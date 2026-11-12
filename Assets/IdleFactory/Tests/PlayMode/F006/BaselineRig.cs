@@ -171,7 +171,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             rig.Grid = gridObject.AddComponent<SlotGridView>();
             rig.Grid.Configure(BaselineArt.Sprites);
             rig.Columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
-            rig.Grid.SetColumns(rig.Columns);
+            rig.Grid.SetLayout(LatticeLayoutBuilder.ShippedForColumns(rig.Columns));
 
             var shell = rig.Shell.Shell;
             Func<string, Sprite> icons = ContractsPanelTestSupport.Icon;
@@ -237,7 +237,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             }
 
             var ppp = Shell.PixelsPerPoint;
-            var layout = RunCameraFraming.Layout(Camera, Grid.Columns, ppp, area);
+            var layout = RunCameraFraming.Layout(Camera, Grid.Layout, ppp, area);
             var selected = shell.SelectedSlot;
             if (!framed)
             {
@@ -260,7 +260,7 @@ namespace IdleFactory.Tests.PlayMode.F006
 
             if (selected >= 0)
             {
-                Controller.OpenSheet(area, Framing.FrameSlot(selected, Grid.Columns));
+                Controller.OpenSheet(area, Framing.FrameSlot(selected, Grid.Layout));
             }
 
             Grid.SetProjectedPixelsPerCell(RunCameraFraming.PixelsPerCell(Camera, ppp));

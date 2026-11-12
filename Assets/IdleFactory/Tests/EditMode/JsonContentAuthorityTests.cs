@@ -72,11 +72,18 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(retiredTypes, Is.Empty);
         }
 
+        // T512 (Feature 006, R22): presentation tuning assets are not gameplay content (FR-001 holds). WorldCompositionSettings holds the world
+        // layout margin, the depot and deposit cell rules and prop weights and density; it reaches no simulation, economy or save data. Each
+        // type listed here must live in the presentation namespace (checked below), so a gameplay definition cannot hide behind this list.
+        private static readonly Type[] PresentationTuningAssets = { typeof(IdleFactory.Unity.Presentation.WorldCompositionSettings) };
+
         [Test]
         public void NoScriptableObjectInTheUnityAssemblyCarriesSerializedGameplayFields()
         {
+            Assert.That(PresentationTuningAssets.Select(type => type.Namespace), Is.All.EqualTo("IdleFactory.Unity.Presentation"),
+                "only presentation tuning assets may be exempt");
             var offenders = typeof(GameplayContentLoader).Assembly.GetTypes()
-                .Where(type => typeof(ScriptableObject).IsAssignableFrom(type))
+                .Where(type => typeof(ScriptableObject).IsAssignableFrom(type) && !PresentationTuningAssets.Contains(type))
                 .SelectMany(type => type.GetFields(DeclaredInstance))
                 .Where(field => field.IsPublic || field.GetCustomAttribute<SerializeField>() != null)
                 .Select(field => field.DeclaringType.FullName + "." + field.Name)

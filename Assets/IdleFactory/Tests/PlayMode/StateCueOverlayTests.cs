@@ -276,7 +276,7 @@ namespace IdleFactory.Tests.PlayMode
             owned.Add(host);
             var view = host.AddComponent<SlotGridView>();
             view.Configure(catalog);
-            view.SetColumns(columns);
+            view.SetLayout(LatticeLayoutBuilder.ShippedForColumns(columns));
             view.SetProjectedPixelsPerCell(pointsPerCell);
             return view;
         }
@@ -544,7 +544,7 @@ namespace IdleFactory.Tests.PlayMode
             var machine = view.RendererOf(front, SlotGridView.SlotRendererRole.Machine);
             var pixels = PixelsOf(machine);
             var rect = view.WorldRectOf(front);
-            var behind = front - view.Columns;
+            var behind = front - LatticeLayoutBuilder.ColumnsFor(view.Layout.Orientation);
             var probe = new Vector2(rect.center.x, rect.center.y + 40f / D); // 40 art px above the plate centre: outside the front hit diamond, inside the tall art and the cell behind
             Assert.That(pixels.ContainsKey(Key(Mathf.FloorToInt(probe.x * D), Mathf.FloorToInt(probe.y * D))), Is.True, "the probe lies on the front machine's art");
             Assert.That(view.TryHitSlot(probe, out var hit), Is.True);
@@ -918,7 +918,7 @@ namespace IdleFactory.Tests.PlayMode
             camera.enabled = false;
             var controller = cameraObject.AddComponent<FactoryCameraController>();
             controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
-            controller.Fit(new ScaleLayout(width, height, pixelsPerPoint, new Rect(0f, 0f, width, height - hud), columns));
+            controller.Fit(new ScaleLayout(width, height, pixelsPerPoint, new Rect(0f, 0f, width, height - hud), LatticeLayoutBuilder.ShippedForColumns(columns)));
             yield return null;
 
             var model = controller.Model;

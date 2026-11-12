@@ -81,7 +81,7 @@ namespace IdleFactory.Unity.Bootstrap
         private ScaleLayout observedLayout;
         private bool hasObservedLayout;
         private Rect lastClosedRect;
-        private int cameraColumns;
+        private string cameraLayoutId;
 
         // Feature 003 run composition. The run is null until the cold-start source selection created it.
         private RunCatalog runCatalog;
@@ -842,15 +842,20 @@ namespace IdleFactory.Unity.Bootstrap
         }
 
         /// <summary>
-        /// Sets the grid columns by screen aspect and binds the camera controller to the Art Bible scale inputs
-        /// (<see cref="RunZoomSettings"/>, never literals in camera or layout code). A new column count, new settings or
+        /// Sets the world layout by screen aspect and binds the camera controller to the Art Bible scale inputs
+        /// (<see cref="RunZoomSettings"/>, never literals in camera or layout code). A new layout, new settings or
         /// <paramref name="fitAll"/> (rotation) defer the fit-all until the shell layout has resolved.
         /// </summary>
         private void ConfigureRunCamera(bool fitAll)
         {
             framing = framing ?? new RunCameraFraming(zoomSettings);
-            var columns = SlotGridLayout.ColumnsFor(Screen.width, Screen.height);
-            slotGrid.SetColumns(columns);
+            var worldLayout = LatticeLayoutBuilder.Shipped(Screen.width, Screen.height);
+            slotGrid.SetLayout(worldLayout);
+            if (runShell != null)
+            {
+                runShell.WorldLayout = worldLayout;
+            }
+
             var settings = framing.ScaleSettings;
             var model = cameraController.Model;
             if (model == null || model.Settings.ArtPixelsPerCell != settings.ArtPixelsPerCell ||
@@ -861,9 +866,9 @@ namespace IdleFactory.Unity.Bootstrap
                 runFramingPending = true;
             }
 
-            if (columns != cameraColumns)
+            if (worldLayout.LayoutId != cameraLayoutId)
             {
-                cameraColumns = columns;
+                cameraLayoutId = worldLayout.LayoutId;
                 runFramingPending = true;
             }
 
@@ -1287,7 +1292,7 @@ namespace IdleFactory.Unity.Bootstrap
 
         /// <summary>
         /// Run-mode camera framing: hands the controller the real HUD-aware rectangle and panel scale. The first resolved rectangle
-        /// (and a rotation or column change) fits all 12 slots once; later layout changes re-fit only when the scale no longer fits;
+        /// (and a rotation or layout change) fits the whole layout once; later layout changes re-fit only when the scale no longer fits;
         /// a selection keeps its slot in the band above (or beside) an open sheet. A rectangle that has not resolved yet does nothing.
         /// </summary>
         private void ApplyRunViewport()
@@ -1297,10 +1302,10 @@ namespace IdleFactory.Unity.Bootstrap
                 return;
             }
 
-            var layout = RunCameraFraming.Layout(factoryCamera, slotGrid.Columns, PixelsPerPoint(), visibleArea);
+            var layout = RunCameraFraming.Layout(factoryCamera, slotGrid.Layout, PixelsPerPoint(), visibleArea);
             var fit = runFramingPending || !cameraController.HasLayout;
             var structural = hasObservedLayout && (observedLayout.PixelWidth != layout.PixelWidth || observedLayout.PixelHeight != layout.PixelHeight ||
-                observedLayout.Columns != layout.Columns || !Mathf.Approximately(observedLayout.PixelsPerPoint, layout.PixelsPerPoint));
+                observedLayout.LayoutId != layout.LayoutId || !Mathf.Approximately(observedLayout.PixelsPerPoint, layout.PixelsPerPoint));
             var changed = !hasObservedLayout || structural || observedLayout.UnobstructedRect != visibleArea;
             var wantSheet = selectedSlot >= 0;
             var closedNow = false;
@@ -1329,7 +1334,7 @@ namespace IdleFactory.Unity.Bootstrap
 
             if (wantSheet && (changed || selectionChanged || !cameraController.SheetOpen))
             {
-                cameraController.OpenSheet(visibleArea, framing.FrameSlot(selectedSlot, slotGrid.Columns));
+                cameraController.OpenSheet(visibleArea, framing.FrameSlot(selectedSlot, slotGrid.Layout));
             }
 
             selectionChanged = false;

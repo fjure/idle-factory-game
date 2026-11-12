@@ -111,7 +111,7 @@ namespace IdleFactory.Tests.PlayMode
             owned.Add(host);
             var view = host.AddComponent<SlotGridView>();
             view.Configure(Catalog());
-            view.SetColumns(3);
+            view.SetLayout(LatticeLayoutBuilder.ShippedForColumns(3));
             view.SetProjectedPixelsPerCell(48f);
             var frame = Enumerable.Range(0, SlotGridLayout.SlotCount)
                 .Select(i => new SlotVisual(i, SlotCondition.Occupied, SlotGridModel.SlotOccupiedKey, MinerKey,

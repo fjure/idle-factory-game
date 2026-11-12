@@ -141,7 +141,7 @@ namespace IdleFactory.Tests.PlayMode
         public void AViewConfiguredWithAFailedCatalogDrawsNothingAndEverySlotStaysTappable([Values(3, 4)] int columns)
         {
             var view = NewView(FailedCatalog());
-            view.SetColumns(columns);
+            view.SetLayout(LatticeLayoutBuilder.ShippedForColumns(columns));
             view.Render(AllOccupied());
 
             Assert.That(view.ActiveRendererCount, Is.EqualTo(0), "a failed catalog resolves no key: nothing is substituted and nothing half-valid is drawn");

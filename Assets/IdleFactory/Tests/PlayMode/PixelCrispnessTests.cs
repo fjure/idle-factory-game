@@ -107,7 +107,7 @@ namespace IdleFactory.Tests.PlayMode
             camera.enabled = false;
             controller = cameraObject.AddComponent<FactoryCameraController>();
             controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
-            controller.Fit(new ScaleLayout(width, height, 1f, new Rect(0f, 0f, width, height), 3));
+            controller.Fit(new ScaleLayout(width, height, 1f, new Rect(0f, 0f, width, height), LatticeLayoutBuilder.ShippedForColumns(3)));
 
             // Warm-up (the first frames of a run can lose draws while the pipeline initialises); the result is not used.
             for (var frame = 0; frame < 3; frame++)
