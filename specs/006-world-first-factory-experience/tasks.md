@@ -332,7 +332,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 
 **Independent test**: All existing suites stay green. There is no scene diff. The 6, 20 and L test layouts pass through the real view, camera and selection (SC-011).
 
-- [ ] T510 Gameplay Developer (Software Architect and Test/QA lenses; Medium, high reasoning), after T500.
+- [X] T510 Gameplay Developer (Software Architect and Test/QA lenses; Medium, high reasoning), after T500.
   - **Change**: a pure move plus a visibility change (R05).
     - `git mv Assets/IdleFactory/Unity/Presentation/SlotGridView.cs` together with its `.meta` (GUID kept) to `Assets/IdleFactory/Unity/Presentation/World/SlotGridView.cs`.
     - Extract `SlotVisualModel.cs` (`SlotCondition`, `SlotVisual`, `SlotGridModel`), `SlotLattice.cs` (`SlotGridLayout`), `FloorRange.cs`, `RunZoomSettings.cs` and `SlotRenderers.cs`. `SlotRenderers` changes from private nested to internal.
@@ -343,7 +343,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
     - `scripts/check-settings-noise.ps1 -Commit <sha>`.
   - **Resources**: unity.
   - **Covers**: FR-037; research R05.
-- [ ] T511 [P] UI/UX Developer (Software Architect and Test/QA lenses; Medium, high reasoning), after T500.
+- [X] T511 [P] UI/UX Developer (Software Architect and Test/QA lenses; Medium, high reasoning), after T500.
   - **Change**: a pure move (R11).
     - Extract the back and sheet logic from `Assets/IdleFactory/Unity/UI/RunShellDocument.cs` into `Assets/IdleFactory/Unity/UI/ShellNavigationStack.cs` and `ShellSheetHost.cs`.
     - Keep `HandleBack` as a delegating method. `StartupStatusPanel.cs:667` still calls it.
@@ -353,7 +353,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: the existing Play Mode suites are unchanged and green, including `RunKeyboardFocusTests`, `RunHudLayoutTests` and `AndroidBackGestureTests`.
   - **Resources**: unity.
   - **Covers**: FR-021, FR-024; research R11.
-- [ ] T512 [US7] Gameplay Developer (Software Architect and Test/QA lenses; Medium, high reasoning), after T510 and T505.
+- [X] T512 [US7] Gameplay Developer (Software Architect and Test/QA lenses; Medium, high reasoning), after T510 and T505.
   - **Layout seam** in `Assets/IdleFactory/Unity/Presentation/World/`: `FactoryWorldLayout.cs`, `LatticeLayoutBuilder.cs` and `BuildingLocationId.cs`, per `data-model.md` and `contracts/world-presentation.md` §4.
     - `Bounds` = today's `SlotGridLayout.Extent`, with `Margin` kept separate.
     - Members: `LayoutId`, `TryHit`, `DeckCells` over all locations, `DepotCell`, `DepositCell`, `TrunkOf` and `BranchOf`.
@@ -368,13 +368,13 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Re-baseline**: record it in `reviews/test-rebaseline.md` for `SlotGridLatticeTests`, `SlotGridTests`, `CameraScaleModelTests` and `ScreenClassScaleTableTests`.
   - **Resources**: unity.
   - **Covers**: FR-037, FR-038, SC-011; research R04, R22.
-- [ ] T513 [P] Technical Artist (DevOps/Operations Low-tier lens; Test/QA lens), after T500.
+- [X] T513 [P] Technical Artist (DevOps/Operations Low-tier lens; Test/QA lens), after T500.
   - **Change**: create the sorting layers `WorldBase`, `WorldDeck`, `WorldLinks` (before `Default`) and `Effects` (after `Overlay`) in `ProjectSettings/TagManager.asset` through Unity tooling.
   - **Guard test**: `Assets/IdleFactory/Tests/EditMode/F006/SortingLayerGuardTests.cs` fails when a layer is missing or the order changes. It accounts for `SortingLayer.NameToID` silently returning 0.
   - **Settings noise**: commit with `IDLEFACTORY_ALLOW_SETTINGS_NOISE=1` and record the decision in `reviews/test-rebaseline.md` › Settings. Run `scripts/check-settings-noise.ps1 -Commit <sha>`; it shows TagManager only.
   - **Resources**: unity.
   - **Covers**: FR-014; research R06.
-- [ ] T514 [P] Gameplay Developer (Software Architect and Game Systems/Economy lenses; Medium, high reasoning), after T500 (OD-11 confirmed).
+- [X] T514 [P] Gameplay Developer (Software Architect and Game Systems/Economy lenses; Medium, high reasoning), after T500 (OD-11 confirmed).
   - **Change**: implement R08 and `contracts/presentation-model.md` §1.
     - `Assets/IdleFactory/Core/Run/Simulation/RunSimulator.cs` records a per-advance count per machine in `CompletionPass`: "+1 per completed cycle, also for a partial batch", "exposed only after a successful `Commit()`; a faulted advance exposes 0".
     - `Assets/IdleFactory/Core/Run/Application/RunSession.cs` accumulates a `long` per `InstanceId`: "pruned on removal, reset on replace, empty on construction, restore and prestige".
@@ -388,7 +388,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **API fixture**: record the `core-public-api.txt` diff in `reviews/test-rebaseline.md`.
   - **Resources**: unity.
   - **Covers**: FR-001, FR-002, FR-029, SC-007; research R08.
-- [ ] T515 [P] Test/QA (UI/UX Developer lens), after T511.
+- [X] T515 [P] Test/QA (UI/UX Developer lens), after T511.
   - **Helper**: add a `ShellTab`/`TabButton` compatibility helper to the Play Mode shell test support (`RunShellTestSupport` or its equivalent), so that the about 35 panel tests can switch from tab buttons to hub navigation in one place later.
   - **Re-baseline file**: create `specs/006-world-first-factory-experience/reviews/test-rebaseline.md`, with the full per-file list from R19 and an old→new table template.
   - **Validation**: the existing suites stay green.
@@ -401,7 +401,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 
 **Independent test**: Before/after captures on every screen class. The SC-005 re-trial shows no regression. The World Designer conformance check finds zero conflicts.
 
-- [ ] T516 [US2] Art Director (Technical Artist and World Designer lenses), after T509.
+- [X] T516 [US2] Art Director (Technical Artist and World Designer lenses), after T509.
   - **Draft** Art Bible v1.1.0 in `docs/art/F004-art-bible-v1.md`: a revision-log entry, marked "draft pending OD-10", and a header note.
   - **Validation**: `grep -n "v1.1.0" docs/art/F004-art-bible-v1.md` finds the header and the revision-log row. The palette check reports 48 ids.
   - **Amendments**: §2.2 (numeric world-layer budget per `contracts/world-presentation.md` §5), §5, §6.4, §6.5, §8.5, §9.4 and §12 (R17).
@@ -411,7 +411,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Citations**: the draft cites World Bible v0.1 and OD-9.
   - **Resources**: none.
   - **Covers**: FR-004, FR-044; research R17.
-- [ ] T517 [P] [US2] Asset Artist (Art Director and UI/UX lenses), after T509.
+- [X] T517 [P] [US2] Asset Artist (Art Director and UI/UX lenses), after T509.
   - **Measure** the A-03 badge-anchor candidates (x = 40 centred; a lower or left offset; a pointer tail) against:
     - the 54 px row band;
     - the selection band;
