@@ -698,7 +698,7 @@
   IdleFactory.Run.Application.MachineSnapshot :: property public System.Int64 RefundOnRemove { get }
   IdleFactory.Run.Application.MachineSnapshot :: property public System.String Label { get }
   IdleFactory.Run.Application.MachineSnapshot :: property public System.String MachineId { get }
-  IdleFactory.Run.Application.MachineStateView :: ctor public (System.Int32 slotIndex, System.Int32 machineTypeIndex, System.Int32 level, System.Boolean isActive, IdleFactory.Run.Application.MachinePhase phase, IdleFactory.Run.Application.MachineBlocker blocker, System.Int64 batchFactor, System.Int64 progressPpm)
+  IdleFactory.Run.Application.MachineStateView :: ctor public (System.Int32 slotIndex, System.Int32 machineTypeIndex, System.Int32 level, System.Boolean isActive, IdleFactory.Run.Application.MachinePhase phase, IdleFactory.Run.Application.MachineBlocker blocker, System.Int64 batchFactor, System.Int64 progressPpm, System.Int64 completedCycles = 0)
   IdleFactory.Run.Application.MachineStateView :: property public IdleFactory.Run.Application.MachineBlocker Blocker { get }
   IdleFactory.Run.Application.MachineStateView :: property public IdleFactory.Run.Application.MachinePhase Phase { get }
   IdleFactory.Run.Application.MachineStateView :: property public System.Boolean IsActive { get }
@@ -706,6 +706,7 @@
   IdleFactory.Run.Application.MachineStateView :: property public System.Int32 MachineTypeIndex { get }
   IdleFactory.Run.Application.MachineStateView :: property public System.Int32 SlotIndex { get }
   IdleFactory.Run.Application.MachineStateView :: property public System.Int64 BatchFactor { get }
+  IdleFactory.Run.Application.MachineStateView :: property public System.Int64 CompletedCycles { get }
   IdleFactory.Run.Application.MachineStateView :: property public System.Int64 ProgressPpm { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public IdleFactory.Run.Application.MachineRates Level1Rates { get }
   IdleFactory.Run.Application.MachineTypeSnapshot :: property public System.Boolean Affordable { get }
@@ -1274,6 +1275,7 @@
   IdleFactory.Run.Application.RunSession :: method public System.Int32 CopyInventory(System.Span<System.Int64> destination)
   IdleFactory.Run.Application.RunSession :: method public System.Int32 CopyMachineStates(IdleFactory.Run.Application.MachineStateView[] destination)
   IdleFactory.Run.Application.RunSession :: method public System.Int32 CopyMachineStates(System.Span<IdleFactory.Run.Application.MachineStateView> destination)
+  IdleFactory.Run.Application.RunSession :: method public System.Int64 CompletedCyclesOf(System.Guid instanceId)
   IdleFactory.Run.Application.RunSession :: method public System.Int64 ReadCash()
   IdleFactory.Run.Application.RunSession :: method public System.Int64 ReadRp()
   IdleFactory.Run.Application.RunSession :: method public System.String InventoryId(System.Int32 index)
@@ -1770,6 +1772,7 @@
   IdleFactory.Run.Simulation.RunSimulator :: field public const System.Int32 LimitStore = -2
   IdleFactory.Run.Simulation.RunSimulator :: method public IdleFactory.Run.Simulation.RunAdvanceResult Advance(IdleFactory.Run.Domain.RunState state, IdleFactory.Run.Domain.PermanentState permanent, System.Int64 ticks, IdleFactory.Run.Simulation.TimelineMapping mapping, System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Simulation.BoundaryEvent> events)
   IdleFactory.Run.Simulation.RunSimulator :: method public IdleFactory.Run.Simulation.RunAdvanceResult Advance(IdleFactory.Run.Domain.RunState state, IdleFactory.Run.Domain.PermanentState permanent, System.Int64 ticks, System.Int64 startUtcMs, System.Collections.Generic.IReadOnlyList<IdleFactory.Run.Simulation.BoundaryEvent> events)
+  IdleFactory.Run.Simulation.RunSimulator :: method public System.Boolean TryGetCompletedCount(System.Guid instanceId, out System.Int32 count)
   IdleFactory.Run.Simulation.RunSimulator :: method public System.Boolean TryGetLastCompletion(System.Guid instanceId, out System.Int64 units, out System.Int64 batchFactor, out System.Int32 limit)
   IdleFactory.Run.Simulation.RunSimulator :: method public System.Int64 LastConsumedUnits(System.String resourceId)
   IdleFactory.Run.Simulation.RunSimulator :: method public System.Int64 LastProducedUnits(System.String resourceId)

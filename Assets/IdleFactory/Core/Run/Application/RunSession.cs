@@ -72,6 +72,13 @@ namespace IdleFactory.Run.Application
         private int[] _completionLimit = new int[16];
         private int _completionCount;
 
+        // Completed cycles per machine (F006 R08, OD-11): a session-owned running total per InstanceId, +1 per completed cycle seen
+        // by a successful advance or command settle. Derived, never persisted and never read by economy, offline or prestige code.
+        // Parallel arrays in first-seen order (no dictionary enumeration), preallocated like the last completions above.
+        private Guid[] _cyclesId = new Guid[16];
+        private long[] _cyclesTotal = new long[16];
+        private int _cyclesCount;
+
         private readonly GuardedRunEventSink _logSink;
 
         // Session-log meters (T364): history the Purchase, Prestige and Bottleneck records need. Only maintained when a sink was supplied; they read the
@@ -222,6 +229,7 @@ namespace IdleFactory.Run.Application
             AnchorUtcMs = candidate.ConfirmedUtcMs > timeline ? candidate.ConfirmedUtcMs : timeline;
             ActiveTicksSinceAnchor = 0;
             _completionCount = 0;
+            _cyclesCount = 0;
             _baselineTaken = false;
             PendingTransition = null;
             QuantityRevision++;
@@ -254,6 +262,7 @@ namespace IdleFactory.Run.Application
             AnchorUtcMs = anchorUtcMs;
             ActiveTicksSinceAnchor = 0;
             _completionCount = 0;
+            _cyclesCount = 0;
             _baselineTaken = false;
             PendingTransition = null;
             QuantityRevision++;
@@ -391,8 +400,60 @@ namespace IdleFactory.Run.Application
             return false;
         }
 
+        /// <summary>
+        /// The completed cycles of a machine this session has counted since it was constructed, restored or went through a
+        /// prestige (F006 R08, OD-11): 0 for a machine that never completed or is not in the run. Session-only; it is not saved.
+        /// </summary>
+        public long CompletedCyclesOf(Guid instanceId)
+        {
+            for (int i = 0; i < _cyclesCount; i++)
+                if (_cyclesId[i] == instanceId) return _cyclesTotal[i];
+            return 0;
+        }
+
+        private void AccumulateCycles()
+        {
+            // Prune removed machines (a re-added instance starts again at 0), then add the committed per-advance counts.
+            int kept = 0;
+            for (int i = 0; i < _cyclesCount; i++)
+            {
+                if (State.FindMachine(_cyclesId[i]) == null) continue;
+                if (kept != i)
+                {
+                    _cyclesId[kept] = _cyclesId[i];
+                    _cyclesTotal[kept] = _cyclesTotal[i];
+                }
+                kept++;
+            }
+            _cyclesCount = kept;
+
+            IReadOnlyList<MachineInstance> machines = State.Machines;
+            for (int m = 0; m < machines.Count; m++)
+            {
+                Guid id = machines[m].InstanceId;
+                if (!_simulator.TryGetCompletedCount(id, out int count)) continue;
+                int at = -1;
+                for (int i = 0; i < _cyclesCount && at < 0; i++)
+                    if (_cyclesId[i] == id) at = i;
+                if (at < 0)
+                {
+                    if (_cyclesCount == _cyclesId.Length)
+                    {
+                        Array.Resize(ref _cyclesId, _cyclesCount * 2);
+                        Array.Resize(ref _cyclesTotal, _cyclesCount * 2);
+                    }
+                    at = _cyclesCount++;
+                    _cyclesId[at] = id;
+                    _cyclesTotal[at] = 0;
+                }
+                long next = _cyclesTotal[at] + count;
+                _cyclesTotal[at] = next < 0 ? long.MaxValue : next;
+            }
+        }
+
         private void RecordCompletions()
         {
+            AccumulateCycles();
             // Forget removed machines, then take the completions of the advance that just ended.
             int kept = 0;
             for (int i = 0; i < _completionCount; i++)
@@ -851,7 +912,7 @@ namespace IdleFactory.Run.Application
 
                 long ppm = 1_000_000;
                 if (!m.IsWaiting) MulDiv.MulDivFloor(m.ProgressTicks, 1_000_000, m.CycleDurationTicks, out ppm);
-                _views[i] = new MachineStateView(m.SlotIndex, typeIndex, m.Level, m.IsActive, phase, blocker, batch, ppm);
+                _views[i] = new MachineStateView(m.SlotIndex, typeIndex, m.Level, m.IsActive, phase, blocker, batch, ppm, CompletedCyclesOf(m.InstanceId));
             }
             _viewCount = count;
             _viewsDirty = false;
