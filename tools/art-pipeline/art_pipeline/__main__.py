@@ -31,12 +31,21 @@ def main(argv: list[str] | None = None) -> int:
     k.add_argument("--strip-scale", type=int, default=None, help="integer device-pixel scale of the strips (default n_fit of the portrait sheet)")
     f6 = sub.add_parser("concept-f006", help="regenerate the F006 T506 concept sprites")
     f6.add_argument("--out", required=True, help="art-source/f006/concept directory to write")
+    ct = sub.add_parser("cue-tail", help="regenerate the F006 T524 badge pointer-tail sprites (OD-12, K4)")
+    ct.add_argument("--out", required=True, help="art-source/f006/cue directory to write")
     args = ap.parse_args(argv)
     if args.cmd == "concept-f006":
         from . import concept_f006
         build = concept_f006.write_all(args.out)
         ok = all(b["passed"] for b in build.values())
         sys.stdout.write("concept-f006: %s" % ("all checks pass" if ok else "FAILING"))
+        sys.stdout.write(chr(10))
+        return 0 if ok else 1
+    if args.cmd == "cue-tail":
+        from .f006 import cue_tail
+        build = cue_tail.write_all(args.out)
+        ok = build["report"]["passed"]
+        sys.stdout.write("cue-tail: %d sprites, %s" % (len(build["sprites"]), "all checks pass" if ok else "FAILING"))
         sys.stdout.write(chr(10))
         return 0 if ok else 1
     if args.cmd == "mockup":

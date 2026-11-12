@@ -1,0 +1,195 @@
+{
+  "entries": [
+    {
+      "artBibleVersion": "F004-PAB v1.1.0",
+      "assetId": "f003-badge-inactive",
+      "box": [
+        48,
+        10,
+        71,
+        37
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "cue-tail",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-badge-inactive/f003-badge-inactive_00.png",
+          "sha256": "88cf8104a674143660da728fa2158df476aa76ebb23f8d71270951d3158a22bf"
+        }
+      ],
+      "key": "F003-BADGE-INACTIVE",
+      "kind": "badge",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "artBibleVersion": "F004-PAB v1.1.0",
+      "assetId": "f003-badge-missing-input",
+      "box": [
+        48,
+        10,
+        71,
+        37
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "cue-tail",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-badge-missing-input/f003-badge-missing-input_00.png",
+          "sha256": "88f3f27d0481aad2eae64038838150c4155a26a604e2e3c6ad53b512dabe2f4b"
+        }
+      ],
+      "key": "F003-BADGE-MISSING-INPUT",
+      "kind": "badge",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "artBibleVersion": "F004-PAB v1.1.0",
+      "assetId": "f003-badge-paused",
+      "box": [
+        48,
+        10,
+        71,
+        37
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "cue-tail",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-badge-paused/f003-badge-paused_00.png",
+          "sha256": "555326dc5ae5b726753e5fb94a40d127000c4e094d2f369e515574cc902e2864"
+        }
+      ],
+      "key": "F003-BADGE-PAUSED",
+      "kind": "badge",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "artBibleVersion": "F004-PAB v1.1.0",
+      "assetId": "f003-badge-storage-full",
+      "box": [
+        48,
+        10,
+        71,
+        37
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "cue-tail",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-badge-storage-full/f003-badge-storage-full_00.png",
+          "sha256": "4a252f1657c9ee59b4c6a2c8c55a7f8766df39de8eb6689a2682aeef0b83343b"
+        }
+      ],
+      "key": "F003-BADGE-STORAGE-FULL",
+      "kind": "badge",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    },
+    {
+      "artBibleVersion": "F004-PAB v1.1.0",
+      "assetId": "f003-badge-waiting",
+      "box": [
+        48,
+        10,
+        71,
+        37
+      ],
+      "canvas": [
+        80,
+        64
+      ],
+      "family": "cue-tail",
+      "footprintPx": [
+        68,
+        30
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f003-badge-waiting/f003-badge-waiting_00.png",
+          "sha256": "c53f7d2a5ac0d55d69a44658bbaf145b3efaf0bc6a39dee37d46f6d0c00bb7db"
+        }
+      ],
+      "key": "F003-BADGE-WAITING",
+      "kind": "badge",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.234375
+      ],
+      "ppu": 24,
+      "route": "scripted"
+    }
+  ],
+  "schemaVersion": 1
+}

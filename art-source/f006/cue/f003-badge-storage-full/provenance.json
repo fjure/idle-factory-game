@@ -1,0 +1,117 @@
+{
+  "artBibleVersion": "F004-PAB v1.1.0",
+  "assetId": "f003-badge-storage-full",
+  "briefVersion": "F006-CUE-TAIL v0.1 (art-source/f006/cue/brief-tail.md)",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "074d1e3335ae2e878fcbe9a3d69afb2f79483caad5de9fdc8905ce1efced04ee",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f006/cue/f003-badge-storage-full/f003-badge-storage-full_00.png",
+      "pixelHash": "5b882b4e0282dba15db613565f2296d7514ddebd2aab79c2506c9e740c51a67b",
+      "sha256": "4a252f1657c9ee59b4c6a2c8c55a7f8766df39de8eb6689a2682aeef0b83343b"
+    }
+  ],
+  "parameters": {
+    "anchor": [
+      59,
+      33
+    ],
+    "box": [
+      48,
+      10,
+      71,
+      37
+    ],
+    "boxWithTail": [
+      48,
+      10,
+      71,
+      37
+    ],
+    "canvas": [
+      80,
+      64
+    ],
+    "fill": "cue_warn",
+    "footprintPx": [
+      68,
+      30
+    ],
+    "glyph": "stack",
+    "glyphScale": 1.0,
+    "innerPx": 21,
+    "key": "F003-BADGE-STORAGE-FULL",
+    "kind": "badge",
+    "od": "OD-12 (anchor K4)",
+    "pivotPx": [
+      40,
+      15
+    ],
+    "ppu": 24,
+    "randomness": "none",
+    "scriptVersion": "t437-1",
+    "seed": null,
+    "state": "storage-full",
+    "tailRowWidths": [
+      7,
+      5,
+      3,
+      1
+    ],
+    "tailRows": 4
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "752ac3ced8fd88fe86a29950c0ee66931be9f5026b60a1bb0815fb4c0f5bed74",
+    "steps": [
+      "reduce_for_route(scripted)",
+      "threshold_alpha",
+      "quantize(palette groups)",
+      "add_outline(ink_0)",
+      "placement on 80x64 overlay canvas",
+      "pointer tail (7, 5, 3, 1 px rows, ink_0 edges and tip, badge fill inside)"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route), MAQA T524",
+  "reviewedBy": {
+    "status": "pending: T525 Art Director pixel review (the producer does not approve its own art)"
+  },
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues.py",
+      "sha256": "16de4b1be14f195da650f8d9aa4f50d0fd581eb596d0574409281546f65295b4"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues_production.py",
+      "sha256": "5fa391ba6e32f406b5de438e359a0fd60772273bfde0a7a80e3d075fbbc44572"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/f006/cue_tail.py",
+      "sha256": "c9c439e85b5c4a86a01592aa944d76785fd7cd2b0965c029e4b101f8a0f10cd0"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art_pipeline.f006.cue_tail",
+      "version": "t524-1"
+    },
+    {
+      "name": "art_pipeline.cues",
+      "version": "t437-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "11.3.0 (pinned in tools/art-pipeline/pyproject.toml)"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}
