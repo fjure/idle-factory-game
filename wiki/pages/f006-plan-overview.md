@@ -1,13 +1,13 @@
 ---
 title: Feature 006 plan overview (planned)
 type: decision
-sources: [S056, S057]
-updated: 2026-11-11
+sources: [S056, S057, S058]
+updated: 2026-11-12
 ---
 
 # Feature 006 plan overview (planned, not implemented)
 
-F006 "World-First Factory Experience" makes the factory the screen. Gameplay, content and saves stay unchanged; the plan (revision 2) passed seven review lenses including the new World Designer. Status: planning complete; batch P0 (T502-T508) merged, P1 not started (see [baseline](./f006-p0-baseline.md)). (S056, S057)
+F006 "World-First Factory Experience" makes the factory the screen. Gameplay, content and saves stay unchanged; the plan (revision 2) passed seven review lenses including the new World Designer. Status: planning complete; batch P0 (T502-T508) merged (see [baseline](./f006-p0-baseline.md)); batch P1, the enabling refactor (T510-T518), merged on 2026-11-12 (see [P1](./f006-batch-p1-enabling-refactor.md)). (S056, S057, S058)
 
 ## Phases and gates
 
@@ -29,7 +29,7 @@ See [world presentation design](./f006-world-presentation-design.md) for the mec
 - OD-7 acceptance on emulator plus Windows; a physical phone is optional and recorded as unverified.
 - OD-14 machine card may reach about 45 % of phone-portrait height at large text; OD-15 minimal World Bible; OD-16 ore-vein marker, not an input.
 - OD-9 resolved in P0 (2026-11-11): World Bible v0.1 frozen (OD-9a), direction A with B's wall as stage-2 candidate, hub label "Office", reviewer conditions binding (OD-9b); see [direction decision](./f006-p0-direction-decision.md). (S057)
-- Pending: OD-10, OD-12; OD-11 (revised `CompletedCycles` design) to confirm at the next owner touchpoint. (S056)
+- Resolved in P1 (2026-11-11/12): OD-10 Art Bible v1.1.0 signed off as drafted, OD-12 anchor K4 (59,33) with a 4 px tail, OD-11 `CompletedCycles` confirmed and built (T514). See [batch P1](./f006-batch-p1-enabling-refactor.md). (S058)
 
 ## Binding versus guidance criteria
 

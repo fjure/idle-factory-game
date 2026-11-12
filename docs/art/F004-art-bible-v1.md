@@ -1,9 +1,9 @@
-# F004 Art Bible v1.0.4 (v1.1.0 draft pending OD-10, see section 21)
+# F004 Art Bible v1.1.0
 
-**Version**: `F004-PAB v1.0.4` (patch of `F004-PAB v1.0`, approved by the owner on 2026-10-30, T426; reviewed content at commit af0ee63; v1.0.1 writes the owner decisions of 2026-11-03 on the T439 review, T467 (#640), precisions only and no style change; v1.0.2 records the owner-confirmed T456 lattice result of 2026-11-04 (section 3.5); v1.0.3 records the owner's APK cap of 150 MB of 2026-11-04 (budget 10, R-3); v1.0.4 extends DEV-2 and DEV-4 to the portrait 720 x 1280 phone at 320 dpi, owner decision of 2026-11-05 on T442 finding F1 (sections 3.2, 4.1, 4.2, 4.3, 8.4); the same v1.0.4 errata also marks the fallback-frame statements superseded after T476 (#670, FR-024 fails closed; sections 0 and 10, see the revision log); see the revision log in section 20)
+**Version**: `F004-PAB v1.1.0` (minor release for F006, signed off by the owner on 2026-11-11, OD-10, T518; sections 2.2a, 5, 6.4, 6.5, 8.5, 9.4a, 12 and 21; owner decisions in section 21.8). It builds on `F004-PAB v1.0.4` (patch of `F004-PAB v1.0`, approved by the owner on 2026-10-30, T426; reviewed content at commit af0ee63; v1.0.1 writes the owner decisions of 2026-11-03 on the T439 review, T467 (#640), precisions only and no style change; v1.0.2 records the owner-confirmed T456 lattice result of 2026-11-04 (section 3.5); v1.0.3 records the owner's APK cap of 150 MB of 2026-11-04 (budget 10, R-3); v1.0.4 extends DEV-2 and DEV-4 to the portrait 720 x 1280 phone at 320 dpi, owner decision of 2026-11-05 on T442 finding F1 (sections 3.2, 4.1, 4.2, 4.3, 8.4); the same v1.0.4 errata also marks the fallback-frame statements superseded after T476 (#670, FR-024 fails closed; sections 0 and 10, see the revision log); see the revision log in section 20)
 
 
-> **v1.1.0 draft (T516, Issue #690): draft pending OD-10.** `F004-PAB v1.1.0` is a minor release that adds the F006 world art families on top of v1.0.4 and removes no v1.0.4 rule. It is **not signed off**: the owner signs it at T518 (OD-10). It follows World Bible `F006-WB v0.1` (OD-9a) and the owner direction decision OD-9b (direction A, B's wall as the stage-2 candidate). The amendments are marked "v1.1.0 draft" in sections 2.2, 5, 6.4, 6.5, 8.5, 9.4 and 12; the family, allowance, sprite and stage tables are in section 21; the revision log row is in section 20. Palette unchanged: 48 ids (`palette_definition` check), no new id. Until OD-10 the signed v1.0.4 text governs F004 assets and the draft governs only the F006 P2 briefs.
+> **v1.1.0 (T516, Issue #690; signed off by the owner on 2026-11-11, OD-10, recorded at T518).** `F004-PAB v1.1.0` is a minor release that adds the F006 world art families on top of v1.0.4 and removes no v1.0.4 rule. It is **not signed off**: the owner signs it at T518 (OD-10). It follows World Bible `F006-WB v0.1` (OD-9a) and the owner direction decision OD-9b (direction A, B's wall as the stage-2 candidate). The amendments are marked "v1.1.0 draft" in sections 2.2, 5, 6.4, 6.5, 8.5, 9.4 and 12; the family, allowance, sprite and stage tables are in section 21; the revision log row is in section 20. Palette unchanged: 48 ids (`palette_definition` check), no new id. Since the OD-10 sign-off (2026-11-11), v1.1.0 governs the F006 P2 art and its briefs. It also contains all v1.0.4 rules for F004 assets unchanged. Owner decisions are in section 21.8.
 
 **Status**: Authored by the Art Director author session (T424, Issue #536). The owner signed it off on 2026-10-30 (T426, Issue #538) at commit af0ee63; it is frozen at D24 and governs T427 to T447. The independent review of T425 (second-session Art Director, UI/UX Reviewer, Game Designer/PO) is recorded in `specs/004-visual-identity/reviews/art-bible-review.md`; revision 1 (T461, Issue #615) revises this document for its conditions R1 to R5, R7, R8, R11, R12 and R15 under the owner decisions of 2026-10-29. R6, R9, R10, R13 and R14 belong to other tasks (section 19). Production (T434 to T438) starts after T462 (#616), which builds the checks this document requires. The author does not approve this document.
 
@@ -102,7 +102,7 @@ Budgets are those of `specs/004-visual-identity/reviews/performance-budgets.md` 
 
 Attribution rule: T444 measures B3 with the accent layer on and in a same-session control with it off, so a miss is attributed before any readability change (a readability reduction needs an owner decision, plan "Performance"). Worst-case renderer count per 12-slot factory with L1: running slot = base, machine, accent, 2 markers; other slot = base, machine, badge, 2 markers; both 5, plus 1 selection frame = at most 61, equal to the F003 cap of 61 (`F003-PAB` section 6.1). `F003-BADGE-RUNNING` is a manifest entry flagged `intentionallyEmpty` with no PNG, and no renderer is drawn for it (owner decision R8, section 8.1; T429).
 
-#### 2.2a World-layer budget (v1.1.0 draft pending OD-10; `contracts/world-presentation.md` section 5)
+#### 2.2a World-layer budget (v1.1.0, signed off at OD-10; `contracts/world-presentation.md` section 5)
 
 The F006 world layers sit beside the F004 slot sprites and replace the F004 floor pool (research R06). Numbers are `derived`; the worked values use 12 locations in 4 x 3 or 3 x 4 and a margin of m = 1 cell for counting (`WorldCompositionSettings.marginCells` is the authority). Nothing is measured here; the measurement is a P2 gate.
 
@@ -257,7 +257,7 @@ Both are recorded as accepted deviations, carried by the owner decision of 2026-
 
 World background: the camera clears to `ui_bg`. No background illustration in v1.0 (the 12 slots fill the view; no measurement supports more).
 
-**Amendment (v1.1.0 draft pending OD-10): the "no background illustration" statement above is superseded for F006.** The camera still clears to `ui_bg`; the world layers draw the F006 ground, foundation, edge, depot, link, prop and deposit families (section 21) on the dark base `floor_0`/`floor_1` of World Bible `F006-WB v0.1`. **No palette id is added: the cap stays 48** (`palette_definition` reports 48 of 48 ids). The family allowances gain the per-family table of **section 21.2**. `lit_*` is used by no F006 family (not by links, pips, sparks or lamps), `teal_*` by no prop, and `plate_*` only as the F004 plate role on the occupied foundation, with **no `plate_*` on the depot slab** (Art Director A3, decided in 21.2: the `floor_1`/`steel_*` alternative). The `res_*` uses (deposit, depot fill) are allowed by id.
+**Amendment (v1.1.0, signed off at OD-10): the "no background illustration" statement above is superseded for F006.** The camera still clears to `ui_bg`; the world layers draw the F006 ground, foundation, edge, depot, link, prop and deposit families (section 21) on the dark base `floor_0`/`floor_1` of World Bible `F006-WB v0.1`. **No palette id is added: the cap stays 48** (`palette_definition` reports 48 of 48 ids). The family allowances gain the per-family table of **section 21.2**. `lit_*` is used by no F006 family (not by links, pips, sparks or lamps), `teal_*` by no prop, and `plate_*` only as the F004 plate role on the occupied foundation, with **no `plate_*` on the depot slab** (Art Director A3, decided in 21.2: the `floor_1`/`steel_*` alternative). The `res_*` uses (deposit, depot fill) are allowed by id.
 
 ## 6. Rendering rules: outline, shading, dithering, animation, noise limits
 
@@ -288,7 +288,7 @@ None. Alpha is 0 or 255 (`check_alpha`); quantisation to the palette uses CIELAB
 | Animated art | machine loops (and the matching accent) only. Plates, badges, markers, labels, selection frame and floor are static | FR-019 |
 | Reduced motion | forces frame 0 for every entry (FR-020, T431) | contract |
 
-**Amendment (v1.1.0 draft pending OD-10), FX sprites on the shared clock.** The "Animated art" row above ("machine loops and the matching accent only") gains the F006 effect sprites of the FX atlas (section 21.4): completion pop, branch pip, spark, steam, build dust, upgrade glint and the vein chip loop. They run only on the shared `PresentationAnimationClock` with frame `floor(t * fps) mod n`, never on a per-effect clock. Rules L-1 and L-2 are **unchanged**: `lit_*` stays in the body lamp area and the accent layer, and no FX, link, pip, spark or lamp uses it. Ground, foundation, edge, depot, link tiles, props and the static deposit stay static; lamps do not flicker. Flash: every FX composite is at most 2 flashes per second (the limit stays 3, `check_flash`). Reduced motion: no FX plays, and every animation has the static fallback of section 21.7 (UI/UX C5). Evidence: `check_flash` on body + accent + FX composites at every pace (research R12).
+**Amendment (v1.1.0, signed off at OD-10), FX sprites on the shared clock.** The "Animated art" row above ("machine loops and the matching accent only") gains the F006 effect sprites of the FX atlas (section 21.4): completion pop, branch pip, spark, steam, build dust, upgrade glint and the vein chip loop. They run only on the shared `PresentationAnimationClock` with frame `floor(t * fps) mod n`, never on a per-effect clock. Rules L-1 and L-2 are **unchanged**: `lit_*` stays in the body lamp area and the accent layer, and no FX, link, pip, spark or lamp uses it. Ground, foundation, edge, depot, link tiles, props and the static deposit stay static; lamps do not flicker. Flash: every FX composite is at most 2 flashes per second (the limit stays 3, `check_flash`). Reduced motion: no FX plays, and every animation has the static fallback of section 21.7 (UI/UX C5). Evidence: `check_flash` on body + accent + FX composites at every pace (research R12).
 
 ### 6.5 Noise limits (supersedes F003 section 8.5)
 
@@ -304,7 +304,7 @@ None. Alpha is 0 or 255 (`check_alpha`); quantisation to the palette uses CIELAB
 | Text in art | locked-plate digits `2` to `5` and tier numerals only; authored 3 x 5 bitmap font | section 8.5 |
 | Atlas | one Sprite Atlas v2 per family, RGBA32, point filter, no mipmaps, padding 2, no rotation, pages at most 1024 x 1024 | research R10, budget 7 |
 
-**Amendment (v1.1.0 draft pending OD-10), F006 caps** (`rule`; the measuring tasks are in P2):
+**Amendment (v1.1.0, signed off at OD-10), F006 caps** (`rule`; the measuring tasks are in P2):
 
 | Limit | Value |
 |---|---|
@@ -387,7 +387,7 @@ A bare plate is never a state. The convention, which the naming-gate sheets and 
 
 The T422 sheets already follow this convention (plate-with-machine). The re-run on the shipped set is T445; its SC-001 sheets use the same rule.
 
-**Amendment (v1.1.0 draft pending OD-10): the padlock and digit stay on the hatch.** The F006 locked location is the `f006-ground-hatch` tile with the section 8.5 padlock and level digit as the overlay (digit cap 15 art px, `ui_text` on `dim_0` or `dim_1`, C9). The empty-location foundation and the occupied flat foundation keep their meaning in the table above (an occupied location is a machine on the F004 plate role). Player text says "location"; this document's "plate" is an internal art term.
+**Amendment (v1.1.0, signed off at OD-10): the padlock and digit stay on the hatch.** The F006 locked location is the `f006-ground-hatch` tile with the section 8.5 padlock and level digit as the overlay (digit cap 15 art px, `ui_text` on `dim_0` or `dim_1`, C9). The empty-location foundation and the occupied flat foundation keep their meaning in the table above (an occupied location is a machine on the F004 plate role). Player text says "location"; this document's "plate" is an internal art term.
 
 ### 8.6 Markers
 
@@ -484,7 +484,7 @@ Rules from the run:
 
 The run uses palette-level colours. The composite-mask measurement of section 9.3 is defined and was run once, by hand, on the spike Miner; the pipeline check that automates it does not exist yet and is not claimed (section 19, O-4).
 
-#### 9.4a Re-run on the new backdrop (v1.1.0 draft pending OD-10)
+#### 9.4a Re-run on the new backdrop (v1.1.0, signed off at OD-10)
 
 **Rule (adopted from OD-9b, Art Director conditions 2 and 3).** The runs R1 and R2 above, rules C1 to C9 and the C8 acceptance are re-run on the F006 backdrop as part of SC-005 (research R18), including the portrait 720 x 1280 phone at `n_min` 2. On the densest 12-slot frame of every screen class, **100 % of the ring pixels lie in `A_ov` or `A_fr`, and no ring pixel is `steel_*`** (the ring-safe set R of section 21.2). The C5 body backdrop set `{plate_1, plate_2, ink_0, floor_0, floor_1}` is unchanged. Walls and gantries lie on the outer margin only, never behind a body or the badge band, each with the keep-out proof of 21.5. The A-03 badge-anchor decision (OD-12) is separate and is made before the sign-off; this draft keeps the anchor (59, 33). Status: **not run**; the run is a P2 gate and is not claimed here.
 
@@ -529,7 +529,7 @@ The condition "re-run the crisp check expecting 100 %" cannot be run in T424: it
 
 No family changes route in v1.0 (no spike outcome required it). A route change needs a brief revision and a recorded reason.
 
-**Amendment (v1.1.0 draft pending OD-10), F006 routes** (research R17):
+**Amendment (v1.1.0, signed off at OD-10), F006 routes** (research R17):
 
 | Family | Route | Reason |
 |---|---|---|
@@ -670,10 +670,11 @@ Conditions of the T425 review that belong to other tasks (referenced, not resolv
 | 1.0.3 | T440 (#554) | patch, 2026-11-04, owner decision on the T440 review: budget 10 becomes "APK file size at most 150 MB" (clean build), replacing "+10 MB against the paired B1" (cap 47,345,615 B); R-3 closed; mirrored in `specs/004-visual-identity/reviews/performance-budgets.md` row 10. No palette, threshold or style change. |
 | 1.0.4 | T442 (#560) | patch, 2026-11-05, owner decision on T442 (#560) finding F1 (`reviews/final-test-evidence.md`) and Art Director A-01 (`reviews/final-acceptance.md`): DEV-2 and DEV-4 extend to the portrait 720 x 1280 phone at 320 dpi (`n_min` 2 with the 1 % tolerance, `n_fit` 2, 22.95 pt cue, 14.97 pt digit), accepted deviation; 4.1 portrait row re-stated from the measured values (levels 5 = 2..6 with the tolerance, 4 without, the 1280 x 720 row aligned the same way; margin 32.7 %, real shell, share of the rect not covered by the extent), AR-1 and AR-2 extended, 4.3 table and DEV-2/DEV-4 text, marker and digit figures in 3.2 and 8.4; blind naming at n = 2 on both 320 dpi phones passed (T445 (#563) SC-001 22/22); tablet landscape `n_fit` recorded as measured 4 (precision). Errata (2026-11-05, T447 option D, owner decision on T476 #670): the F003 placeholders were deleted and FR-024 now fails closed, so the statements in section 0 (S2 row) and section 10 (Fallback frames) that F003 placeholders are fallback frames or exempt are superseded; no style change. The 24 pt rule, the 23 px icon set, the tolerance, palette and style do not change. |
 | 1.1.0 draft | T516 (#690) | **draft pending OD-10**, 2026-11-11: minor release proposal for F006 (specs/006-world-first-factory-experience). Amendments to sections 2.2 (2.2a numeric world-layer budget), 5 (background statement superseded, family allowance table), 6.4 (FX sprites on the shared clock), 6.5 (F006 caps), 8.5 (padlock and digit stay on the hatch), 9.4 (9.4a re-run on the new backdrop) and 12 (F006 routes); new section 21 (direction, allowances, sprite and texture table, keep-out proofs, cost per stage). Cites `F006-WB v0.1` and OD-9 (OD-9a, OD-9b). Palette unchanged at 48 ids; no new id. Not signed off. |
+| 1.1.0 | T518 (parent) | **signed off by the owner on 2026-11-11 (OD-10)**, together with OD-12. The draft is adopted as written, with the recommended choices: steel depot slab (A3), `copper_2` lamp head with a `steel_3` cap, `copper_2` pips with an `ink_0` ring, strict ring set R, and the wall as a stage-2 candidate. Flash wording clarified. The trunk is recoloured where it passes the badge band (T517 finding). The A-03 anchor is K4: (59, 33) plus a 4 px pointer tail (OD-12). Section 21.8 is new. No palette change (48 ids). |
 
-## 21. F006 world art (v1.1.0 draft pending OD-10)
+## 21. F006 world art (v1.1.0, signed off at OD-10)
 
-**Status**: draft by the T516 (#690) Art Director author session. It is **draft pending OD-10**: the owner signs it off at T518, and the author does not approve it. Nothing here is measured in the engine; every number is `derived` (arithmetic shown) or `rule` (a new Art Director rule, with the measuring task named). No palette id is added (cap 48, section 5).
+**Status**: drafted by the T516 (#690) Art Director author session. The owner **signed it off on 2026-11-11 (OD-10, recorded at T518)**, with the decisions in 21.8. The author did not approve it. Nothing here is measured in the engine; every number is `derived` (arithmetic shown) or `rule` (a new Art Director rule, with the measuring task named). No palette id is added (cap 48, section 5).
 
 **Citations**: World Bible `F006-WB v0.1` (`docs/world/world-bible-v0.1.md`, frozen by OD-9a, 2026-11-11): the neutral starter platform on a dark base; the three stages Open deck, Walled yard and Gantry line; the swappable ground family keyed by region id `starter-platform` (section 5 of the World Bible); deposits and props are scenery only (section 6). Owner decision OD-9b (`specs/006-world-first-factory-experience/reviews/direction.md`, T509, 2026-11-11). Research R17 and R15, `contracts/world-presentation.md` section 5. Covers FR-004 and FR-044.
 
@@ -825,3 +826,21 @@ FX (42 frames) are shared by all stages. Stage 2 and stage 3 art must exist befo
 - **Flash.** The flash rule of 6.4 holds: at most 3 flashes per second, and the F006 composite requirement is at most 2 per second for body + accent + FX (the Assembler is already at 3, R12). Static lamps never flicker.
 - **Railing noise (UI/UX F6, Art Director A4).** The quiet railing variants are used near badges and the depot; the post pattern does not grow in stage 2 or 3.
 - **Reduced motion (C5).** A static fallback exists for every animation. No FX plays. Machine loops show frame 0. The branch pip is replaced by `link-branch-active`. The completion pop is replaced by the R12 static 1 s highlight on the card or the depot (manifest `stillFrame` 3 of the pop stays as the evidence-sheet still). The vein chip loop shows `deposit-highlight`. Build dust, upgrade glint, spark and steam show nothing. The zero-flash gate holds in every case.
+
+### 21.8 Owner decisions at T518 (OD-10, OD-12), 2026-11-11
+
+Decided by the owner on 2026-11-11 and recorded by the parent at T518. Inputs: this section as drafted by T516 (#690, QA PASS at `524f5a9`, merged in #728) and the A-03 measurement of T517 (#691, QA PASS at `b2cd84b`, merged in #729; [a03-anchor.md](../../specs/006-world-first-factory-experience/reviews/a03-anchor.md)).
+
+1. **OD-10: v1.1.0 is signed off as drafted**, with the recommended choices:
+   - the world-layer budget of 2.2a and 21.3 (at most 3 tilemap renderers, 60 visible tiles at 12 locations with margin 1, 31 world sprite renderers, at most 95 renderers against the 173 tier);
+   - the texture table of 21.4 (40 world frames and 42 FX frames; planned pages 512² and 256², 1.25 MiB; worst case 2.50 MiB; F004 plus F006 at most 5.67 MB against 8);
+   - the allowance table of 21.2: no new id, no `lit_*` anywhere in F006, no `teal_*` on props;
+   - **A3**: the depot slab uses `steel_*`, not `plate_*`, so no allowance is needed;
+   - the lamp has a `copper_2` head and a `steel_3` cap. Because it glows less than the concept lamp, SC-005 is re-run in P2;
+   - pips are `copper_2` with an `ink_0` ring and are ring-safe;
+   - the C8 ring rule stays strict: no `steel_*` in any ring (set R, OD-9b Art Director condition 2);
+   - the wall stays a stage-2 candidate. No wall tile is drawn on an edge that fails the keep-out proof.
+2. **Flash wording (clarifies 21.7).** At most 3 flashes per second overall. F006 FX add at most 2 per second on top of a machine loop. The Assembler loop, already at 3 (R12), keeps its ≤8 fps cap, and no FX may push a composite above 3.
+3. **Trunk under the badge band (T517 finding).** The `steel_1` trunk lane of the concept lies inside the C8 ring for every anchor (62 to 120 ring px). Owner decision: **recolour the trunk**. The strict ring rule stands. Where the trunk passes the badge band (art y 16..39 of the row), P2 LINK art (`link-trunk`, `link-junction`) uses only set R tones. The 21.2 LINK row, with lane body `dim_0`, already complies. The C8 re-run of 9.4a proves it for every class.
+4. **OD-12: A-03 badge anchor K4.** The badge keeps its overlay anchor at bottom-centre (59, 33) (cue geometry table in section 3.2) and gains a **4 art px pointer tail** toward its own machine, drawn in `ink_0` and the badge fill, palette-exact. Measured by T517: no regression on any overlap, row-band or ring measure; attribution ratio 1.14, a directional cue; legibility unchanged (23 px at n_min, DEV-2 unchanged). The tail also serves UI/UX C2, linking the card to its machine on landscape and tablet. The T517 tail is a mock. The badge is an F004 cue sprite (b23), so the production tail goes through the cue-sprite pipeline with a brief and an Art Director pixel review in P2. The parent assigns it with the P2 art briefs.
+5. **Notes from QA, no rule change.** Research R12 says lamps "use steel or teal tones"; this Bible governs: `copper_2` head, `steel_3` cap, no `teal_*`. In the 6.5 Atlas row, "one Sprite Atlas v2 per family" means per F006 atlas (world and FX).

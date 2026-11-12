@@ -43,9 +43,10 @@ page files, not here.
 - [F005 batch B UI, DevTools overlay and Android backup rules](pages/f005-batch-b-ui-and-android.md) — T332/T333, T339-T340, T361-T362, F6 gate, overlay move, androidlib, deferred Android items.
 - [F005 batch C policy r2 and gates](pages/f005-batch-c-policy-r2-and-gates.md) — T341 Q10 interpretations, ContentTuned gate mechanism, BalanceFull self-gating, casual pin, contracts-only stall.
 - [F005 batch C UI and DevTools fixes](pages/f005-batch-c-ui-and-devtools-fixes.md) — T365 empty-string signature sentinel, T366 RuntimePanelHitTest, header only on step change.
-- [F006 world presentation design (planned)](pages/f006-world-presentation-design.md) — Layout seam, Tilemap deck, depot links, vein, CompletedCycles, shortage ranking, ShellTab shim.
+- [F006 world presentation design (partly implemented)](pages/f006-world-presentation-design.md) — Layout seam, Tilemap deck, depot links, vein, CompletedCycles, shortage ranking, ShellTab shim.
 - [F006 P0 baseline of the current shell](pages/f006-p0-baseline.md) — T502 probes, 10 classes, SC-001/002/003/010 before values, 13 persistent labels.
 - [F006 P0 mockup tooling](pages/f006-p0-art-tooling.md) — Lattice export, mockup compositor, concept-f006, UI occlusion in framing.
+- [F006 batch P1 enabling refactor](pages/f006-batch-p1-enabling-refactor.md) — T510-T518 seams (layout, sorting layers, CompletedCycles, shell stack), OD-10/OD-12, follow-ups, pitfalls.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 - [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
@@ -123,6 +124,7 @@ page files, not here.
 - [F005 batch D player and emulator journeys](pages/f005-batch-d-journeys.md) — T348 player suite, T351 emulator scenario, shell-owned directory and scrolled-tap pitfalls.
 - [F005 batch D workflow pitfalls](pages/f005-batch-d-workflow-pitfalls.md) — Left-over wait loops, limit resumes, three-reviewer cap, host-load recording.
 - [F006 batch P0 workflow pitfalls](pages/f006-batch-p0-workflow-pitfalls.md) — Merge-exit-code gate, scope widening, emulator /data full, ProjectSettings noise, worktree delete.
+- [F006 batch P1 workflow pitfalls](pages/f006-batch-p1-workflow-pitfalls.md) — Library reuse between worktrees, per-run ProjectSettings and UI Toolkit noise.
 - [F004 batch 1 workflow pitfalls](pages/f004-batch-1-workflow-pitfalls.md) — Usage-limit resumes, no ExecutionPolicy Bypass, Blender metadata, tool version drift.
 - [F004 batch 2 workflow pitfalls](pages/f004-batch-2-workflow-pitfalls.md) — Limit resume, generated-file cleanup, Play Mode timeout, T411 comparator decision.
 - [F004 batch 3 workflow pitfalls](pages/f004-batch-3-workflow-pitfalls.md) — Play Mode timeout, disk space, review fidelity, deferred B2.

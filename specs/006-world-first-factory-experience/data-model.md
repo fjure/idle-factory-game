@@ -37,15 +37,20 @@ Inputs come from the existing read models: `MachineStateView`, `RunFactorySnapsh
 
 | Field | Meaning |
 |---|---|
-| `marginCells: int` | Width of the margin band in cells. Default reproduces F004's half-cell fit margin. |
-| `depotRule: {portrait, landscape}` | Margin cell at the end of the row trunks. |
-| `depositRule` | Margin cell, never inside a hit shape or a keep-out. |
+| `marginCells: float` | Camera fit margin in **world units** (1 unit = 24 art px), not lattice cells. Default 0.5 reproduces F004's `HalfCellMargin`. An int could not express 0.5 (T512). |
+| `deckBandCells: int` | Width of the deck margin band in 70×54 lattice cells. Default 1. The depot and the deposit sit in this band (T512). |
+| `depotRulePortrait`, `depotRuleLandscape` | Margin cell at the end of the row trunks. Side Left or Right only: trunks run in the row gaps, so Top or Bottom would force a lane through footprints. Default Right, front row. |
+| `depositRule` | Margin cell, never inside a hit shape or a keep-out. Side Left, Right or Bottom, never Top (the back row's badge band reaches the top margin cell). Default Left, back row. Must not share the depot's collector column (follow-up check, T512 review). |
 | `propWeightsPerStage[3]: (kind, weight)[]` | Prop selection weights for each stage. |
 | `propDensityPerStage[3]: float` | Probability that an eligible cell gets a prop. |
 | `maxPropHeightArtPx = 24` | Height limit for props. |
-| `hatchRule`, `edgeRulePerStage[3]` | Railing, then wall, then gantry. |
+| `hatchRule`, `edgeRulePerStage[3]` | Railing, then wall, then gantry. The stage-2 wall stays provisional until the C8 ring proof (OD-9b). |
 
 **Validation**: Edit Mode tests check that the values are in range and that the default lattice reproduces the F004 Extent and fit.
+
+**Content authority**: this is a presentation-only tuning asset. `JsonContentAuthorityTests` exempts it by design through its one-entry `PresentationTuningAssets` list, with a namespace assertion (T512, accepted by the architect review). It holds no gameplay field.
+
+**Runtime wiring (follow-up)**: as of T512 the bootstrap builds layouts from the built-in defaults (`LatticeLayoutBuilder.Shipped`). These equal the asset. The first task that changes margin, depot, deposit or props loads the asset, validates it and feeds it to the builder. In the same change, `LayoutId` gains a composition hash or version, and the `Shipped` cache becomes settings-aware, so that camera change detection sees composition changes.
 
 ### FactoryWorldLayout (R04, R06, R07)
 
@@ -60,14 +65,16 @@ Inputs come from the existing read models: `MachineStateView`, `RunFactorySnapsh
 | `DeckCells` | Rectangle-grid cells of 70×54 art px covering **all** locations plus the margin band. |
 | `IsUnlocked(id, unlockedCount)` | Unlock state of a location. |
 | `DepotCell`, `DepotAnchor`, `DepositCell` | Positions of the depot and the deposit. |
-| `TrunkOf(row) → cells` | Static lane in the 19 px row gap. |
-| `BranchOf(id) → segment` | From the plate's rear edge to the row trunk. |
+| `TrunkOf(row) → LanePath` | Static axis-aligned polyline in world units, in the row gap behind each row (lane y = pivot + 29 art px). It ends at a vertical collector in the depot's margin column, at `DepotAnchor`. |
+| `BranchOf(id) → LanePath` | Straight line from the plate's rear-edge centre to its row trunk. |
+| `DeckBounds`, `KeepOutOf(id, k)`, `RowOf`, `CellOf`, `Validate()` | Added by T512: the deck extent including the margin band, the cue keep-out boxes, row and cell lookups, and the validation used by the tests. |
 
 **Validation:**
 
 - Footprints never overlap, and hit shapes are disjoint.
 - Every branch reaches its trunk, every trunk reaches the depot, and no lane crosses a footprint.
 - `DepotCell` and `DepositCell` lie in the margin band and outside hit shapes and keep-outs.
+- Lanes and keep-outs: lanes draw on `WorldLinks`, below the overlay layer, so a badge or marker box may lie over the trunk or branch of its own location. `KeepOutOf`'s doc comment in code still says no lane may cover a keep-out, which is stricter than the geometry. That doc fix and the cue-over-lane contrast are follow-ups for the P2 link art (T512 review).
 - `Bounds` and `CameraScaleModel.LargestFittingScale` equal the F004 values for 12 locations in 3 and 4 columns on every screen class (parity).
 - Test layouts (6, 20, L) pass all of the above.
 

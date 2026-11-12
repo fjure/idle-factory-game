@@ -1,9 +1,9 @@
 # What I Learned: World-First Factory Experience (F006)
 
 **Feature**: Make the factory the screen: a world deck, depot and labelled hub in place of the six-tab bar. Gameplay, content and saves stay unchanged.
-**Generated**: 2026-11-11 (P0 batch)
-**Scope**: Phase P0 only (T500-T509: baseline, World Bible, direction briefs, mockups, reviews, owner decisions)
-**Implementation status**: P0 merged on main (Issues #678-#683; PRs #721-#726) plus the parent decisions OD-9a and OD-9b on `feat-006-maqa-batch1`. P1-P4 not started.
+**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch, see the P1 section below)
+**Scope**: Phases P0 (T500-T509) and P1 (T510-T518)
+**Implementation status**: P0 merged on main (Issues #678-#683; PRs #721-#726) plus the parent decisions OD-9a and OD-9b on `feat-006-maqa-batch1`. P1 merged (see P1 section); P2-P4 not started.
 
 ---
 
@@ -95,3 +95,89 @@ P0 changed no runtime code except test-only probes. The baseline probes read the
 - **C8 ring**: the Art Bible rule that the ring around a selected machine falls only on allowed backdrop tones.
 - **Occlusion-aware framing**: visibility measured against the area not covered by docked UI.
 - **Stage 1/2/3**: Open deck (railing), Walled yard (wall), Gantry line (gantry).
+
+---
+
+# Batch P1: the enabling refactor (T510-T518)
+
+**Generated**: 2026-11-12 (P1 batch). **Status**: P1 merged on main (Issues #684-#691; PRs #728-#735) plus the parent record T518 (e6c2d2a) on `feat-006-maqa-batch2`. Edit Mode 2569 to 2683 tests, Play Mode 2596 to 2616. P2-P4 not started.
+
+## P1 batch: Key Decisions
+
+### 5. Put the world behind a layout seam before drawing any of it
+
+**What we did**: `FactoryWorldLayout` (anchors, footprints, hit shapes, sort keys, `LayoutId`, `Bounds`) is built by `LatticeLayoutBuilder` from `WorldCompositionSettings`; the camera now reads `LayoutId` and `Bounds` instead of lattice columns. Test layouts with 6, 20 and L-shaped locations prove nothing depends on 3 or 4 columns.
+
+**Why**: Deck, links, depot and vein all need positions. If each reads the lattice directly, the first non-lattice layout breaks all of them. A seam with a parity test (camera fit unchanged for every screen class) lets the art phases build on one contract.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Extend `ScaleLayout` with more fields | It stays lattice-shaped and keeps columns as identity. |
+| Build layout and art together in P2 | A failed art review would then block the structure and the camera migration at once. |
+
+**When you'd choose differently**: With one fixed layout and no variants, a seam is overhead; here stage growth and test layouts justify it. The runtime still uses built-in `Shipped` defaults; wiring the asset is follow-up P1-F1 (T527).
+
+---
+
+### 6. Make refactors pure moves, then change behaviour separately
+
+**What we did**: `SlotGridView` moved to `Presentation/World/` with no logic change (T510), and `ShellNavigationStack` and `ShellSheetHost` were lifted out of the 2652-line `RunShellDocument` with `HandleBack` delegating (T511). A Play Mode `RunShellTestNavigation` seam (T515) keeps tests off private shell state, with an R19 re-baseline list for tests that must change later.
+
+**Why**: A move that changes nothing can be reviewed by diff and proven by unchanged tests. Mixing behaviour into it hides regressions in churn.
+
+**When you'd choose differently**: If the old structure blocks a test you need today, extract just enough and accept the behaviour change in its own Issue.
+
+---
+
+### 7. Count completed cycles in the simulator, expose them only through the session
+
+**What we did**: `RunSimulator` emits a per-advance count (+1 per cycle, never the batch factor), `RunSession` keeps a session-only `long` per instance, and `MachineStateView.CompletedCycles` surfaces it. It is not saved and no economy code reads it; a no-observer-effect test compares state hashes.
+
+**Why**: The shortage signal and pips need a "something finished" event. A stateless simulator cannot own a counter, and a saved counter would be a save-format change for a display value.
+
+**When you'd choose differently**: If the number must survive a restart (for example for an achievement), it belongs in the saved state with a migration, not here.
+
+---
+
+### 8. Decide anchors from measurement, not preference (A-03)
+
+**What we did**: `a03_anchor.py` placed badges on the densest frame (12 occupied slots, all badged) for candidates K0-K5 and counted overlaps in art pixels. K1 and K3 hit foreign hit shapes or own markers; K0, K4 and K2 were clean. The owner chose K4 (59,33) with a 4 px pointer tail (OD-12) and signed off Art Bible v1.1.0 (OD-10), and decided to recolour the trunk under the badge band to keep the strict C8 ring rule.
+
+**Why**: Overlap with a foreign hit shape is a functional bug (a tap selects the wrong machine), not a taste issue; a worst-case table turns the choice into trade-offs the owner can see.
+
+**When you'd choose differently**: Where the dense case is rare, a cheaper visual review may do; here every slot can be badged.
+
+---
+
+## P1 batch: Concepts to Know
+
+### Create engine-global settings through the engine's own tooling
+
+Sorting layers live in `TagManager`, and `SortingLayer.NameToID` silently returns 0 for a missing layer, so T513 created them via Unity tooling and added `SortingLayerGuardTests`. `check-settings-noise.ps1` has no TagManager signature, so a deliberate change passes clean; the exception is recorded in `reviews/test-rebaseline.md`.
+
+### Unity serializes arrays as packed hex
+
+An enum or int array in ScriptableObject YAML appears as `edgeRulePerStage: 000000000100000002000000i`, the same form as `m_StackTraceTypes`. It is tool output, not a hand edit; a reviewer once flagged it wrongly.
+
+### Authority lists have narrow exemptions
+
+Presentation-only tuning ScriptableObjects pass `JsonContentAuthorityTests` through the one-entry `PresentationTuningAssets` list, so gameplay content stays JSON-authoritative.
+
+### Reuse the imported Library between worktrees
+
+Moving `Library/` from the merged worktree into the next Issue's worktree makes each sequential Unity run import incrementally, and a worktree without `Library/` removes without the `\?\` delete. Every Unity run still re-serializes `ProjectSettings.asset` (+130/-1, iOS icons) and creates untracked `UnityDefaultRuntimeTheme.tss` and `Assets/UI Toolkit.meta`; restore or remove them before committing.
+
+### Environment faults to expect
+
+`SessionLogAllocationTests.FlushThroughTheRealFileLayerStaysInTheAllocationAndMillisecondBudget` is a host-timing flake (64.9 ms against 25 ms once, then green). A usage limit killed the T510 worker mid-run; renew the lease and resume the same worker with SendMessage. A transient GitHub GraphQL error dropped a label edit and a comment in one chained command, so re-verify the marker comment afterwards.
+
+## P1 batch: carried follow-ups
+
+`reviews/p1-followups.md` (P1-F1 to F6) names the later task for each. Notable: wire the composition asset at runtime (T527) and add a camera `ViewBounds` because the depot and vein sit outside the pan clamp (P1-F2, T534). The `data-model.md` corrections are in 4315ecd.
+
+## P1 batch: Glossary additions
+
+- **Layout seam**: `FactoryWorldLayout` plus `LatticeLayoutBuilder`; the one source of location geometry.
+- **OD-10 / OD-11 / OD-12**: owner decisions on Art Bible v1.1.0, the `CompletedCycles` design and the A-03 anchor K4.
+- **A-03**: the badge-anchor question; K0-K5 are the measured candidates.
