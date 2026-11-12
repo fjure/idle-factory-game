@@ -1,0 +1,325 @@
+{
+  "entries": [
+    {
+      "assetId": "f006-edge-gantry-corner",
+      "canvas": [
+        70,
+        84
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-gantry-corner/f006-edge-gantry-corner_00.png",
+          "sha256": "f405a0c9999fa6d6e203eb504cb364673e80378b3cb73559d6bac4d1733c793a"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.345238
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-gantry-fl",
+      "canvas": [
+        70,
+        84
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-gantry-fl/f006-edge-gantry-fl_00.png",
+          "sha256": "5c576604fc92a4edd1eedab5f27dc8d0d493aebc2755ed1a3cfaf89013ecb6b2"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.345238
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-gantry-fr",
+      "canvas": [
+        70,
+        84
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-gantry-fr/f006-edge-gantry-fr_00.png",
+          "sha256": "3d28fcc3a3f7b1a2cf056793ebc0e0c051eb985e8e33a0ed1beb59844c7d67eb"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.345238
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-railing-corner",
+      "canvas": [
+        70,
+        66
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-railing-corner/f006-edge-railing-corner_00.png",
+          "sha256": "15371170f4135be33c553aae1b4d679a10a12821c970dd67c6d8f2b6cff904d5"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.439394
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-railing-fl",
+      "canvas": [
+        70,
+        66
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-railing-fl/f006-edge-railing-fl_00.png",
+          "sha256": "2e9bf210b1593c221255ae02cfe494a211c8417dd9316073becf22b0647d561c"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.439394
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-railing-fr",
+      "canvas": [
+        70,
+        66
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-railing-fr/f006-edge-railing-fr_00.png",
+          "sha256": "fca0dda5a010b2c04b84430e894fd7bacae298bc76bf64f0bc119d9d78dc9751"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.439394
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-railing-quiet-fl",
+      "canvas": [
+        70,
+        66
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-railing-quiet-fl/f006-edge-railing-quiet-fl_00.png",
+          "sha256": "90d98e536bf61d3d1026466c8ae15d91d5ae387006356dc34a3f74368d47400b"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.439394
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-railing-quiet-fr",
+      "canvas": [
+        70,
+        66
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-railing-quiet-fr/f006-edge-railing-quiet-fr_00.png",
+          "sha256": "1582a62083638a50bb676596469e32afbcc98facf27f8036a2910ae4b1d87b57"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.439394
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-wall-corner",
+      "canvas": [
+        70,
+        78
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-wall-corner/f006-edge-wall-corner_00.png",
+          "sha256": "b88f6640b5e97f03acd04c154ce630bba98c8efa40caeb7828e58ed3c7e2c9fb"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.371795
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-wall-fl",
+      "canvas": [
+        70,
+        78
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-wall-fl/f006-edge-wall-fl_00.png",
+          "sha256": "55a5d4045faded814021fd54f00b3d9e53aa9b2c4e982618a6368ebf33b507ce"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.371795
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-edge-wall-fr",
+      "canvas": [
+        70,
+        78
+      ],
+      "footprintPx": [
+        70,
+        58
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-edge-wall-fr/f006-edge-wall-fr_00.png",
+          "sha256": "78f1fa747152ca33bcc978629047ddffb468231017406474f9a34264fb86337a"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.371795
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "note": "T521 candidate entries for T526; reviewedBy pending (T525). EDGE pivot = deck diamond centre (footprint height 2 x the diamond centre height above the content bottom); PROP pivot = base centre.",
+  "schemaVersion": 1
+}

@@ -1,0 +1,113 @@
+{
+  "artBibleVersion": "F004-PAB v1.1.0",
+  "assetId": "f006-edge-railing-quiet-fr",
+  "briefVersion": "F006-PE v0.1",
+  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; no seed selection. Hybrid route (owner decision 2026-11-03): the Blender MCP bridge (127.0.0.1:9876) was not reachable (Blender GUI not running), so geometry was iterated by headless batch renders; the committed render is the final headless run, and a second headless render is byte-identical.",
+  "checkReportHash": "1122d53b55780fde3e9f27fe53af98dd3dcc96630c381f35581869ed8336d7b6",
+  "checkReportPath": "art-source/f006/edge/check-report.json",
+  "interactiveSteps": [
+    "none: Blender MCP bridge not reachable at 127.0.0.1:9876; headless batch iteration only"
+  ],
+  "key": "F006-EDGE-RAILING-QUIET-FR",
+  "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
+  "outputs": [
+    {
+      "file": "f006-edge-railing-quiet-fr/f006-edge-railing-quiet-fr_00.png",
+      "sha256": "1582a62083638a50bb676596469e32afbcc98facf27f8036a2910ae4b1d87b57"
+    }
+  ],
+  "parameters": {
+    "denoiser": false,
+    "densityD": 24,
+    "engine": "CYCLES/CPU",
+    "frameCount": 1,
+    "keyLight": "unused by the emission materials",
+    "material": "toon",
+    "materials": "flat emission, exact palette colours per element",
+    "perspective": "isometric-2-1",
+    "projection": "isometric-2-1",
+    "renderScript": "tools/art-pipeline/blender/render.py",
+    "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+    "renderSeconds": 0.064,
+    "resolution": 128,
+    "rigFile": "rig-v2.blend",
+    "rigSha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
+    "rigVersion": "rig-v2",
+    "samples": 16,
+    "scriptHashes": {
+      "edge/build_models.py": "5da466446616a1a1a590cdfe21710cced1d098869ad5094359a12a1302fa7e8b",
+      "palette-v1.json": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+      "pipeline_ground_foundation.py": "b4767cb4bcd12cf335cae810ef92a33706344c9a830c6e997661bcf629a215f5",
+      "pipeline_prop_edge.py": "320c53ee74eccfaec3398d6ffc520565fdc535c75729c786558694430759aa12",
+      "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
+      "prop/build_models.py": "0a0b5b81a1b6a3f5691ca739632f11bc4018445a53d8a47e81d510ab404b0248",
+      "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+      "rig-v2.blend": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098"
+    },
+    "seed": 0
+  },
+  "pixelPass": {
+    "config": {
+      "canvas": [
+        70,
+        66
+      ],
+      "supersample": 1,
+      "tones": [
+        "floor_0",
+        "ink_1",
+        "steel_1",
+        "steel_2",
+        "steel_3"
+      ]
+    },
+    "driver": "art-source/f006/pipeline_prop_edge.py",
+    "paletteId": "f004-palette",
+    "paletteSha256": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+    "paletteVersion": "1.0.0",
+    "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+    "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+  },
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Technical Artist and World Designer lenses), T521 / Issue #694",
+  "renderEnv": {
+    "driver": "621.01",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "reviewedBy": null,
+  "revision": 1,
+  "rigVersion": "rig-v2",
+  "route": "blender",
+  "sources": [
+    {
+      "note": "procedural geometry, flat palette-colour emission materials per element; no external assets",
+      "path": "art-source/f006/edge/build_models.py",
+      "sha256": "5da466446616a1a1a590cdfe21710cced1d098869ad5094359a12a1302fa7e8b"
+    },
+    {
+      "path": "tools/art-pipeline/blender/rig-v2.blend",
+      "sha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098"
+    },
+    {
+      "path": "art-source/f006/edge/model/edge-railing-quiet-fr.blend",
+      "sha256": "17c520d8ff364bf8a1633dec059edc765cf66e3fb2bc6996cde50cc8b594351c"
+    }
+  ],
+  "tools": {
+    "blender": {
+      "addons": [],
+      "hash": "9e2066aef7ef",
+      "version": "5.2.1 LTS"
+    },
+    "pillow": "11.3.0",
+    "python": "3.13.6"
+  },
+  "touchUp": [
+    {
+      "note": "nearest-tone snap to ['floor_0', 'ink_1', 'steel_1', 'steel_2', 'steel_3'], single-pixel despeckle, 1 px ink_0 silhouette outline (omitted along tile seams: back edges and fascia-free front edges), placement on the [70, 66] canvas; deterministic, no hand edits. {\"despeckled\": 0, \"innerOutlinePxRemoved\": 105, \"contentBboxInCanvas\": [1, 20, 70, 66], \"pivotRowFromTop\": 37, \"pivotHeightAboveBottom\": 29, \"opaquePx\": 1665}",
+      "script": "art-source/f006/pipeline_prop_edge.py",
+      "step": "snap_despeckle_outline"
+    }
+  ],
+  "trainingDataNote": "N/A: no generative model or training data used (Blender route, procedural geometry written by an AI coding agent, disclosed).",
+  "worldBibleVersion": "F006-WB v0.1"
+}

@@ -1,0 +1,608 @@
+{
+  "assets": {
+    "f006-prop-crate-small": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            24,
+            20
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.25
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.25
+          ],
+          "pivotPx": [
+            12.0,
+            5.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for a scenery prop (R06 caps the height at 24 art px instead)",
+          "overhangCells": 0.375,
+          "overhangPx": 9
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "copper_2": 18,
+            "ink_0": 58,
+            "steel_0": 80,
+            "steel_1": 80,
+            "steel_2": 82
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "heightPx": 19,
+          "max": 24,
+          "rule": "research R06"
+        },
+        "name": "prop_height_at_most_24_art_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "steel_* is allowed on the margin ring only (Art Bible 21.2 PROP row); inside the Extent only set R, so this prop is placed on the margin and never inside a ring",
+          "steelPixels": 242
+        },
+        "name": "prop_margin_only_tones",
+        "passed": true
+      }
+    ],
+    "f006-prop-crate-stack": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 7
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            30,
+            24
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.25
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.25
+          ],
+          "pivotPx": [
+            15.0,
+            6.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for a scenery prop (R06 caps the height at 24 art px instead)",
+          "overhangCells": 0.5,
+          "overhangPx": 12
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "copper_0": 12,
+            "copper_1": 12,
+            "copper_2": 15,
+            "ink_0": 78,
+            "steel_0": 106,
+            "steel_1": 116,
+            "steel_2": 120
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "heightPx": 24,
+          "max": 24,
+          "rule": "research R06"
+        },
+        "name": "prop_height_at_most_24_art_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "steel_* is allowed on the margin ring only (Art Bible 21.2 PROP row); inside the Extent only set R, so this prop is placed on the margin and never inside a ring",
+          "steelPixels": 342
+        },
+        "name": "prop_margin_only_tones",
+        "passed": true
+      }
+    ],
+    "f006-prop-lamp-post": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 7
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            14,
+            24
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.083333
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.083333
+          ],
+          "pivotPx": [
+            7.0,
+            2.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for a scenery prop (R06 caps the height at 24 art px instead)",
+          "overhangCells": 0.7916666666666666,
+          "overhangPx": 19
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "copper_1": 14,
+            "copper_2": 15,
+            "ink_0": 54,
+            "steel_0": 8,
+            "steel_1": 23,
+            "steel_2": 27,
+            "steel_3": 16
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "heightPx": 23,
+          "max": 24,
+          "rule": "research R06"
+        },
+        "name": "prop_height_at_most_24_art_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "steel_* is allowed on the margin ring only (Art Bible 21.2 PROP row); inside the Extent only set R, so this prop is placed on the margin and never inside a ring",
+          "steelPixels": 74
+        },
+        "name": "prop_margin_only_tones",
+        "passed": true
+      }
+    ],
+    "f006-prop-pallet": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            30,
+            16
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.375
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.375
+          ],
+          "pivotPx": [
+            15.0,
+            6.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for a scenery prop (R06 caps the height at 24 art px instead)",
+          "overhangCells": 0.125,
+          "overhangPx": 3
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "dim_0": 26,
+            "dim_1": 24,
+            "ink_0": 54,
+            "steel_1": 142
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "heightPx": 15,
+          "max": 24,
+          "rule": "research R06"
+        },
+        "name": "prop_height_at_most_24_art_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "steel_* is allowed on the margin ring only (Art Bible 21.2 PROP row); inside the Extent only set R, so this prop is placed on the margin and never inside a ring",
+          "steelPixels": 142
+        },
+        "name": "prop_margin_only_tones",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.1.0",
+    "briefVersion": "F006-PE v0.1",
+    "family": "prop",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 694,
+    "task": "T521",
+    "worldBible": "F006-WB v0.1"
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "rule": "Art Bible 21.2, 21.8 items 1 and 5"
+      },
+      "name": "no_lit_no_teal_in_family",
+      "passed": true
+    },
+    {
+      "details": {
+        "edge-gantry-corner": {
+          "byteIdentical": true,
+          "first": "87497962e86b4adcaa8e6f040aefe162d04bc0bc83f31a1e2e945c3a0e37a2e4",
+          "second": "87497962e86b4adcaa8e6f040aefe162d04bc0bc83f31a1e2e945c3a0e37a2e4"
+        },
+        "edge-gantry-fl": {
+          "byteIdentical": true,
+          "first": "36ec0601605a48e509ce809d58c6772a5b2cbd29f908ab1bd199332eb4ce2aa3",
+          "second": "36ec0601605a48e509ce809d58c6772a5b2cbd29f908ab1bd199332eb4ce2aa3"
+        },
+        "edge-gantry-fr": {
+          "byteIdentical": true,
+          "first": "85b6e7fd3bd0b145f24303621591c76c797e4fca45358abf90fab8f39fadb7d6",
+          "second": "85b6e7fd3bd0b145f24303621591c76c797e4fca45358abf90fab8f39fadb7d6"
+        },
+        "edge-railing-corner": {
+          "byteIdentical": true,
+          "first": "dcb3691ec0c2e40379796a6f6035580bb0198380f36c3c4714fee82c6e566229",
+          "second": "dcb3691ec0c2e40379796a6f6035580bb0198380f36c3c4714fee82c6e566229"
+        },
+        "edge-railing-fl": {
+          "byteIdentical": true,
+          "first": "657235cc03c59649c41931ac5b16cf06d27a9a9492c56b17ff73aa55fe0fb518",
+          "second": "657235cc03c59649c41931ac5b16cf06d27a9a9492c56b17ff73aa55fe0fb518"
+        },
+        "edge-railing-fr": {
+          "byteIdentical": true,
+          "first": "e56a6f7ebe7764ecd967416a5518e1e5232a07e498e4507d50906708b37c4ce2",
+          "second": "e56a6f7ebe7764ecd967416a5518e1e5232a07e498e4507d50906708b37c4ce2"
+        },
+        "edge-railing-quiet-fl": {
+          "byteIdentical": true,
+          "first": "a23a09bbfb77a947c130971c3525f8885c96f9fdcacbccce49a9e1bda696e919",
+          "second": "a23a09bbfb77a947c130971c3525f8885c96f9fdcacbccce49a9e1bda696e919"
+        },
+        "edge-railing-quiet-fr": {
+          "byteIdentical": true,
+          "first": "0e1cb07abcee3f5fb26ba52d9fe8dd17c952f9552bd337760350c32f94d11166",
+          "second": "0e1cb07abcee3f5fb26ba52d9fe8dd17c952f9552bd337760350c32f94d11166"
+        },
+        "edge-wall-corner": {
+          "byteIdentical": true,
+          "first": "d4dff8b96c8493170c1545cd6d64fad5b7467859da886b60ba4c02530659e65b",
+          "second": "d4dff8b96c8493170c1545cd6d64fad5b7467859da886b60ba4c02530659e65b"
+        },
+        "edge-wall-fl": {
+          "byteIdentical": true,
+          "first": "01658b1350eec66459df7630ca2fd2d0e699e17652d75112d4dc9115f857a59d",
+          "second": "01658b1350eec66459df7630ca2fd2d0e699e17652d75112d4dc9115f857a59d"
+        },
+        "edge-wall-fr": {
+          "byteIdentical": true,
+          "first": "0250c20fc8cf7a6712369f4638c9c4531c6b13997a50301547ea68cfb9b6f4df",
+          "second": "0250c20fc8cf7a6712369f4638c9c4531c6b13997a50301547ea68cfb9b6f4df"
+        },
+        "prop-crate-small": {
+          "byteIdentical": true,
+          "first": "d0da2e7c10ac4923de311707707d4aa4e8b493a71369eeb9330225d367b7f6cd",
+          "second": "d0da2e7c10ac4923de311707707d4aa4e8b493a71369eeb9330225d367b7f6cd"
+        },
+        "prop-crate-stack": {
+          "byteIdentical": true,
+          "first": "9df5f241a509aadd2c940a35c7df07866563e7907ac514e3798c0e3fb21afeec",
+          "second": "9df5f241a509aadd2c940a35c7df07866563e7907ac514e3798c0e3fb21afeec"
+        },
+        "prop-lamp-post": {
+          "byteIdentical": true,
+          "first": "cd7b6df4168d19517d11256a3c21859dcd8d7529136b35a1ed49003f06e50b76",
+          "second": "cd7b6df4168d19517d11256a3c21859dcd8d7529136b35a1ed49003f06e50b76"
+        },
+        "prop-pallet": {
+          "byteIdentical": true,
+          "first": "3bca3ccd172dba5dc1f261c4d29d4a31131756ae9e2f5ada9b1d65abf4702972",
+          "second": "3bca3ccd172dba5dc1f261c4d29d4a31131756ae9e2f5ada9b1d65abf4702972"
+        }
+      },
+      "name": "reproducibility",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}
