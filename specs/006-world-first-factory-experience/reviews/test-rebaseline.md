@@ -56,3 +56,68 @@ Other callers moved by the same renames (compile only, no value touched): `Tests
 **Not a pure rename, recorded here.** `Tests/EditMode/JsonContentAuthorityTests.cs`, `NoScriptableObjectInTheUnityAssemblyCarriesSerializedGameplayFields` (the FR-001 authority guard). `WorldCompositionSettings` (R22) is a ScriptableObject in the Unity assembly with serialized fields, so the guard failed on it. The guard now exempts a short explicit list of presentation tuning assets (`PresentationTuningAssets`, one entry) and asserts that every exempt type lives in `IdleFactory.Unity.Presentation`. Gameplay definitions still fail the guard. The exemption is in the test, not in the production code.
 
 **Layout parity evidence.** `WorldLayoutParityTests` compares the seam against `SlotGridLayout` and against `tools/art-pipeline/f006/lattice-geometry.json` (extent, pivots, plate rects, hit diamonds, and `n_fit` for every point screen and device). A full Edit Mode run leaves that file byte-identical (`git diff` is empty), because `LatticeGeometryExportTests` rewrites it from the migrated code.
+
+## Shell navigation seam and the R19 re-baseline list (T515)
+
+**Helper (T515, SC-007, research R19).** `RunShellTestNavigation` in `Assets/IdleFactory/Tests/PlayMode/RunShellTestSupport.cs` has two members. `OpenPanel(shell, ShellTab)` delegates to `shell.SelectTab(tab)`. `EntryControl(shell, ShellTab)` delegates to `shell.TabButton(tab)`. Both behave exactly like the direct calls, so the helper changes nothing today.
+
+**Decision: helper only, no call site migrated.** The edit scope of T515 is the support file and this record, and a migration would touch 33 test files that other work in the batch may also edit (conflict risk) for no behaviour gain. The replacement is mechanical (`X.SelectTab(t)` becomes `RunShellTestNavigation.OpenPanel(X, t)`, `X.TabButton(t)` becomes `RunShellTestNavigation.EntryControl(X, t)`), so the later hub issue can do it in one pass or just change the two bodies for the call sites that adopt it.
+
+**Hub constraints for the later switch (OD-9b, UI/UX C3).** The hub label is "Office". The hub and the card are mutually exclusive and there is no duplicate path to a panel, so once `OpenPanel` navigates through the hub, a test must not also press a tab. Hub rows are 48 dp, so `EntryControl` returns the row and the 44/48 dp target assertions in `RunHudLayoutTests` and `RunTextScaleTests` move to that size. T515 implements no hub.
+
+**Panel tests that use the tab seam directly.** 33 Play Mode files (counts: `SelectTab` calls / `TabButton` calls; `OpenTabAtSection` is not called by any test):
+
+| File | SelectTab | TabButton |
+|---|---|---|
+| `ContractsAutoDeliverPanelTests` | 2 | 6 |
+| `ContractsPanelTests` | 1 | 0 |
+| `ExpansionPanelTests` | 1 | 0 |
+| `F006/BaselineRig` (`ShowTab`) | 1 | 0 |
+| `F006/InteractionCountJourney` | 0 | 2 |
+| `F006/ShellGeometryProbeTests` | 1 | 0 |
+| `GoalsLinePanelTests` | 9 | 0 |
+| `IndustryPanelTests` | 1 | 0 |
+| `InventoryRatesPanelTests` | 1 | 0 |
+| `ItemsPanelTests` | 2 | 0 |
+| `MachinePanelGuidanceTests` | 0 | 1 |
+| `MarketPanelTestSupport` | 1 | 0 |
+| `MarketSellPanelTests` | 2 | 0 |
+| `OfflineSummaryPanelTests` | 0 | 2 |
+| `OreVeinPanelTests` | 6 | 2 |
+| `OverdriveControlTests` | 1 | 0 |
+| `PanelTitleWrapTests` | 1 | 0 |
+| `PrestigePanelTests` | 1 | 0 |
+| `PrioritiesPanelTests` | 1 | 0 |
+| `ResearchPanelScrollTests` | 1 | 0 |
+| `ResearchPanelTests` | 1 | 0 |
+| `RunDeviceProfileTests` | 1 | 1 |
+| `RunHudLayoutTests` | 10 | 4 |
+| `RunKeyboardFocusTests` | 4 | 17 |
+| `RunPanelCompositionTests` | 0 | 6 |
+| `RunShellFocusAndLabelsTests` | 3 | 0 |
+| `RunTextScaleTests` | 4 | 4 |
+| `SessionLogPanelTests` | 3 | 0 |
+| `SettingsSheetTests` | 1 | 0 |
+| `SlotGridTests` | 1 | 0 |
+| `TextScaleLayoutTests` | 1 | 0 |
+| `UiIconSurfaceRig` | 6 | 0 |
+| `UiReviewFixesTests` | 7 | 2 |
+
+Totals: 75 `SelectTab` lines and 47 `TabButton` lines (production `RunShellDocument` and the panel presenters are not counted). Counts come from `git grep` on the base commit.
+
+**R19 per-file re-baseline list.** Status is `pending` until the owning issue records the old→new diff in the table below. T512 already recorded its renames above, T513 and T514 their own.
+
+| Group | Files | Owner / status |
+|---|---|---|
+| Six tabs and `HandleBack` | `RunHudLayoutTests` (L171–186), `RunKeyboardFocusTests`, `RunPanelCompositionTests`, `GoalsLinePanelTests`, `UiReviewFixesTests`, `UiIconSurfaceRig`, `RunTextScaleTests`, `OreVeinPanelTests`, `ContractsAutoDeliverPanelTests`, the panel tests in the table above (about 35 files, via the `RunShellTestNavigation` seam), `AndroidBackGestureTests` | hub issue, pending |
+| Zoom buttons | `NavigationInputTests`, `RunDeviceProfileTests`, `RunTextScaleTests`, `PixelCrispnessTests`, `DevToolsOverlayPlacementTests` | pending |
+| 12 slots and columns | `SlotGridLatticeTests`, `SlotGridTests`, `CameraScaleModelTests`, `ScreenClassScaleTableTests`, `StateCueSetTests`, `F004AssetContractTests` | T512 (API renames recorded above), `StateCueSetTests` and `F004AssetContractTests` pending |
+| Preferences | `DisplayPreferencesStoreTests` | pending |
+| Core API | `core-public-api.txt` | T514, done (section above) |
+| Emulator | `scripts/android-emulator-journey.ps1`: Default, F003, F004 and F005 scenarios move from bottom-bar fraction taps to a hub-entry tap helper; F006 is added to `$knownScenarios` | pending |
+
+**Old→new table template (one row per changed test or assertion).** A re-baseline changes a test only through a recorded row; an expectation change needs a reason that cites the requirement.
+
+| File | Test / line | Old | New | Reason (FR/SC/decision) | Expectation changed? | Issue |
+|---|---|---|---|---|---|---|
+| _example_ `RunHudLayoutTests.cs` | `Name` / L171 | `shell.TabButton(ShellTab.Market)` | `RunShellTestNavigation.EntryControl(shell, ShellTab.Market)` | R11, OD-9b | no | #nnn |
