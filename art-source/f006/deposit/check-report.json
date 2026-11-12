@@ -1,0 +1,810 @@
+{
+  "assets": {
+    "f006-deposit-highlight": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            48,
+            34
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_1",
+            "ink_0",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            6
+          ],
+          "used": {
+            "floor_1": 318,
+            "ink_0": 116,
+            "res_coal": 155,
+            "res_ore_0": 106,
+            "res_ore_1": 50,
+            "steel_3": 24
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.352941
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.352941
+          ],
+          "pivotPx": [
+            24.0,
+            12.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.375,
+          "overhangPx": 9
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "res_ore_0",
+            "steel_3"
+          ],
+          "steelPixels": 24
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "steel_3": 24
+        },
+        "name": "no_steel_in_rest",
+        "passed": true
+      }
+    ],
+    "f006-deposit-rest-s1": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            48,
+            34
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_1",
+            "ink_0",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            5
+          ],
+          "used": {
+            "floor_1": 318,
+            "ink_0": 116,
+            "res_coal": 155,
+            "res_ore_0": 106,
+            "res_ore_1": 74
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.352941
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.352941
+          ],
+          "pivotPx": [
+            24.0,
+            12.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.375,
+          "overhangPx": 9
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "res_ore_0"
+          ],
+          "steelPixels": 0
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "steel_3": 0
+        },
+        "name": "no_steel_in_rest",
+        "passed": true
+      }
+    ],
+    "f006-deposit-rest-s2": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            48,
+            34
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_1",
+            "ink_0",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            5
+          ],
+          "used": {
+            "floor_1": 311,
+            "ink_0": 121,
+            "res_coal": 163,
+            "res_ore_0": 100,
+            "res_ore_1": 74
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.352941
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.352941
+          ],
+          "pivotPx": [
+            24.0,
+            12.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.375,
+          "overhangPx": 9
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "res_ore_0"
+          ],
+          "steelPixels": 0
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "steel_3": 0
+        },
+        "name": "no_steel_in_rest",
+        "passed": true
+      }
+    ],
+    "f006-deposit-rest-s3": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            48,
+            34
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_1",
+            "ink_0",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            5
+          ],
+          "used": {
+            "floor_1": 267,
+            "ink_0": 128,
+            "res_coal": 196,
+            "res_ore_0": 122,
+            "res_ore_1": 90
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.352941
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.352941
+          ],
+          "pivotPx": [
+            24.0,
+            12.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.4166666666666667,
+          "overhangPx": 10
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "res_ore_0"
+          ],
+          "steelPixels": 0
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "steel_3": 0
+        },
+        "name": "no_steel_in_rest",
+        "passed": true
+      }
+    ],
+    "f006-fx-vein-chip": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 4
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            48,
+            34
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "ink_0",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            4,
+            3,
+            3,
+            3,
+            3,
+            2
+          ],
+          "used": {
+            "ink_0": 92,
+            "res_ore_0": 59,
+            "res_ore_1": 11,
+            "steel_3": 1
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.352941
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.352941
+          ],
+          "note": "FX frames hold chips only; the manifest pivot equals the deposit pivot they are anchored to",
+          "pivotPx": [
+            24.0,
+            12.0
+          ],
+          "restsOnFootprint": false
+        },
+        "name": "pivot_manifest_only",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 0.4166666666666667,
+          "overhangPx": 10
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "res_ore_0",
+            "steel_3"
+          ],
+          "steelPixels": 1
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 2,
+          "transitions": [
+            0.080721,
+            0.099864,
+            0.104433,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "fps": 8,
+          "limit": 3,
+          "maxFlashesPerSecond": 0,
+          "transitions": [
+            0.004434,
+            0.005248,
+            0.005285,
+            0.003955,
+            0.001183,
+            0.004959
+          ]
+        },
+        "name": "flash_composite_over_rest_vein",
+        "passed": true
+      },
+      {
+        "details": {
+          "frames": 6
+        },
+        "name": "six_distinct_frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "bboxes": [
+            [
+              22,
+              1,
+              27,
+              7
+            ],
+            [
+              21,
+              0,
+              29,
+              7
+            ],
+            [
+              24,
+              0,
+              31,
+              6
+            ],
+            [
+              25,
+              0,
+              33,
+              8
+            ],
+            [
+              26,
+              1,
+              35,
+              13
+            ],
+            [
+              20,
+              0,
+              36,
+              9
+            ]
+          ]
+        },
+        "name": "chips_inside_vein_canvas_and_above_patch",
+        "passed": true
+      },
+      {
+        "details": {
+          "limitF006Fx": 2,
+          "limitOverall": 3,
+          "note": "chip loop 6 frames at 8 fps. Measured: chip-only frames reach 2 flashes per second (the F006 FX limit, 3 overall); over the rest vein the composite measures 0. See the flash and flash_composite_over_rest_vein results. Scenery loop, not combined with a machine loop; reduced motion shows f006-deposit-highlight (zero flashes)."
+        },
+        "name": "flash_budget_21_8",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.1.0",
+    "briefVersion": "F006-DEPOSIT v0.1",
+    "family": "deposit",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 693,
+    "task": "T520",
+    "worldBible": "F006-WB v0.1"
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "count": 12
+      },
+      "name": "depot_12_distinct",
+      "passed": true
+    },
+    {
+      "details": {
+        "chip-0": {
+          "byteIdentical": true,
+          "first": "23cf5e719381a925af35f665ba1271e7fb1b4d254287e8998508c19a4172441c",
+          "second": "23cf5e719381a925af35f665ba1271e7fb1b4d254287e8998508c19a4172441c"
+        },
+        "chip-1": {
+          "byteIdentical": true,
+          "first": "0ef24ea8528a3273d87e64a14f85bda68dcae79e0c754ef29f03069d95e50ade",
+          "second": "0ef24ea8528a3273d87e64a14f85bda68dcae79e0c754ef29f03069d95e50ade"
+        },
+        "chip-2": {
+          "byteIdentical": true,
+          "first": "88d415e2c4184bd4658dba2e9a3e5cc03c564e992af01331116355f45c4563c6",
+          "second": "88d415e2c4184bd4658dba2e9a3e5cc03c564e992af01331116355f45c4563c6"
+        },
+        "chip-3": {
+          "byteIdentical": true,
+          "first": "78b9bcee946e640c594a335107148538d736cc99a831bf50a44e98ce25fd8262",
+          "second": "78b9bcee946e640c594a335107148538d736cc99a831bf50a44e98ce25fd8262"
+        },
+        "chip-4": {
+          "byteIdentical": true,
+          "first": "2e5228fbdbee2bccef0c3dbaaebc79e64f50b5279542664923a90768ea95e5f3",
+          "second": "2e5228fbdbee2bccef0c3dbaaebc79e64f50b5279542664923a90768ea95e5f3"
+        },
+        "chip-5": {
+          "byteIdentical": true,
+          "first": "d6483749f0842d5d37c410af809f7ff52826e6a3828e8c26aafd1c043f62b07c",
+          "second": "d6483749f0842d5d37c410af809f7ff52826e6a3828e8c26aafd1c043f62b07c"
+        },
+        "deposit-rest-s1": {
+          "byteIdentical": true,
+          "first": "3bbe058623dd3ebfc3f2664eaf8168c2261f86d3d51cf14873a1f5931570d1fc",
+          "second": "3bbe058623dd3ebfc3f2664eaf8168c2261f86d3d51cf14873a1f5931570d1fc"
+        },
+        "deposit-rest-s2": {
+          "byteIdentical": true,
+          "first": "63c1e17af7b9608252ab0b94f11277611e2280bc30938efa30547a0efc24aaaf",
+          "second": "63c1e17af7b9608252ab0b94f11277611e2280bc30938efa30547a0efc24aaaf"
+        },
+        "deposit-rest-s3": {
+          "byteIdentical": true,
+          "first": "116405fa31ff265dc9e6b552f8bfc442debe4afeb899f084ae5bdb00c63b2ca3",
+          "second": "116405fa31ff265dc9e6b552f8bfc442debe4afeb899f084ae5bdb00c63b2ca3"
+        },
+        "depot-s1-empty": {
+          "byteIdentical": true,
+          "first": "12a07e2ee02e988ab9bce71c10ab8f121c29c34ea0b1946a2512e8017920b765",
+          "second": "12a07e2ee02e988ab9bce71c10ab8f121c29c34ea0b1946a2512e8017920b765"
+        },
+        "depot-s1-full": {
+          "byteIdentical": true,
+          "first": "f9fe41b70d31560335684f0b07b6966cd0db18be75bd40f00c857a67e27f6f6d",
+          "second": "f9fe41b70d31560335684f0b07b6966cd0db18be75bd40f00c857a67e27f6f6d"
+        },
+        "depot-s1-high": {
+          "byteIdentical": true,
+          "first": "d147f830ec9c76c3331b86d6ddfce21b8aa84a3604a1a32e30fd2175e4d9f1f8",
+          "second": "d147f830ec9c76c3331b86d6ddfce21b8aa84a3604a1a32e30fd2175e4d9f1f8"
+        },
+        "depot-s1-low": {
+          "byteIdentical": true,
+          "first": "c60ed9753dc4d209402548791b701e29079ab459190904b345ca9d10f8b8a433",
+          "second": "c60ed9753dc4d209402548791b701e29079ab459190904b345ca9d10f8b8a433"
+        },
+        "depot-s2-empty": {
+          "byteIdentical": true,
+          "first": "827076033f2f89701f81129f6dda3b4318d1208752f544eaf0f30a28533bbead",
+          "second": "827076033f2f89701f81129f6dda3b4318d1208752f544eaf0f30a28533bbead"
+        },
+        "depot-s2-full": {
+          "byteIdentical": true,
+          "first": "3178adfce7e709290316a01fb449baf88be4f6c576c466c580caa4861f1ef35c",
+          "second": "3178adfce7e709290316a01fb449baf88be4f6c576c466c580caa4861f1ef35c"
+        },
+        "depot-s2-high": {
+          "byteIdentical": true,
+          "first": "529bd6f59d04f20e0fa0e30e49d69cb14cedf5f8ea4aec0dd74ad1d4d0fc0d85",
+          "second": "529bd6f59d04f20e0fa0e30e49d69cb14cedf5f8ea4aec0dd74ad1d4d0fc0d85"
+        },
+        "depot-s2-low": {
+          "byteIdentical": true,
+          "first": "8f4f62762433c4263c1009f3f34ed66ae502b9a144d282cf48cb695f978bca2b",
+          "second": "8f4f62762433c4263c1009f3f34ed66ae502b9a144d282cf48cb695f978bca2b"
+        },
+        "depot-s3-empty": {
+          "byteIdentical": true,
+          "first": "d1b3159d21a895a473ea5c6382ef46a3f2122fcc867e356a91f5d8bc7a2cabc7",
+          "second": "d1b3159d21a895a473ea5c6382ef46a3f2122fcc867e356a91f5d8bc7a2cabc7"
+        },
+        "depot-s3-full": {
+          "byteIdentical": true,
+          "first": "f17978b65c435c468e215974e87d00c7ae18049ce512c1c79f660c1c8c3c32d4",
+          "second": "f17978b65c435c468e215974e87d00c7ae18049ce512c1c79f660c1c8c3c32d4"
+        },
+        "depot-s3-high": {
+          "byteIdentical": true,
+          "first": "b29bd87c2760a1d41d70e3708fd5f197112f874906477726f665d144e7347ce6",
+          "second": "b29bd87c2760a1d41d70e3708fd5f197112f874906477726f665d144e7347ce6"
+        },
+        "depot-s3-low": {
+          "byteIdentical": true,
+          "first": "426f05f7a20cb5cc203707783e0fa825b3d78d37bfa038c686a9819f7c255fef",
+          "second": "426f05f7a20cb5cc203707783e0fa825b3d78d37bfa038c686a9819f7c255fef"
+        }
+      },
+      "name": "reproducibility",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}

@@ -1,0 +1,111 @@
+{
+  "artBibleVersion": "F004-PAB v1.1.0",
+  "assetId": "f006-depot-s3-low",
+  "briefVersion": "F006-DEPOT v0.1",
+  "candidateSelection": "Deterministic render of fixed geometry, seed 0, 16 samples; no seed selection. Hybrid route (owner decision 2026-11-03): the Blender MCP bridge (127.0.0.1:9876) was not reachable (Blender GUI not running), so geometry was iterated by headless batch renders; the committed render is the final headless run, and a second headless render is byte-identical.",
+  "checkReportHash": "3525acf659b0b2d924e97e182f3addcfc3d41ab7a802499200a81841b039c39c",
+  "checkReportPath": "art-source/f006/depot/check-report.json",
+  "interactiveSteps": [
+    "none: Blender MCP bridge not reachable at 127.0.0.1:9876; headless batch iteration only"
+  ],
+  "key": "F006-DEPOT-S3-LOW",
+  "license": "Repository-authored procedural geometry and palette; no third-party assets, models or textures. Ownership: repository owner (fjure); no public license grant.",
+  "outputs": [
+    {
+      "file": "f006-depot-s3-low/f006-depot-s3-low_00.png",
+      "sha256": "018a542fa807d0a41d6ae042881f7bb0d9822316ac65494cc0a4a4ef78e663c1"
+    }
+  ],
+  "parameters": {
+    "denoiser": false,
+    "densityD": 24,
+    "engine": "CYCLES/CPU",
+    "frameCount": 1,
+    "keyLight": "unused by the emission materials",
+    "material": "toon",
+    "materials": "flat emission, exact palette colours per face",
+    "perspective": "isometric-2-1",
+    "projection": "isometric-2-1",
+    "renderScript": "tools/art-pipeline/blender/render.py",
+    "renderScriptSha256": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+    "renderSeconds": [
+      0.07
+    ],
+    "resolution": 128,
+    "rigFile": "rig-v2.blend",
+    "rigSha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098",
+    "rigVersion": "rig-v2",
+    "samples": 16,
+    "scriptHashes": {
+      "deposit/build_models.py": "6015495c90817af7caa6055a1196c48aed161f641985c85853f5eb72f0677803",
+      "depot/build_models.py": "b7c2ef47bf4282cb124db0d84bc9b9337b6a7bdccd37505c771053135cf1455a",
+      "palette-v1.json": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+      "pipeline_depot_deposit.py": "7b3953dd8a22a13642bb5bfa453762771c9a64545cb6e69ca60533d47f2de850",
+      "pixel_pass.py": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8",
+      "render.py": "cbf82bf6bf7272eb298b3e682e753eefda410a840d92f0d6a2283550d60fe9e4",
+      "rig-v2.blend": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098"
+    },
+    "seed": 0
+  },
+  "pixelPass": {
+    "config": {
+      "canvas": [
+        80,
+        76
+      ],
+      "footprint": [
+        80,
+        40
+      ],
+      "supersample": 1
+    },
+    "driver": "art-source/f006/pipeline_depot_deposit.py",
+    "paletteId": "f004-palette",
+    "paletteSha256": "cc3a64ee474e6cef8d3ef6d181040eaecaaa2fbe3f1d277d890bb5ec1aa10a00",
+    "paletteVersion": "1.0.0",
+    "script": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+    "scriptSha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+  },
+  "producedBy": "3D and Render Artist (Claude Code Sonnet 5.5, Technical Artist lens), T520 / Issue #693",
+  "renderEnv": {
+    "driver": "621.01",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti"
+  },
+  "reviewedBy": null,
+  "revision": 1,
+  "rigVersion": "rig-v2",
+  "route": "blender",
+  "sources": [
+    {
+      "note": "procedural geometry, flat palette-colour emission materials per face; no external assets",
+      "path": "art-source/f006/depot/build_models.py",
+      "sha256": "b7c2ef47bf4282cb124db0d84bc9b9337b6a7bdccd37505c771053135cf1455a"
+    },
+    {
+      "path": "tools/art-pipeline/blender/rig-v2.blend",
+      "sha256": "9075ca24da793f8b2d04e8d4642aefc139cfad3329dc1085528b2947dc412098"
+    },
+    {
+      "path": "art-source/f006/depot/model/depot-s3-low.blend",
+      "sha256": "3e4be8dbb43642758b09693d15b8f6798910611f2223110b7aaef73a202cc7eb"
+    }
+  ],
+  "tools": {
+    "blender": {
+      "addons": [],
+      "hash": "9e2066aef7ef",
+      "version": "5.2.1 LTS"
+    },
+    "pillow": "11.3.0",
+    "python": "3.13.6"
+  },
+  "touchUp": [
+    {
+      "note": "nearest-tone snap to the model's declared tones, single-pixel despeckle, fixed crop window, in-place 1 px ink_0 outline on the transparent neighbours; deterministic, no hand edits. {\"cropWindow\": [24, 8, 104, 84], \"despeckled\": 1, \"tones\": [\"copper_0\", \"copper_1\", \"copper_2\", \"dim_0\", \"ink_0\", \"res_coal\", \"res_ore_0\", \"res_ore_1\", \"steel_0\", \"steel_1\", \"steel_2\", \"steel_3\"]}",
+      "script": "art-source/f006/pipeline_depot_deposit.py",
+      "step": "snap_despeckle_outline"
+    }
+  ],
+  "trainingDataNote": "N/A: no generative model or training data used (Blender route, procedural geometry written by an AI coding agent, disclosed).",
+  "worldBibleVersion": "F006-WB v0.1"
+}

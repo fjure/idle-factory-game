@@ -1,0 +1,354 @@
+{
+  "entries": [
+    {
+      "assetId": "f006-depot-s1-empty",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s1-empty/f006-depot-s1-empty_00.png",
+          "sha256": "1c92e60c7d02467ea4c71ff47d764dda2c2b7be5481216d8338cf0a7def8d674"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s1-full",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s1-full/f006-depot-s1-full_00.png",
+          "sha256": "8dd4dd6ad823682744ab0391c234e9c9ec102f2566c031c5f5f24c82a38f2cc3"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s1-high",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s1-high/f006-depot-s1-high_00.png",
+          "sha256": "47ec5aaff6f2c17b477a3f5a836c12b6e524a9b0e7b97ebe666e3e530d92d8ea"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s1-low",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s1-low/f006-depot-s1-low_00.png",
+          "sha256": "fbaceec9cf873f34d5f2badb40c02c84d9f22111c37fe98a0f28a09003ea9fb5"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s2-empty",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s2-empty/f006-depot-s2-empty_00.png",
+          "sha256": "d8dada50b8c98da22a3528ba8a6d013292c2b1eb4f3c79c3550edd332c2a5540"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s2-full",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s2-full/f006-depot-s2-full_00.png",
+          "sha256": "6b8f6ec512d212a1821662ef543d9ffa449985f56056bacf151e43d0ec0c77a8"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s2-high",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s2-high/f006-depot-s2-high_00.png",
+          "sha256": "f81f49c899b067ff5eb600173ec104868d4abd352ca1714bc1ba087ec691891b"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s2-low",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s2-low/f006-depot-s2-low_00.png",
+          "sha256": "3d182cd9bfe9cb612ca131c44c1e1be4affe5007a71a379650038491fc54358e"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s3-empty",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s3-empty/f006-depot-s3-empty_00.png",
+          "sha256": "21a0fb50c6014ee64c7efe1270f870b4f9ce685227dbfc193cef60aaac758a49"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s3-full",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s3-full/f006-depot-s3-full_00.png",
+          "sha256": "808771310ffa3cea7d0ce3389201a9e4438889bb3be06cd8775de53fd62ff73a"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s3-high",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s3-high/f006-depot-s3-high_00.png",
+          "sha256": "dd2319fb273d5b4cb0572a30ad5ae99206bd05faaf89c3bd90cf83d676900e07"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-depot-s3-low",
+      "canvas": [
+        80,
+        76
+      ],
+      "footprintPx": [
+        80,
+        40
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-depot-s3-low/f006-depot-s3-low_00.png",
+          "sha256": "018a542fa807d0a41d6ae042881f7bb0d9822316ac65494cc0a4a4ef78e663c1"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.263158
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "note": "T520 candidate entries for T526; reviewedBy pending (T525). Depot 80 x 76 footprint 80 x 40; deposit and chip 48 x 34 footprint 48 x 24; the chip loop (fps 8) is anchored on the deposit pivot, its reduced-motion still is f006-deposit-highlight (Art Bible 21.7).",
+  "schemaVersion": 1
+}

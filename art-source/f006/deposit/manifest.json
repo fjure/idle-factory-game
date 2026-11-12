@@ -1,0 +1,173 @@
+{
+  "entries": [
+    {
+      "assetId": "f006-deposit-highlight",
+      "canvas": [
+        48,
+        34
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-deposit-highlight/f006-deposit-highlight_00.png",
+          "sha256": "16078a0448fc31d44de2fe0faf562a157a8e752412e4e8a8f1caddda57970e57"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.352941
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-deposit-rest-s1",
+      "canvas": [
+        48,
+        34
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-deposit-rest-s1/f006-deposit-rest-s1_00.png",
+          "sha256": "83524da93ac4cda3f8c06dcb5a6a97d2ee019740ac50feb8be5cae7596b77c07"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.352941
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-deposit-rest-s2",
+      "canvas": [
+        48,
+        34
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-deposit-rest-s2/f006-deposit-rest-s2_00.png",
+          "sha256": "286ad1113a7f23d3911850507574bb4a03b4055624f2f4cb6efa3fef125dde30"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.352941
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-deposit-rest-s3",
+      "canvas": [
+        48,
+        34
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-deposit-rest-s3/f006-deposit-rest-s3_00.png",
+          "sha256": "3061d6a780421bd68693a1a0c1740f0210647f3cb3c4bdd5a6b74d3442aeae5b"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.352941
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-fx-vein-chip",
+      "canvas": [
+        48,
+        34
+      ],
+      "footprintPx": [
+        48,
+        24
+      ],
+      "fps": 8,
+      "frames": [
+        {
+          "file": "f006-fx-vein-chip/f006-fx-vein-chip_00.png",
+          "sha256": "f197d38c91dce575ba4d575905fd010c03becb434330052a57f6c306fdaa23a3"
+        },
+        {
+          "file": "f006-fx-vein-chip/f006-fx-vein-chip_01.png",
+          "sha256": "66852da6a78a0ac7868da6514d5280f026c76530ca27f7598dbcb8d16353e255"
+        },
+        {
+          "file": "f006-fx-vein-chip/f006-fx-vein-chip_02.png",
+          "sha256": "8b8857f5f56977b8637f3d10b18999f55bd4c5f0ef62c30a0b88b53d610cc14d"
+        },
+        {
+          "file": "f006-fx-vein-chip/f006-fx-vein-chip_03.png",
+          "sha256": "677182c242bbee2de7fde794d59432643591c60547e354128d2bf5e8afc49c6c"
+        },
+        {
+          "file": "f006-fx-vein-chip/f006-fx-vein-chip_04.png",
+          "sha256": "320af2919f33b0d8427f2526697d63f7201a553da20f68d0bba0deb263955b26"
+        },
+        {
+          "file": "f006-fx-vein-chip/f006-fx-vein-chip_05.png",
+          "sha256": "a8324e3cb416ce01a1afcff42ae04c482c6b3b648997aa6dfc03e7b156c52ad2"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.352941
+      ],
+      "ppu": 24,
+      "reducedMotionStill": "f006-deposit-highlight",
+      "route": "blender",
+      "stillFrame": 0
+    }
+  ],
+  "note": "T520 candidate entries for T526; reviewedBy pending (T525). Depot 80 x 76 footprint 80 x 40; deposit and chip 48 x 34 footprint 48 x 24; the chip loop (fps 8) is anchored on the deposit pivot, its reduced-motion still is f006-deposit-highlight (Art Bible 21.7).",
+  "schemaVersion": 1
+}
