@@ -1,0 +1,2464 @@
+{
+  "assets": {
+    "f006-depot-s1-empty": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 9
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            9
+          ],
+          "used": {
+            "copper_0": 310,
+            "copper_1": 236,
+            "copper_2": 28,
+            "dim_0": 144,
+            "ink_0": 243,
+            "steel_0": 468,
+            "steel_1": 827,
+            "steel_2": 164,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1489
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            36,
+            6,
+            44,
+            14
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            5,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 468,
+          "steel_1": 827
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "dim_0Bbox": [
+            29,
+            32,
+            51,
+            44
+          ],
+          "note": "pit floor visible through the collar, dim_0 interior",
+          "required": [
+            12,
+            6
+          ]
+        },
+        "name": "hopper_opening_ge_12x6",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            28,
+            28,
+            28,
+            123
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            51,
+            149,
+            168
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s1-full": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            12
+          ],
+          "used": {
+            "copper_0": 310,
+            "copper_1": 139,
+            "copper_2": 123,
+            "dim_0": 3,
+            "ink_0": 249,
+            "res_coal": 16,
+            "res_ore_0": 98,
+            "res_ore_1": 54,
+            "steel_0": 468,
+            "steel_1": 814,
+            "steel_2": 164,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "res_ore_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1476
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            25,
+            6,
+            54,
+            45
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            5,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 468,
+          "steel_1": 814
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "coalPixels": 16,
+          "orePixels": 152
+        },
+        "name": "fill_visible",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": 123,
+          "note": "compare with the -high copper_2 count in the fill_monotonic check"
+        },
+        "name": "full_copper2_lip",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            28,
+            28,
+            28,
+            123
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            51,
+            149,
+            168
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s1-high": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            12
+          ],
+          "used": {
+            "copper_0": 310,
+            "copper_1": 214,
+            "copper_2": 28,
+            "dim_0": 12,
+            "ink_0": 248,
+            "res_coal": 9,
+            "res_ore_0": 64,
+            "res_ore_1": 76,
+            "steel_0": 468,
+            "steel_1": 827,
+            "steel_2": 164,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "res_ore_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1489
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            36,
+            6,
+            44,
+            14
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            5,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 468,
+          "steel_1": 827
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "coalPixels": 9,
+          "orePixels": 140
+        },
+        "name": "fill_visible",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            28,
+            28,
+            28,
+            123
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            51,
+            149,
+            168
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s1-low": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            11
+          ],
+          "used": {
+            "copper_0": 310,
+            "copper_1": 236,
+            "copper_2": 28,
+            "dim_0": 83,
+            "ink_0": 253,
+            "res_coal": 18,
+            "res_ore_1": 33,
+            "steel_0": 468,
+            "steel_1": 827,
+            "steel_2": 164,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1489
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            36,
+            6,
+            44,
+            14
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            5,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 468,
+          "steel_1": 827
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "coalPixels": 18,
+          "orePixels": 33
+        },
+        "name": "fill_visible",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            28,
+            28,
+            28,
+            123
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            51,
+            149,
+            168
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s2-empty": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 9
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            9
+          ],
+          "used": {
+            "copper_0": 310,
+            "copper_1": 236,
+            "copper_2": 28,
+            "dim_0": 145,
+            "ink_0": 225,
+            "steel_0": 668,
+            "steel_1": 1015,
+            "steel_2": 250,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1963
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            36,
+            6,
+            44,
+            14
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            5,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 668,
+          "steel_1": 1015
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "dim_0Bbox": [
+            29,
+            32,
+            55,
+            44
+          ],
+          "note": "pit floor visible through the collar, dim_0 interior",
+          "required": [
+            12,
+            6
+          ]
+        },
+        "name": "hopper_opening_ge_12x6",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            28,
+            28,
+            28,
+            115
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            52,
+            150,
+            176
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s2-full": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            12
+          ],
+          "used": {
+            "copper_0": 310,
+            "copper_1": 142,
+            "copper_2": 115,
+            "dim_0": 3,
+            "ink_0": 235,
+            "res_coal": 18,
+            "res_ore_0": 104,
+            "res_ore_1": 54,
+            "steel_0": 655,
+            "steel_1": 991,
+            "steel_2": 250,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "res_ore_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1926
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            25,
+            6,
+            54,
+            45
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            5,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 655,
+          "steel_1": 991
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "coalPixels": 18,
+          "orePixels": 158
+        },
+        "name": "fill_visible",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": 115,
+          "note": "compare with the -high copper_2 count in the fill_monotonic check"
+        },
+        "name": "full_copper2_lip",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            28,
+            28,
+            28,
+            115
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            52,
+            150,
+            176
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s2-high": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            12
+          ],
+          "used": {
+            "copper_0": 310,
+            "copper_1": 214,
+            "copper_2": 28,
+            "dim_0": 12,
+            "ink_0": 230,
+            "res_coal": 10,
+            "res_ore_0": 64,
+            "res_ore_1": 76,
+            "steel_0": 668,
+            "steel_1": 1015,
+            "steel_2": 250,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "res_ore_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1963
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            36,
+            6,
+            44,
+            14
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            5,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 668,
+          "steel_1": 1015
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "coalPixels": 10,
+          "orePixels": 140
+        },
+        "name": "fill_visible",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            28,
+            28,
+            28,
+            115
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            52,
+            150,
+            176
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s2-low": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            11
+          ],
+          "used": {
+            "copper_0": 310,
+            "copper_1": 236,
+            "copper_2": 28,
+            "dim_0": 83,
+            "ink_0": 235,
+            "res_coal": 19,
+            "res_ore_1": 33,
+            "steel_0": 668,
+            "steel_1": 1015,
+            "steel_2": 250,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1963
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            36,
+            6,
+            44,
+            14
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            5,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 668,
+          "steel_1": 1015
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "coalPixels": 19,
+          "orePixels": 33
+        },
+        "name": "fill_visible",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            28,
+            28,
+            28,
+            115
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            52,
+            150,
+            176
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s3-empty": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 9
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            9
+          ],
+          "used": {
+            "copper_0": 337,
+            "copper_1": 237,
+            "copper_2": 25,
+            "dim_0": 144,
+            "ink_0": 326,
+            "steel_0": 468,
+            "steel_1": 994,
+            "steel_2": 213,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1705
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            36,
+            6,
+            44,
+            14
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            6,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 468,
+          "steel_1": 994
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "dim_0Bbox": [
+            29,
+            32,
+            51,
+            44
+          ],
+          "note": "pit floor visible through the collar, dim_0 interior",
+          "required": [
+            12,
+            6
+          ]
+        },
+        "name": "hopper_opening_ge_12x6",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            25,
+            25,
+            25,
+            120
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            53,
+            151,
+            170
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s3-full": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            12
+          ],
+          "used": {
+            "copper_0": 337,
+            "copper_1": 139,
+            "copper_2": 120,
+            "dim_0": 3,
+            "ink_0": 332,
+            "res_coal": 17,
+            "res_ore_0": 98,
+            "res_ore_1": 55,
+            "steel_0": 468,
+            "steel_1": 980,
+            "steel_2": 213,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "res_ore_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1691
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            25,
+            6,
+            54,
+            45
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            6,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 468,
+          "steel_1": 980
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "coalPixels": 17,
+          "orePixels": 153
+        },
+        "name": "fill_visible",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": 120,
+          "note": "compare with the -high copper_2 count in the fill_monotonic check"
+        },
+        "name": "full_copper2_lip",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            25,
+            25,
+            25,
+            120
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            53,
+            151,
+            170
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s3-high": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 12
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            12
+          ],
+          "used": {
+            "copper_0": 337,
+            "copper_1": 214,
+            "copper_2": 25,
+            "dim_0": 12,
+            "ink_0": 331,
+            "res_coal": 10,
+            "res_ore_0": 64,
+            "res_ore_1": 77,
+            "steel_0": 468,
+            "steel_1": 993,
+            "steel_2": 213,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "res_ore_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1704
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            36,
+            6,
+            44,
+            14
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            6,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 468,
+          "steel_1": 993
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "coalPixels": 10,
+          "orePixels": 141
+        },
+        "name": "fill_visible",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            25,
+            25,
+            25,
+            120
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            53,
+            151,
+            170
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ],
+    "f006-depot-s3-low": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 11
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            80,
+            76
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_0",
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "dim_1",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "res_coal",
+            "res_ore_0",
+            "res_ore_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMaxPerSprite": 12,
+          "outside": [],
+          "perSpriteColours": [
+            11
+          ],
+          "used": {
+            "copper_0": 337,
+            "copper_1": 236,
+            "copper_2": 25,
+            "dim_0": 83,
+            "ink_0": 336,
+            "res_coal": 19,
+            "res_ore_1": 34,
+            "steel_0": 468,
+            "steel_1": 993,
+            "steel_2": 213,
+            "steel_3": 30
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.263158
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.263158
+          ],
+          "pivotPx": [
+            40.0,
+            20.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "note": "informational: the depot is a margin-cell structure with a fixed 80 x 76 canvas (Art Bible 21.4); the 0.5-cell overhang rule is for plates and selection frames (Art Bible 3.x), not for this prop",
+          "overhangCells": 1.4166666666666667,
+          "overhangPx": 34
+        },
+        "name": "overhang_info",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "margin cell outside every hit shape and ring (Art Bible 21.2 DEPOT/DEPOSIT rows); the ring proof on the densest frame is the P2 composite gate (T527). This family is never drawn inside a ring.",
+          "outsideR": [
+            "copper_0",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 1704
+        },
+        "name": "c8_ring_note",
+        "passed": true
+      },
+      {
+        "details": {
+          "required": 2,
+          "topRow": 2
+        },
+        "name": "lamp_headroom_ge_2px",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Bbox": [
+            36,
+            6,
+            44,
+            14
+          ],
+          "note": "A3 / OD-10: copper_2 head, steel_3 cap, never lit_*",
+          "steel_3Bbox": [
+            6,
+            3,
+            75,
+            43
+          ]
+        },
+        "name": "lamp_copper2_head_steel3_cap",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "A3: slab top steel_1, side steel_0, rim steel_2",
+          "steel_0": 468,
+          "steel_1": 993
+        },
+        "name": "slab_steel_not_plate",
+        "passed": true
+      },
+      {
+        "details": {
+          "coalPixels": 19,
+          "orePixels": 34
+        },
+        "name": "fill_visible",
+        "passed": true
+      },
+      {
+        "details": {
+          "copper_2Pixels": [
+            25,
+            25,
+            25,
+            120
+          ],
+          "fillPixels(empty,low,high,full)": [
+            0,
+            53,
+            151,
+            170
+          ]
+        },
+        "name": "fill_monotonic_and_lip",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.1.0",
+    "briefVersion": "F006-DEPOT v0.1",
+    "family": "depot",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 693,
+    "task": "T520",
+    "worldBible": "F006-WB v0.1"
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "count": 12
+      },
+      "name": "depot_12_distinct",
+      "passed": true
+    },
+    {
+      "details": {
+        "chip-0": {
+          "byteIdentical": true,
+          "first": "23cf5e719381a925af35f665ba1271e7fb1b4d254287e8998508c19a4172441c",
+          "second": "23cf5e719381a925af35f665ba1271e7fb1b4d254287e8998508c19a4172441c"
+        },
+        "chip-1": {
+          "byteIdentical": true,
+          "first": "0ef24ea8528a3273d87e64a14f85bda68dcae79e0c754ef29f03069d95e50ade",
+          "second": "0ef24ea8528a3273d87e64a14f85bda68dcae79e0c754ef29f03069d95e50ade"
+        },
+        "chip-2": {
+          "byteIdentical": true,
+          "first": "88d415e2c4184bd4658dba2e9a3e5cc03c564e992af01331116355f45c4563c6",
+          "second": "88d415e2c4184bd4658dba2e9a3e5cc03c564e992af01331116355f45c4563c6"
+        },
+        "chip-3": {
+          "byteIdentical": true,
+          "first": "78b9bcee946e640c594a335107148538d736cc99a831bf50a44e98ce25fd8262",
+          "second": "78b9bcee946e640c594a335107148538d736cc99a831bf50a44e98ce25fd8262"
+        },
+        "chip-4": {
+          "byteIdentical": true,
+          "first": "2e5228fbdbee2bccef0c3dbaaebc79e64f50b5279542664923a90768ea95e5f3",
+          "second": "2e5228fbdbee2bccef0c3dbaaebc79e64f50b5279542664923a90768ea95e5f3"
+        },
+        "chip-5": {
+          "byteIdentical": true,
+          "first": "d6483749f0842d5d37c410af809f7ff52826e6a3828e8c26aafd1c043f62b07c",
+          "second": "d6483749f0842d5d37c410af809f7ff52826e6a3828e8c26aafd1c043f62b07c"
+        },
+        "deposit-rest-s1": {
+          "byteIdentical": true,
+          "first": "3bbe058623dd3ebfc3f2664eaf8168c2261f86d3d51cf14873a1f5931570d1fc",
+          "second": "3bbe058623dd3ebfc3f2664eaf8168c2261f86d3d51cf14873a1f5931570d1fc"
+        },
+        "deposit-rest-s2": {
+          "byteIdentical": true,
+          "first": "63c1e17af7b9608252ab0b94f11277611e2280bc30938efa30547a0efc24aaaf",
+          "second": "63c1e17af7b9608252ab0b94f11277611e2280bc30938efa30547a0efc24aaaf"
+        },
+        "deposit-rest-s3": {
+          "byteIdentical": true,
+          "first": "116405fa31ff265dc9e6b552f8bfc442debe4afeb899f084ae5bdb00c63b2ca3",
+          "second": "116405fa31ff265dc9e6b552f8bfc442debe4afeb899f084ae5bdb00c63b2ca3"
+        },
+        "depot-s1-empty": {
+          "byteIdentical": true,
+          "first": "12a07e2ee02e988ab9bce71c10ab8f121c29c34ea0b1946a2512e8017920b765",
+          "second": "12a07e2ee02e988ab9bce71c10ab8f121c29c34ea0b1946a2512e8017920b765"
+        },
+        "depot-s1-full": {
+          "byteIdentical": true,
+          "first": "f9fe41b70d31560335684f0b07b6966cd0db18be75bd40f00c857a67e27f6f6d",
+          "second": "f9fe41b70d31560335684f0b07b6966cd0db18be75bd40f00c857a67e27f6f6d"
+        },
+        "depot-s1-high": {
+          "byteIdentical": true,
+          "first": "d147f830ec9c76c3331b86d6ddfce21b8aa84a3604a1a32e30fd2175e4d9f1f8",
+          "second": "d147f830ec9c76c3331b86d6ddfce21b8aa84a3604a1a32e30fd2175e4d9f1f8"
+        },
+        "depot-s1-low": {
+          "byteIdentical": true,
+          "first": "c60ed9753dc4d209402548791b701e29079ab459190904b345ca9d10f8b8a433",
+          "second": "c60ed9753dc4d209402548791b701e29079ab459190904b345ca9d10f8b8a433"
+        },
+        "depot-s2-empty": {
+          "byteIdentical": true,
+          "first": "827076033f2f89701f81129f6dda3b4318d1208752f544eaf0f30a28533bbead",
+          "second": "827076033f2f89701f81129f6dda3b4318d1208752f544eaf0f30a28533bbead"
+        },
+        "depot-s2-full": {
+          "byteIdentical": true,
+          "first": "3178adfce7e709290316a01fb449baf88be4f6c576c466c580caa4861f1ef35c",
+          "second": "3178adfce7e709290316a01fb449baf88be4f6c576c466c580caa4861f1ef35c"
+        },
+        "depot-s2-high": {
+          "byteIdentical": true,
+          "first": "529bd6f59d04f20e0fa0e30e49d69cb14cedf5f8ea4aec0dd74ad1d4d0fc0d85",
+          "second": "529bd6f59d04f20e0fa0e30e49d69cb14cedf5f8ea4aec0dd74ad1d4d0fc0d85"
+        },
+        "depot-s2-low": {
+          "byteIdentical": true,
+          "first": "8f4f62762433c4263c1009f3f34ed66ae502b9a144d282cf48cb695f978bca2b",
+          "second": "8f4f62762433c4263c1009f3f34ed66ae502b9a144d282cf48cb695f978bca2b"
+        },
+        "depot-s3-empty": {
+          "byteIdentical": true,
+          "first": "d1b3159d21a895a473ea5c6382ef46a3f2122fcc867e356a91f5d8bc7a2cabc7",
+          "second": "d1b3159d21a895a473ea5c6382ef46a3f2122fcc867e356a91f5d8bc7a2cabc7"
+        },
+        "depot-s3-full": {
+          "byteIdentical": true,
+          "first": "f17978b65c435c468e215974e87d00c7ae18049ce512c1c79f660c1c8c3c32d4",
+          "second": "f17978b65c435c468e215974e87d00c7ae18049ce512c1c79f660c1c8c3c32d4"
+        },
+        "depot-s3-high": {
+          "byteIdentical": true,
+          "first": "b29bd87c2760a1d41d70e3708fd5f197112f874906477726f665d144e7347ce6",
+          "second": "b29bd87c2760a1d41d70e3708fd5f197112f874906477726f665d144e7347ce6"
+        },
+        "depot-s3-low": {
+          "byteIdentical": true,
+          "first": "426f05f7a20cb5cc203707783e0fa825b3d78d37bfa038c686a9819f7c255fef",
+          "second": "426f05f7a20cb5cc203707783e0fa825b3d78d37bfa038c686a9819f7c255fef"
+        }
+      },
+      "name": "reproducibility",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}
