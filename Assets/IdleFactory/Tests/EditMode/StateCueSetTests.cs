@@ -242,6 +242,17 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(StateCueGeometry.BadgeAnchorOffset.y, Is.EqualTo(0.6667f).Within(1e-4f));
             Assert.That(StateCueGeometry.BadgeSizeWorld, Is.EqualTo(23f * Px).Within(1e-5f));
 
+            // T524 re-baseline (OD-12, K4): the anchor and the 23 px box are unchanged (old 23 x 23 box = new box); the extent is new and
+            // adds the 4 px pointer tail below the anchor: old badge extent 23 x 23 px, new 23 x 27 px, bottom edge 16 px -> 12 px above the pivot.
+            Assert.That(StateCueGeometry.BadgeTailPixels, Is.EqualTo(4));
+            Assert.That(StateCueGeometry.BadgeTailBaseWidthPixels, Is.EqualTo(7));
+            var extent = StateCueGeometry.BadgeExtentBox();
+            Assert.That(extent.width, Is.EqualTo(23f * Px).Within(1e-5f), "the tail adds no width");
+            Assert.That(extent.height, Is.EqualTo(27f * Px).Within(1e-5f), "box 23 px plus tail 4 px");
+            Assert.That(extent.yMin, Is.EqualTo(12f * Px).Within(1e-5f), "the tail tip is 12 px above the pivot");
+            Assert.That(extent.yMax, Is.EqualTo(StateCueGeometry.BadgeBox().yMax).Within(1e-5f), "the top edge does not move");
+            Assert.That(extent.center.x, Is.EqualTo(StateCueGeometry.BadgeAnchorOffset.x).Within(1e-5f), "the tail is centred on the anchor column");
+
             // Markers: M1 box x 24..34 and M2 box x 36..46, rows 16..26 (11 x 11); centres (29, 21) and (41, 21) from the top-left.
             Assert.That(StateCueGeometry.Marker1Offset.x, Is.EqualTo(-11f * Px).Within(1e-5f));
             Assert.That(StateCueGeometry.Marker2Offset.x, Is.EqualTo(1f * Px).Within(1e-5f));
@@ -263,6 +274,12 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(first.Overlaps(second), Is.False, "M1 and M2");
             Assert.That(second.Overlaps(badge), Is.False, "M2 and the badge");
             Assert.That(first.Overlaps(badge), Is.False, "M1 and the badge");
+
+            // K4: the tail extent keeps every guarantee of the bare box (T517: 0 px over markers, plate, hit shapes and the row band).
+            var extent = StateCueGeometry.BadgeExtentBox();
+            Assert.That(first.Overlaps(extent), Is.False, "M1 and the badge tail extent");
+            Assert.That(second.Overlaps(extent), Is.False, "M2 and the badge tail extent");
+            Assert.That(extent.yMin, Is.GreaterThan(0f), "the tail ends above the footprint pivot");
 
             // One art pixel apart at least: the boxes share no pixel and no edge.
             Assert.That(second.xMin - first.xMax, Is.GreaterThanOrEqualTo(1f / 24f - 1e-5f));

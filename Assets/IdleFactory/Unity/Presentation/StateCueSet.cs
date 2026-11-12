@@ -102,6 +102,16 @@ namespace IdleFactory.Unity.Presentation
         public const int PivotYFromBottomPixels = 15;
 
         public const int BadgeSizePixels = 23;
+
+        /// <summary>
+        /// OD-12 (Art Bible 21.8 item 4, kit K4 of research R17): the badge keeps its bottom-centre anchor (59, 33) and gains a pointer tail of
+        /// <see cref="BadgeTailPixels"/> art px below the 23 px box, drawn in <c>ink_0</c> and the badge fill. The tail rows are 7, 5, 3 and 1 px wide and
+        /// centred on the anchor column, so the tail adds height and no width, and the 23 px box is never rescaled (legibility is unchanged).
+        /// </summary>
+        public const int BadgeTailPixels = 4;
+
+        /// <summary>The widest tail row, directly under the box (7, 5, 3, 1 px).</summary>
+        public const int BadgeTailBaseWidthPixels = 7;
         public const int MarkerSizePixels = 11;
 
         // Pixel indices, y down (Art Bible 3.2 "Cue geometry"). The pivot sits at pixel (40, 49 from the top).
@@ -133,6 +143,14 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The badge box (23 x 23 art px, bottom-centre anchored) relative to the footprint pivot, in world units.</summary>
         public static Rect BadgeBox() => new Rect(
             BadgeAnchorOffset.x - BadgeSizeWorld * 0.5f, BadgeAnchorOffset.y, BadgeSizeWorld, BadgeSizeWorld);
+
+        /// <summary>
+        /// The whole badge, box plus the pointer tail, relative to the footprint pivot: 23 px wide and 27 px tall (K4). The tail points down
+        /// at the badge's own plate; its tip is 4 art px below the anchor, so the extent stays inside the 54 px row band (measured by T517).
+        /// </summary>
+        public static Rect BadgeExtentBox() => new Rect(
+            BadgeAnchorOffset.x - BadgeSizeWorld * 0.5f, BadgeAnchorOffset.y - BadgeTailPixels / (float)ArtPixelsPerCell,
+            BadgeSizeWorld, BadgeSizeWorld + BadgeTailPixels / (float)ArtPixelsPerCell);
 
         /// <summary>A marker box (11 x 11 art px) around its centre, relative to the footprint pivot, in world units.</summary>
         public static Rect MarkerBox(int marker) =>
