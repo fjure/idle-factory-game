@@ -146,9 +146,9 @@ namespace IdleFactory.Tests.EditMode
             var columns = SlotGridLayout.ColumnsFor(row.WidthPoints, row.HeightPoints);
             var rect = UnobstructedRectPixels(row.Layout, row.WidthPoints, row.HeightPoints, row.Effective);
             var nMin = CameraScaleModel.MinScale(settings, row.Effective);
-            var nFit = Math.Min(CameraScaleModel.LargestFittingScale(rect, columns, density), MaxScale);
+            var nFit = Math.Min(CameraScaleModel.LargestFittingScale(rect, LatticeLayoutBuilder.ShippedForColumns(columns).Bounds, density), MaxScale);
             var levels = Math.Max(0, MaxScale - nMin + 1);
-            var margin = nFit >= 1 ? CameraScaleModel.MarginFraction(rect, columns, nFit, density) : 1f;
+            var margin = nFit >= 1 ? CameraScaleModel.MarginFraction(rect, LatticeLayoutBuilder.ShippedForColumns(columns).Bounds, nFit, density) : 1f;
             return new Result(row, density, nMin, nFit, levels, margin);
         }
 
@@ -315,7 +315,7 @@ namespace IdleFactory.Tests.EditMode
             var row = new Row("phone-landscape 640x360 oversized HUD", FactoryHudLayout.CompactLandscape, 1075, 605, 640f, 360f, 1.68f, 1.68f);
             var settings = new ArtScaleSettings(24, ReadablePoints, MaxScale);
             var oversized = new Rect(0f, 200f * 1.68f, 640f * 1.68f, (360f - 200f - 80f) * 1.68f);
-            var nFit = CameraScaleModel.LargestFittingScale(oversized, 4, 24);
+            var nFit = CameraScaleModel.LargestFittingScale(oversized, LatticeLayoutBuilder.ShippedForColumns(4).Bounds, 24);
             Assert.That(nFit, Is.LessThan(CameraScaleModel.MinScale(settings, row.Effective)));
         }
 

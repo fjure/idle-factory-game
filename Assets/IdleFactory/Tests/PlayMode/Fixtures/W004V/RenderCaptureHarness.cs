@@ -288,7 +288,7 @@ namespace IdleFactory.Tests.PlayMode
                 var grid = gridObject.AddComponent<SlotGridView>();
                 grid.Configure(sprites);
                 var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
-                grid.SetColumns(columns);
+                grid.SetLayout(LatticeLayoutBuilder.ShippedForColumns(columns));
                 presenter = new RunShellPresenter(session, commands, rig.Shell, grid,
                     id => catalog.Machines.TryGetValue(id, out var machine) ? machine.PresentationKey : string.Empty);
                 presenter.Invalidate();
@@ -414,7 +414,7 @@ namespace IdleFactory.Tests.PlayMode
                 var grid = gridObject.AddComponent<SlotGridView>();
                 grid.Configure(sprites);
                 var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
-                grid.SetColumns(columns);
+                grid.SetLayout(LatticeLayoutBuilder.ShippedForColumns(columns));
                 presenter = new RunShellPresenter(session, commands, rig.Shell, grid,
                     id => catalog.Machines.TryGetValue(id, out var machine) ? machine.PresentationKey : string.Empty);
                 presenter.Invalidate();

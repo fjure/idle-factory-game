@@ -38,11 +38,23 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: WorldBase
+    uniqueID: 1713051201
+    locked: 0
+  - name: WorldDeck
+    uniqueID: 1713051202
+    locked: 0
+  - name: WorldLinks
+    uniqueID: 1713051203
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
   - name: Overlay
     uniqueID: 1332175961
+    locked: 0
+  - name: Effects
+    uniqueID: 1713051204
     locked: 0
   m_RenderingLayers:
   - Default

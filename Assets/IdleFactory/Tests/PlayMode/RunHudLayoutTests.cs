@@ -409,9 +409,9 @@ namespace IdleFactory.Tests.PlayMode
             var pixelsPerPoint = rig.PixelsPerPoint;
 
             Assert.That(rig.Shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True);
-            controller.Fit(RunCameraFraming.Layout(camera, columns, pixelsPerPoint, area));
+            controller.Fit(RunCameraFraming.Layout(camera, LatticeLayoutBuilder.ShippedForColumns(columns), pixelsPerPoint, area));
             var range = framing.ConfigureLimits(pixelsPerPoint);
-            Assert.That(controller.Scale, Is.EqualTo(framing.FitAll(area, columns, pixelsPerPoint)), $"{screen}: the controller fits the scale the framing computes");
+            Assert.That(controller.Scale, Is.EqualTo(framing.FitAll(area, LatticeLayoutBuilder.ShippedForColumns(columns), pixelsPerPoint)), $"{screen}: the controller fits the scale the framing computes");
             Assert.That(controller.Scale, Is.GreaterThanOrEqualTo(range.Min), $"{screen}: fit-all is at least n_min (Art Bible 8.2, readable cell {zoom.readableCellPoints} pt)");
             Assert.That(controller.Scale, Is.LessThanOrEqualTo(range.Max));
             Assert.That(camera.orthographicSize, Is.EqualTo(camera.pixelHeight / (2f * controller.Scale * zoom.artPixelsPerCell)).Within(1e-4f), $"{screen}: rule 1");
@@ -443,7 +443,7 @@ namespace IdleFactory.Tests.PlayMode
             var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
             var pixelsPerPoint = rig.PixelsPerPoint;
             Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var closedArea), Is.True);
-            controller.Fit(RunCameraFraming.Layout(camera, columns, pixelsPerPoint, closedArea));
+            controller.Fit(RunCameraFraming.Layout(camera, LatticeLayoutBuilder.ShippedForColumns(columns), pixelsPerPoint, closedArea));
             var fitted = controller.Scale;
             var range = framing.ConfigureLimits(pixelsPerPoint);
 
@@ -452,7 +452,7 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(shell.OpenSlot(slot, SlotCondition.Empty), Is.True);
                 yield return ShellRig.Settle();
                 Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True);
-                var outcome = controller.OpenSheet(area, framing.FrameSlot(slot, columns));
+                var outcome = controller.OpenSheet(area, framing.FrameSlot(slot, LatticeLayoutBuilder.ShippedForColumns(columns)));
 
                 var (low, high) = ScreenRectOf(camera, SlotGridLayout.SlotRect(slot, columns));
                 Assert.That(low.x, Is.GreaterThanOrEqualTo(area.xMin - 1.5f), $"{screen}: slot {slot + 1} left of the world area above the sheet ({outcome})");
@@ -726,8 +726,8 @@ namespace IdleFactory.Tests.PlayMode
             // The slots fit-all frames into that area lie below the bars.
             var camera = CreateFramingCamera(out var controller);
             var columns = SlotGridLayout.ColumnsFor(screen.Width, screen.Height);
-            controller.Fit(RunCameraFraming.Layout(camera, columns, rig.PixelsPerPoint, covered));
-            var gridFits = CameraScaleModel.LargestFittingScale(covered, columns, new RunZoomSettings().artPixelsPerCell) >= 1;
+            controller.Fit(RunCameraFraming.Layout(camera, LatticeLayoutBuilder.ShippedForColumns(columns), rig.PixelsPerPoint, covered));
+            var gridFits = CameraScaleModel.LargestFittingScale(covered, LatticeLayoutBuilder.ShippedForColumns(columns).Bounds, new RunZoomSettings().artPixelsPerCell) >= 1;
             for (var slot = 0; gridFits && slot < SlotGridLayout.SlotCount; slot++)
             {
                 // Whenever the whole grid fits the area (n_fit >= 1), no slot reaches under a bar.
@@ -804,8 +804,8 @@ namespace IdleFactory.Tests.PlayMode
             var aboveEdge = veinPixels.yMax;
             var above = Rect.MinMaxRect(withoutVein.xMin, aboveEdge, withoutVein.xMax, withoutVein.yMax);
             var density = SlotGridLayout.Density;
-            var scaleAbove = above.height > 0f ? CameraScaleModel.LargestFittingScale(above, columns, density) : 0;
-            var scaleNow = CameraScaleModel.LargestFittingScale(rect, columns, density);
+            var scaleAbove = above.height > 0f ? CameraScaleModel.LargestFittingScale(above, LatticeLayoutBuilder.ShippedForColumns(columns).Bounds, density) : 0;
+            var scaleNow = CameraScaleModel.LargestFittingScale(rect, LatticeLayoutBuilder.ShippedForColumns(columns).Bounds, density);
             Assert.That(scaleNow, Is.GreaterThanOrEqualTo(scaleAbove), context + ": the corner-aware rectangle fits at least the scale of the full-width cut");
         }
 

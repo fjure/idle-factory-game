@@ -26,25 +26,44 @@ namespace IdleFactory.Unity.Presentation
     /// <summary>The screen facts a fit needs. All pixel values are physical pixels; the rectangle has a bottom-left origin.</summary>
     public readonly struct ScaleLayout
     {
-        public ScaleLayout(int pixelWidth, int pixelHeight, float pixelsPerPoint, Rect unobstructedRect, int columns)
+        /// <summary>
+        /// The screen facts plus the identity, content extent and fit margin of the world layout (<see cref="FactoryWorldLayout.LayoutId"/>,
+        /// <see cref="FactoryWorldLayout.Bounds"/>, <see cref="FactoryWorldLayout.Margin"/>). The extent excludes the margin; the model adds it.
+        /// </summary>
+        public ScaleLayout(int pixelWidth, int pixelHeight, float pixelsPerPoint, Rect unobstructedRect, FactoryWorldLayout layout)
+            : this(pixelWidth, pixelHeight, pixelsPerPoint, unobstructedRect,
+                  (layout ?? throw new ArgumentNullException(nameof(layout))).LayoutId, layout.Bounds, layout.Margin)
+        {
+        }
+
+        public ScaleLayout(int pixelWidth, int pixelHeight, float pixelsPerPoint, Rect unobstructedRect, string layoutId, Rect bounds, float margin = SlotGridLayout.HalfCellMargin)
         {
             PixelWidth = pixelWidth;
             PixelHeight = pixelHeight;
             PixelsPerPoint = pixelsPerPoint > 0f && !float.IsNaN(pixelsPerPoint) && !float.IsInfinity(pixelsPerPoint) ? pixelsPerPoint : 1f;
             UnobstructedRect = unobstructedRect;
-            Columns = Math.Max(1, columns);
+            LayoutId = layoutId ?? string.Empty;
+            Bounds = bounds;
+            Margin = margin;
         }
 
         public int PixelWidth { get; }
         public int PixelHeight { get; }
         public float PixelsPerPoint { get; }
         public Rect UnobstructedRect { get; }
-        public int Columns { get; }
+        /// <summary>The identity of the world layout (once-per-layout log, change detection).</summary>
+        public string LayoutId { get; }
+
+        /// <summary>The content extent (plates plus the badge band) that fit-all and the pan limits use; the margin is not included.</summary>
+        public Rect Bounds { get; }
+
+        /// <summary>The fit margin in world units added around <see cref="Bounds"/>.</summary>
+        public float Margin { get; }
 
         /// <summary>The identity of a layout for the once-per-layout log: the rectangle changes with a sheet, the screen does not.</summary>
-        internal string Key => $"{PixelWidth}x{PixelHeight}@{PixelsPerPoint:0.####}/{Columns}";
+        internal string Key => $"{PixelWidth}x{PixelHeight}@{PixelsPerPoint:0.####}/{LayoutId}";
 
-        internal ScaleLayout WithRect(Rect rect) => new ScaleLayout(PixelWidth, PixelHeight, PixelsPerPoint, rect, Columns);
+        internal ScaleLayout WithRect(Rect rect) => new ScaleLayout(PixelWidth, PixelHeight, PixelsPerPoint, rect, LayoutId, Bounds, Margin);
     }
 
     /// <summary>What the model did when a bottom sheet opened (rule 7).</summary>
@@ -179,20 +198,18 @@ namespace IdleFactory.Unity.Presentation
         }
 
         /// <summary>Rule 3: the largest n at which the factory extent plus a half-cell margin fits the rectangle (0 when not even n = 1 fits).</summary>
-        public static int LargestFittingScale(Rect rect, int columns, int artPixelsPerCell)
+        public static int LargestFittingScale(Rect rect, Rect bounds, int artPixelsPerCell, float margin = SlotGridLayout.HalfCellMargin)
         {
-            var extent = SlotGridLayout.Extent(columns);
-            var widthCells = extent.width + 2f * SlotGridLayout.HalfCellMargin;
-            var heightCells = extent.height + 2f * SlotGridLayout.HalfCellMargin;
+            var widthCells = bounds.width + 2f * margin;
+            var heightCells = bounds.height + 2f * margin;
             var byWidth = rect.width / (widthCells * artPixelsPerCell);
             var byHeight = rect.height / (heightCells * artPixelsPerCell);
             return (int)Math.Floor(Math.Min(byWidth, byHeight) + Epsilon);
         }
 
         /// <summary>The share of the rectangle not covered by the factory extent at a scale: the tighter of the two axes (0..1).</summary>
-        public static float MarginFraction(Rect rect, int columns, int scale, int artPixelsPerCell)
+        public static float MarginFraction(Rect rect, Rect extent, int scale, int artPixelsPerCell)
         {
-            var extent = SlotGridLayout.Extent(columns);
             var k = scale * artPixelsPerCell;
             var width = rect.width <= 0f ? 0f : 1f - extent.width * k / rect.width;
             var height = rect.height <= 0f ? 0f : 1f - extent.height * k / rect.height;
@@ -237,7 +254,7 @@ namespace IdleFactory.Unity.Presentation
             var previousScale = scale;
             var wasFitAll = scale <= fitScale;
             ApplyLayout(newLayout);
-            var largest = Math.Max(1, LargestFittingScale(newLayout.UnobstructedRect, newLayout.Columns, Settings.ArtPixelsPerCell));
+            var largest = Math.Max(1, LargestFittingScale(newLayout.UnobstructedRect, newLayout.Bounds, Settings.ArtPixelsPerCell, newLayout.Margin));
             var outOfRange = scale < lowerBound || scale > UpperBound;
             if (outOfRange || (wasFitAll && scale > largest))
             {
@@ -255,7 +272,7 @@ namespace IdleFactory.Unity.Presentation
             layout = newLayout;
             hasLayout = true;
             var minimum = MinScale(Settings, newLayout.PixelsPerPoint);
-            var largest = LargestFittingScale(newLayout.UnobstructedRect, newLayout.Columns, Settings.ArtPixelsPerCell);
+            var largest = LargestFittingScale(newLayout.UnobstructedRect, newLayout.Bounds, Settings.ArtPixelsPerCell, newLayout.Margin);
             if (largest >= minimum && minimum <= Settings.MaxScale)
             {
                 belowFloor = false;
@@ -298,7 +315,7 @@ namespace IdleFactory.Unity.Presentation
         private Vector2 CenteredPosition(int n)
         {
             var offset = (layout.UnobstructedRect.center - ScreenCentre) / K(n);
-            return SlotGridLayout.Extent(layout.Columns).center - offset;
+            return layout.Bounds.center - offset;
         }
 
         /// <summary>The world point under a screen pixel for a camera position and a (possibly fractional) scale.</summary>
@@ -313,11 +330,11 @@ namespace IdleFactory.Unity.Presentation
         {
             var rect = layout.UnobstructedRect;
             var relax = sheetOpen ? sheetRelaxWorld : 0f;
-            var extent = SlotGridLayout.Extent(layout.Columns);
+            var extent = layout.Bounds;
             var k = K(n);
             var rectCentreOffset = (rect.center - ScreenCentre) / k;
             var halfSpan = new Vector2(rect.width, rect.height) / (2f * k);
-            var margin = SlotGridLayout.HalfCellMargin + relax;
+            var margin = layout.Margin + relax;
             var centre = camera + rectCentreOffset;
             centre.x = ClampAxis(centre.x, extent.xMin - margin + halfSpan.x, extent.xMax + margin - halfSpan.x, extent.center.x);
             centre.y = ClampAxis(centre.y, extent.yMin - margin + halfSpan.y, extent.yMax + margin - halfSpan.y, extent.center.y);
@@ -540,7 +557,7 @@ namespace IdleFactory.Unity.Presentation
             {
                 // The layout may have changed while the sheet was open: the restored scale stays inside the allowed range and
                 // at or below the largest scale that fits (#520 follow-up 1).
-                var restoredLargest = Math.Max(1, LargestFittingScale(fullRect, layout.Columns, Settings.ArtPixelsPerCell));
+                var restoredLargest = Math.Max(1, LargestFittingScale(fullRect, layout.Bounds, Settings.ArtPixelsPerCell, layout.Margin));
                 var restored = Math.Min(Math.Max(sheetPriorScale, lowerBound), UpperBound);
                 restored = Math.Min(restored, Math.Max(restoredLargest, lowerBound));
                 if (restored == sheetPriorScale)
@@ -557,7 +574,7 @@ namespace IdleFactory.Unity.Presentation
                 return;
             }
 
-            var largest = Math.Max(1, LargestFittingScale(fullRect, layout.Columns, Settings.ArtPixelsPerCell));
+            var largest = Math.Max(1, LargestFittingScale(fullRect, layout.Bounds, Settings.ArtPixelsPerCell, layout.Margin));
             if (scale <= fitScale && scale > largest)
             {
                 scale = fitScale;
