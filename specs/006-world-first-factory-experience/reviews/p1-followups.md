@@ -16,3 +16,16 @@
 | P1-F10 | T517 | The K4 pointer tail is a mock. The production tail needs a brief and an Art Director pixel review through the cue-sprite pipeline (OD-12). | The P2 art briefs: the parent assigns it with T519–T524 |
 
 **Scope note**: T512 also changed `SlotGridView.cs` (`Columns`/`SetColumns` → `Layout`/`SetLayout`), which was outside its assigned edit list. The architect review accepted this as necessary and minimal, and it is recorded on Issue #686.
+
+## Batch-end gates (2026-11-12)
+
+| Gate | Result |
+|---|---|
+| All batch Issues merged and closed | #690, #691, #684, #685, #687, #688, #686 and #689 merged through `scripts/maqa-merge.ps1` after independent QA PASS (PRs #728–#735). |
+| Owner decisions | T518 recorded: OD-10 (Art Bible v1.1.0 signed off), OD-12 (A-03 anchor K4) and the trunk recolour. |
+| Unity suites on the last Issue commit | Edit Mode 2683/2683 and Play Mode 2616/2616 (T515 QA, `dff6be6`). |
+| Tagged Windows test-player suite | `scripts/test-unity.ps1 -StandaloneWindowsPlayer` on main `0f70490`, with leases `unity,emulator`: PlayerPlayMode 62/62 passed, exit 0. This is the first batch with runtime changes. |
+| after_implement hooks | Wiki ingest (S056 re-dated, S058 added), learn review, and wiki lint all ran. `check-after-implement-hooks.ps1` gives PASS 7/7, after a fresh `test-art-pipeline.ps1` run (276 passed) for T517's art-path change. |
+| Stale-worktree report | No P1 worktree is left. The 7 older entries (1 REMOVABLE, `docs/675-wiki-maintenance`; 6 REVIEW from F004 or other sessions) are unchanged and untouched. |
+| Play-Tester | **Not triggered; reason recorded.** P1 changes no production, contract, upgrade, unlock, reward, offline-progress or prestige rule, and no player-visible flow. T510, T511 and T512 are behaviour-preserving refactors with identical expected values. T513 only adds unused sorting layers. T514 adds a read value with no observer effect: the golden trace and the save bytes are byte-identical. T516, T517 and T518 are documents and measurement tooling. The Play-Tester runs on the first batch that changes the player-visible loop (P2 art integration or P3). |
+| UI/UX independent acceptance | Not required for this batch, because nothing changed visibly for the player. The T511 shell extraction was checked for identical focus and back behaviour by the QA with the UI/UX lens. |
