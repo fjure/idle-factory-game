@@ -100,6 +100,7 @@ namespace IdleFactory.Unity.UI
         private bool zoomOutShown;
         private OreVeinControl oreVein;
         private bool oreVeinWanted;
+        private FactoryWorldLayout worldLayout;
         private bool hasLastLayoutSize;
         private float lastLayoutWidth;
         private float lastLayoutHeight;
@@ -581,6 +582,22 @@ namespace IdleFactory.Unity.UI
         }
 
         /// <summary>
+        /// The world layout the unobstructed rectangle is cut for (set by the bootstrap). Unset, or when its orientation differs from the
+        /// panel's (a rotation frame), the F004 lattice for the panel's aspect is used, as before.
+        /// </summary>
+        public FactoryWorldLayout WorldLayout
+        {
+            get => worldLayout;
+            set => worldLayout = value;
+        }
+
+        private FactoryWorldLayout WorldLayoutFor(Rect panelBounds)
+        {
+            var orientation = LatticeLayoutBuilder.OrientationFor(panelBounds.width, panelBounds.height);
+            return worldLayout != null && worldLayout.Orientation == orientation ? worldLayout : LatticeLayoutBuilder.Shipped(orientation);
+        }
+
+        /// <summary>
         /// The screen-pixel rectangle (bottom-left origin) of the world area the shell leaves uncovered: the world column below the
         /// top strip and right of the zoom controls. A sheet or side panel is already outside the world column. Returns false
         /// until the layout has resolved.
@@ -631,9 +648,9 @@ namespace IdleFactory.Unity.UI
                     var above = vein.yMin > topPoint ? Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, Mathf.Min(bottomPoint, vein.yMin)) : Rect.zero;
                     var beside = vein.xMin > leftPoint ? Rect.MinMaxRect(leftPoint, topPoint, Mathf.Min(bounds.xMax, vein.xMin), bottomPoint) : Rect.zero;
                     var panelBounds = root.panel.visualTree.worldBound;
-                    var columns = SlotGridLayout.ColumnsFor(panelBounds.width, panelBounds.height);
-                    var aboveScale = FittingScale(above, columns, pixelsPerPoint);
-                    var besideScale = FittingScale(beside, columns, pixelsPerPoint);
+                    var layout = WorldLayoutFor(panelBounds);
+                    var aboveScale = FittingScale(above, layout, pixelsPerPoint);
+                    var besideScale = FittingScale(beside, layout, pixelsPerPoint);
                     if (above.width <= 0f && beside.width <= 0f)
                     {
                         // The vein lies outside the world area: nothing to cut.
@@ -662,7 +679,7 @@ namespace IdleFactory.Unity.UI
             return true;
         }
 
-        private static int FittingScale(Rect points, int columns, float pixelsPerPoint)
+        private static int FittingScale(Rect points, FactoryWorldLayout layout, float pixelsPerPoint)
         {
             if (points.width <= 0f || points.height <= 0f)
             {
@@ -670,7 +687,7 @@ namespace IdleFactory.Unity.UI
             }
 
             var pixels = new Rect(0f, 0f, points.width * pixelsPerPoint, points.height * pixelsPerPoint);
-            return CameraScaleModel.LargestFittingScale(pixels, columns, SlotGridLayout.Density);
+            return CameraScaleModel.LargestFittingScale(pixels, layout.Bounds, SlotGridLayout.Density, layout.Margin);
         }
 
         // ------------------------------------------------------------------------------------------------------

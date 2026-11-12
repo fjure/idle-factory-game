@@ -336,7 +336,7 @@ namespace IdleFactory.Tests.PlayMode
                 var controller = gameObject.AddComponent<FactoryCameraController>();
                 controller.Configure(camera, new ArtScaleSettings(24, 24, 6));
                 var columns = SlotGridLayout.ColumnsFor(width, height);
-                controller.Fit(new ScaleLayout(width, height, 1f, new Rect(0f, 0f, width, height), columns));
+                controller.Fit(new ScaleLayout(width, height, 1f, new Rect(0f, 0f, width, height), LatticeLayoutBuilder.ShippedForColumns(columns)));
                 while (controller.ZoomInState == ZoomButtonState.Enabled)
                 {
                     controller.ZoomFromVisibleControl(1);
@@ -382,7 +382,7 @@ namespace IdleFactory.Tests.PlayMode
                 gameObject.transform.position = new Vector3(0f, 0f, -10f);
                 var controller = gameObject.AddComponent<FactoryCameraController>();
                 controller.Configure(camera, new ArtScaleSettings(24, 24, 6));
-                controller.Fit(new ScaleLayout(640, 480, 1f, new Rect(0f, 0f, 640, 480), 3));
+                controller.Fit(new ScaleLayout(640, 480, 1f, new Rect(0f, 0f, 640, 480), LatticeLayoutBuilder.ShippedForColumns(3)));
                 while (controller.ZoomInState == ZoomButtonState.Enabled)
                 {
                     controller.ZoomFromVisibleControl(1);
@@ -418,7 +418,7 @@ namespace IdleFactory.Tests.PlayMode
                 gameObject.transform.position = new Vector3(0f, 0f, -10f);
                 var controller = gameObject.AddComponent<FactoryCameraController>();
                 controller.Configure(camera, new ArtScaleSettings(24, 24, 6));
-                controller.Fit(new ScaleLayout(1080, 1920, 2f, new Rect(0f, 0f, 1080, 1920), 3));
+                controller.Fit(new ScaleLayout(1080, 1920, 2f, new Rect(0f, 0f, 1080, 1920), LatticeLayoutBuilder.ShippedForColumns(3)));
                 var anchor = new Vector2(300f, 700f);
                 var start = controller.Scale;
                 Assert.That(controller.Model.LowerBound, Is.EqualTo(2), "1080 px at 2 px/pt: n_min = ceil(24 * 2 / 24)");
@@ -553,7 +553,7 @@ namespace IdleFactory.Tests.PlayMode
             gameObject.transform.position = new Vector3(0f, 0f, -10f);
             var controller = gameObject.AddComponent<FactoryCameraController>();
             controller.Configure(camera, settings);
-            controller.Fit(new ScaleLayout(width, height, pixelsPerPoint, new Rect(0f, 0f, width, height), 3));
+            controller.Fit(new ScaleLayout(width, height, pixelsPerPoint, new Rect(0f, 0f, width, height), LatticeLayoutBuilder.ShippedForColumns(3)));
             return controller;
         }
 
@@ -699,7 +699,7 @@ namespace IdleFactory.Tests.PlayMode
                 controller.HandleNavigationIntent(new NavigationIntent(NavigationIntentKind.Zoom, new Vector2(300f, 700f), Vector2.zero, 0.6f, true));
                 Assert.That(controller.PinchPreviewActive, Is.True);
 
-                controller.UpdateLayout(new ScaleLayout(1080, 1920, 2f, new Rect(0f, 100f, 1080, 1700), 3));
+                controller.UpdateLayout(new ScaleLayout(1080, 1920, 2f, new Rect(0f, 100f, 1080, 1700), LatticeLayoutBuilder.ShippedForColumns(3)));
 
                 Assert.That(controller.PinchPreviewActive, Is.False);
                 Assert.That(controller.Scale, Is.EqualTo(scale), "the scale still fits, so it stays");
@@ -762,7 +762,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
             var view = host.AddComponent<SlotGridView>();
             view.Configure(catalog);
-            view.SetColumns(columns);
+            view.SetLayout(LatticeLayoutBuilder.ShippedForColumns(columns));
             view.Render(Enumerable.Range(0, SlotGridLayout.SlotCount)
                 .Select(i => new SlotVisual(i, SlotCondition.Empty, SlotGridModel.SlotEmptyKey, null, null, null, false, false, false, 0, "Slot " + (i + 1)))
                 .ToArray());

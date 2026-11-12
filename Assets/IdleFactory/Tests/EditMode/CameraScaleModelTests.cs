@@ -16,7 +16,7 @@ namespace IdleFactory.Tests.EditMode
         private static readonly int[] Densities = { 16, 24, 32 };
 
         private static ScaleLayout Layout(int width, int height, float pixelsPerPoint, int columns = 3, Rect? rect = null) =>
-            new ScaleLayout(width, height, pixelsPerPoint, rect ?? new Rect(0f, 0f, width, height), columns);
+            new ScaleLayout(width, height, pixelsPerPoint, rect ?? new Rect(0f, 0f, width, height), LatticeLayoutBuilder.ShippedForColumns(columns));
 
         private static CameraScaleModel Fitted(int width, int height, float pixelsPerPoint, int density = 24, int max = 6, int columns = 3, Rect? rect = null, Action<string> log = null)
         {
@@ -151,7 +151,7 @@ namespace IdleFactory.Tests.EditMode
             {
                 var rect = new Rect(80f, 120f, 920f, 1500f);
                 var model = Fitted(1080, 1920, ppp, rect: rect);
-                var largest = CameraScaleModel.LargestFittingScale(rect, 3, 24);
+                var largest = CameraScaleModel.LargestFittingScale(rect, LatticeLayoutBuilder.ShippedForColumns(3).Bounds, 24);
                 Assert.That(model.FitScale, Is.EqualTo(Math.Min(largest, 6)));
                 Assert.That(model.Scale, Is.EqualTo(model.FitScale));
                 Assert.That(model.BelowFloor, Is.False);
@@ -159,7 +159,7 @@ namespace IdleFactory.Tests.EditMode
                 // One more level would not fit (unless capped by maxScale).
                 if (model.FitScale < 6)
                 {
-                    Assert.That(CameraScaleModel.LargestFittingScale(rect, 3, 24), Is.EqualTo(model.FitScale));
+                    Assert.That(CameraScaleModel.LargestFittingScale(rect, LatticeLayoutBuilder.ShippedForColumns(3).Bounds, 24), Is.EqualTo(model.FitScale));
                 }
 
                 var extent = SlotGridLayout.Extent(3);
@@ -238,7 +238,7 @@ namespace IdleFactory.Tests.EditMode
                         Assert.That(model.Scale, Is.GreaterThanOrEqualTo(CameraScaleModel.MinScale(model.Settings, ppp)), label);
                     }
 
-                    if (CameraScaleModel.LargestFittingScale(rect, columns, 24) >= 1)
+                    if (CameraScaleModel.LargestFittingScale(rect, LatticeLayoutBuilder.ShippedForColumns(columns).Bounds, 24) >= 1)
                     {
                         var extent = SlotGridLayout.Extent(columns);
                         var low = ScreenOf(model, extent.min);
@@ -370,7 +370,7 @@ namespace IdleFactory.Tests.EditMode
 
             // A window too small for the current scale: re-fit.
             Assert.That(model.OnLayoutChanged(Layout(700, 700, 1f, 4)), Is.True);
-            Assert.That(model.Scale, Is.EqualTo(CameraScaleModel.LargestFittingScale(new Rect(0f, 0f, 700f, 700f), 4, 24)));
+            Assert.That(model.Scale, Is.EqualTo(CameraScaleModel.LargestFittingScale(new Rect(0f, 0f, 700f, 700f), LatticeLayoutBuilder.ShippedForColumns(4).Bounds, 24)));
         }
 
         [Test]
@@ -483,7 +483,7 @@ namespace IdleFactory.Tests.EditMode
             model.OpenSheet(new Rect(0f, 700f, 1000f, 300f), SlotGridLayout.SlotRect(0, 4));
             var small = new Rect(0f, 0f, 600f, 600f);
             model.CloseSheet(small);
-            var largest = CameraScaleModel.LargestFittingScale(small, 4, 24);
+            var largest = CameraScaleModel.LargestFittingScale(small, LatticeLayoutBuilder.ShippedForColumns(4).Bounds, 24);
             Assert.That(model.Scale, Is.LessThanOrEqualTo(largest), "the restored scale fits the new rectangle");
             Assert.That(model.Scale, Is.InRange(model.LowerBound, model.UpperBound));
             Assert.That(CameraScaleModel.IsOnPixelGrid(model.Position.x, 1000, model.Scale, 24), Is.True);

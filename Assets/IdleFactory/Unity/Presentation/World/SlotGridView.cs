@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 namespace IdleFactory.Unity.Presentation
 {
     /// <summary>
-    /// Draws the 12 slots. Per slot there is one Sorting Group for the body art (plate, machine, accent; sorted by slot row, R04)
+    /// Draws the slots of the world layout (12 today). Per slot there is one Sorting Group for the body art (plate, machine, accent; sorted by slot row, R04)
     /// and, outside that group, the overlays (selection frame, lock label, markers, state badge) on the dedicated
     /// <see cref="OverlaySortingLayer"/> above all machine art, with a row-based <c>sortingOrder</c>. At most 8 renderers per slot
     /// (Art Bible section 6.1 plus the accent and the lock label); the view owns no gameplay state: <see cref="Render"/> takes the pure
@@ -42,7 +42,7 @@ namespace IdleFactory.Unity.Presentation
         private StateCueSet cueSet = StateCueSet.Default;
         private SlotRenderers[] slots;
         private SlotVisual[] visuals = Array.Empty<SlotVisual>();
-        private int columns = 3;
+        private FactoryWorldLayout layout = LatticeLayoutBuilder.Shipped(WorldOrientation.Portrait);
         private float pixelsPerCell = 64f;
         private long clockMilliseconds;
         private bool clockFrozen;
@@ -56,7 +56,9 @@ namespace IdleFactory.Unity.Presentation
         private bool floorApplied;
         private int floorEnabled;
 
-        public int Columns => columns;
+        /// <summary>The world layout that places every slot, its hit test and its sorting rows (the F004 portrait lattice until <see cref="SetLayout"/>).</summary>
+        public FactoryWorldLayout Layout => layout;
+
         /// <summary>The live visual buffer: the next <see cref="Render"/> overwrites it in place, so copy it to keep a snapshot.</summary>
         public IReadOnlyList<SlotVisual> Visuals => visuals;
 
@@ -94,7 +96,7 @@ namespace IdleFactory.Unity.Presentation
             }
         }
 
-        /// <summary>The enabled accent renderers (<c>F004-ACCENT-*</c>); at most one per running occupied slot, so at most 12.</summary>
+        /// <summary>The enabled accent renderers (<c>F004-ACCENT-*</c>); at most one per running occupied slot.</summary>
         public int ActiveAccentCount
         {
             get
@@ -114,12 +116,20 @@ namespace IdleFactory.Unity.Presentation
             }
         }
 
-        public void Configure(PresentationSpriteCatalog catalog, int slotCount = SlotGridLayout.SlotCount) => Configure(catalog, null, slotCount);
+        /// <summary>Configures the view; <paramref name="slotCount"/> below 0 (the default) means one slot per location of the layout.</summary>
+        public void Configure(PresentationSpriteCatalog catalog, int slotCount = -1) => Configure(catalog, null, slotCount);
 
-        public void Configure(PresentationSpriteCatalog catalog, StateCueSet stateCues, int slotCount = SlotGridLayout.SlotCount)
+        public void Configure(PresentationSpriteCatalog catalog, StateCueSet stateCues, int slotCount = -1)
         {
             sprites = catalog ?? throw new ArgumentNullException(nameof(catalog));
             cueSet = stateCues ?? StateCueSet.Default;
+            BuildSlots(slotCount < 0 ? layout.LocationCount : slotCount);
+            Reposition();
+            ConfigureFloor();
+        }
+
+        private void BuildSlots(int slotCount)
+        {
             var overlayLayerId = SortingLayer.NameToID(OverlaySortingLayer);
             if (slots != null)
             {
@@ -134,9 +144,6 @@ namespace IdleFactory.Unity.Presentation
             {
                 slots[i] = new SlotRenderers(transform, i, overlayLayerId);
             }
-
-            Reposition();
-            ConfigureFloor();
         }
 
         /// <summary>True when the catalog resolved <see cref="PresentationSpriteCatalog.FloorTileKey"/> to a sprite; otherwise the view draws no floor.</summary>
@@ -269,15 +276,18 @@ namespace IdleFactory.Unity.Presentation
             floorEnabled = needed;
         }
 
-        /// <summary>Sets the column count (3 portrait, 4 landscape) and moves every slot.</summary>
-        public void SetColumns(int newColumns)
+        /// <summary>
+        /// Sets the world layout and moves every slot. A layout with a different number of locations rebuilds the slot renderers (the next
+        /// <see cref="Render"/> shows them); the same count only repositions.
+        /// </summary>
+        public void SetLayout(FactoryWorldLayout newLayout)
         {
-            if (newColumns != 3 && newColumns != 4)
+            layout = newLayout ?? throw new ArgumentNullException(nameof(newLayout));
+            if (slots != null && sprites != null && slots.Length != layout.LocationCount)
             {
-                throw new ArgumentOutOfRangeException(nameof(newColumns));
+                BuildSlots(layout.LocationCount);
             }
 
-            columns = newColumns;
             Reposition();
         }
 
@@ -345,17 +355,23 @@ namespace IdleFactory.Unity.Presentation
 
         public bool TryHitSlot(Vector2 world, out int slotIndex)
         {
-            slotIndex = SlotGridLayout.HitTest(world, columns);
-            return slotIndex >= 0;
+            if (layout.TryHit(world, out var id))
+            {
+                slotIndex = id.Value;
+                return true;
+            }
+
+            slotIndex = -1;
+            return false;
         }
 
-        public Rect WorldRectOf(int slotIndex) => SlotGridLayout.SlotRect(slotIndex, columns);
+        public Rect WorldRectOf(int slotIndex) => layout.FootprintOf(new BuildingLocationId(slotIndex));
 
         /// <summary>The footprint pivot of a slot in world units: the origin of every overlay anchor.</summary>
-        public Vector2 FootprintPivotOf(int slotIndex) => SlotGridLayout.PivotOf(slotIndex, columns);
+        public Vector2 FootprintPivotOf(int slotIndex) => layout.AnchorOf(new BuildingLocationId(slotIndex));
 
         /// <summary>The sorting row of a slot: 0 for the top (back) row, increasing toward the front.</summary>
-        public int RowOf(int slotIndex) => SlotGridLayout.RowOf(slotIndex, columns);
+        public int RowOf(int slotIndex) => layout.SortKeyOf(new BuildingLocationId(slotIndex));
 
         /// <summary>The renderers of one slot, for tests and diagnostics.</summary>
         public IReadOnlyList<SpriteRenderer> RenderersOf(int slotIndex) => slots == null || slotIndex < 0 || slotIndex >= slots.Length
@@ -409,9 +425,10 @@ namespace IdleFactory.Unity.Presentation
                 return;
             }
 
-            for (var i = 0; i < slots.Length; i++)
+            for (var i = 0; i < slots.Length && i < layout.LocationCount; i++)
             {
-                slots[i].SetOrigin(SlotGridLayout.PivotOf(i, columns), SlotGridLayout.RowOf(i, columns));
+                var id = new BuildingLocationId(i);
+                slots[i].SetOrigin(layout.AnchorOf(id), layout.SortKeyOf(id));
             }
         }
 

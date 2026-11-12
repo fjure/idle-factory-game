@@ -203,7 +203,7 @@ namespace IdleFactory.Tests.PlayMode
             // T427: fit-all is a whole-number scale. At 1 px/pt (the table's points) the grid fits at n = floor(ppc / D), at least n_min = 1.
             var framing = new RunCameraFraming(zoom);
             var area = new Rect(0f, 0f, width, height);
-            var fit = framing.FitAll(area, columns, 1f);
+            var fit = framing.FitAll(area, LatticeLayoutBuilder.ShippedForColumns(columns), 1f);
             Assert.That(fit, Is.EqualTo(Mathf.Clamp(Mathf.FloorToInt(ppc / zoom.artPixelsPerCell + 1e-4f), 1, zoom.maxScale)));
             Assert.That(fit, Is.GreaterThanOrEqualTo(framing.ConfigureLimits(1f).Min), "n_fit >= n_min for the table's screens");
         }

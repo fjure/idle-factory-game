@@ -139,12 +139,12 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(shell.TryGetUnobstructedScreenRect(device.Height, out var closed), Is.True);
             var range = framing.ConfigureLimits(pixelsPerPoint);
-            var nFit = framing.FitAll(closed, columns, pixelsPerPoint);
-            var largest = CameraScaleModel.LargestFittingScale(closed, columns, 24);
+            var nFit = framing.FitAll(closed, LatticeLayoutBuilder.ShippedForColumns(columns), pixelsPerPoint);
+            var largest = CameraScaleModel.LargestFittingScale(closed, LatticeLayoutBuilder.ShippedForColumns(columns).Bounds, 24);
             TestContext.Out.WriteLine($"{device}: {pixelsPerPoint:0.####} px/pt, rect {closed.width:0}x{closed.height:0} px, n_min {range.Min}, n_fit {nFit}, largest fitting {largest}, levels {range.LevelCount}");
             // T463: the rectangle is corner-aware for the ore vein, so the rule holds with the vein and the hint bar on every device.
             Assert.That(largest, Is.GreaterThanOrEqualTo(range.Min), $"{device}: n_fit >= n_min with the real HUD (overlays {overlays})");
-            controller.Fit(RunCameraFraming.Layout(camera, columns, pixelsPerPoint, closed));
+            controller.Fit(RunCameraFraming.Layout(camera, LatticeLayoutBuilder.ShippedForColumns(columns), pixelsPerPoint, closed));
             Assert.That(controller.Model.BelowFloor, Is.False, $"{device}: no runtime degrade");
             Assert.That(controller.Scale, Is.EqualTo(nFit));
 
@@ -154,7 +154,7 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(shell.OpenSlot(slot, SlotCondition.Empty), Is.True);
                 yield return ShellRig.Settle();
                 Assert.That(shell.TryGetUnobstructedScreenRect(device.Height, out var band), Is.True);
-                var outcome = controller.OpenSheet(band, framing.FrameSlot(slot, columns));
+                var outcome = controller.OpenSheet(band, framing.FrameSlot(slot, LatticeLayoutBuilder.ShippedForColumns(columns)));
                 Assert.That(controller.Scale, Is.GreaterThanOrEqualTo(range.Min), $"{device}: slot {slot + 1} {outcome}");
                 var (low, high) = ScreenRectOf(camera, SlotGridLayout.SlotRect(slot, columns));
                 if (outcome == SheetOutcome.TopAligned)
@@ -192,7 +192,7 @@ namespace IdleFactory.Tests.PlayMode
             var columns = SlotGridLayout.ColumnsFor(device.Width / pixelsPerPoint, device.Height / pixelsPerPoint);
             Assert.That(rig.Shell.TryGetUnobstructedScreenRect(device.Height, out var rect), Is.True);
             var range = framing.ConfigureLimits(pixelsPerPoint);
-            var largest = CameraScaleModel.LargestFittingScale(rect, columns, zoom.artPixelsPerCell);
+            var largest = CameraScaleModel.LargestFittingScale(rect, LatticeLayoutBuilder.ShippedForColumns(columns).Bounds, zoom.artPixelsPerCell);
             TestContext.Out.WriteLine($"1280x720 phone overlays={overlays}: rect {rect.width:0}x{rect.height:0} px, n_min {range.Min}, largest fitting {largest}");
             Assert.That(range.Min, Is.EqualTo(2), "n_min with the 1 % tolerance");
             Assert.That(largest, Is.GreaterThanOrEqualTo(range.Min), $"n_fit >= n_min with the real shell at D = 24 (overlays {overlays})");
@@ -220,12 +220,12 @@ namespace IdleFactory.Tests.PlayMode
             var columns = SlotGridLayout.ColumnsFor(screen.Width / pixelsPerPoint, screen.Height / pixelsPerPoint);
             Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var rect), Is.True);
             var range = framing.ConfigureLimits(pixelsPerPoint);
-            var largest = CameraScaleModel.LargestFittingScale(rect, columns, 24);
+            var largest = CameraScaleModel.LargestFittingScale(rect, LatticeLayoutBuilder.ShippedForColumns(columns).Bounds, 24);
             Assert.That(largest, Is.LessThan(range.Min), "the rule n_fit >= n_min fails with an oversized HUD instead of passing silently");
 
             var log = new List<string>();
             var camera = CreateCamera(out var controller, log);
-            controller.Fit(RunCameraFraming.Layout(camera, columns, pixelsPerPoint, rect));
+            controller.Fit(RunCameraFraming.Layout(camera, LatticeLayoutBuilder.ShippedForColumns(columns), pixelsPerPoint, rect));
             Assert.That(controller.Model.BelowFloor, Is.True);
             Assert.That(controller.Scale, Is.GreaterThanOrEqualTo(1), "never a fractional or zero scale");
             Assert.That(log.Count, Is.EqualTo(1));

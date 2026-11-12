@@ -133,7 +133,7 @@ namespace IdleFactory.Tests.PlayMode
             owned.Add(host);
             var view = host.AddComponent<SlotGridView>();
             view.Configure(Catalog());
-            view.SetColumns(3);
+            view.SetLayout(LatticeLayoutBuilder.ShippedForColumns(3));
             view.SetProjectedPixelsPerCell(48f);
             return view;
         }
@@ -326,7 +326,7 @@ namespace IdleFactory.Tests.PlayMode
             camera.enabled = false;
             var controller = cameraObject.AddComponent<FactoryCameraController>();
             controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
-            controller.Fit(new ScaleLayout(1080, 1920, 3f, new Rect(0f, 0f, 1080f, 1700f), 3));
+            controller.Fit(new ScaleLayout(1080, 1920, 3f, new Rect(0f, 0f, 1080f, 1700f), LatticeLayoutBuilder.ShippedForColumns(3)));
             var view = NewView();
             view.Render(Frame(0));
 
