@@ -1,0 +1,229 @@
+{
+  "entries": [
+    {
+      "appliesTo": [],
+      "assetId": "f006-link-branch",
+      "atlas": "world",
+      "canvas": [
+        70,
+        54
+      ],
+      "family": "F006-LINK",
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-link-branch/f006-link-branch_00.png",
+          "sha256": "3eb3a5b73045dd5c5735fe1a334667ea8c48a64af661e67fa318bc258302b206"
+        }
+      ],
+      "kind": "lane",
+      "lattice": {
+        "branchRows": [
+          13,
+          19
+        ],
+        "machinePivotRowFromTop": 39,
+        "rule": "tile centred on the cell pivot; a = 39 - row above the machine pivot",
+        "spineColumns": [
+          34,
+          36
+        ],
+        "trunkRows": [
+          8,
+          12
+        ]
+      },
+      "loop": false,
+      "note": "branch to an occupied location; trunk piece included",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotConvention": "px from the left and from the bottom of the canvas",
+      "pivotPx": [
+        35,
+        27
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "stillFrame": 0
+    },
+    {
+      "appliesTo": [],
+      "assetId": "f006-link-branch-active",
+      "atlas": "world",
+      "canvas": [
+        70,
+        54
+      ],
+      "family": "F006-LINK",
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-link-branch-active/f006-link-branch-active_00.png",
+          "sha256": "f8289f902bb7af7aafdab4658a781a41f9f2e69519d40ddc00aae5171f247bed"
+        }
+      ],
+      "kind": "lane",
+      "lattice": {
+        "branchRows": [
+          13,
+          19
+        ],
+        "machinePivotRowFromTop": 39,
+        "rule": "tile centred on the cell pivot; a = 39 - row above the machine pivot",
+        "spineColumns": [
+          34,
+          36
+        ],
+        "trunkRows": [
+          8,
+          12
+        ]
+      },
+      "loop": false,
+      "note": "static running tile, the reduced-motion state of the pip (copper_2 dashes)",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotConvention": "px from the left and from the bottom of the canvas",
+      "pivotPx": [
+        35,
+        27
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "stillFrame": 0
+    },
+    {
+      "appliesTo": [],
+      "assetId": "f006-link-junction",
+      "atlas": "world",
+      "canvas": [
+        70,
+        54
+      ],
+      "family": "F006-LINK",
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-link-junction/f006-link-junction_00.png",
+          "sha256": "ea74b930462114b450bc351dffa48054310a4e8a5ec99631a557cc1227baac9c"
+        }
+      ],
+      "kind": "lane",
+      "lattice": {
+        "branchRows": [
+          13,
+          19
+        ],
+        "machinePivotRowFromTop": 39,
+        "rule": "tile centred on the cell pivot; a = 39 - row above the machine pivot",
+        "spineColumns": [
+          34,
+          36
+        ],
+        "trunkRows": [
+          8,
+          12
+        ]
+      },
+      "loop": false,
+      "note": "trunk end at the depot; the spine column is the depot meeting line; only set R tones",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotConvention": "px from the left and from the bottom of the canvas",
+      "pivotPx": [
+        35,
+        27
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "stillFrame": 0
+    },
+    {
+      "appliesTo": [],
+      "assetId": "f006-link-trunk",
+      "atlas": "world",
+      "canvas": [
+        70,
+        54
+      ],
+      "family": "F006-LINK",
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-link-trunk/f006-link-trunk_00.png",
+          "sha256": "d94263e2258dbd8011eea5b669d2d86def3093db41a79c6e5e2b617b5f0668d2"
+        }
+      ],
+      "kind": "lane",
+      "lattice": {
+        "branchRows": [
+          13,
+          19
+        ],
+        "machinePivotRowFromTop": 39,
+        "rule": "tile centred on the cell pivot; a = 39 - row above the machine pivot",
+        "spineColumns": [
+          34,
+          36
+        ],
+        "trunkRows": [
+          8,
+          12
+        ]
+      },
+      "loop": false,
+      "note": "static row trunk; period 10 px horizontally so tiles join; only set R tones",
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotConvention": "px from the left and from the bottom of the canvas",
+      "pivotPx": [
+        35,
+        27
+      ],
+      "ppu": 24,
+      "route": "scripted",
+      "stillFrame": 0
+    }
+  ],
+  "schemaVersion": 1
+}

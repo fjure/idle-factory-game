@@ -1,0 +1,109 @@
+{
+  "artBibleVersion": "F004-PAB v1.1.0",
+  "assetId": "f006-fx-steam",
+  "briefVersion": "F006-LINK-FX-AB v1.0 (specs/006-world-first-factory-experience, task T522; Art Bible 21.2 and 21.4)",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "6faf17f9b0501b85cb86b02cfa14a03ac4858bf5785cf75590ab83fa7cbdf480",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f006/fx/f006-fx-steam/f006-fx-steam_00.png",
+      "pixelHash": "f5274b744fb7f9fe23391e276deafd8259f0476a0e4249e0736e5e405f48e128",
+      "sha256": "f556d23ccb303af5494731c1a325432635e9bfd5a07d8a10af6c76cfb4dbaf6d"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-steam/f006-fx-steam_01.png",
+      "pixelHash": "c6eef54e1309848010bd49017410c15dcfbba96ab5115ace3c8945c37c6f2e6c",
+      "sha256": "7cdbdb55f325fcc6a4dd479933b2a758b4191ccfc01f6ccac30cc15a4a0bdeea"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-steam/f006-fx-steam_02.png",
+      "pixelHash": "2b32cc406730f5ae42eb74d144f594aa4b473fde6a32fadbc13182320a523c8d",
+      "sha256": "f7894d70861e53eaf42e4004840d36910a1b83800f69b1a47b7eba280d085b93"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-steam/f006-fx-steam_03.png",
+      "pixelHash": "15caafc819cc20e36e13bf8046a79cd2f4204f18007bca5b7c754d21b7b4bbc6",
+      "sha256": "1691b748b4b2da7b7b7d2ce04463134f36fe07c097c6f155b17de9e4b7697473"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-steam/f006-fx-steam_04.png",
+      "pixelHash": "771045365ad475866703cebf215794376532caf287646987bed081a6b074a280",
+      "sha256": "880585b06c0e171f70a556b65499c2c820e9e4eca092854ff12542885a1999d2"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-steam/f006-fx-steam_05.png",
+      "pixelHash": "7f864b0ac147dea2608b25e59735b8c0e7151e545288faa9a754ca45219d0969",
+      "sha256": "1b04b9b03eae15bf8f4689563c6fb86f8eb61201c2317840ad2d426df82e65ad"
+    }
+  ],
+  "parameters": {
+    "allowedIds": [
+      "ink_0",
+      "steel_2",
+      "steel_3"
+    ],
+    "brief": "F006-LINK-FX-AB v1.0 (specs/006-world-first-factory-experience, task T522; Art Bible 21.2 and 21.4)",
+    "canvas": [
+      24,
+      32
+    ],
+    "family": "fx",
+    "fps": 8,
+    "frames": 6,
+    "loop": true,
+    "randomness": "none",
+    "role": "steam",
+    "scriptVersion": "t522-1",
+    "seed": null
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "4a5bc97dd035841262b345a38e3ee6dfbd9a8a04045f134bbd48500f2d0f7bc3",
+    "steps": [
+      "exact-pixel drawing from palette ids (no antialiasing, alpha 0/255)",
+      "1 px ink_0 outline where the sprite has one",
+      "no quantisation needed (exact ids)",
+      "allowed-id, canvas, alpha, frame-count, flash and keep-out checks"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route, Art Director lens), MAQA T522 (#695)",
+  "reviewedBy": {},
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "tools/art-pipeline/art_pipeline/checks.py",
+      "sha256": "748b6590afd0ed196abd1cc7483d6f3f95729ecf8cd25d0663d94e63ac70c5ff"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/checks_v1.py",
+      "sha256": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/f006/link_fx.py",
+      "sha256": "42ed6d2e43a3664ac1b396abd4ff19c9931f98437f5105c4221f48c6d605a85b"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+      "sha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art_pipeline.f006.link_fx",
+      "version": "t522-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "pinned in tools/art-pipeline/pyproject.toml"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}

@@ -1,0 +1,940 @@
+{
+  "assets": {
+    "f006-fx-branch-pip": [
+      {
+        "details": {
+          "allowed": [
+            "copper_2",
+            "ink_0"
+          ],
+          "colourCount": 2,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "copper_2",
+            "ink_0"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            14,
+            10
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "backdrop": "floor_0",
+          "limit": 3,
+          "maxFlashesPerSecondByFps": {
+            "10": 0,
+            "12": 0,
+            "6": 0,
+            "8": 0
+          },
+          "overlapOnly": {
+            "10": 0,
+            "12": 0,
+            "6": 0,
+            "8": 0
+          },
+          "target": 2,
+          "transitions": [
+            0.005123,
+            0.005123,
+            0.0,
+            0.005123,
+            0.005123,
+            0.0
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "applies": false,
+          "note": "not anchored to a machine (21.5)"
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f006-fx-build-dust": [
+      {
+        "details": {
+          "allowed": [
+            "floor_1",
+            "ink_0",
+            "steel_1",
+            "steel_2"
+          ],
+          "colourCount": 3,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "floor_1",
+            "steel_1",
+            "steel_2"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            48,
+            28
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "backdrop": "floor_0",
+          "limit": 3,
+          "maxFlashesPerSecondByFps": {
+            "10": 0,
+            "12": 0,
+            "6": 0,
+            "8": 0
+          },
+          "overlapOnly": {
+            "10": 2,
+            "12": 2,
+            "6": 1,
+            "8": 2
+          },
+          "target": 2,
+          "transitions": [
+            0.022607,
+            0.022496,
+            0.010596,
+            0.00693,
+            0.00085,
+            0.006636
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "applies": false,
+          "note": "not anchored to a machine (21.5)"
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f006-fx-completion-highlight": [
+      {
+        "details": {
+          "allowed": [
+            "ink_0",
+            "steel_3"
+          ],
+          "colourCount": 2,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "ink_0",
+            "steel_3"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            68,
+            36
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "applies": false,
+          "note": "not anchored to a machine (21.5)"
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f006-fx-completion-pop": [
+      {
+        "details": {
+          "allowed": [
+            "ink_0",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourCount": 1,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "steel_2"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            68,
+            36
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "backdrop": "floor_0",
+          "limit": 3,
+          "maxFlashesPerSecondByFps": {
+            "10": 0,
+            "12": 0,
+            "6": 0,
+            "8": 0
+          },
+          "overlapOnly": {
+            "10": 0,
+            "12": 0,
+            "6": 0,
+            "8": 0
+          },
+          "target": 2,
+          "transitions": [
+            0.005136,
+            0.008774,
+            0.012412,
+            0.01498,
+            0.016264,
+            0.010058
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "anchor": [
+            6,
+            28
+          ],
+          "badFrames": [],
+          "cols": [
+            15,
+            71
+          ],
+          "rows": [
+            0,
+            33
+          ]
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f006-fx-spark": [
+      {
+        "details": {
+          "allowed": [
+            "copper_1",
+            "copper_2",
+            "ink_0",
+            "steel_3"
+          ],
+          "colourCount": 4,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "copper_1",
+            "copper_2",
+            "ink_0",
+            "steel_3"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            20,
+            16
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "backdrop": "floor_0",
+          "limit": 3,
+          "maxFlashesPerSecondByFps": {
+            "10": 0,
+            "6": 0,
+            "8": 0
+          },
+          "overlapOnly": {
+            "10": 4,
+            "6": 2,
+            "8": 4
+          },
+          "target": 2,
+          "transitions": [
+            0.007424,
+            0.029797,
+            0.029715,
+            0.010298,
+            0.005913,
+            0.010245
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "anchor": [
+            58,
+            36
+          ],
+          "badFrames": [],
+          "cols": [
+            15,
+            71
+          ],
+          "rows": [
+            0,
+            33
+          ]
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f006-fx-steam": [
+      {
+        "details": {
+          "allowed": [
+            "ink_0",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourCount": 3,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "ink_0",
+            "steel_2",
+            "steel_3"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            24,
+            32
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "backdrop": "floor_0",
+          "limit": 3,
+          "maxFlashesPerSecondByFps": {
+            "10": 0,
+            "6": 0,
+            "8": 0
+          },
+          "overlapOnly": {
+            "10": 10,
+            "6": 6,
+            "8": 8
+          },
+          "target": 2,
+          "transitions": [
+            0.020547,
+            0.028325,
+            0.026427,
+            0.019844,
+            0.026216,
+            0.025021
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "anchor": [
+            0,
+            24
+          ],
+          "badFrames": [],
+          "cols": [
+            15,
+            71
+          ],
+          "rows": [
+            0,
+            33
+          ]
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f006-fx-upgrade-glint": [
+      {
+        "details": {
+          "allowed": [
+            "copper_2",
+            "ink_0",
+            "steel_3"
+          ],
+          "colourCount": 2,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "copper_2",
+            "steel_3"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            24,
+            24
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 6,
+          "expected": 6
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "backdrop": "floor_0",
+          "limit": 3,
+          "maxFlashesPerSecondByFps": {
+            "10": 0,
+            "12": 0,
+            "6": 0,
+            "8": 0
+          },
+          "overlapOnly": {
+            "10": 0,
+            "12": 0,
+            "6": 0,
+            "8": 0
+          },
+          "target": 2,
+          "transitions": [
+            0.003748,
+            0.004176,
+            0.003748,
+            0.003748,
+            0.007924,
+            0.0
+          ]
+        },
+        "name": "flash",
+        "passed": true
+      },
+      {
+        "details": {
+          "anchor": [
+            47,
+            31
+          ],
+          "badFrames": [],
+          "cols": [
+            15,
+            71
+          ],
+          "rows": [
+            0,
+            33
+          ]
+        },
+        "name": "overlay_keepout",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ]
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "assemblerCapAtMost8": true,
+        "everyCompositeWithinLimit": true,
+        "limitPerSecond": 3,
+        "method": "check_flash on body + accent + FX frame i, frames 0..5 on one clock, window = fps transitions, loop wrap counted",
+        "paceCaps": {
+          "assembler": {
+            "baseline": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "capBeforeAssemblerRule": 10,
+            "compositesChecked": 4,
+            "paceCapFps": 8
+          },
+          "miner": {
+            "baseline": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "capBeforeAssemblerRule": 10,
+            "compositesChecked": 4,
+            "paceCapFps": 10
+          },
+          "press": {
+            "baseline": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "capBeforeAssemblerRule": 10,
+            "compositesChecked": 7,
+            "paceCapFps": 10
+          },
+          "smelter": {
+            "baseline": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "capBeforeAssemblerRule": 10,
+            "compositesChecked": 8,
+            "paceCapFps": 10
+          }
+        },
+        "pacesFps": [
+          6,
+          8,
+          10
+        ],
+        "passed": true,
+        "rows": [
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "(none)",
+            "machine": "miner",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "completion-pop",
+            "machine": "miner",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "upgrade-glint",
+            "machine": "miner",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "(none)",
+            "machine": "smelter",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "completion-pop",
+            "machine": "smelter",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "spark",
+            "machine": "smelter",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "steam",
+            "machine": "smelter",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "upgrade-glint",
+            "machine": "smelter",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "(none)",
+            "machine": "press",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "completion-pop",
+            "machine": "press",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "spark",
+            "machine": "press",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "upgrade-glint",
+            "machine": "press",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "(none)",
+            "machine": "assembler",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 2,
+              "6": 1,
+              "8": 2
+            },
+            "fx": "completion-pop",
+            "machine": "assembler",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "upgrade-glint",
+            "machine": "assembler",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "build-dust",
+            "machine": "(foundation, no machine)",
+            "ok": true
+          }
+        ],
+        "stacks": [
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "spark+steam+completion-pop",
+            "machine": "smelter",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "spark+steam+upgrade-glint",
+            "machine": "smelter",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "spark+completion-pop",
+            "machine": "press",
+            "ok": true
+          },
+          {
+            "flashes": {
+              "10": 0,
+              "6": 0,
+              "8": 0
+            },
+            "fx": "spark+upgrade-glint",
+            "machine": "press",
+            "ok": true
+          }
+        ],
+        "targetPerSecond": 2,
+        "worstFlashesPerSecond": 2
+      },
+      "name": "flash_composite_matrix",
+      "passed": true
+    },
+    {
+      "details": {
+        "frames": 37,
+        "table": "21.4 FX atlas 42 frames = these 36 (six sprites of 6) + the vein chip (6, deposit task); plus 1 static highlight, an addition"
+      },
+      "name": "inventory",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}
