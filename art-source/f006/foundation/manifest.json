@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "assetId": "f006-foundation-flat",
+      "canvas": [
+        70,
+        36
+      ],
+      "footprintPx": [
+        70,
+        36
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-foundation-flat/f006-foundation-flat_00.png",
+          "sha256": "2d3e3d57aca784564ba6392044ed5f1187e3cae354385492ba7b0797e471a76b"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-foundation-outline",
+      "canvas": [
+        70,
+        36
+      ],
+      "footprintPx": [
+        70,
+        36
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-foundation-outline/f006-foundation-outline_00.png",
+          "sha256": "33b3ae0f4ce5b342a29452cb2cdfec13c0ae6436a06e8f872372650e62ccfa2a"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "note": "T519 candidate entries for T526; reviewedBy pending (T525). Ground tiles 70 x 54 pivot (35, 27), keyed by region id starter-platform; foundations 70 x 36 pivot (35, 18); diamond centre of both = deck diamond centre.",
+  "schemaVersion": 1
+}

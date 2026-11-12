@@ -1,0 +1,364 @@
+{
+  "assets": {
+    "f006-foundation-flat": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 3
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            36
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            35.0,
+            18.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "plate_1",
+            "plate_2"
+          ],
+          "colourMax": 12,
+          "outside": [],
+          "used": {
+            "ink_0": 138,
+            "plate_1": 930,
+            "plate_2": 226
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "every pixel of this sprite is in R, so a ring over it contributes zero steel_* pixels; the full ring proof on the densest frame is the P2 composite gate (T527)",
+          "outsideR": [],
+          "rule": "Art Bible 21.2 / 21.5: ring-safe set R, zero steel_* pixels",
+          "steelPixels": 0
+        },
+        "name": "c8_ring_safe_set_R",
+        "passed": true
+      },
+      {
+        "details": {
+          "rowWidths": [
+            0,
+            4,
+            8,
+            12,
+            16,
+            20,
+            24,
+            28,
+            32,
+            36,
+            40,
+            44,
+            48,
+            52,
+            56,
+            60,
+            64,
+            68,
+            70,
+            68,
+            64,
+            60,
+            56,
+            52,
+            48,
+            44,
+            40,
+            36,
+            32,
+            28,
+            24,
+            20,
+            16,
+            12,
+            8,
+            4
+          ]
+        },
+        "name": "diamond_70x35_rows_1_to_35",
+        "passed": true
+      },
+      {
+        "details": {
+          "heightRows": 35,
+          "note": "single flat 70 x 35 diamond, no wall faces (R06, FR-012); plate_2 rim inside the ink_0 outline, plate_1 top"
+        },
+        "name": "flat_no_wall_no_plinth",
+        "passed": true
+      }
+    ],
+    "f006-foundation-outline": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            36
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            35.0,
+            18.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1"
+          ],
+          "colourMax": 12,
+          "outside": [],
+          "used": {
+            "floor_0": 530,
+            "ink_0": 138
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "every pixel of this sprite is in R, so a ring over it contributes zero steel_* pixels; the full ring proof on the densest frame is the P2 composite gate (T527)",
+          "outsideR": [],
+          "rule": "Art Bible 21.2 / 21.5: ring-safe set R, zero steel_* pixels",
+          "steelPixels": 0
+        },
+        "name": "c8_ring_safe_set_R",
+        "passed": true
+      },
+      {
+        "details": {
+          "rowWidths": [
+            0,
+            4,
+            8,
+            12,
+            16,
+            20,
+            24,
+            28,
+            32,
+            36,
+            40,
+            44,
+            48,
+            52,
+            56,
+            60,
+            64,
+            68,
+            70,
+            68,
+            64,
+            60,
+            56,
+            52,
+            48,
+            44,
+            40,
+            36,
+            32,
+            28,
+            24,
+            20,
+            16,
+            12,
+            8,
+            4
+          ]
+        },
+        "name": "diamond_70x35_rows_1_to_35",
+        "passed": true
+      },
+      {
+        "details": {
+          "centreAlpha": 0
+        },
+        "name": "outline_interior_transparent",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.1.0",
+    "briefVersion": "F006-GF v0.1",
+    "family": "foundation",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 692,
+    "regionKey": null,
+    "task": "T519",
+    "worldBible": "F006-WB v0.1"
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "foundation-flat": {
+          "byteIdentical": true,
+          "first": "7be6bb3509f8ea6b7fcc87faaf103f8051a44c4a60d71381e4a706a22fc44caf",
+          "second": "7be6bb3509f8ea6b7fcc87faaf103f8051a44c4a60d71381e4a706a22fc44caf"
+        },
+        "foundation-outline": {
+          "byteIdentical": true,
+          "first": "73f925a2e5fa8512d2447568a80d32d318c6c067243d683b2b03f7222cbeef6c",
+          "second": "73f925a2e5fa8512d2447568a80d32d318c6c067243d683b2b03f7222cbeef6c"
+        },
+        "ground-base": {
+          "byteIdentical": true,
+          "first": "a794ebcba5fb0e04c7141f5dbef774fa22e27304c13f6166b7d783e6bf34e747",
+          "second": "a794ebcba5fb0e04c7141f5dbef774fa22e27304c13f6166b7d783e6bf34e747"
+        },
+        "ground-deck": {
+          "byteIdentical": true,
+          "first": "4dbb3805691e12e9eb205d54e3c999cc649d9f1f41a2898c33356a24c70dacc0",
+          "second": "4dbb3805691e12e9eb205d54e3c999cc649d9f1f41a2898c33356a24c70dacc0"
+        },
+        "ground-hatch": {
+          "byteIdentical": true,
+          "first": "57aaae02f96c5b04b30aee7d13c5d2025103a39d1a8b7ef2df117a4f18687ff9",
+          "second": "57aaae02f96c5b04b30aee7d13c5d2025103a39d1a8b7ef2df117a4f18687ff9"
+        }
+      },
+      "name": "reproducibility",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}

@@ -1,0 +1,553 @@
+{
+  "assets": {
+    "f006-ground-base": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 1
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            54
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            35.0,
+            27.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1"
+          ],
+          "colourMax": 12,
+          "outside": [],
+          "used": {
+            "floor_0": 3780
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "every pixel of this sprite is in R, so a ring over it contributes zero steel_* pixels; the full ring proof on the densest frame is the P2 composite gate (T527)",
+          "outsideR": [],
+          "rule": "Art Bible 21.2 / 21.5: ring-safe set R, zero steel_* pixels",
+          "steelPixels": 0
+        },
+        "name": "c8_ring_safe_set_R",
+        "passed": true
+      },
+      {
+        "details": {
+          "size": [
+            70,
+            54
+          ]
+        },
+        "name": "tile_geometry_opaque_70x54",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "floor_1 on the ring only at the 70 px wide middle row (the diamond apexes touch the period edge); neighbours carry the same tone, so no tone step (tiling_lattice)",
+          "tones": [
+            "floor_0"
+          ]
+        },
+        "name": "edge_ring_field_tone",
+        "passed": true
+      },
+      {
+        "details": {
+          "period": [
+            70,
+            54
+          ],
+          "seamPairs": 2480,
+          "toneSteps": 0
+        },
+        "name": "tiling_lattice",
+        "passed": true
+      }
+    ],
+    "f006-ground-deck": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 2
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            54
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            35.0,
+            27.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1"
+          ],
+          "colourMax": 12,
+          "outside": [],
+          "used": {
+            "floor_0": 2486,
+            "floor_1": 1294
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "every pixel of this sprite is in R, so a ring over it contributes zero steel_* pixels; the full ring proof on the densest frame is the P2 composite gate (T527)",
+          "outsideR": [],
+          "rule": "Art Bible 21.2 / 21.5: ring-safe set R, zero steel_* pixels",
+          "steelPixels": 0
+        },
+        "name": "c8_ring_safe_set_R",
+        "passed": true
+      },
+      {
+        "details": {
+          "size": [
+            70,
+            54
+          ]
+        },
+        "name": "tile_geometry_opaque_70x54",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "floor_1 on the ring only at the 70 px wide middle row (the diamond apexes touch the period edge); neighbours carry the same tone, so no tone step (tiling_lattice)",
+          "tones": [
+            "floor_0",
+            "floor_1"
+          ]
+        },
+        "name": "edge_ring_field_tone",
+        "passed": true
+      },
+      {
+        "details": {
+          "period": [
+            70,
+            54
+          ],
+          "seamPairs": 2480,
+          "toneSteps": 0
+        },
+        "name": "tiling_lattice",
+        "passed": true
+      },
+      {
+        "details": {
+          "expectedWidths": [
+            4,
+            8,
+            12,
+            16,
+            20,
+            24,
+            28,
+            32,
+            36,
+            40,
+            44,
+            48,
+            52,
+            56,
+            60,
+            64,
+            68,
+            70,
+            68,
+            64,
+            60,
+            56,
+            52,
+            48,
+            44,
+            40,
+            36,
+            32,
+            28,
+            24,
+            20,
+            16,
+            12,
+            8,
+            4
+          ],
+          "rowsWithDeckOrHatch": 35
+        },
+        "name": "deck_diamond_70x35",
+        "passed": true
+      }
+    ],
+    "f006-ground-hatch": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 5
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            54
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.5
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.5
+          ],
+          "pivotPx": [
+            35.0,
+            27.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1"
+          ],
+          "colourMax": 12,
+          "outside": [],
+          "used": {
+            "dim_0": 505,
+            "floor_0": 2728,
+            "floor_1": 270,
+            "ink_0": 62,
+            "ink_1": 215
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "every pixel of this sprite is in R, so a ring over it contributes zero steel_* pixels; the full ring proof on the densest frame is the P2 composite gate (T527)",
+          "outsideR": [],
+          "rule": "Art Bible 21.2 / 21.5: ring-safe set R, zero steel_* pixels",
+          "steelPixels": 0
+        },
+        "name": "c8_ring_safe_set_R",
+        "passed": true
+      },
+      {
+        "details": {
+          "size": [
+            70,
+            54
+          ]
+        },
+        "name": "tile_geometry_opaque_70x54",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "floor_1 on the ring only at the 70 px wide middle row (the diamond apexes touch the period edge); neighbours carry the same tone, so no tone step (tiling_lattice)",
+          "tones": [
+            "floor_0",
+            "floor_1"
+          ]
+        },
+        "name": "edge_ring_field_tone",
+        "passed": true
+      },
+      {
+        "details": {
+          "period": [
+            70,
+            54
+          ],
+          "seamPairs": 2480,
+          "toneSteps": 0
+        },
+        "name": "tiling_lattice",
+        "passed": true
+      },
+      {
+        "details": {
+          "expectedWidths": "n/a (hatch interior tones differ)",
+          "rowsWithDeckOrHatch": 35
+        },
+        "name": "deck_diamond_70x35",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "36 x 18 diamond of dim_0 at the tile centre, free of slats: the backing of the section 8.5 padlock and level digit overlay (digit cap 15 art px)",
+          "padPixels": 256,
+          "tones": [
+            "dim_0"
+          ]
+        },
+        "name": "padlock_digit_backing_dim_0",
+        "passed": true
+      },
+      {
+        "details": {
+          "darkestLight": 1.0,
+          "pairs": [
+            {
+              "bg": "dim_0",
+              "fg": "ui_text",
+              "kind": "text",
+              "need": 4.5,
+              "passed": true,
+              "ratio": 11.55,
+              "ratioDarkest": 11.55
+            }
+          ]
+        },
+        "name": "contrast",
+        "passed": true
+      },
+      {
+        "details": {
+          "used": [
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1"
+          ]
+        },
+        "name": "no_steel_frame_no_floor_2",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.1.0",
+    "briefVersion": "F006-GF v0.1",
+    "family": "ground",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 692,
+    "regionKey": "starter-platform",
+    "task": "T519",
+    "worldBible": "F006-WB v0.1"
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "foundation-flat": {
+          "byteIdentical": true,
+          "first": "7be6bb3509f8ea6b7fcc87faaf103f8051a44c4a60d71381e4a706a22fc44caf",
+          "second": "7be6bb3509f8ea6b7fcc87faaf103f8051a44c4a60d71381e4a706a22fc44caf"
+        },
+        "foundation-outline": {
+          "byteIdentical": true,
+          "first": "73f925a2e5fa8512d2447568a80d32d318c6c067243d683b2b03f7222cbeef6c",
+          "second": "73f925a2e5fa8512d2447568a80d32d318c6c067243d683b2b03f7222cbeef6c"
+        },
+        "ground-base": {
+          "byteIdentical": true,
+          "first": "a794ebcba5fb0e04c7141f5dbef774fa22e27304c13f6166b7d783e6bf34e747",
+          "second": "a794ebcba5fb0e04c7141f5dbef774fa22e27304c13f6166b7d783e6bf34e747"
+        },
+        "ground-deck": {
+          "byteIdentical": true,
+          "first": "4dbb3805691e12e9eb205d54e3c999cc649d9f1f41a2898c33356a24c70dacc0",
+          "second": "4dbb3805691e12e9eb205d54e3c999cc649d9f1f41a2898c33356a24c70dacc0"
+        },
+        "ground-hatch": {
+          "byteIdentical": true,
+          "first": "57aaae02f96c5b04b30aee7d13c5d2025103a39d1a8b7ef2df117a4f18687ff9",
+          "second": "57aaae02f96c5b04b30aee7d13c5d2025103a39d1a8b7ef2df117a4f18687ff9"
+        }
+      },
+      "name": "reproducibility",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}

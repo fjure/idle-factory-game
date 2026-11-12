@@ -1,0 +1,93 @@
+{
+  "entries": [
+    {
+      "assetId": "f006-ground-base",
+      "canvas": [
+        70,
+        54
+      ],
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-ground-base/f006-ground-base_00.png",
+          "sha256": "bcd20fbecff46a229f9e0b22920a7a49c5f84b8cb3e6e96d957c945d3743089e"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-ground-deck",
+      "canvas": [
+        70,
+        54
+      ],
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-ground-deck/f006-ground-deck_00.png",
+          "sha256": "f8fda14ebe34f755eb4aa40286dbc1eb175a81ade20a6601a548c1595616efb4"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-ground-hatch",
+      "canvas": [
+        70,
+        54
+      ],
+      "footprintPx": [
+        70,
+        54
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-ground-hatch/f006-ground-hatch_00.png",
+          "sha256": "19c499a4a2f50e23542fc6dcaf75a7d4e72b8db7c4ebf08562edee4c4d3a94f9"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "note": "T519 candidate entries for T526; reviewedBy pending (T525). Ground tiles 70 x 54 pivot (35, 27), keyed by region id starter-platform; foundations 70 x 36 pivot (35, 18); diamond centre of both = deck diamond centre.",
+  "schemaVersion": 1
+}
