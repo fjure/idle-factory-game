@@ -1,0 +1,88 @@
+{
+  "artBibleVersion": "F004-PAB v1.1.0",
+  "assetId": "f006-link-branch",
+  "briefVersion": "F006-LINK-FX-AB v1.0 (specs/006-world-first-factory-experience, task T522; Art Bible 21.2 and 21.4)",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "d76952df6096a6a23530afe16c11d89ee2daf07db25a37c813218a1bf66bc788",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f006/link/f006-link-branch/f006-link-branch_00.png",
+      "pixelHash": "2d4e8d3287ba684b4e0407cd6dd9823eae3945f4aa957d15b935828c8c557161",
+      "sha256": "3eb3a5b73045dd5c5735fe1a334667ea8c48a64af661e67fa318bc258302b206"
+    }
+  ],
+  "parameters": {
+    "allowedIds": [
+      "copper_1",
+      "copper_2",
+      "dim_0",
+      "floor_0",
+      "floor_1",
+      "ink_0",
+      "ink_1"
+    ],
+    "brief": "F006-LINK-FX-AB v1.0 (specs/006-world-first-factory-experience, task T522; Art Bible 21.2 and 21.4)",
+    "canvas": [
+      70,
+      54
+    ],
+    "family": "link",
+    "fps": 0,
+    "frames": 1,
+    "loop": false,
+    "randomness": "none",
+    "role": "lane",
+    "scriptVersion": "t522-1",
+    "seed": null
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "4a5bc97dd035841262b345a38e3ee6dfbd9a8a04045f134bbd48500f2d0f7bc3",
+    "steps": [
+      "exact-pixel drawing from palette ids (no antialiasing, alpha 0/255)",
+      "1 px ink_0 outline where the sprite has one",
+      "no quantisation needed (exact ids)",
+      "allowed-id, canvas, alpha, frame-count, flash and keep-out checks"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route, Art Director lens), MAQA T522 (#695)",
+  "reviewedBy": {},
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "tools/art-pipeline/art_pipeline/checks.py",
+      "sha256": "748b6590afd0ed196abd1cc7483d6f3f95729ecf8cd25d0663d94e63ac70c5ff"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/checks_v1.py",
+      "sha256": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/f006/link_fx.py",
+      "sha256": "42ed6d2e43a3664ac1b396abd4ff19c9931f98437f5105c4221f48c6d605a85b"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+      "sha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art_pipeline.f006.link_fx",
+      "version": "t522-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "pinned in tools/art-pipeline/pyproject.toml"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}

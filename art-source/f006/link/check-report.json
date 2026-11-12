@@ -1,0 +1,652 @@
+{
+  "assets": {
+    "f006-link-branch": [
+      {
+        "details": {
+          "allowed": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1"
+          ],
+          "colourCount": 4,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "copper_1",
+            "dim_0",
+            "ink_0",
+            "ink_1"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            54
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "ids": [
+            "copper_1",
+            "dim_0",
+            "ink_0",
+            "ink_1"
+          ],
+          "setR": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "plate_1",
+            "plate_2",
+            "res_coal",
+            "res_gold",
+            "res_ore_1",
+            "res_plank",
+            "ui_bg",
+            "ui_line",
+            "ui_panel",
+            "ui_text"
+          ]
+        },
+        "name": "set_r_only",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f006-link-branch-active": [
+      {
+        "details": {
+          "allowed": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1"
+          ],
+          "colourCount": 5,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "ink_0",
+            "ink_1"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            54
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "ids": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "ink_0",
+            "ink_1"
+          ],
+          "setR": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "plate_1",
+            "plate_2",
+            "res_coal",
+            "res_gold",
+            "res_ore_1",
+            "res_plank",
+            "ui_bg",
+            "ui_line",
+            "ui_panel",
+            "ui_text"
+          ]
+        },
+        "name": "set_r_only",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f006-link-junction": [
+      {
+        "details": {
+          "allowed": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1"
+          ],
+          "colourCount": 4,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "copper_1",
+            "dim_0",
+            "ink_0",
+            "ink_1"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            54
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "ids": [
+            "copper_1",
+            "dim_0",
+            "ink_0",
+            "ink_1"
+          ],
+          "setR": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "plate_1",
+            "plate_2",
+            "res_coal",
+            "res_gold",
+            "res_ore_1",
+            "res_plank",
+            "ui_bg",
+            "ui_line",
+            "ui_panel",
+            "ui_text"
+          ]
+        },
+        "name": "set_r_only",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ],
+    "f006-link-trunk": [
+      {
+        "details": {
+          "allowed": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1"
+          ],
+          "colourCount": 4,
+          "colourMax": 12,
+          "forbidden": [],
+          "reservedUsed": [],
+          "used": [
+            "copper_1",
+            "dim_0",
+            "ink_0",
+            "ink_1"
+          ]
+        },
+        "name": "allowed_ids",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            54
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "ids": [
+            "copper_1",
+            "dim_0",
+            "ink_0",
+            "ink_1"
+          ],
+          "setR": [
+            "copper_1",
+            "copper_2",
+            "dim_0",
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "plate_1",
+            "plate_2",
+            "res_coal",
+            "res_gold",
+            "res_ore_1",
+            "res_plank",
+            "ui_bg",
+            "ui_line",
+            "ui_panel",
+            "ui_text"
+          ]
+        },
+        "name": "set_r_only",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "an independent second render is pixel-identical"
+        },
+        "name": "reproduction",
+        "passed": true
+      }
+    ]
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "layouts": [
+          "3x4",
+          "4x3",
+          "6",
+          "20",
+          "L"
+        ],
+        "rows": [
+          {
+            "badge": "K0",
+            "laneUnderBadgePx": 1380,
+            "layout": "3x4",
+            "passed": true,
+            "ringPx": 960,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 120,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 12,
+              "dim_0": 36,
+              "ink_0": 48,
+              "ink_1": 24
+            },
+            "slots": 12
+          },
+          {
+            "badge": "K4",
+            "laneUnderBadgePx": 1380,
+            "layout": "3x4",
+            "passed": true,
+            "ringPx": 960,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 120,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 12,
+              "dim_0": 36,
+              "ink_0": 48,
+              "ink_1": 24
+            },
+            "slots": 12
+          },
+          {
+            "badge": "K0",
+            "laneUnderBadgePx": 1380,
+            "layout": "4x3",
+            "passed": true,
+            "ringPx": 960,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 120,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 12,
+              "dim_0": 36,
+              "ink_0": 48,
+              "ink_1": 24
+            },
+            "slots": 12
+          },
+          {
+            "badge": "K4",
+            "laneUnderBadgePx": 1380,
+            "layout": "4x3",
+            "passed": true,
+            "ringPx": 960,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 120,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 12,
+              "dim_0": 36,
+              "ink_0": 48,
+              "ink_1": 24
+            },
+            "slots": 12
+          },
+          {
+            "badge": "K0",
+            "laneUnderBadgePx": 690,
+            "layout": "6",
+            "passed": true,
+            "ringPx": 480,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 60,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 6,
+              "dim_0": 18,
+              "ink_0": 24,
+              "ink_1": 12
+            },
+            "slots": 6
+          },
+          {
+            "badge": "K4",
+            "laneUnderBadgePx": 690,
+            "layout": "6",
+            "passed": true,
+            "ringPx": 480,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 60,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 6,
+              "dim_0": 18,
+              "ink_0": 24,
+              "ink_1": 12
+            },
+            "slots": 6
+          },
+          {
+            "badge": "K0",
+            "laneUnderBadgePx": 2300,
+            "layout": "20",
+            "passed": true,
+            "ringPx": 1600,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 200,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 20,
+              "dim_0": 60,
+              "ink_0": 80,
+              "ink_1": 40
+            },
+            "slots": 20
+          },
+          {
+            "badge": "K4",
+            "laneUnderBadgePx": 2300,
+            "layout": "20",
+            "passed": true,
+            "ringPx": 1600,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 200,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 20,
+              "dim_0": 60,
+              "ink_0": 80,
+              "ink_1": 40
+            },
+            "slots": 20
+          },
+          {
+            "badge": "K0",
+            "laneUnderBadgePx": 575,
+            "layout": "L",
+            "passed": true,
+            "ringPx": 400,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 50,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 5,
+              "dim_0": 15,
+              "ink_0": 20,
+              "ink_1": 10
+            },
+            "slots": 5
+          },
+          {
+            "badge": "K4",
+            "laneUnderBadgePx": 575,
+            "layout": "L",
+            "passed": true,
+            "ringPx": 400,
+            "ringPxNotInSetR": 0,
+            "ringPxOnLane": 50,
+            "ringSteelPx": 0,
+            "ringTonesOnLane": {
+              "copper_1": 5,
+              "dim_0": 15,
+              "ink_0": 20,
+              "ink_1": 10
+            },
+            "slots": 5
+          }
+        ],
+        "rule": "C8 and Art Bible 21.8 items 1 and 3: set R only, zero steel_* in any ring"
+      },
+      "name": "c8_ring_link_layer",
+      "passed": true
+    },
+    {
+      "details": {
+        "failingTones": {},
+        "laneContrastRatios": {
+          "copper_1|dim_0": 2.36,
+          "copper_1|floor_0": 2.51,
+          "copper_2|dim_0": 4.47,
+          "copper_2|floor_0": 4.75,
+          "dim_0|floor_0": 1.06,
+          "dim_0|floor_1": 1.14,
+          "ink_0|dim_0": 1.47
+        },
+        "note": "P1-F3 evidence; a failing tone is a finding for the Art Director, see the T522 report",
+        "sharesByCue": {
+          "f003-badge-inactive": {
+            "copper_1": 1.0,
+            "copper_2": 1.0,
+            "dim_0": 1.0,
+            "ink_0": 1.0,
+            "ink_1": 1.0
+          },
+          "f003-badge-missing-input": {
+            "copper_1": 1.0,
+            "copper_2": 1.0,
+            "dim_0": 1.0,
+            "ink_0": 1.0,
+            "ink_1": 1.0
+          },
+          "f003-badge-paused": {
+            "copper_1": 1.0,
+            "copper_2": 1.0,
+            "dim_0": 1.0,
+            "ink_0": 1.0,
+            "ink_1": 1.0
+          },
+          "f003-badge-storage-full": {
+            "copper_1": 1.0,
+            "copper_2": 1.0,
+            "dim_0": 1.0,
+            "ink_0": 1.0,
+            "ink_1": 1.0
+          },
+          "f003-badge-waiting": {
+            "copper_1": 1.0,
+            "copper_2": 1.0,
+            "dim_0": 1.0,
+            "ink_0": 1.0,
+            "ink_1": 1.0
+          },
+          "f003-marker-boosted": {
+            "copper_1": 1.0,
+            "copper_2": 1.0,
+            "dim_0": 1.0,
+            "ink_0": 1.0,
+            "ink_1": 1.0
+          },
+          "f003-marker-overdrive": {
+            "copper_1": 1.0,
+            "copper_2": 1.0,
+            "dim_0": 1.0,
+            "ink_0": 1.0,
+            "ink_1": 1.0
+          }
+        },
+        "threshold": 0.9,
+        "tones": [
+          "dim_0",
+          "ink_1",
+          "ink_0",
+          "copper_1",
+          "copper_2"
+        ]
+      },
+      "name": "cue_over_lane_contrast",
+      "passed": true
+    },
+    {
+      "details": {
+        "tiles": 4
+      },
+      "name": "inventory",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}

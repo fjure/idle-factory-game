@@ -1,0 +1,108 @@
+{
+  "artBibleVersion": "F004-PAB v1.1.0",
+  "assetId": "f006-fx-branch-pip",
+  "briefVersion": "F006-LINK-FX-AB v1.0 (specs/006-world-first-factory-experience, task T522; Art Bible 21.2 and 21.4)",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "6faf17f9b0501b85cb86b02cfa14a03ac4858bf5785cf75590ab83fa7cbdf480",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f006/fx/f006-fx-branch-pip/f006-fx-branch-pip_00.png",
+      "pixelHash": "f327f22e26ddf38e019baa807a5c45114ae45d26ef9d8cf65dd6d10ce0fc8696",
+      "sha256": "2c9ca6ca84de4a9cdf37bca7fa0ab6f6115b4211cc424894b9b5c1fdba02ede5"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-branch-pip/f006-fx-branch-pip_01.png",
+      "pixelHash": "74ec00a4aa1c6c70b19cac43d70dd62413cda38565283c412a9df104db0c7595",
+      "sha256": "739f7af871af34d0a85f76c03796926592cf0ead8760ab51da19ec597c104969"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-branch-pip/f006-fx-branch-pip_02.png",
+      "pixelHash": "1b35a74a3a548b65e396942f8180b44e9c04e30377e04f9bc0c3df0fb9ec4acf",
+      "sha256": "b97d7855114be9db712143f5a470894ab77a2adc10fc5fdd090855f4c6a65cb8"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-branch-pip/f006-fx-branch-pip_03.png",
+      "pixelHash": "1b35a74a3a548b65e396942f8180b44e9c04e30377e04f9bc0c3df0fb9ec4acf",
+      "sha256": "b97d7855114be9db712143f5a470894ab77a2adc10fc5fdd090855f4c6a65cb8"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-branch-pip/f006-fx-branch-pip_04.png",
+      "pixelHash": "74ec00a4aa1c6c70b19cac43d70dd62413cda38565283c412a9df104db0c7595",
+      "sha256": "739f7af871af34d0a85f76c03796926592cf0ead8760ab51da19ec597c104969"
+    },
+    {
+      "path": "art-source/f006/fx/f006-fx-branch-pip/f006-fx-branch-pip_05.png",
+      "pixelHash": "f327f22e26ddf38e019baa807a5c45114ae45d26ef9d8cf65dd6d10ce0fc8696",
+      "sha256": "2c9ca6ca84de4a9cdf37bca7fa0ab6f6115b4211cc424894b9b5c1fdba02ede5"
+    }
+  ],
+  "parameters": {
+    "allowedIds": [
+      "copper_2",
+      "ink_0"
+    ],
+    "brief": "F006-LINK-FX-AB v1.0 (specs/006-world-first-factory-experience, task T522; Art Bible 21.2 and 21.4)",
+    "canvas": [
+      14,
+      10
+    ],
+    "family": "fx",
+    "fps": 12,
+    "frames": 6,
+    "loop": true,
+    "randomness": "none",
+    "role": "branch pip",
+    "scriptVersion": "t522-1",
+    "seed": null
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "4a5bc97dd035841262b345a38e3ee6dfbd9a8a04045f134bbd48500f2d0f7bc3",
+    "steps": [
+      "exact-pixel drawing from palette ids (no antialiasing, alpha 0/255)",
+      "1 px ink_0 outline where the sprite has one",
+      "no quantisation needed (exact ids)",
+      "allowed-id, canvas, alpha, frame-count, flash and keep-out checks"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route, Art Director lens), MAQA T522 (#695)",
+  "reviewedBy": {},
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "tools/art-pipeline/art_pipeline/checks.py",
+      "sha256": "748b6590afd0ed196abd1cc7483d6f3f95729ecf8cd25d0663d94e63ac70c5ff"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/checks_v1.py",
+      "sha256": "483f2048c0b4da21dfa8ffef38137483b92a00a8265a56968a9a3756c2f6af17"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/f006/link_fx.py",
+      "sha256": "42ed6d2e43a3664ac1b396abd4ff19c9931f98437f5105c4221f48c6d605a85b"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/pixel_pass.py",
+      "sha256": "9efc4080d877f0fe5457036c27b99211efcbdd48ca81ee79d5bfb209937318b8"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art_pipeline.f006.link_fx",
+      "version": "t522-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "pinned in tools/art-pipeline/pyproject.toml"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}
