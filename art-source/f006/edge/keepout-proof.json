@@ -1,0 +1,4425 @@
+{
+ "artBibleSection": "21.5 and 21.8 item 1",
+ "layouts": {
+  "20": {
+   "extentPx": [
+    280,
+    270
+   ],
+   "locations": 20,
+   "orientation": "landscape",
+   "sides": {
+    "back": {
+     "allClear": false,
+     "cells": 6,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 724,
+        "extent": 8536,
+        "frame": 640,
+        "hit": 2808,
+        "marker": 1132,
+        "overlayKeepOut": 6584,
+        "plate": 1936,
+        "ringK0": 2092,
+        "ringK4": 2156
+       },
+       "worstExtentOverlapPxOneCell": 2134
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 616,
+        "extent": 6416,
+        "frame": 432,
+        "hit": 1772,
+        "marker": 1132,
+        "overlayKeepOut": 5212,
+        "plate": 1132,
+        "ringK0": 1356,
+        "ringK4": 1356
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 140,
+        "extent": 6416,
+        "frame": 432,
+        "hit": 1772,
+        "marker": 1132,
+        "overlayKeepOut": 5728,
+        "plate": 1132,
+        "ringK0": 2092,
+        "ringK4": 2156
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-railing-corner": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 3848,
+        "frame": 64,
+        "hit": 288,
+        "marker": 1092,
+        "overlayKeepOut": 5760,
+        "plate": 64,
+        "ringK0": 1280,
+        "ringK4": 1280
+       },
+       "worstExtentOverlapPxOneCell": 962
+      },
+      "f006-edge-railing-fl": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2288,
+        "frame": 32,
+        "hit": 144,
+        "marker": 796,
+        "overlayKeepOut": 4092,
+        "plate": 32,
+        "ringK0": 148,
+        "ringK4": 148
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-fr": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2288,
+        "frame": 32,
+        "hit": 144,
+        "marker": 420,
+        "overlayKeepOut": 4464,
+        "plate": 32,
+        "ringK0": 1280,
+        "ringK4": 1280
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2288,
+        "frame": 32,
+        "hit": 144,
+        "marker": 796,
+        "overlayKeepOut": 4092,
+        "plate": 32,
+        "ringK0": 148,
+        "ringK4": 148
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2288,
+        "frame": 32,
+        "hit": 144,
+        "marker": 420,
+        "overlayKeepOut": 4464,
+        "plate": 32,
+        "ringK0": 1280,
+        "ringK4": 1280
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-wall-corner": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 324,
+        "extent": 7208,
+        "frame": 448,
+        "hit": 1680,
+        "marker": 1132,
+        "overlayKeepOut": 6980,
+        "plate": 1024,
+        "ringK0": 2236,
+        "ringK4": 2256
+       },
+       "worstExtentOverlapPxOneCell": 1802
+      },
+      "f006-edge-wall-fl": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 308,
+        "extent": 5296,
+        "frame": 244,
+        "hit": 956,
+        "marker": 1132,
+        "overlayKeepOut": 5368,
+        "plate": 532,
+        "ringK0": 1144,
+        "ringK4": 1144
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      },
+      "f006-edge-wall-fr": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 16,
+        "extent": 5296,
+        "frame": 244,
+        "hit": 956,
+        "marker": 1056,
+        "overlayKeepOut": 6024,
+        "plate": 532,
+        "ringK0": 2236,
+        "ringK4": 2256
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      }
+     },
+     "wallGantryClear": false
+    },
+    "front": {
+     "allClear": true,
+     "cells": 6,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": true
+    },
+    "left": {
+     "allClear": true,
+     "cells": 5,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    },
+    "right": {
+     "allClear": true,
+     "cells": 5,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    }
+   }
+  },
+  "3x4": {
+   "extentPx": [
+    210,
+    216
+   ],
+   "locations": 12,
+   "orientation": "portrait",
+   "sides": {
+    "back": {
+     "allClear": false,
+     "cells": 5,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 543,
+        "extent": 6402,
+        "frame": 480,
+        "hit": 2106,
+        "marker": 849,
+        "overlayKeepOut": 4938,
+        "plate": 1452,
+        "ringK0": 1569,
+        "ringK4": 1617
+       },
+       "worstExtentOverlapPxOneCell": 2134
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 462,
+        "extent": 4812,
+        "frame": 324,
+        "hit": 1329,
+        "marker": 849,
+        "overlayKeepOut": 3909,
+        "plate": 849,
+        "ringK0": 1017,
+        "ringK4": 1017
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 105,
+        "extent": 4812,
+        "frame": 324,
+        "hit": 1329,
+        "marker": 849,
+        "overlayKeepOut": 4296,
+        "plate": 849,
+        "ringK0": 1569,
+        "ringK4": 1617
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-railing-corner": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2886,
+        "frame": 48,
+        "hit": 216,
+        "marker": 819,
+        "overlayKeepOut": 4320,
+        "plate": 48,
+        "ringK0": 960,
+        "ringK4": 960
+       },
+       "worstExtentOverlapPxOneCell": 962
+      },
+      "f006-edge-railing-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 24,
+        "hit": 108,
+        "marker": 597,
+        "overlayKeepOut": 3069,
+        "plate": 24,
+        "ringK0": 111,
+        "ringK4": 111
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 24,
+        "hit": 108,
+        "marker": 315,
+        "overlayKeepOut": 3348,
+        "plate": 24,
+        "ringK0": 960,
+        "ringK4": 960
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 24,
+        "hit": 108,
+        "marker": 597,
+        "overlayKeepOut": 3069,
+        "plate": 24,
+        "ringK0": 111,
+        "ringK4": 111
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 24,
+        "hit": 108,
+        "marker": 315,
+        "overlayKeepOut": 3348,
+        "plate": 24,
+        "ringK0": 960,
+        "ringK4": 960
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-wall-corner": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 243,
+        "extent": 5406,
+        "frame": 336,
+        "hit": 1260,
+        "marker": 849,
+        "overlayKeepOut": 5235,
+        "plate": 768,
+        "ringK0": 1677,
+        "ringK4": 1692
+       },
+       "worstExtentOverlapPxOneCell": 1802
+      },
+      "f006-edge-wall-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 231,
+        "extent": 3972,
+        "frame": 183,
+        "hit": 717,
+        "marker": 849,
+        "overlayKeepOut": 4026,
+        "plate": 399,
+        "ringK0": 858,
+        "ringK4": 858
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      },
+      "f006-edge-wall-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 12,
+        "extent": 3972,
+        "frame": 183,
+        "hit": 717,
+        "marker": 792,
+        "overlayKeepOut": 4518,
+        "plate": 399,
+        "ringK0": 1677,
+        "ringK4": 1692
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      }
+     },
+     "wallGantryClear": false
+    },
+    "front": {
+     "allClear": true,
+     "cells": 5,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": true
+    },
+    "left": {
+     "allClear": true,
+     "cells": 4,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    },
+    "right": {
+     "allClear": true,
+     "cells": 4,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 4,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    }
+   }
+  },
+  "4x3": {
+   "extentPx": [
+    280,
+    162
+   ],
+   "locations": 12,
+   "orientation": "landscape",
+   "sides": {
+    "back": {
+     "allClear": false,
+     "cells": 6,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 724,
+        "extent": 8536,
+        "frame": 640,
+        "hit": 2808,
+        "marker": 1132,
+        "overlayKeepOut": 6584,
+        "plate": 1936,
+        "ringK0": 2092,
+        "ringK4": 2156
+       },
+       "worstExtentOverlapPxOneCell": 2134
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 616,
+        "extent": 6416,
+        "frame": 432,
+        "hit": 1772,
+        "marker": 1132,
+        "overlayKeepOut": 5212,
+        "plate": 1132,
+        "ringK0": 1356,
+        "ringK4": 1356
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 140,
+        "extent": 6416,
+        "frame": 432,
+        "hit": 1772,
+        "marker": 1132,
+        "overlayKeepOut": 5728,
+        "plate": 1132,
+        "ringK0": 2092,
+        "ringK4": 2156
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-railing-corner": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 3848,
+        "frame": 64,
+        "hit": 288,
+        "marker": 1092,
+        "overlayKeepOut": 5760,
+        "plate": 64,
+        "ringK0": 1280,
+        "ringK4": 1280
+       },
+       "worstExtentOverlapPxOneCell": 962
+      },
+      "f006-edge-railing-fl": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2288,
+        "frame": 32,
+        "hit": 144,
+        "marker": 796,
+        "overlayKeepOut": 4092,
+        "plate": 32,
+        "ringK0": 148,
+        "ringK4": 148
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-fr": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2288,
+        "frame": 32,
+        "hit": 144,
+        "marker": 420,
+        "overlayKeepOut": 4464,
+        "plate": 32,
+        "ringK0": 1280,
+        "ringK4": 1280
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2288,
+        "frame": 32,
+        "hit": 144,
+        "marker": 796,
+        "overlayKeepOut": 4092,
+        "plate": 32,
+        "ringK0": 148,
+        "ringK4": 148
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2288,
+        "frame": 32,
+        "hit": 144,
+        "marker": 420,
+        "overlayKeepOut": 4464,
+        "plate": 32,
+        "ringK0": 1280,
+        "ringK4": 1280
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-wall-corner": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 324,
+        "extent": 7208,
+        "frame": 448,
+        "hit": 1680,
+        "marker": 1132,
+        "overlayKeepOut": 6980,
+        "plate": 1024,
+        "ringK0": 2236,
+        "ringK4": 2256
+       },
+       "worstExtentOverlapPxOneCell": 1802
+      },
+      "f006-edge-wall-fl": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 308,
+        "extent": 5296,
+        "frame": 244,
+        "hit": 956,
+        "marker": 1132,
+        "overlayKeepOut": 5368,
+        "plate": 532,
+        "ringK0": 1144,
+        "ringK4": 1144
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      },
+      "f006-edge-wall-fr": {
+       "cells": 6,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 16,
+        "extent": 5296,
+        "frame": 244,
+        "hit": 956,
+        "marker": 1056,
+        "overlayKeepOut": 6024,
+        "plate": 532,
+        "ringK0": 2236,
+        "ringK4": 2256
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      }
+     },
+     "wallGantryClear": false
+    },
+    "front": {
+     "allClear": true,
+     "cells": 6,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 6,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": true
+    },
+    "left": {
+     "allClear": true,
+     "cells": 3,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    },
+    "right": {
+     "allClear": true,
+     "cells": 3,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    }
+   }
+  },
+  "6": {
+   "extentPx": [
+    210,
+    108
+   ],
+   "locations": 6,
+   "orientation": "portrait",
+   "sides": {
+    "back": {
+     "allClear": false,
+     "cells": 5,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 543,
+        "extent": 6402,
+        "frame": 480,
+        "hit": 2106,
+        "marker": 849,
+        "overlayKeepOut": 4938,
+        "plate": 1452,
+        "ringK0": 1569,
+        "ringK4": 1617
+       },
+       "worstExtentOverlapPxOneCell": 2134
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 462,
+        "extent": 4812,
+        "frame": 324,
+        "hit": 1329,
+        "marker": 849,
+        "overlayKeepOut": 3909,
+        "plate": 849,
+        "ringK0": 1017,
+        "ringK4": 1017
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 105,
+        "extent": 4812,
+        "frame": 324,
+        "hit": 1329,
+        "marker": 849,
+        "overlayKeepOut": 4296,
+        "plate": 849,
+        "ringK0": 1569,
+        "ringK4": 1617
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-railing-corner": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2886,
+        "frame": 48,
+        "hit": 216,
+        "marker": 819,
+        "overlayKeepOut": 4320,
+        "plate": 48,
+        "ringK0": 960,
+        "ringK4": 960
+       },
+       "worstExtentOverlapPxOneCell": 962
+      },
+      "f006-edge-railing-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 24,
+        "hit": 108,
+        "marker": 597,
+        "overlayKeepOut": 3069,
+        "plate": 24,
+        "ringK0": 111,
+        "ringK4": 111
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 24,
+        "hit": 108,
+        "marker": 315,
+        "overlayKeepOut": 3348,
+        "plate": 24,
+        "ringK0": 960,
+        "ringK4": 960
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 24,
+        "hit": 108,
+        "marker": 597,
+        "overlayKeepOut": 3069,
+        "plate": 24,
+        "ringK0": 111,
+        "ringK4": 111
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 24,
+        "hit": 108,
+        "marker": 315,
+        "overlayKeepOut": 3348,
+        "plate": 24,
+        "ringK0": 960,
+        "ringK4": 960
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-wall-corner": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 243,
+        "extent": 5406,
+        "frame": 336,
+        "hit": 1260,
+        "marker": 849,
+        "overlayKeepOut": 5235,
+        "plate": 768,
+        "ringK0": 1677,
+        "ringK4": 1692
+       },
+       "worstExtentOverlapPxOneCell": 1802
+      },
+      "f006-edge-wall-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 231,
+        "extent": 3972,
+        "frame": 183,
+        "hit": 717,
+        "marker": 849,
+        "overlayKeepOut": 4026,
+        "plate": 399,
+        "ringK0": 858,
+        "ringK4": 858
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      },
+      "f006-edge-wall-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 12,
+        "extent": 3972,
+        "frame": 183,
+        "hit": 717,
+        "marker": 792,
+        "overlayKeepOut": 4518,
+        "plate": 399,
+        "ringK0": 1677,
+        "ringK4": 1692
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      }
+     },
+     "wallGantryClear": false
+    },
+    "front": {
+     "allClear": true,
+     "cells": 5,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": true
+    },
+    "left": {
+     "allClear": true,
+     "cells": 2,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    },
+    "right": {
+     "allClear": true,
+     "cells": 2,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 2,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    }
+   }
+  },
+  "L": {
+   "extentPx": [
+    210,
+    162
+   ],
+   "locations": 5,
+   "orientation": "portrait",
+   "sides": {
+    "back": {
+     "allClear": false,
+     "cells": 5,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 181,
+        "extent": 6402,
+        "frame": 160,
+        "hit": 702,
+        "marker": 283,
+        "overlayKeepOut": 1646,
+        "plate": 484,
+        "ringK0": 523,
+        "ringK4": 539
+       },
+       "worstExtentOverlapPxOneCell": 2134
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 154,
+        "extent": 4812,
+        "frame": 108,
+        "hit": 443,
+        "marker": 283,
+        "overlayKeepOut": 1303,
+        "plate": 283,
+        "ringK0": 339,
+        "ringK4": 339
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 35,
+        "extent": 4812,
+        "frame": 108,
+        "hit": 443,
+        "marker": 283,
+        "overlayKeepOut": 1432,
+        "plate": 283,
+        "ringK0": 523,
+        "ringK4": 539
+       },
+       "worstExtentOverlapPxOneCell": 1604
+      },
+      "f006-edge-railing-corner": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 2886,
+        "frame": 16,
+        "hit": 72,
+        "marker": 273,
+        "overlayKeepOut": 1440,
+        "plate": 16,
+        "ringK0": 320,
+        "ringK4": 320
+       },
+       "worstExtentOverlapPxOneCell": 962
+      },
+      "f006-edge-railing-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 8,
+        "hit": 36,
+        "marker": 199,
+        "overlayKeepOut": 1023,
+        "plate": 8,
+        "ringK0": 37,
+        "ringK4": 37
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 8,
+        "hit": 36,
+        "marker": 105,
+        "overlayKeepOut": 1116,
+        "plate": 8,
+        "ringK0": 320,
+        "ringK4": 320
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 8,
+        "hit": 36,
+        "marker": 199,
+        "overlayKeepOut": 1023,
+        "plate": 8,
+        "ringK0": 37,
+        "ringK4": 37
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 0,
+        "extent": 1716,
+        "frame": 8,
+        "hit": 36,
+        "marker": 105,
+        "overlayKeepOut": 1116,
+        "plate": 8,
+        "ringK0": 320,
+        "ringK4": 320
+       },
+       "worstExtentOverlapPxOneCell": 572
+      },
+      "f006-edge-wall-corner": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 81,
+        "extent": 5406,
+        "frame": 112,
+        "hit": 420,
+        "marker": 283,
+        "overlayKeepOut": 1745,
+        "plate": 256,
+        "ringK0": 559,
+        "ringK4": 564
+       },
+       "worstExtentOverlapPxOneCell": 1802
+      },
+      "f006-edge-wall-fl": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 77,
+        "extent": 3972,
+        "frame": 61,
+        "hit": 239,
+        "marker": 283,
+        "overlayKeepOut": 1342,
+        "plate": 133,
+        "ringK0": 286,
+        "ringK4": 286
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      },
+      "f006-edge-wall-fr": {
+       "cells": 5,
+       "clear": false,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 0,
+       "overlapPx": {
+        "body": 4,
+        "extent": 3972,
+        "frame": 61,
+        "hit": 239,
+        "marker": 264,
+        "overlayKeepOut": 1506,
+        "plate": 133,
+        "ringK0": 559,
+        "ringK4": 564
+       },
+       "worstExtentOverlapPxOneCell": 1324
+      }
+     },
+     "wallGantryClear": false
+    },
+    "front": {
+     "allClear": true,
+     "cells": 5,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 5,
+       "clear": true,
+       "farFromKeepOut": true,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": null,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": true
+    },
+    "left": {
+     "allClear": true,
+     "cells": 3,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    },
+    "right": {
+     "allClear": true,
+     "cells": 3,
+     "sprites": {
+      "f006-edge-gantry-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-gantry-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-railing-quiet-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-corner": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fl": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 1,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      },
+      "f006-edge-wall-fr": {
+       "cells": 3,
+       "clear": true,
+       "farFromKeepOut": false,
+       "gapNoneMeansMoreThanPx": 12,
+       "minGapToAnyKeepOutPx": 2,
+       "overlapPx": {
+        "body": 0,
+        "extent": 0,
+        "frame": 0,
+        "hit": 0,
+        "marker": 0,
+        "overlayKeepOut": 0,
+        "plate": 0,
+        "ringK0": 0,
+        "ringK4": 0
+       },
+       "worstExtentOverlapPxOneCell": 0
+      }
+     },
+     "wallGantryClear": false
+    }
+   }
+  }
+ },
+ "masks": [
+  "extent",
+  "hit",
+  "overlayKeepOut",
+  "ringK0",
+  "ringK4",
+  "marker",
+  "frame",
+  "body",
+  "plate"
+ ],
+ "method": "each EDGE sprite is placed with its pivot (deck diamond centre) on the pivot of each margin cell of the lattice (margin_cells = 1) and its opaque pixels are intersected with the masks below",
+ "schema": "f006-edge-keepout/1",
+ "summary": {
+  "c8": "no edge pixel lies in ringK0 or ringK4 for any placement counted as clear, so the ring pixels of every badge and marker stay in A_ov / A_fr with zero steel_* contribution from this family; the full ring proof on the densest 12-slot frame per screen class is the composite gate (T525, T527)",
+  "frontMarginRowClearForAllLayouts": true,
+  "remainingForComposite": [
+   "pixel ring proof on the densest 12-slot frame of every screen class with the final F006 world layers composed (T525, T527)",
+   "the depot, deposit and link margin cells are not drawn by this family; their overlap with an edge tile in the same margin cell is a composition rule (T527)"
+  ],
+  "ruleDerived": "walls and gantries are drawn only on the front margin row, below the Extent, at least 13 art px from every mask (never next to a machine column). A wall or gantry tile on the back margin row overlaps the Extent, hit shapes, rings and the keep-out; on the left and right margin rows it touches the machine column (gap 1 to 2 px). Those tiles are not drawn there (Art Bible 21.5, 21.8 item 1). The railing overlaps nothing on the front, left and right margin rows and fails on the back row (counts per sprite below)",
+  "sidesThatFail": {
+   "20": [
+    "back",
+    "left",
+    "right"
+   ],
+   "3x4": [
+    "back",
+    "left",
+    "right"
+   ],
+   "4x3": [
+    "back",
+    "left",
+    "right"
+   ],
+   "6": [
+    "back",
+    "left",
+    "right"
+   ],
+   "L": [
+    "back",
+    "left",
+    "right"
+   ]
+  }
+ },
+ "task": "T521"
+}

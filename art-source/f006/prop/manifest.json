@@ -1,0 +1,122 @@
+{
+  "entries": [
+    {
+      "assetId": "f006-prop-crate-small",
+      "canvas": [
+        24,
+        20
+      ],
+      "footprintPx": [
+        22,
+        10
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-prop-crate-small/f006-prop-crate-small_00.png",
+          "sha256": "59a2a437ff16be072561a98faa827be71ffd13381a618e68e0ce36a51fa04d78"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.25
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-prop-crate-stack",
+      "canvas": [
+        30,
+        24
+      ],
+      "footprintPx": [
+        30,
+        12
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-prop-crate-stack/f006-prop-crate-stack_00.png",
+          "sha256": "e77a867b523995d652c60c82db9b4c4e9ff86537132210970b7234340626c1cd"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.25
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-prop-lamp-post",
+      "canvas": [
+        14,
+        24
+      ],
+      "footprintPx": [
+        10,
+        4
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-prop-lamp-post/f006-prop-lamp-post_00.png",
+          "sha256": "b3dd5d806db69000df519cd791634b3b41ed2104b8721438ab9211df0805f4df"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.083333
+      ],
+      "ppu": 24,
+      "route": "blender"
+    },
+    {
+      "assetId": "f006-prop-pallet",
+      "canvas": [
+        30,
+        16
+      ],
+      "footprintPx": [
+        26,
+        12
+      ],
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-prop-pallet/f006-prop-pallet_00.png",
+          "sha256": "63e2d63716ffd70f3980535a54833d148f33fde988a16e845e299777b7703d4f"
+        }
+      ],
+      "palette": {
+        "id": "f004-palette",
+        "version": "1.0.0"
+      },
+      "perspective": "isometric-2-1",
+      "pivot": [
+        0.5,
+        0.375
+      ],
+      "ppu": 24,
+      "route": "blender"
+    }
+  ],
+  "note": "T521 candidate entries for T526; reviewedBy pending (T525). EDGE pivot = deck diamond centre (footprint height 2 x the diamond centre height above the content bottom); PROP pivot = base centre.",
+  "schemaVersion": 1
+}

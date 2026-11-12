@@ -1,0 +1,1627 @@
+{
+  "assets": {
+    "f006-edge-gantry-corner": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 9
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            84
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.345238
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.345238
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.041666666666666664,
+          "overhangPx": 1
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_1",
+            "dim_0",
+            "floor_0",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "copper_1": 12,
+            "dim_0": 46,
+            "floor_0": 1086,
+            "ink_0": 210,
+            "ink_1": 476,
+            "steel_0": 360,
+            "steel_1": 386,
+            "steel_2": 124,
+            "steel_3": 76
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 946
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 30,
+          "stage": "gantry"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": true,
+          "right": true
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-gantry-fl": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 9
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            84
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.345238
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.345238
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.041666666666666664,
+          "overhangPx": 1
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_1",
+            "dim_0",
+            "floor_0",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "copper_1": 6,
+            "dim_0": 22,
+            "floor_0": 1342,
+            "ink_0": 106,
+            "ink_1": 68,
+            "steel_0": 145,
+            "steel_1": 112,
+            "steel_2": 129,
+            "steel_3": 37
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 423
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 30,
+          "stage": "gantry"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": true,
+          "right": false
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-gantry-fr": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 8
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            84
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.345238
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.345238
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.041666666666666664,
+          "overhangPx": 1
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "copper_1",
+            "dim_0",
+            "floor_0",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "copper_1": 6,
+            "dim_0": 22,
+            "floor_0": 1002,
+            "ink_0": 106,
+            "ink_1": 408,
+            "steel_0": 163,
+            "steel_1": 223,
+            "steel_3": 37
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_0",
+            "steel_1",
+            "steel_3"
+          ],
+          "steelPixels": 423
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 30,
+          "stage": "gantry"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": false,
+          "right": true
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-railing-corner": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            66
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.439394
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.439394
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "ink_0",
+            "ink_1",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "floor_0": 1314,
+            "ink_0": 130,
+            "ink_1": 476,
+            "steel_1": 80,
+            "steel_2": 152,
+            "steel_3": 20
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 252
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 10,
+          "stage": "railing"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": true,
+          "right": true
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-railing-fl": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            66
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.439394
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.439394
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "ink_0",
+            "ink_1",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "floor_0": 1420,
+            "ink_0": 66,
+            "ink_1": 68,
+            "steel_1": 43,
+            "steel_2": 60,
+            "steel_3": 8
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 111
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 10,
+          "stage": "railing"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": true,
+          "right": false
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-railing-fr": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            66
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.439394
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.439394
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "ink_0",
+            "ink_1",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "floor_0": 1080,
+            "ink_0": 66,
+            "ink_1": 408,
+            "steel_1": 43,
+            "steel_2": 60,
+            "steel_3": 8
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 111
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 10,
+          "stage": "railing"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": false,
+          "right": true
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-railing-quiet-fl": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            66
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.439394
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.439394
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "ink_0",
+            "ink_1",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "floor_0": 1450,
+            "ink_0": 66,
+            "ink_1": 68,
+            "steel_1": 47,
+            "steel_2": 30,
+            "steel_3": 4
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 81
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 10,
+          "stage": "railing-quiet"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": true,
+          "right": false
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-railing-quiet-fr": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            66
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.439394
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.439394
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "ink_0",
+            "ink_1",
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "floor_0": 1110,
+            "ink_0": 66,
+            "ink_1": 408,
+            "steel_1": 47,
+            "steel_2": 30,
+            "steel_3": 4
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_1",
+            "steel_2",
+            "steel_3"
+          ],
+          "steelPixels": 81
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 10,
+          "stage": "railing-quiet"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": false,
+          "right": true
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-wall-corner": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 7
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            78
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.371795
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.371795
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "floor_0": 700,
+            "floor_1": 204,
+            "ink_0": 154,
+            "ink_1": 476,
+            "steel_0": 374,
+            "steel_1": 374,
+            "steel_2": 68
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_0",
+            "steel_1",
+            "steel_2"
+          ],
+          "steelPixels": 816
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 16,
+          "stage": "wall"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": true,
+          "right": true
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-wall-fl": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            78
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.371795
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.371795
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "floor_0": 1098,
+            "floor_1": 102,
+            "ink_0": 78,
+            "ink_1": 68,
+            "steel_1": 374,
+            "steel_2": 34
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_1",
+            "steel_2"
+          ],
+          "steelPixels": 408
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 16,
+          "stage": "wall"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": true,
+          "right": false
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ],
+    "f006-edge-wall-fr": [
+      {
+        "details": {
+          "disallowedGroups": [],
+          "idAllowances": [],
+          "overBudget": {},
+          "unknown": [],
+          "usedColors": 6
+        },
+        "name": "palette",
+        "passed": true
+      },
+      {
+        "details": {
+          "badFrames": [],
+          "expected": [
+            70,
+            78
+          ]
+        },
+        "name": "canvas",
+        "passed": true
+      },
+      {
+        "details": {
+          "expected": [
+            0.5,
+            0.371795
+          ],
+          "integral": true,
+          "integralTolerance": 0.001,
+          "manifest": [
+            0.5,
+            0.371795
+          ],
+          "pivotPx": [
+            35.0,
+            29.0
+          ],
+          "restsOnFootprint": true
+        },
+        "name": "pivot",
+        "passed": true
+      },
+      {
+        "details": {
+          "partialAlpha": []
+        },
+        "name": "alpha",
+        "passed": true
+      },
+      {
+        "details": {
+          "actual": 1,
+          "expected": 1
+        },
+        "name": "frames",
+        "passed": true
+      },
+      {
+        "details": {
+          "maxCells": 0.5,
+          "overhangCells": 0.0,
+          "overhangPx": 0
+        },
+        "name": "overhang",
+        "passed": true
+      },
+      {
+        "details": {
+          "allowed": [
+            "floor_0",
+            "floor_1",
+            "ink_0",
+            "ink_1",
+            "steel_0",
+            "steel_1",
+            "steel_2"
+          ],
+          "colourMax": 12,
+          "forbiddenPrefixes": [
+            "lit_",
+            "teal_",
+            "plate_",
+            "floor_2"
+          ],
+          "outside": [],
+          "used": {
+            "floor_0": 758,
+            "floor_1": 102,
+            "ink_0": 78,
+            "ink_1": 408,
+            "steel_0": 374,
+            "steel_2": 34
+          }
+        },
+        "name": "family_allowance_21_2",
+        "passed": true
+      },
+      {
+        "details": {
+          "note": "not drawn inside a ring: placement is proven against every hit shape, ring, keep-out and the Extent in edge/keepout-proof.json (Art Bible 21.5); the full ring proof on the densest frame is the composite gate (T525, T527)",
+          "outsideR": [
+            "steel_0",
+            "steel_2"
+          ],
+          "steelPixels": 408
+        },
+        "name": "c8_ring_proof_pointer",
+        "passed": true
+      },
+      {
+        "details": {
+          "aboveDeckCentrePx": 16,
+          "stage": "wall"
+        },
+        "name": "structure_height_px",
+        "passed": true
+      },
+      {
+        "details": {
+          "left": false,
+          "right": true
+        },
+        "name": "fascia_only_on_outer_edges",
+        "passed": true
+      }
+    ]
+  },
+  "family": {
+    "artBibleVersion": "F004-PAB v1.1.0",
+    "briefVersion": "F006-PE v0.1",
+    "family": "edge",
+    "intentionallyEmpty": "no intentionallyEmpty entry in this family",
+    "issue": 694,
+    "task": "T521",
+    "worldBible": "F006-WB v0.1"
+  },
+  "global": [
+    {
+      "details": {
+        "cap": 48,
+        "colors": 48,
+        "problems": []
+      },
+      "name": "palette_definition",
+      "passed": true
+    },
+    {
+      "details": {
+        "problems": []
+      },
+      "name": "models",
+      "passed": true
+    },
+    {
+      "details": {
+        "note": "Art Director condition 4: stage 1 railing, stage 2 wall on the margin, stage 3 gantry; the railing post height is the same in every railing sprite (A4: posts do not grow in P2)",
+        "quietRailingFl": {
+          "fl": 10,
+          "fr": 10
+        },
+        "structureHeightAboveDeckCentrePx": {
+          "gantry": 30,
+          "railing": 10,
+          "wall": 16
+        }
+      },
+      "name": "visible_growth_railing_lt_wall_lt_gantry",
+      "passed": true
+    },
+    {
+      "details": {
+        "postHeightPx": {
+          "f006-edge-railing-corner": 10,
+          "f006-edge-railing-fl": 10,
+          "f006-edge-railing-fr": 10,
+          "f006-edge-railing-quiet-fl": 10,
+          "f006-edge-railing-quiet-fr": 10
+        }
+      },
+      "name": "railing_post_height_constant_a4",
+      "passed": true
+    },
+    {
+      "details": {
+        "note": "UI/UX F6 and Art Director A4: fewer posts near badges and the depot",
+        "steelPixels": {
+          "f006-edge-railing-corner": 252,
+          "f006-edge-railing-fl": 111,
+          "f006-edge-railing-fr": 111,
+          "f006-edge-railing-quiet-fl": 81,
+          "f006-edge-railing-quiet-fr": 81
+        }
+      },
+      "name": "quiet_variants_carry_fewer_posts",
+      "passed": true
+    },
+    {
+      "details": {
+        "rule": "Art Bible 21.2, 21.8 items 1 and 5"
+      },
+      "name": "no_lit_no_teal_in_family",
+      "passed": true
+    },
+    {
+      "details": {
+        "front": true,
+        "summary": {
+          "20": [
+            "back",
+            "left",
+            "right"
+          ],
+          "3x4": [
+            "back",
+            "left",
+            "right"
+          ],
+          "4x3": [
+            "back",
+            "left",
+            "right"
+          ],
+          "6": [
+            "back",
+            "left",
+            "right"
+          ],
+          "L": [
+            "back",
+            "left",
+            "right"
+          ]
+        }
+      },
+      "name": "keepout_proof_front_margin_clear",
+      "passed": true
+    },
+    {
+      "details": {
+        "edge-gantry-corner": {
+          "byteIdentical": true,
+          "first": "87497962e86b4adcaa8e6f040aefe162d04bc0bc83f31a1e2e945c3a0e37a2e4",
+          "second": "87497962e86b4adcaa8e6f040aefe162d04bc0bc83f31a1e2e945c3a0e37a2e4"
+        },
+        "edge-gantry-fl": {
+          "byteIdentical": true,
+          "first": "36ec0601605a48e509ce809d58c6772a5b2cbd29f908ab1bd199332eb4ce2aa3",
+          "second": "36ec0601605a48e509ce809d58c6772a5b2cbd29f908ab1bd199332eb4ce2aa3"
+        },
+        "edge-gantry-fr": {
+          "byteIdentical": true,
+          "first": "85b6e7fd3bd0b145f24303621591c76c797e4fca45358abf90fab8f39fadb7d6",
+          "second": "85b6e7fd3bd0b145f24303621591c76c797e4fca45358abf90fab8f39fadb7d6"
+        },
+        "edge-railing-corner": {
+          "byteIdentical": true,
+          "first": "dcb3691ec0c2e40379796a6f6035580bb0198380f36c3c4714fee82c6e566229",
+          "second": "dcb3691ec0c2e40379796a6f6035580bb0198380f36c3c4714fee82c6e566229"
+        },
+        "edge-railing-fl": {
+          "byteIdentical": true,
+          "first": "657235cc03c59649c41931ac5b16cf06d27a9a9492c56b17ff73aa55fe0fb518",
+          "second": "657235cc03c59649c41931ac5b16cf06d27a9a9492c56b17ff73aa55fe0fb518"
+        },
+        "edge-railing-fr": {
+          "byteIdentical": true,
+          "first": "e56a6f7ebe7764ecd967416a5518e1e5232a07e498e4507d50906708b37c4ce2",
+          "second": "e56a6f7ebe7764ecd967416a5518e1e5232a07e498e4507d50906708b37c4ce2"
+        },
+        "edge-railing-quiet-fl": {
+          "byteIdentical": true,
+          "first": "a23a09bbfb77a947c130971c3525f8885c96f9fdcacbccce49a9e1bda696e919",
+          "second": "a23a09bbfb77a947c130971c3525f8885c96f9fdcacbccce49a9e1bda696e919"
+        },
+        "edge-railing-quiet-fr": {
+          "byteIdentical": true,
+          "first": "0e1cb07abcee3f5fb26ba52d9fe8dd17c952f9552bd337760350c32f94d11166",
+          "second": "0e1cb07abcee3f5fb26ba52d9fe8dd17c952f9552bd337760350c32f94d11166"
+        },
+        "edge-wall-corner": {
+          "byteIdentical": true,
+          "first": "d4dff8b96c8493170c1545cd6d64fad5b7467859da886b60ba4c02530659e65b",
+          "second": "d4dff8b96c8493170c1545cd6d64fad5b7467859da886b60ba4c02530659e65b"
+        },
+        "edge-wall-fl": {
+          "byteIdentical": true,
+          "first": "01658b1350eec66459df7630ca2fd2d0e699e17652d75112d4dc9115f857a59d",
+          "second": "01658b1350eec66459df7630ca2fd2d0e699e17652d75112d4dc9115f857a59d"
+        },
+        "edge-wall-fr": {
+          "byteIdentical": true,
+          "first": "0250c20fc8cf7a6712369f4638c9c4531c6b13997a50301547ea68cfb9b6f4df",
+          "second": "0250c20fc8cf7a6712369f4638c9c4531c6b13997a50301547ea68cfb9b6f4df"
+        },
+        "prop-crate-small": {
+          "byteIdentical": true,
+          "first": "d0da2e7c10ac4923de311707707d4aa4e8b493a71369eeb9330225d367b7f6cd",
+          "second": "d0da2e7c10ac4923de311707707d4aa4e8b493a71369eeb9330225d367b7f6cd"
+        },
+        "prop-crate-stack": {
+          "byteIdentical": true,
+          "first": "9df5f241a509aadd2c940a35c7df07866563e7907ac514e3798c0e3fb21afeec",
+          "second": "9df5f241a509aadd2c940a35c7df07866563e7907ac514e3798c0e3fb21afeec"
+        },
+        "prop-lamp-post": {
+          "byteIdentical": true,
+          "first": "cd7b6df4168d19517d11256a3c21859dcd8d7529136b35a1ed49003f06e50b76",
+          "second": "cd7b6df4168d19517d11256a3c21859dcd8d7529136b35a1ed49003f06e50b76"
+        },
+        "prop-pallet": {
+          "byteIdentical": true,
+          "first": "3bca3ccd172dba5dc1f261c4d29d4a31131756ae9e2f5ada9b1d65abf4702972",
+          "second": "3bca3ccd172dba5dc1f261c4d29d4a31131756ae9e2f5ada9b1d65abf4702972"
+        }
+      },
+      "name": "reproducibility",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "schemaVersion": 1
+}
