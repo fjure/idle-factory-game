@@ -1,11 +1,13 @@
 ---
 title: F004 display preferences store (T432)
 type: component
-sources: [S045, S047, S054]
-updated: 2026-11-05
+sources: [S045, S047, S054, S059]
+updated: 2026-11-13
 ---
 
 # F004 display preferences store (T432)
+
+> **Superseded in part by F006 T538 (2026-11-13).** The store now writes `display-v2.json` with `showZoomButtons`. It reads `display-v1.json` only when no v2 file exists, and leaves the v1 file in place. It also retries transient replace failures. See [F006 batch P2 art and presentation](./f006-batch-p2-art-and-presentation.md). (S059)
 
 T432 (#545, PR #589) adds `DisplayPreferencesStore`, the reduced-motion override kept out of the save. It owns `<root>/IdleFactory/Preferences/display-v1.json` with `reducedMotion` in {followSystem, on, off}. (S045)
 
