@@ -264,6 +264,8 @@ The positions differ.
 | UI/UX | Accept. The glyph reads as paperwork, which fits "Office"; the visible label plus the tooltip carry the meaning. Avoids a new sprite, review and palette cost. A distinct hub glyph later is a normal 0-to-1 sprite change with an owner decision per 21.2. |
 | Game Designer/PO | Accept for now, with a re-check in T535/T540. Require the text label to show at 200 % text in the compact strip (UI/UX C3). Add the first-run question "what do you expect to find under this button?" to the T535/T540 playtest. Do not draw a new icon now: spend without evidence. |
 
+**Owner decision (2026-11-13, recorded by the parent):** a NEW "Office" glyph, as the Art Director requires. The hub entry gets its own 24 px `ui_text` glyph, authored through the F003 UI-icon pipeline with an Art Director pixel review. This adds one F006-UI sprite under §21.2, so the T523 "0 sprites" count becomes 1. The visible "Office" label stays beside the glyph at every text scale. Carried as P2-F22.
+
 Banner and dot plainness: AD, UX and PO recommend plain USS; no owner decision needed unless an ornament is requested.
 
 P1-F5 stays provisional by the earlier owner decision; it needs no new decision.
