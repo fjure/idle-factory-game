@@ -494,6 +494,24 @@ function Wait-UnityReady {
     return $null
 }
 
+function Wait-SceneLoaded {
+    # T552: "graphics device created" is not "playable". A scene whose load never finishes (an oversized atlas page kept the
+    # Android player at 'SetGameState isLoading: true' with the loading thread at 100 % CPU) still passes Wait-UnityReady.
+    # Unity logs 'SetGameState: isLoading: false, ..., label: 0' when the first scene has loaded and its first frame can
+    # draw. Returns the elapsed seconds from the call (the process is already running), or $null on timeout.
+    param([int] $ProcessId)
+    $started = Get-Date
+    $deadline = $started.AddSeconds($StartupTimeoutSeconds)
+    do {
+        $log = Invoke-Adb logcat -d --pid $ProcessId -AllowFailure
+        if ($log -match 'SetGameState: isLoading: false, mode: \w+, label: 0') {
+            return [pscustomobject]@{ Seconds = [Math]::Round(((Get-Date) - $started).TotalSeconds) }
+        }
+        Start-Sleep -Seconds 2
+    } while ((Get-Date) -lt $deadline)
+    return $null
+}
+
 function Set-Sensor {
     param([string] $Vector)
     Invoke-Adb emu sensor set acceleration $Vector | Out-Null
@@ -594,6 +612,8 @@ function Invoke-Launch {
     $log = Invoke-Adb logcat -d
     Save-Text -Name 'launch-logcat.txt' -Text $log | Out-Null
     Add-Result 'Launch' 'time to graphics device' 'INFO' $(if ($ready) { "$($ready.Seconds) s after process start" } else { "not within $StartupTimeoutSeconds s" })
+    $loaded = Wait-SceneLoaded -ProcessId $script:appPid
+    Assert-Check 'Launch' 'first scene loaded (playable shell)' ([bool] $loaded) $(if ($loaded) { "$($loaded.Seconds) s after the graphics device" } else { "still loading after $StartupTimeoutSeconds s: SetGameState isLoading never became false" })
     $packageInfo = Invoke-Adb shell dumpsys package $Package
     $abi = if ($packageInfo -match 'primaryCpuAbi=(\S+)') { $Matches[1] } else { 'unknown' }
     Assert-Check 'Launch' 'primary ABI' ($abi -eq 'arm64-v8a') $abi
@@ -684,6 +704,8 @@ function Invoke-ColdRestart {
     Assert-Check 'ColdRestart' 'new process' ($newPid -and $newPid -ne $oldPid) "PID $oldPid -> $newPid"
     $ready = Wait-UnityReady -ProcessId $newPid
     Add-Result 'ColdRestart' 'time to graphics device' 'INFO' $(if ($ready) { "$($ready.Seconds) s" } else { "not within $StartupTimeoutSeconds s" })
+    $loadedCold = Wait-SceneLoaded -ProcessId $newPid
+    Assert-Check 'ColdRestart' 'first scene loaded (playable shell)' ([bool] $loadedCold) $(if ($loadedCold) { "$($loadedCold.Seconds) s after the graphics device" } else { "still loading after $StartupTimeoutSeconds s" })
     $restored = Wait-CheckpointV2 -After $before -Label 'cold-1-restored' -TimeoutSeconds 30
     if ($before) {
         Assert-Check 'ColdRestart' 'reconciled from the last durable checkpoint' ($restored -and $restored.Generation -gt $before.Generation) (Format-CheckpointV2 $restored)

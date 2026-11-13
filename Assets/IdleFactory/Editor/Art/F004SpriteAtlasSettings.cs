@@ -9,7 +9,7 @@ namespace IdleFactory.Editor.Art
     /// <summary>
     /// T430 (FR-023, research R10, Art Bible budget 7): the settings every F004 Sprite Atlas v2 carries. One atlas per family
     /// (<c>Assets/IdleFactory/Art/F004/Atlases/&lt;family&gt;.spriteatlasv2</c>); RGBA32 uncompressed, point filter, no mipmaps,
-    /// padding 2, no rotation, pages at most 1024 x 1024, with explicit overrides for Default, Standalone and Android (Android
+    /// padding 2, no rotation, pages at most 512 x 512 (T552, see <see cref="MaxPageBytes"/>), with explicit overrides for Default, Standalone and Android (Android
     /// otherwise falls back to block compression, which smears pixel edges). No family has production content yet, so atlas assets
     /// are created by <see cref="CreateFamilyAtlas"/> when the family's art is imported (T440), not before.
     /// </summary>
@@ -18,7 +18,14 @@ namespace IdleFactory.Editor.Art
         public const string AtlasFolder = F004ImportRules.ArtRoot + "/Atlases";
         public const string AtlasExtension = ".spriteatlasv2";
         public const int Padding = 2;
-        public const int MaxPageSize = 1024;
+        public const int MaxPageSize = 512;
+
+        /// <summary>
+        /// Largest RGBA32 page an atlas may ship (512 x 512). T552: the Android GLES3 player never finished loading a scene that
+        /// referenced a 512 x 1024 (2 MiB) page, with the loading thread at 100 % CPU, while pages of 1 MiB loaded in about 3 s.
+        /// A family that needs more pixels becomes extra pages of the same atlas (the packer does this at the page limit).
+        /// </summary>
+        public const int MaxPageBytes = MaxPageSize * MaxPageSize * 4;
 
         /// <summary>Platform names the importer accepts; the first is the Default override.</summary>
         public static readonly string[] Platforms = { "DefaultTexturePlatform", "Standalone", "Android" };
