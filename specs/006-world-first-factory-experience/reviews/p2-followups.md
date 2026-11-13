@@ -49,3 +49,17 @@ The independent UI/UX review was ACCEPT_WITH_NOTES.
 |---|---|---|
 | P2-F20 | `reviews/world-copy.md` does not record the copy of the new Settings toggle: the label "Show zoom buttons" and the hint "Adds zoom buttons to the factory view. Pinch zoom still works." It needs a World Designer read, and the text belongs in the copy list. | T547 (World Designer conformance), parent |
 | P2-F21 | Security/Privacy notes: the v1 parser now runs through the shared token walk with v2 off, and the v1 tests cover it. A symlink at `display-v2.json` is followed on read, but the read stays bounded and the directory is the trust boundary. The replace retry blocks the main thread. | Note only |
+
+## Batch-end gates (2026-11-13)
+
+| Gate | Result |
+|---|---|
+| All batch Issues merged and closed | #696, #692, #695, #697, #693, #694, #701, #705 and #709. All were merged through `scripts/maqa-merge.ps1` after independent QA PASS (PRs #737–#745). #709 passed on QA loop 3, after two fails on the host `File.Replace` failure (P2-F21; pitfall recorded). |
+| Independent reviews | T532: Software Architect APPROVE_WITH_NOTES, Game Systems CONFORMS_WITH_NOTES. T533: UI/UX ACCEPT_WITH_NOTES. T538: Security/Privacy PASS_WITH_NOTES. Formal art approvals belong to T525, which is now ready. |
+| Unity suites on the last Issue commit | Edit Mode 2844/2844 and Play Mode 2714/2714 (T538 QA, `f178a65`). |
+| Tagged Windows test-player suite | `scripts/test-unity.ps1 -StandaloneWindowsPlayer` on main `3177056`, with leases `unity,emulator`: PlayerPlayMode 63/63 passed, exit 0. This includes the new T538 preferences round trip. |
+| Art pipeline | `scripts/test-art-pipeline.ps1` on `8c5fb2e`: 344 passed, exit 0. |
+| after_implement hooks | Wiki ingest (S059 added, S056 re-dated), learn review (P2 section) and wiki lint all ran. `check-after-implement-hooks.ps1` gives PASS 7/7. The lint left 2 stale-date findings on pages that cite S056; they are recorded in `wiki/lint-report.md`. |
+| Stale-worktree report | No P2 worktree is left. The 7 older entries (1 REMOVABLE, `docs/675-wiki-maintenance`; 6 REVIEW from F004 or other sessions) are unchanged and untouched. |
+| Play-Tester | **Not triggered; reason recorded.** P2 changes no production, contract, upgrade, unlock, reward, offline-progress or prestige rule, and changes nothing in the player-visible core loop. The art families are source assets only; their Unity import and integration come in T526 and T527. The T532 models and the T533 scaffold are not wired into the shell. T524 changes cue geometry and tests, but the runtime sprites are unchanged until P2-F5. T538 adds a stored Settings preference, which nothing consumes until T534. The Play-Tester runs on the first batch that integrates the world art (T527 to T529) or P3. |
+| UI/UX independent acceptance | The T538 toggle is the only player-visible change. QA checked it with the UI/UX lens: label, at least 48 dp, 200 % text and focus order. Its copy still needs a World Designer read (P2-F20). The T533 scaffold has independent UI/UX acceptance with notes. |
