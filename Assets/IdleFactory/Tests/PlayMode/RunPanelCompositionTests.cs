@@ -33,6 +33,8 @@ namespace IdleFactory.Tests.PlayMode
         {
             ShellPanelIds.Build, ShellPanelIds.Machine, ShellPanelIds.MachineCard, ShellPanelIds.Market, ShellPanelIds.Contracts,
             ShellPanelIds.Items, ShellPanelIds.Research, ShellPanelIds.Prestige, ShellPanelIds.Settings,
+            // T535: the Industry system view and the hub ("Office") are composed and registered like the other panels.
+            ShellPanelIds.Industry, ShellPanelIds.Hub,
         };
 
         private static readonly ShellTab[] PanelTabs =

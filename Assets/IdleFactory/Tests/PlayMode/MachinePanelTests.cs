@@ -195,13 +195,13 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(MachineAt(0).IsActive, Is.False);
             Assert.That(panel.ActiveButton.text, Is.EqualTo("Switch on"));
             Assert.That(Text("machine-status"), Is.EqualTo("Status: Switched off"));
-            Assert.That(Text("machine-blocker-text-0"), Is.EqualTo("This machine is switched off."));
             Assert.That(Text("machine-progress-text"), Is.EqualTo("Cycle progress: 25%"), "progress is kept");
 
-            Assert.That(panel.BlockerButtons.Count, Is.EqualTo(1));
-            Assert.That(panel.BlockerButtons[0].text, Is.EqualTo("Switch on"));
-            Press(panel.BlockerButtons[0]);
-            Assert.That(MachineAt(0).IsActive, Is.True, "the corrective action switches the machine on");
+            // T535 (A-3): one Switch on (the actions section); the "switched off" blocker row and its second button are gone.
+            Assert.That(panel.BlockerButtons.Count, Is.EqualTo(0), "no second Switch on button");
+            Assert.That(panel.Root.Q<VisualElement>("machine-blocker-text-0"), Is.Null, "no stale blocker row for a switched-off machine");
+            Press(panel.ActiveButton);
+            Assert.That(MachineAt(0).IsActive, Is.True, "the Switch on control switches the machine on");
             Assert.That(Text("machine-status"), Is.EqualTo("Status: Running"));
             Assert.That(panel.BlockerButtons.Count, Is.EqualTo(0));
             Assert.That(MachineAt(0).InstanceId, Is.EqualTo(id));

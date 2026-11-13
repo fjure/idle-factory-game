@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="hub-panel" class="scaffold hub">
+        <ui:VisualElement name="hub-state" class="scaffold__state hub__state">
+            <ui:Label name="hub-state-mark" text="i" class="scaffold__mark" />
+            <ui:Label name="hub-state-title" text="" class="scaffold__state-title" />
+            <ui:Label name="hub-state-message" text="" class="scaffold__state-message" />
+            <ui:VisualElement name="hub-state-actions" class="scaffold__actions">
+                <ui:Button name="hub-state-retry" text="Retry" focusable="true" class="run-control scaffold-button scaffold-button--primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="hub-list" class="hub__list" />
+    </ui:VisualElement>
+</ui:UXML>
