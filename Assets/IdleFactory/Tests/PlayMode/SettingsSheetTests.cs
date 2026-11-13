@@ -348,6 +348,75 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator TheShowZoomButtonsSwitchIsLabelledOffByDefaultAndStoresItsChoiceInV2()
+        {
+            yield return Open(ShellScreens.All().First());
+            rig.Shell.OpenSettings();
+            yield return ShellRig.Settle();
+            var toggle = presenter.ZoomToggle;
+
+            Assert.That(toggle.Q<Label>(SettingsPanelPresenter.ZoomToggleName + "-label").text, Is.EqualTo("Show zoom buttons"));
+            Assert.That(toggle.tooltip, Is.EqualTo("Show zoom buttons: off"), "the accessible name states the state");
+            Assert.That(presenter.ZoomToggleState.text, Is.EqualTo("Off"), "the state is text, not colour alone");
+            Assert.That(toggle.ClassListContains("set-toggle--on"), Is.False);
+            Assert.That(harness.Store.ShowZoomButtons, Is.False);
+            var order = rig.Shell.GetFocusOrder().ToList();
+            Assert.That(order.IndexOf(toggle), Is.GreaterThan(order.IndexOf(presenter.OffRadio)), "the switch follows the radio group in focus order");
+
+            Click(toggle);
+            yield return ShellRig.Settle();
+            Assert.That(harness.Store.ShowZoomButtons, Is.True);
+            Assert.That(presenter.ZoomToggleState.text, Is.EqualTo("On"));
+            Assert.That(toggle.tooltip, Is.EqualTo("Show zoom buttons: on"));
+            Assert.That(toggle.ClassListContains("set-toggle--on"), Is.True);
+            Assert.That(File.ReadAllText(harness.Store.FilePath), Does.Contain("\"version\":2").And.Contain("\"showZoomButtons\":true"));
+            Assert.That(presenter.Selected, Is.EqualTo(ReducedMotionPreference.FollowSystem), "the reduced-motion choice is untouched");
+
+            Click(toggle);
+            yield return ShellRig.Settle();
+            Assert.That(harness.Store.ShowZoomButtons, Is.False);
+            Assert.That(File.ReadAllText(harness.Store.FilePath), Does.Contain("\"showZoomButtons\":false"));
+        }
+
+        [UnityTest]
+        public IEnumerator TheShowZoomButtonsSwitchIsAtLeastFortyEightPointsAndNeverClipsAtEveryClassAndTextScale()
+        {
+            foreach (var screen in ShellScreens.All())
+            {
+                foreach (var percent in new[] { 100, 200 })
+                {
+                    yield return Open(screen, percent);
+                    rig.Shell.OpenSettings();
+                    yield return ShellRig.Settle();
+                    var context = screen + " @" + percent;
+                    var toggle = presenter.ZoomToggle;
+                    Assert.That(toggle.worldBound.height, Is.GreaterThanOrEqualTo(47.5f), context + " height (OD-9b C4)");
+                    Assert.That(toggle.worldBound.width, Is.GreaterThanOrEqualTo(47.5f), context + " width (OD-9b C4)");
+                    AssertShellLayout(rig, "zoom switch " + context);
+                    AssertScrollContentClipped(rig.Root.Q<ScrollView>("panel-scroll"), context);
+                    AssertTextAndTargets(rig.Root, rig.SafeRect(), context);
+                    rig.Dispose();
+                    rigs.Remove(rig);
+                    registration?.Dispose();
+                    registration = null;
+                }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TheSwitchReadsTheStoredChoiceWhenTheSheetOpensAgain()
+        {
+            yield return Open(ShellScreens.All().First());
+            Directory.CreateDirectory(Path.GetDirectoryName(harness.Store.FilePath));
+            File.WriteAllText(harness.Store.FilePath, "{\"version\":2,\"reducedMotion\":\"off\",\"showZoomButtons\":true}");
+            rig.Shell.OpenSettings();
+            yield return ShellRig.Settle();
+
+            Assert.That(presenter.ZoomToggleState.text, Is.EqualTo("On"), "the lazy re-read on open shows the stored v2 choice");
+            Assert.That(presenter.OffRadio.ClassListContains("set-radio--selected"), Is.True);
+        }
+
+        [UnityTest]
         public IEnumerator ArrowKeysMoveTheChoiceAndTheFocusWithinTheGroup()
         {
             yield return Open(ShellScreens.All().First());
