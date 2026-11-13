@@ -22,6 +22,8 @@ namespace IdleFactory.Tests.PlayMode
     public sealed class MachineCardTests
     {
         private readonly List<CardHarness> harnesses = new List<CardHarness>();
+        private readonly List<GameObject> tapObjects = new List<GameObject>();
+        private readonly List<RunShellPresenter> presenters = new List<RunShellPresenter>();
         private CardHarness h;
 
         public static IEnumerable<ShellScreen> Screens() => ShellScreens.All();
@@ -36,6 +38,21 @@ namespace IdleFactory.Tests.PlayMode
                 item.Dispose();
             }
 
+            foreach (var presenter in presenters)
+            {
+                presenter.Dispose();
+            }
+
+            foreach (var item in tapObjects)
+            {
+                if (item != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(item);
+                }
+            }
+
+            presenters.Clear();
+            tapObjects.Clear();
             harnesses.Clear();
             h = null;
         }
@@ -591,6 +608,53 @@ namespace IdleFactory.Tests.PlayMode
             h.Shell.HandleBack();
             Assert.That(h.Shell.IsCardOpen, Is.False);
             Assert.That(h.Shell.SelectedSlot, Is.EqualTo(-1));
+        }
+
+        public static IEnumerable<ShellScreen> PortraitAndLandscapePhones() =>
+            ShellScreens.All().Where(screen =>
+                screen.Name.StartsWith("phone-portrait 390", StringComparison.Ordinal) || screen.Name.StartsWith("phone-landscape 844", StringComparison.Ordinal));
+
+        // T553 (U-A2, US3 scenario 5, FR-021): a tap on empty world with the Details view open closes Details AND the card, restores the selection
+        // (the camera follows it) and returns focus to the location. It runs through the real presenter, not the shell alone.
+        [UnityTest]
+        public IEnumerator AnEmptyWorldTapWithDetailsOpenClosesDetailsAndTheCardAndFocusesTheLocation(
+            [ValueSource(nameof(PortraitAndLandscapePhones))] ShellScreen screen)
+        {
+            yield return Make(screen, 100, RunShellFixtures.ComfortableCash);
+            h.Build(0, "machine.miner");
+
+            var host = new GameObject("t553-grid");
+            tapObjects.Add(host);
+            var catalog = new PresentationSpriteCatalog();
+            catalog.Configure(new PresentationSpriteEntry[0]);
+            var grid = host.AddComponent<SlotGridView>();
+            grid.SetLayout(LatticeLayoutBuilder.ShippedForColumns(SlotGridLayout.ColumnsFor(screen.Width, screen.Height)));
+            grid.Configure(catalog);
+            var catalogOfRun = h.Session.Catalog;
+            var presenter = new RunShellPresenter(
+                h.Session, h.Commands, h.Shell, grid,
+                id => catalogOfRun.Machines.TryGetValue(id, out var machine) ? machine.PresentationKey : string.Empty);
+            presenters.Add(presenter);
+            h.Shell.SetGameplayAvailable(true);
+            presenter.Invalidate();
+            presenter.Refresh();
+
+            Assert.That(presenter.HandleWorldTap(grid.WorldRectOf(0).center), Is.True, "a machine tap opens its card");
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.IsCardOpen, Is.True, screen.Name);
+            CardHarness.Press(h.Card.DetailsButton);
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.IsDetailsFromCard, Is.True, screen.Name + ": Details is the open view");
+            Assert.That(h.Shell.IsCardOpen, Is.False, screen.Name + ": the card hides while Details shows");
+
+            Assert.That(presenter.HandleWorldTap(new Vector2(-1000f, -1000f)), Is.False, "empty world hits no machine");
+            yield return ShellRig.Settle();
+
+            Assert.That(h.Shell.IsDetailsFromCard, Is.False, screen.Name + ": Details closed");
+            Assert.That(h.Shell.IsSheetOpen, Is.False, screen.Name + ": no sheet stays open");
+            Assert.That(h.Shell.IsCardOpen, Is.False, screen.Name + ": the card closed");
+            Assert.That(h.Shell.SelectedSlot, Is.EqualTo(-1), screen.Name + ": the selection cleared, so the camera restores the prior view");
+            Assert.That(FocusedElement, Is.SameAs(h.Shell.LocationStop), screen.Name + ": focus is back on the location");
         }
 
         [UnityTest]
