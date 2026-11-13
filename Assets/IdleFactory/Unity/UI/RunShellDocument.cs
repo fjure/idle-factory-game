@@ -110,6 +110,23 @@ namespace IdleFactory.Unity.UI
         private VisualElement focusRing;
         private VisualElement ringTarget;
 
+        // T534: the docked machine card (one instance, registered as ShellPanelIds.MachineCard), its details hand-over and the keyboard
+        // stop of the world locations.
+        private IShellPanel cardPanel;
+        private VisualElement cardMountedRoot;
+        private bool cardOpen;
+        private int cardSlot = -1;
+        private bool detailsFromCard;
+        private bool cardBandPending;
+        private int cardBandFrame;
+        private float safeHeightPoints;
+        private VisualElement locationStop;
+        private readonly List<int> locationOrder = new List<int>();
+        private int locationCursor;
+        private int lastLocationMoveFrame = -1;
+        private int lastLocationMoveDirection;
+        private int lastLocationActivateFrame = -1;
+
         private bool built;
         private bool gameplayAvailable = true;
         private string unavailableReason = string.Empty;
@@ -200,6 +217,51 @@ namespace IdleFactory.Unity.UI
 
         /// <summary>The gear in the top strip that opens and closes the Settings sheet (T433, OD-8).</summary>
         public Button SettingsButton { get; private set; }
+
+        /// <summary>The accessible name of the keyboard stop that stands for the world locations.</summary>
+        public const string LocationStopName = "Locations. Arrow keys move between locations, Enter opens one.";
+
+        /// <summary>
+        /// Raised when the keyboard activates a location (Enter or Space on the location stop) with the location's slot index. The presenter
+        /// opens the build card, the machine card or the lock notice, as a tap does.
+        /// </summary>
+        public event Action<int> LocationActivated;
+
+        /// <summary>
+        /// Gives the screen rectangle (panel points, top-left origin) of a location so the focus ring of the location stop can surround it. Set
+        /// by the bootstrap, which owns the camera; unset, the stop sits at the corner of the world column.
+        /// </summary>
+        public Func<int, Rect?> LocationRectProvider { get; set; }
+
+        /// <summary>True while the machine card is the open frame (it is hidden while its Details view shows).</summary>
+        public bool IsCardOpen => cardOpen;
+
+        /// <summary>The slot the card shows, or -1.</summary>
+        public int CardSlot => cardOpen ? cardSlot : -1;
+
+        /// <summary>True while the Details view of a machine, opened from the card, is the open sheet (closing it returns to the card).</summary>
+        public bool IsDetailsFromCard => detailsFromCard;
+
+        /// <summary>True when a machine card is registered; without one, a machine tap opens the machine panel directly as before.</summary>
+        public bool HasMachineCard => registry.IsRegistered(ShellPanelIds.MachineCard);
+
+        /// <summary>The root of the machine card, or null when none is registered.</summary>
+        public VisualElement CardRoot => cardPanel?.Root;
+
+        /// <summary>The registered machine card, or null.</summary>
+        public IShellPanel Card => cardPanel;
+
+        /// <summary>True from the moment a card opens (or the layout changes under it) until its band has been laid out: the camera waits for it.</summary>
+        public bool IsCardBandPending => cardBandPending;
+
+        /// <summary>The keyboard stop that stands for the world locations (focusable; arrow keys move its cursor).</summary>
+        public VisualElement LocationStop => locationStop;
+
+        /// <summary>The slot the location cursor is on, or -1 when no order is set.</summary>
+        public int LocationCursorSlot => locationOrder.Count == 0 ? -1 : locationOrder[Mathf.Clamp(locationCursor, 0, locationOrder.Count - 1)];
+
+        /// <summary>The keyboard order of the locations (slot indices, by SortKeyOf then column).</summary>
+        public IReadOnlyList<int> LocationOrder => locationOrder;
 
         public ShellTab ActiveTab => activeTab;
         public string ActivePanelId => activePanelId;
@@ -377,6 +439,7 @@ namespace IdleFactory.Unity.UI
             ApplyTextScale(textScale);
             BuildPlaceholder();
             BindCallbacks();
+            BuildLocationStop();
             ApplyIcons();
             built = true;
             Error = string.Empty;
@@ -387,6 +450,7 @@ namespace IdleFactory.Unity.UI
             UpdateTabSelection();
             ApplyContractsBadge();
             ShowPanel(null, null, -1);
+            RebindCard();
             if (AutoProbeDevice)
             {
                 ProbeNow(true);
@@ -442,6 +506,8 @@ namespace IdleFactory.Unity.UI
                 var name = ShellTextScale.ClassName(step);
                 root.EnableInClassList(name, name == active);
             }
+
+            ApplyCardCap();
         }
 
         private void ProbeNow(bool includeFontScale)
@@ -527,9 +593,11 @@ namespace IdleFactory.Unity.UI
                 oreVein.CancelHold(OreVeinHoldEnd.Rotation);
             }
 
+            var sizeChanged = hasLastLayoutSize && (Mathf.Abs(width - lastLayoutWidth) > 0.5f || Mathf.Abs(height - lastLayoutHeight) > 0.5f);
             hasLastLayoutSize = true;
             lastLayoutWidth = width;
             lastLayoutHeight = height;
+            safeHeightPoints = Mathf.Max(0f, safeArea.height);
             Layout = FactoryHudDocument.Classify(width, height);
             foreach (var layout in (FactoryHudLayout[])Enum.GetValues(typeof(FactoryHudLayout)))
             {
@@ -571,6 +639,15 @@ namespace IdleFactory.Unity.UI
                 overdriveParent.Add(OverdriveButton);
             }
 
+            // The card docks in the side panel on tablet and desktop and as a band or column in the main row on phones; the camera waits for
+            // the new band after a resize or rotation (the band is known before the reframe).
+            MountCard();
+            ApplyCardCap();
+            if (cardOpen && (sizeChanged || previous != Layout))
+            {
+                MarkCardBandPending();
+            }
+
             if (previous != Layout)
             {
                 UpdateSheetState();
@@ -608,6 +685,18 @@ namespace IdleFactory.Unity.UI
             if (!IsReady || root.panel == null || screenHeight <= 0f)
             {
                 return false;
+            }
+
+            if (cardBandPending)
+            {
+                // The card was just opened or resized: until its band is laid out the rectangle is the old one, and reframing on it would move
+                // the camera twice. A few frames at most, then the layout is taken as it is.
+                if (Time.frameCount - cardBandFrame < 4)
+                {
+                    return false;
+                }
+
+                cardBandPending = false;
             }
 
             var bounds = worldColumn.worldBound;
@@ -1132,6 +1221,8 @@ namespace IdleFactory.Unity.UI
             }
 
             ClearTransientNotice();
+            DismissCard(false);
+            detailsFromCard = false;
             SetSelectedSlot(-1);
             activeTab = tab;
             sheetOpen = true;
@@ -1184,6 +1275,8 @@ namespace IdleFactory.Unity.UI
             }
 
             ClearTransientNotice();
+            DismissCard(false);
+            detailsFromCard = false;
             SetSelectedSlot(-1);
             activeTab = ShellTab.Factory;
             sheetOpen = true;
@@ -1219,7 +1312,7 @@ namespace IdleFactory.Unity.UI
         /// Opens the build sheet (an empty slot) or the machine panel (an occupied slot). A locked slot opens nothing and
         /// shows the level that unlocks it. Returns whether a sheet opened.
         /// </summary>
-        public bool OpenSlot(int slot, SlotCondition condition, int unlockLevel = 0)
+        public bool OpenSlot(int slot, SlotCondition condition, int unlockLevel = 0, bool focusCard = false)
         {
             if (!EnsureReady())
             {
@@ -1233,7 +1326,15 @@ namespace IdleFactory.Unity.UI
                 return false;
             }
 
+            if (condition == SlotCondition.Occupied && HasMachineCard)
+            {
+                // T534: a machine opens the docked card; its Details view is the former machine panel.
+                return OpenMachineCard(slot, focusCard);
+            }
+
             ClearTransientNotice();
+            DismissCard(false);
+            detailsFromCard = false;
             activeTab = ShellTab.Factory;
             sheetOpen = true;
             SetSelectedSlot(slot);
@@ -1251,6 +1352,13 @@ namespace IdleFactory.Unity.UI
         /// </summary>
         public void UpdateSlotRoute(int slot, SlotCondition condition)
         {
+            if (cardOpen && slot == cardSlot && condition != SlotCondition.Occupied)
+            {
+                // A removed machine closes the card and says so (FR-016, U-9). The card also checks its own instance every refresh.
+                CloseMachineCard(true, MachineCardCopy.Gone);
+                return;
+            }
+
             if (!IsReady || slot != selectedSlot || !sheetOpen || activeTab != ShellTab.Factory)
             {
                 return;
@@ -1263,8 +1371,16 @@ namespace IdleFactory.Unity.UI
             }
 
             var id = condition == SlotCondition.Empty ? ShellPanelIds.Build : ShellPanelIds.Machine;
+            if (id == ShellPanelIds.Machine && activePanelId == ShellPanelIds.Build && HasMachineCard)
+            {
+                // A machine was built at the selected location: the build sheet hands over to the new machine's card.
+                OpenMachineCard(slot);
+                return;
+            }
+
             if (id != activePanelId)
             {
+                detailsFromCard = false;
                 ShowPanel(id, (condition == SlotCondition.Empty ? "Build" : "Machine") + " · Slot " + (slot + 1), slot);
             }
         }
@@ -1284,8 +1400,10 @@ namespace IdleFactory.Unity.UI
             var focusWasInside = focused != null && panelHost.Contains(focused) && !tabBar.Contains(focused);
             var wasSettings = settingsOpen;
             sheetOpen = false;
+            detailsFromCard = false;
             activeTab = ShellTab.Factory;
             ClearTransientNotice();
+            DismissCard(false);
             SetSelectedSlot(-1);
             ShowPanel(null, null, -1);
             UpdateSheetState();
@@ -1317,10 +1435,468 @@ namespace IdleFactory.Unity.UI
         void IShellBackFrames.PopDialog() => CloseDialog(ConfirmationCloseReason.Back);
         void IShellBackFrames.PopPinnedValue() => Unpin();
         void IShellBackFrames.PopSettings() => CloseSettings();
-        void IShellBackFrames.PopSheet() => CloseSheet();
+        void IShellBackFrames.PopSheet() => CloseSheetOrDetails();
+        bool IShellBackFrames.HasCard => cardOpen;
+        void IShellBackFrames.PopCard() => CloseMachineCard();
 
         /// <summary>The shown panel changed because the run read model changed: lets a visible panel refresh itself.</summary>
         public void RefreshActivePanel() => activePanel?.Refresh();
+
+        // ------------------------------------------------------------------------------------------------------
+        // Machine card (T534, FR-016 to FR-019, research R10)
+        // ------------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Opens the docked machine card for an occupied slot, or switches it to another slot. The card is exclusive with every sheet: an open
+        /// sheet, tab panel or Settings closes first, and the selection is the slot (the camera keeps it in the band the card leaves).
+        /// Returns false when no card is registered.
+        /// </summary>
+        public bool OpenMachineCard(int slot, bool focusCard = false)
+        {
+            if (!EnsureReady() || !HasMachineCard || slot < 0)
+            {
+                return false;
+            }
+
+            ClearTransientNotice();
+            if (sheetOpen)
+            {
+                sheetOpen = false;
+                detailsFromCard = false;
+                activeTab = ShellTab.Factory;
+                ShowPanel(null, null, -1);
+            }
+
+            var wasOpen = cardOpen;
+            RebindCard(false);
+            activeTab = ShellTab.Factory;
+            cardOpen = true;
+            cardSlot = slot;
+            SetSelectedSlot(slot);
+            MountCard();
+            ApplyCardCap();
+            root.EnableInClassList("run-shell--card-open", true);
+            if (!wasOpen)
+            {
+                MarkCardBandPending();
+            }
+
+            cardPanel.OnShown(new ShellPanelContext(this, slot));
+            UpdateSheetState();
+            if (focusCard && cardOpen)
+            {
+                FocusWhenReady(cardPanel.Root.Q<Button>("machine-card-upgrade"));
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Closes the machine card and clears the selection (the camera restores the prior view). With a <paramref name="notice"/> the shell
+        /// shows it. When focus was inside the card it returns to the location that was selected (the keyboard stop, with its cursor there).
+        /// </summary>
+        public void CloseMachineCard(bool restoreFocus = true, string notice = null)
+        {
+            if (!EnsureReady() || !cardOpen)
+            {
+                return;
+            }
+
+            var slot = cardSlot;
+            var focused = root.panel?.focusController?.focusedElement as VisualElement;
+            var focusWasInside = focused != null && cardPanel != null && cardPanel.Root.Contains(focused);
+            DismissCard(true);
+            if (!string.IsNullOrEmpty(notice))
+            {
+                ShowNotice(notice, ShellNoticeKind.Info);
+            }
+
+            UpdateSheetState();
+            if (restoreFocus && focusWasInside)
+            {
+                FocusLocation(slot);
+            }
+        }
+
+        /// <summary>
+        /// Opens the Details view of the card's machine: the former machine panel in the sheet. The card hides, the selection stays, and closing
+        /// the sheet (Close, Back, Escape) returns to the card with focus on its Details control.
+        /// </summary>
+        public bool OpenDetails(int slot)
+        {
+            if (!EnsureReady() || slot < 0)
+            {
+                return false;
+            }
+
+            var fromCard = cardOpen;
+            DismissCard(false);
+            ClearTransientNotice();
+            activeTab = ShellTab.Factory;
+            sheetOpen = true;
+            SetSelectedSlot(slot);
+            ShowPanel(ShellPanelIds.Machine, "Details \u00B7 Location " + (slot + 1), slot);
+            detailsFromCard = fromCard;
+            UpdateSheetState();
+            if (fromCard)
+            {
+                FocusWhenReady(activePanel?.Root.Q<Button>() ?? CloseButton);
+            }
+
+            return true;
+        }
+
+        /// <summary>Close for a sheet: the Details view returns to the card it was opened from; any other sheet closes as <see cref="CloseSheet"/>.</summary>
+        public void CloseSheetOrDetails()
+        {
+            if (!EnsureReady())
+            {
+                return;
+            }
+
+            if (detailsFromCard && sheetOpen && selectedSlot >= 0 && activePanelId == ShellPanelIds.Machine && HasMachineCard)
+            {
+                var slot = selectedSlot;
+                detailsFromCard = false;
+                sheetOpen = false;
+                activeTab = ShellTab.Factory;
+                ClearTransientNotice();
+                ShowPanel(null, null, -1);
+                UpdateSheetState();
+                if (OpenMachineCard(slot))
+                {
+                    FocusWhenReady(cardPanel.Root.Q<Button>("machine-card-details"));
+                }
+                else
+                {
+                    CloseSheet();
+                }
+
+                return;
+            }
+
+            CloseSheet();
+        }
+
+        /// <summary>Per-frame update of the open card (the card refreshes its model every frame).</summary>
+        public void RefreshCard()
+        {
+            if (cardOpen)
+            {
+                cardPanel?.Refresh();
+            }
+        }
+
+        // Hides the card without touching the selection (a sheet or another selection takes over), or with clearing it.
+        private void DismissCard(bool clearSelection)
+        {
+            if (!cardOpen)
+            {
+                return;
+            }
+
+            cardOpen = false;
+            cardSlot = -1;
+            cardBandPending = false;
+            cardPanel?.OnHidden();
+            root?.EnableInClassList("run-shell--card-open", false);
+            if (clearSelection)
+            {
+                SetSelectedSlot(-1);
+            }
+        }
+
+        // Re-reads the registered card (a session replace registers a new one) and mounts it. A card that was open for the old session closes: a
+        // world replacement clears the stack.
+        private void RebindCard(bool closeOpen = true)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            registry.TryGet(ShellPanelIds.MachineCard, out var registered);
+            if (ReferenceEquals(registered, cardPanel))
+            {
+                return;
+            }
+
+            if (closeOpen && cardOpen)
+            {
+                DismissCard(true);
+            }
+
+            cardMountedRoot?.RemoveFromHierarchy();
+            cardMountedRoot = null;
+            cardPanel = registered;
+            MountCard();
+            ApplyCardCap();
+        }
+
+        private void MountCard()
+        {
+            if (cardPanel == null || root == null || panelHost == null || main == null)
+            {
+                return;
+            }
+
+            var element = cardPanel.Root;
+            var parent = IsSidePanelLayout ? panelHost : main;
+            if (element.parent != parent)
+            {
+                element.RemoveFromHierarchy();
+                if (parent == panelHost)
+                {
+                    parent.Insert(parent.IndexOf(panelScroll), element);
+                }
+                else
+                {
+                    parent.Add(element);
+                }
+            }
+
+            if (!ReferenceEquals(cardMountedRoot, element))
+            {
+                cardMountedRoot = element;
+                element.RegisterCallback<GeometryChangedEvent>(OnCardGeometry);
+            }
+        }
+
+        private void OnCardGeometry(GeometryChangedEvent evt)
+        {
+            if (cardBandPending && cardOpen && cardMountedRoot != null && cardMountedRoot.layout.height > 0f)
+            {
+                cardBandPending = false;
+            }
+        }
+
+        private void MarkCardBandPending()
+        {
+            cardBandPending = true;
+            cardBandFrame = Time.frameCount;
+        }
+
+        /// <summary>
+        /// The band the card may take in phone portrait: at most 30 percent of the safe height at 100 to 140 percent text, and a hard cap of 45
+        /// percent above that (FR-016, OD-14). Other classes take their column or the side panel and are not capped.
+        /// </summary>
+        public static float CardBandFraction(int textScalePercent) => textScalePercent <= 140 ? 0.30f : 0.45f;
+
+        private void ApplyCardCap()
+        {
+            if (cardMountedRoot == null)
+            {
+                return;
+            }
+
+            if (Layout == FactoryHudLayout.CompactPortrait && safeHeightPoints > 0f)
+            {
+                cardMountedRoot.style.maxHeight = safeHeightPoints * CardBandFraction(TextScalePercent);
+            }
+            else
+            {
+                cardMountedRoot.style.maxHeight = StyleKeyword.Null;
+            }
+        }
+
+        // ------------------------------------------------------------------------------------------------------
+        // Keyboard stop of the world locations (T534, R10: persistent layer, locations by SortKeyOf, then the card)
+        // ------------------------------------------------------------------------------------------------------
+
+        private void BuildLocationStop()
+        {
+            locationStop = new VisualElement { name = "location-stop", focusable = true, pickingMode = PickingMode.Ignore, tooltip = LocationStopName };
+            locationStop.AddToClassList("run-control");
+            locationStop.AddToClassList("run-location-stop");
+            var style = locationStop.style;
+            style.position = Position.Absolute;
+            style.left = 0f;
+            style.top = 0f;
+            style.width = 48f;
+            style.height = 48f;
+            style.backgroundColor = Color.clear;
+            style.borderLeftWidth = 0f;
+            style.borderRightWidth = 0f;
+            style.borderTopWidth = 0f;
+            style.borderBottomWidth = 0f;
+            worldColumn.Add(locationStop);
+            locationStop.RegisterCallback<KeyDownEvent>(OnLocationKeyDown, TrickleDown.TrickleDown);
+            locationStop.RegisterCallback<NavigationMoveEvent>(OnLocationNavigationMove, TrickleDown.TrickleDown);
+            locationStop.RegisterCallback<NavigationSubmitEvent>(OnLocationSubmit, TrickleDown.TrickleDown);
+            locationStop.RegisterCallback<FocusInEvent>(evt => PositionLocationStop());
+        }
+
+        /// <summary>Sets the keyboard order of the locations (slot indices). The cursor stays on its slot when that slot is still in the order.</summary>
+        public void SetLocationOrder(IReadOnlyList<int> order)
+        {
+            var current = LocationCursorSlot;
+            locationOrder.Clear();
+            if (order != null)
+            {
+                for (var i = 0; i < order.Count; i++)
+                {
+                    locationOrder.Add(order[i]);
+                }
+            }
+
+            var index = current >= 0 ? locationOrder.IndexOf(current) : -1;
+            locationCursor = index >= 0 ? index : 0;
+        }
+
+        /// <summary>Moves the cursor to a slot and focuses the stop: used when focus returns to a location (the card closed).</summary>
+        public void FocusLocation(int slot)
+        {
+            if (locationStop == null)
+            {
+                return;
+            }
+
+            var index = locationOrder.IndexOf(slot);
+            if (index >= 0)
+            {
+                locationCursor = index;
+            }
+
+            PositionLocationStop();
+            FocusWhenReady(locationStop);
+        }
+
+        /// <summary>Re-places the stop on the cursor's location (the camera moved). The bootstrap calls it every frame while the stop has focus.</summary>
+        public void RefreshLocationStop()
+        {
+            if (locationStop != null && locationStop.focusController?.focusedElement == locationStop)
+            {
+                PositionLocationStop();
+            }
+        }
+
+        private void PositionLocationStop()
+        {
+            if (locationStop == null || worldColumn == null)
+            {
+                return;
+            }
+
+            var slot = LocationCursorSlot;
+            var style = locationStop.style;
+            var rect = slot >= 0 && LocationRectProvider != null ? LocationRectProvider(slot) : null;
+            if (rect.HasValue && !float.IsNaN(worldColumn.worldBound.x))
+            {
+                var origin = worldColumn.worldBound;
+                var width = Mathf.Max(48f, rect.Value.width);
+                var height = Mathf.Max(48f, rect.Value.height);
+                style.left = rect.Value.center.x - width * 0.5f - origin.xMin;
+                style.top = rect.Value.center.y - height * 0.5f - origin.yMin;
+                style.width = width;
+                style.height = height;
+            }
+            else
+            {
+                style.left = 0f;
+                style.top = 0f;
+                style.width = 48f;
+                style.height = 48f;
+            }
+
+            if (ringTarget == locationStop)
+            {
+                PositionFocusRing();
+            }
+        }
+
+        private void MoveLocationCursor(int direction, bool toEnd = false)
+        {
+            if (locationOrder.Count == 0)
+            {
+                return;
+            }
+
+            // The input system raises a key event and a navigation event for one arrow press: act on the first only.
+            if (!toEnd && lastLocationMoveFrame == Time.frameCount && lastLocationMoveDirection == direction && Application.isPlaying)
+            {
+                return;
+            }
+
+            lastLocationMoveFrame = Time.frameCount;
+            lastLocationMoveDirection = direction;
+            locationCursor = toEnd
+                ? (direction < 0 ? 0 : locationOrder.Count - 1)
+                : Mathf.Clamp(locationCursor + direction, 0, locationOrder.Count - 1);
+            PositionLocationStop();
+        }
+
+        private void ActivateLocation()
+        {
+            if (locationOrder.Count == 0)
+            {
+                return;
+            }
+
+            if (lastLocationActivateFrame == Time.frameCount && Application.isPlaying)
+            {
+                return;
+            }
+
+            lastLocationActivateFrame = Time.frameCount;
+            LocationActivated?.Invoke(LocationCursorSlot);
+        }
+
+        private void OnLocationKeyDown(KeyDownEvent evt)
+        {
+            switch (evt.keyCode)
+            {
+                case KeyCode.LeftArrow:
+                case KeyCode.UpArrow:
+                    MoveLocationCursor(-1);
+                    break;
+                case KeyCode.RightArrow:
+                case KeyCode.DownArrow:
+                    MoveLocationCursor(1);
+                    break;
+                case KeyCode.Home:
+                    MoveLocationCursor(-1, true);
+                    break;
+                case KeyCode.End:
+                    MoveLocationCursor(1, true);
+                    break;
+                case KeyCode.Return:
+                case KeyCode.KeypadEnter:
+                case KeyCode.Space:
+                    ActivateLocation();
+                    break;
+                default:
+                    return;
+            }
+
+            evt.StopPropagation();
+            locationStop.focusController?.IgnoreEvent(evt);
+        }
+
+        private void OnLocationNavigationMove(NavigationMoveEvent evt)
+        {
+            switch (evt.direction)
+            {
+                case NavigationMoveEvent.Direction.Left:
+                case NavigationMoveEvent.Direction.Up:
+                    MoveLocationCursor(-1);
+                    break;
+                case NavigationMoveEvent.Direction.Right:
+                case NavigationMoveEvent.Direction.Down:
+                    MoveLocationCursor(1);
+                    break;
+                default:
+                    return;
+            }
+
+            evt.StopPropagation();
+            locationStop.focusController?.IgnoreEvent(evt);
+        }
+
+        private void OnLocationSubmit(NavigationSubmitEvent evt)
+        {
+            ActivateLocation();
+            evt.StopPropagation();
+        }
 
         private void SetSelectedSlot(int slot)
         {
@@ -2224,7 +2800,7 @@ namespace IdleFactory.Unity.UI
             tabButtons[(int)ShellTab.Contracts].RegisterCallback<GeometryChangedEvent>(evt => ApplyContractsBadge());
             tabBar.RegisterCallback<KeyDownEvent>(OnTabKeyDown);
             tabBar.RegisterCallback<NavigationMoveEvent>(OnTabNavigationMove);
-            CloseButton.clicked += () => CloseSheet();
+            CloseButton.clicked += () => CloseSheetOrDetails();
             CloseButton.tooltip = "Close";
             ZoomInButton.clicked += () => OnZoomClicked(1);
             ZoomOutButton.clicked += () => OnZoomClicked(-1);
@@ -2379,6 +2955,12 @@ namespace IdleFactory.Unity.UI
 
         private void OnRegistryChanged(string id)
         {
+            if (IsReady && id == ShellPanelIds.MachineCard)
+            {
+                RebindCard();
+                return;
+            }
+
             if (!IsReady || id != activePanelId)
             {
                 return;
@@ -2586,6 +3168,19 @@ namespace IdleFactory.Unity.UI
             oreVeinWanted = false;
             activePanel?.OnHidden();
             activePanel = null;
+            if (cardOpen)
+            {
+                cardPanel?.OnHidden();
+            }
+
+            cardOpen = false;
+            cardSlot = -1;
+            detailsFromCard = false;
+            cardBandPending = false;
+            cardMountedRoot?.RemoveFromHierarchy();
+            cardMountedRoot = null;
+            cardPanel = null;
+            locationStop = null;
             if (root != null && panelContent != null)
             {
                 // Mounted panel roots belong to their panels: take them out before the shell tree is dropped.

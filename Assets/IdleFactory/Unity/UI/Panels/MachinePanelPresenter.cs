@@ -9,12 +9,17 @@ using UnityEngine.UIElements;
 namespace IdleFactory.Unity.UI
 {
     /// <summary>
+    /// The Details view of a machine (T534, FR-018): the machine panel of F003 to F005 keeps every capability, reorganized as the second step
+    /// behind the docked <see cref="MachineCard"/> (Details chevron). Closing it returns to the card. Remove stays here, behind the shell's
+    /// confirmation dialog (FR-019). The F003 description follows.
+    /// </summary>
+    /// <remarks>
     /// The machine panel of an occupied slot (T113, FR-009, FR-011, US1 scenarios 2 and 5, UX-10): level, effective rate with the
     /// batch size beyond the event bound, cycle progress, blockers with corrective actions, the next upgrade, the active toggle
     /// and Remove behind the shell's confirmation dialog. It reads <see cref="RunSnapshots.Factory"/>, <see cref="RunSnapshots.Rates"/>
     /// and the allocation-free machine states, and mutates only through <see cref="RunCommands"/>. Every rejected command shows its
     /// reason code's copy next to the control that was used and changes no state.
-    /// </summary>
+    /// </remarks>
     public sealed class MachinePanelPresenter : IShellPanel
     {
         private readonly RunSession session;
@@ -38,6 +43,8 @@ namespace IdleFactory.Unity.UI
         private readonly Label upgradeFeedback;
         private readonly Label activeFeedback;
         private readonly Label removeFeedback;
+        private readonly MachineFeedback responses;
+        private IVisualElementScheduledItem highlightTimer;
         private MachineStateView[] states = new MachineStateView[64];
         private ShellPanelContext context;
         private int slot = -1;
@@ -70,9 +77,11 @@ namespace IdleFactory.Unity.UI
         private const string WorstStatus = "Status: Waiting: the finished cycle cannot be delivered yet";
         private const string WorstLastBatch = "Last batch: 999,999 of 999,999 because Iron Ore ran short.";
 
-        public MachinePanelPresenter(RunSession session, RunCommands commands, VisualTreeAsset tree, StyleSheet styles, Func<string, Sprite> icons = null)
+        public MachinePanelPresenter(
+            RunSession session, RunCommands commands, VisualTreeAsset tree, StyleSheet styles, Func<string, Sprite> icons = null, MachineFeedback responses = null)
         {
             this.icons = icons;
+            this.responses = responses;
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.commands = commands ?? throw new ArgumentNullException(nameof(commands));
             if (tree == null)
@@ -126,7 +135,7 @@ namespace IdleFactory.Unity.UI
         }
 
         public string Id => ShellPanelIds.Machine;
-        public string Title => "Machine";
+        public string Title => "Details";
         public VisualElement Root => root;
 
         public Button UpgradeButton { get; }
@@ -677,6 +686,36 @@ namespace IdleFactory.Unity.UI
         // Commands (each shows its rejection next to the control that was used)
         // ------------------------------------------------------------------------------------------------------
 
+        /// <summary>The seconds the static highlight on the name stays (FR-034: one second); a test shortens it.</summary>
+        public float HighlightSeconds { get; set; } = 1f;
+
+        /// <summary>True while the static highlight shows on the name.</summary>
+        public bool IsHighlighted => nameLabel.ClassListContains("mpanel__name--highlight");
+
+        // FR-034: a successful upgrade or switch-on answers with a world effect through the sink, or with the static one-second highlight under
+        // reduced motion and while no sink is wired.
+        private void Respond(MachineResponseKind kind)
+        {
+            if (responses == null || slot < 0)
+            {
+                return;
+            }
+
+            responses.Play(kind, slot, ShowHighlight);
+        }
+
+        private void ShowHighlight()
+        {
+            highlightTimer?.Pause();
+            nameLabel.AddToClassList("mpanel__name--highlight");
+            highlightTimer = nameLabel.schedule.Execute(() =>
+            {
+                nameLabel.RemoveFromClassList("mpanel__name--highlight");
+                highlightTimer = null;
+            });
+            highlightTimer.ExecuteLater((long)(HighlightSeconds * 1000f));
+        }
+
         private void ClearFeedback()
         {
             foreach (var label in new[] { blockerFeedback, upgradeFeedback, activeFeedback, removeFeedback })
@@ -704,6 +743,10 @@ namespace IdleFactory.Unity.UI
             {
                 SlotSheetText.SetText(upgradeFeedback, RunRejectionCopy.For(result.ReasonCode));
             }
+            else
+            {
+                Respond(MachineResponseKind.UpgradeGlint);
+            }
 
             Finish();
         }
@@ -716,10 +759,15 @@ namespace IdleFactory.Unity.UI
             }
 
             ClearFeedback();
-            var result = commands.SetActive(machine.InstanceId, !machine.IsActive);
+            var switchOn = !machine.IsActive;
+            var result = commands.SetActive(machine.InstanceId, switchOn);
             if (!result.IsSuccess)
             {
                 SlotSheetText.SetText(activeFeedback, RunRejectionCopy.For(result.ReasonCode));
+            }
+            else if (switchOn)
+            {
+                Respond(MachineResponseKind.SwitchOn);
             }
 
             Finish();
@@ -735,6 +783,11 @@ namespace IdleFactory.Unity.UI
                 {
                     var result = commands.SetActive(action.InstanceId == Guid.Empty && machine != null ? machine.InstanceId : action.InstanceId, true);
                     reason = result.IsSuccess ? null : result.ReasonCode;
+                    if (result.IsSuccess)
+                    {
+                        Respond(MachineResponseKind.SwitchOn);
+                    }
+
                     break;
                 }
 

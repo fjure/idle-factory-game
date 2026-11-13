@@ -278,6 +278,56 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>True when the depot lies right of the lattice, false when it lies left of it.</summary>
         public bool DepotOnRight { get; }
 
+        /// <summary>The depot canvas in art pixels (80 x 76, pivot (40, 20), Art Bible 21.4): what the view extent keeps in view.</summary>
+        public static readonly Vector2Int DepotCanvasPixels = new Vector2Int(80, 76);
+
+        /// <summary>The depot pivot inside its canvas in art pixels, from the lower-left corner.</summary>
+        public static readonly Vector2Int DepotPivotPixels = new Vector2Int(40, 20);
+
+        /// <summary>The world rectangle the depot sprite covers around <see cref="DepotAnchor"/>.</summary>
+        public Rect DepotRect => new Rect(
+            DepotAnchor.x - DepotPivotPixels.x / Density,
+            DepotAnchor.y - DepotPivotPixels.y / Density,
+            DepotCanvasPixels.x / Density,
+            DepotCanvasPixels.y / Density);
+
+        /// <summary>The world rectangle of the ore-vein deposit: its margin cell (the 48 x 34 sprite sits inside it).</summary>
+        public Rect DepositRect => DeckTileRect(DepositCell);
+
+        /// <summary>
+        /// The view extent (T534, P1-F2, OD-9b UI/UX C1): <see cref="Bounds"/> plus the depot and the deposit, which sit one lattice cell outside
+        /// the bounds. The camera always pans over it, and it fits over it when that costs no integer scale compared with <see cref="Bounds"/> alone;
+        /// otherwise fit-all frames <see cref="Bounds"/> and the depot or the vein may be out of view until the player pans (recorded per screen
+        /// class, never hidden by art).
+        /// </summary>
+        public Rect ViewBounds
+        {
+            get
+            {
+                var depot = DepotRect;
+                var deposit = DepositRect;
+                return Rect.MinMaxRect(
+                    Mathf.Min(Bounds.xMin, Mathf.Min(depot.xMin, deposit.xMin)),
+                    Mathf.Min(Bounds.yMin, Mathf.Min(depot.yMin, deposit.yMin)),
+                    Mathf.Max(Bounds.xMax, Mathf.Max(depot.xMax, deposit.xMax)),
+                    Mathf.Max(Bounds.yMax, Mathf.Max(depot.yMax, deposit.yMax)));
+            }
+        }
+
+        /// <summary>
+        /// The whole visual extent of a location in world units: the plate width, from the plate bottom up to the top of the badge band
+        /// (<see cref="SlotGridLayout.ContentAbovePivotPixels"/>). A card that must not hide the machine keeps this rectangle in view,
+        /// not only the plate footprint (SC-002).
+        /// </summary>
+        public Rect MachineRectOf(BuildingLocationId id)
+        {
+            var pivot = AnchorOf(id);
+            var width = SlotGridLayout.PlateWidthPixels / Density;
+            var bottom = pivot.y - SlotGridLayout.PivotAbovePlateBottomPixels / Density;
+            var top = pivot.y + SlotGridLayout.ContentAbovePivotPixels / Density;
+            return new Rect(pivot.x - width * 0.5f, bottom, width, top - bottom);
+        }
+
         public bool IsValidId(BuildingLocationId id) => id.Value >= 0 && id.Value < cells.Length;
 
         /// <summary>The lattice cell (column from the left, row from the bottom) of a location.</summary>

@@ -713,12 +713,11 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
             yield return null;
             yield return null;
-            Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Machine), "after the build the open sheet becomes the machine panel");
-            Assert.That(machine.Root.parent, Is.SameAs(shell.PanelContent));
+            Assert.That(shell.IsCardOpen, Is.True, "after the build the open sheet hands over to the machine card (T534)");
 
             shell.CloseSheet();
             Assert.That(presenter.HandleWorldTap(grid.WorldRectOf(2).center), Is.True);
-            Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Machine), "an occupied slot opens the machine panel");
+            Assert.That(shell.IsCardOpen, Is.True, "an occupied slot opens the machine card (T534)");
 
             Assert.That(presenter.HandleWorldTap(new Vector2(-50f, -50f)), Is.False, "a tap beside the grid hits nothing");
         }

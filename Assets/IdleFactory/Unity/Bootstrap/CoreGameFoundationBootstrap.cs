@@ -48,6 +48,10 @@ namespace IdleFactory.Unity.Bootstrap
         [SerializeField] private StyleSheet buildSheetStyles;
         [SerializeField] private VisualTreeAsset machinePanelTree;
         [SerializeField] private StyleSheet machinePanelStyles;
+        [Tooltip("T534: the docked machine card (UXML, USS) and the shared PanelScaffold USS it reuses. A missing asset leaves a machine tap on the Details view with a coded diagnostic.")]
+        [SerializeField] private VisualTreeAsset machineCardTree;
+        [SerializeField] private StyleSheet machineCardStyles;
+        [SerializeField] private StyleSheet panelScaffoldStyles;
         [SerializeField] private VisualTreeAsset inventoryRatesTree;
         [SerializeField] private StyleSheet inventoryRatesStyles;
         [SerializeField] private VisualTreeAsset prioritiesTree;
@@ -536,6 +540,7 @@ namespace IdleFactory.Unity.Bootstrap
                 runShell.ZoomRequested += cameraController.ZoomFromVisibleControl;
                 runShell.SlotSelectionChanged += HandleShellSlotSelection;
                 dialogRotationRegistration = RegisterTransientAction(runShell.CancelConfirmationForRotation);
+                runShell.LocationRectProvider = LocationScreenRect;
                 shellPresenter = new RunShellPresenter(runSession, runCommands, runShell, slotGrid, PresentationKeyOf);
                 ComposeRunPanels();
             }
@@ -546,6 +551,33 @@ namespace IdleFactory.Unity.Bootstrap
             shellAvailable = runPersistence.Lifecycle == LifecycleState.Running;
             ApplySafeAreaLayout(true);
             return true;
+        }
+
+        private IMachineEffects machineEffects;
+
+        /// <summary>T529 hands the world effect pool here; until then the card answers with the static highlight (FR-034).</summary>
+        public void UseMachineEffects(IMachineEffects effects) => machineEffects = effects;
+
+        // The location stop's ring surrounds the machine on screen: the world rectangle of the location through the camera, in panel points.
+        private Rect? LocationScreenRect(int slot)
+        {
+            if (slotGrid == null || factoryCamera == null || cameraController == null || !cameraController.HasLayout)
+            {
+                return null;
+            }
+
+            var layout = slotGrid.Layout;
+            if (slot < 0 || slot >= layout.LocationCount)
+            {
+                return null;
+            }
+
+            var world = layout.MachineRectOf(new BuildingLocationId(slot));
+            var low = factoryCamera.WorldToScreenPoint(new Vector3(world.xMin, world.yMin, 0f));
+            var high = factoryCamera.WorldToScreenPoint(new Vector3(world.xMax, world.yMax, 0f));
+            var perPoint = PixelsPerPoint();
+            var panelHeight = factoryCamera.pixelHeight / perPoint;
+            return Rect.MinMaxRect(low.x / perPoint, panelHeight - high.y / perPoint, high.x / perPoint, panelHeight - low.y / perPoint);
         }
 
         private Sprite ResolveIcon(string key) => spriteCatalog.TryGet(key, out var sprite) ? sprite : null;
@@ -580,8 +612,14 @@ namespace IdleFactory.Unity.Bootstrap
 
             TryComposePanel(ShellPanelIds.Build,
                 () => new BuildSheetPresenter(runSession, runCommands, buildSheetTree, buildSheetStyles, icons));
+            // T534: the card and the Details view answer a successful upgrade or switch-on through one policy (a world effect through the sink once
+            // T529 wires the pool, otherwise and always under reduced motion the static one-second highlight, FR-034).
+            var machineFeedback = new MachineFeedback(() => CurrentReducedMotion.Reduced, machineEffects);
             TryComposePanel(ShellPanelIds.Machine,
-                () => new MachinePanelPresenter(runSession, runCommands, machinePanelTree, machinePanelStyles, icons));
+                () => new MachinePanelPresenter(runSession, runCommands, machinePanelTree, machinePanelStyles, icons, machineFeedback));
+            TryComposePanel(ShellPanelIds.MachineCard,
+                () => new MachineCard(runSession, runCommands, machineCardTree, machineCardStyles, panelScaffoldStyles, icons, machineFeedback,
+                    () => slotGrid != null ? slotGrid.Layout : LatticeLayoutBuilder.ShippedForColumns(3)));
             TryComposePanel(ShellPanelIds.Market,
                 () => new MarketPanelHost(runSession, runCommands, runShell, inventoryRatesTree, inventoryRatesStyles,
                     prioritiesTree, prioritiesStyles, expansionTree, expansionStyles, icons, sessionLog),
@@ -1025,6 +1063,8 @@ namespace IdleFactory.Unity.Bootstrap
                 }
                 else if (kind == LifecycleReturnKind.Return && result.Value != null && result.Value.OfflineSummary != null)
                 {
+                    // P2-F12: the first refresh after an offline return reports no completion delta.
+                    (runShell?.Card as MachineCard)?.ResetModels(true);
                     LastOfflineSummary = result.Value.OfflineSummary;
                 }
             }
@@ -1334,7 +1374,8 @@ namespace IdleFactory.Unity.Bootstrap
 
             if (wantSheet && (changed || selectionChanged || !cameraController.SheetOpen))
             {
-                cameraController.OpenSheet(visibleArea, framing.FrameSlot(selectedSlot, slotGrid.Layout));
+                // SC-002: the whole machine (plate and badge band) stays in the band the card or sheet leaves, not only its plate.
+                cameraController.OpenSheet(visibleArea, framing.FrameMachine(selectedSlot, slotGrid.Layout));
             }
 
             selectionChanged = false;

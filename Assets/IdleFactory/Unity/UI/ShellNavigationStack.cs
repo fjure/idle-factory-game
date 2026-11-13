@@ -18,10 +18,17 @@ namespace IdleFactory.Unity.UI
         void PopSettings();
 
         void PopSheet();
+
+        /// <summary>T534: the machine card is open (docked, no sheet). Defaults to false so existing implementers stay valid.</summary>
+        bool HasCard => false;
+
+        void PopCard()
+        {
+        }
     }
 
     /// <summary>
-    /// The back-frame order of the run shell (R11, T511): dialog, pinned value, settings, sheet. One back press pops exactly one
+    /// The back-frame order of the run shell (R11, T511, T534): dialog, pinned value, settings, sheet (Details), machine card. One back press pops exactly one
     /// frame, and the press is idempotent within a frame so a key event and the input poll never act twice. Plain C#, no UI
     /// Toolkit dependency. The tab bar and <c>ShellTab</c> stay in <see cref="RunShellDocument"/> as a shim.
     /// </summary>
@@ -59,6 +66,11 @@ namespace IdleFactory.Unity.UI
             else if (frames.HasClosableSheet)
             {
                 frames.PopSheet();
+                consumed = true;
+            }
+            else if (frames.HasCard)
+            {
+                frames.PopCard();
                 consumed = true;
             }
             else
