@@ -268,6 +268,8 @@ The positions differ.
 
 **Owner decision (2026-11-13, recorded by the parent):** a NEW "Office" glyph, as the Art Director requires. The hub entry gets its own 24 px `ui_text` glyph, authored through the F003 UI-icon pipeline with an Art Director pixel review. This adds one F006-UI sprite under §21.2, so the T523 "0 sprites" count becomes 1. The visible "Office" label stays beside the glyph at every text scale. Carried as P2-F22.
 
+**Art Director pixel review of the new glyph (T554, #752, PR #753, 2026-11-13, fresh session):** APPROVED_WITH_CONDITIONS, no pixel change. `f006-ui-office` (an in-tray with a stack of cards, 24 px `ui_text`) reads as "where everything lands", is distinct from the contracts glyph (silhouette IoU 0.22) and passes every UI-icon check; the 1 px gap at row 3 resolves at 1x and improves at 2x and 3x; keep the middle card band. Conditions: the Art Bible 21.2 UI row leads with the current state (done by the parent on the batch branch) and this verdict is recorded. **U1 is closed.**
+
 Banner and dot plainness: AD, UX and PO recommend plain USS; no owner decision needed unless an ornament is requested.
 
 P1-F5 stays provisional by the earlier owner decision; it needs no new decision.
