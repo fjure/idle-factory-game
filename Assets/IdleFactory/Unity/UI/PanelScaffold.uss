@@ -271,3 +271,30 @@
 .scaffold .scaffold__notice .scaffold-button {
     margin: 0;
 }
+
+/* T535 (P2-F17): the sheet mount point. An overlay over the body (transparent, no pointer) for a docked sheet; it takes no space until used. */
+.scaffold__sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: column;
+}
+
+/* T535 (P2-F17): the shared row. A run control (shell focus ring, 44 pt floor) raised to 48 dp, full width, icon then text, text wraps. */
+.scaffold .scaffold-row,
+.scaffold-row {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-width: 48px;
+    min-height: 48px;
+    margin: 0 0 4px 0;
+    padding: 4px 8px;
+    background-color: var(--surface-raised);
+    -unity-text-align: middle-left;
+}
+
+.scaffold-row .run-icon {
+    margin-right: 8px;
+}

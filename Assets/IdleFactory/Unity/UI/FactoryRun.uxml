@@ -35,6 +35,11 @@
                                 <ui:Label name="overdrive-caption" text="Locked" class="run-caption" picking-mode="Ignore" />
                             </ui:VisualElement>
                         </ui:Button>
+                        <ui:Button name="hub-entry" class="run-control run-hub-entry" focusable="true" tooltip="Office">
+                            <ui:VisualElement name="hub-entry-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
+                            <ui:Label name="hub-entry-label" text="Office" class="run-hub-entry__label" picking-mode="Ignore" />
+                            <ui:Label name="hub-entry-dot" class="run-hub-entry__dot" picking-mode="Ignore" />
+                        </ui:Button>
                         <ui:Button name="settings" class="run-control run-gear" focusable="true" tooltip="Settings">
                             <ui:VisualElement name="settings-icon" class="run-gear__icon" picking-mode="Ignore">
                                 <ui:VisualElement class="run-gear__tooth" picking-mode="Ignore" />

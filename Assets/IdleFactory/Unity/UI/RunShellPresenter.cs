@@ -19,6 +19,7 @@ namespace IdleFactory.Unity.UI
         private readonly RunShellDocument shell;
         private readonly SlotGridView grid;
         private readonly ContractsShellFeed contractsFeed;
+        private readonly IdleFactory.Unity.UI.Panels.HubAttentionFeed hubFeed;
         private readonly Func<string, string> presentationKeyOf;
         private readonly List<MachineStateView> machineBuffer = new List<MachineStateView>();
         private MachineStateView[] views = new MachineStateView[16];
@@ -52,6 +53,7 @@ namespace IdleFactory.Unity.UI
             this.grid = grid ?? throw new ArgumentNullException(nameof(grid));
             this.presentationKeyOf = presentationKeyOf ?? throw new ArgumentNullException(nameof(presentationKeyOf));
             contractsFeed = new ContractsShellFeed(session, shell);
+            hubFeed = new IdleFactory.Unity.UI.Panels.HubAttentionFeed(session, commands, shell.Attention);
             shell.SlotSelectionChanged += HandleSelectionChanged;
             shell.OverdriveRequested += HandleOverdriveRequested;
             shell.LocationActivated += HandleLocationActivated;
@@ -86,6 +88,7 @@ namespace IdleFactory.Unity.UI
             factoryDirty = true;
             structureRevision = -1;
             contractsFeed.Invalidate();
+            hubFeed.Invalidate();
         }
 
         /// <summary>Per-frame update: hot reads for the strip, a snapshot only when something structural or a machine state changed.</summary>
@@ -158,6 +161,9 @@ namespace IdleFactory.Unity.UI
 
             // The Contracts tab badge and the auto-delivered notice show on every tab (T330).
             contractsFeed.Update();
+
+            // T535: the Research, Prestige and Overdrive flags of the hub card and the hub entry dot show on the factory screen.
+            hubFeed.Update(Time.realtimeSinceStartup);
 
             if (shell.IsSheetOpen)
             {

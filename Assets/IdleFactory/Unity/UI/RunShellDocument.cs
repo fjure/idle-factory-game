@@ -24,7 +24,7 @@ namespace IdleFactory.Unity.UI
     /// values handed to it by <see cref="RunShellPresenter"/>. T113 to T118 add panels through <see cref="Panels"/>
     /// without editing it.
     /// </summary>
-    public sealed class RunShellDocument : MonoBehaviour, IShellBackFrames
+    public sealed partial class RunShellDocument : MonoBehaviour, IShellBackFrames
     {
         /// <summary>The one-line notice that a rotation cancelled an open transient action (UX-9).</summary>
         public const string RotationCancelledNotice = "Cancelled by rotation";
@@ -431,6 +431,11 @@ namespace IdleFactory.Unity.UI
                 return Fail("The run shell UXML is malformed or missing required named elements.");
             }
 
+            if (!QueryHub())
+            {
+                return Fail("The run shell UXML is malformed or missing the hub entry.");
+            }
+
             root.styleSheets.Add(styleSheet);
             oreVeinWanted = false;
             hasLastLayoutSize = false;
@@ -508,6 +513,7 @@ namespace IdleFactory.Unity.UI
             }
 
             ApplyCardCap();
+            PlaceHubEntry();
         }
 
         private void ProbeNow(bool includeFontScale)
@@ -639,6 +645,8 @@ namespace IdleFactory.Unity.UI
                 overdriveParent.Add(OverdriveButton);
             }
 
+            PlaceHubEntry();
+
             // The card docks in the side panel on tablet and desktop and as a band or column in the main row on phones; the camera waits for
             // the new band after a resize or rotation (the band is known before the reframe).
             MountCard();
@@ -723,8 +731,35 @@ namespace IdleFactory.Unity.UI
                 }
             }
 
+            if (HubEntryOnItsOwnRow && HubEntryButton.resolvedStyle.display != DisplayStyle.None && !float.IsNaN(HubEntryButton.worldBound.yMax) &&
+                bounds.yMax - Mathf.Max(topPoint, HubEntryButton.worldBound.yMax) >= MinWorldBelowHubRow)
+            {
+                // The phone portrait's entry row is chrome like a notice bar: the camera frames below it while the world keeps a usable height.
+                topPoint = Mathf.Max(topPoint, HubEntryButton.worldBound.yMax);
+            }
+
             var leftPoint = zoom.width > 0f ? Mathf.Max(bounds.xMin, zoom.xMax) : bounds.xMin;
             var bottomPoint = bounds.yMax;
+            if (HubEntryOverlay && HubEntryButton.resolvedStyle.display != DisplayStyle.None && !float.IsNaN(HubEntryButton.worldBound.yMin) && !float.IsNaN(HubEntryButton.worldBound.xMax))
+            {
+                // U-1 (C1): the landscape overlay never covers the framed world. As for the ore vein, the rectangle either ends above the entry or starts
+                // right of it, whichever leaves the larger fitting scale (the larger area breaks a tie).
+                var entry = HubEntryButton.worldBound;
+                var above = entry.yMin > topPoint ? Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, Mathf.Min(bottomPoint, entry.yMin)) : Rect.zero;
+                var beside = entry.xMax < bounds.xMax ? Rect.MinMaxRect(Mathf.Max(leftPoint, entry.xMax), topPoint, bounds.xMax, bottomPoint) : Rect.zero;
+                var entryLayout = WorldLayoutFor(root.panel.visualTree.worldBound);
+                var aboveScale = FittingScale(above, entryLayout, pixelsPerPoint);
+                var besideScale = FittingScale(beside, entryLayout, pixelsPerPoint);
+                if (beside.width > 0f && (besideScale > aboveScale || (besideScale == aboveScale && beside.width * beside.height > above.width * above.height)))
+                {
+                    leftPoint = beside.xMin;
+                }
+                else if (above.width > 0f)
+                {
+                    bottomPoint = above.yMax;
+                }
+            }
+
             var available = Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, bottomPoint);
             if (oreVeinWanted && IsDisplayed(oreVein.Root))
             {
@@ -1292,8 +1327,9 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
+            var fromHub = hubInvokedPanelId != null && hubInvokedPanelId == activePanelId;
             CloseSheet(false);
-            FocusWhenReady(SettingsButton);
+            FocusWhenReady(fromHub ? HubEntryButton : SettingsButton);
         }
 
         private void ToggleSettings()
@@ -1399,6 +1435,8 @@ namespace IdleFactory.Unity.UI
             var focused = root.panel?.focusController?.focusedElement as VisualElement;
             var focusWasInside = focused != null && panelHost.Contains(focused) && !tabBar.Contains(focused);
             var wasSettings = settingsOpen;
+            var wasHub = IsHubFamilyOpen || (hubInvokedPanelId != null && hubInvokedPanelId == activePanelId);
+            hubInvokedPanelId = null;
             sheetOpen = false;
             detailsFromCard = false;
             activeTab = ShellTab.Factory;
@@ -1409,7 +1447,7 @@ namespace IdleFactory.Unity.UI
             UpdateSheetState();
             if (returnFocusToTab && focusWasInside)
             {
-                FocusWhenReady(wasSettings ? SettingsButton : TabButton(ShellTab.Factory));
+                FocusWhenReady(wasHub ? HubEntryButton : wasSettings ? SettingsButton : TabButton(ShellTab.Factory));
             }
         }
 
@@ -1431,7 +1469,7 @@ namespace IdleFactory.Unity.UI
         bool IShellBackFrames.HasDialog => dialogRequest != null;
         bool IShellBackFrames.HasPinnedValue => pinnedHost != null;
         bool IShellBackFrames.IsSettingsOpen => settingsOpen;
-        bool IShellBackFrames.HasClosableSheet => sheetHost.IsBackClosable(selectedSlot >= 0, activeTab != ShellTab.Factory);
+        bool IShellBackFrames.HasClosableSheet => sheetHost.IsBackClosable(selectedSlot >= 0, activeTab != ShellTab.Factory || IsHubFamilyOpen);
         void IShellBackFrames.PopDialog() => CloseDialog(ConfirmationCloseReason.Back);
         void IShellBackFrames.PopPinnedValue() => Unpin();
         void IShellBackFrames.PopSettings() => CloseSettings();
@@ -2780,6 +2818,7 @@ namespace IdleFactory.Unity.UI
             SetIcon(root.Q<VisualElement>("panel-close-icon"), "F003-UI-ICON-CLOSE");
             SetIcon(root.Q<VisualElement>("world-hint-icon"), "F003-UI-ICON-BUILD");
             ApplySettingsGlyph(root.Q<VisualElement>("settings-icon"));
+            ApplyHubIcon();
             foreach (var host in new VisualElement[] { CashButton, RpButton, StoreButton })
             {
                 SetIcon(PinHintOf(host), "F003-UI-ICON-INFO");
@@ -2829,6 +2868,7 @@ namespace IdleFactory.Unity.UI
                   " units (" + StorePercent(storeUsed, storeCapacity) + "%)"
                 : "Store: no capacity");
             registry.Changed += OnRegistryChanged;
+            BindHub();
         }
 
         /// <summary>The accessible name and tooltip of the gear.</summary>
@@ -3169,6 +3209,7 @@ namespace IdleFactory.Unity.UI
             exactValueHandles.Clear();
             exactTexts.Clear();
             registry.Changed -= OnRegistryChanged;
+            DisposeHub();
             oreVein?.Dispose();
             oreVein = null;
             oreVeinWanted = false;

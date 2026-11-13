@@ -11,7 +11,7 @@ namespace IdleFactory.Unity.UI
 {
     /// <summary>
     /// The shell-level part of the contracts surface (T330, contracts/ui-surfaces-f005.md <c>tab-contracts-badge</c> and the auto-delivered
-    /// notice). The Contracts panel only redraws while it is visible, but the badge on the tab and the notice that a contract ended by
+    /// notice; T535 re-points the badge output to the hub's Contracts card flag through <see cref="RunShellDocument.Attention"/>, which still drives the tab badge until T537 removes the tab bar). The Contracts panel only redraws while it is visible, but the badge on the tab and the notice that a contract ended by
     /// itself must show on every tab, so the presenter drives this feed every frame. It reads <see cref="RunSnapshots.Contracts"/> only when the
     /// structure, the quantities or the timeline second changed, and it holds no rule: the number of deliverable contracts and the outcome come
     /// from the snapshot, and the shell only draws them.
@@ -79,11 +79,8 @@ namespace IdleFactory.Unity.UI
                 keyQuantity = session.QuantityRevision;
                 keySecond = second;
                 seeded = true;
-                if (Deliverable != 0)
-                {
-                    Deliverable = 0;
-                    shell.SetContractsBadge(0);
-                }
+                Deliverable = 0;
+                shell.Attention.SetContracts(0);
 
                 return;
             }
@@ -93,7 +90,7 @@ namespace IdleFactory.Unity.UI
             keySecond = second;
             var snapshot = RunSnapshots.Contracts(session);
             Deliverable = CountDeliverable(snapshot);
-            shell.SetContractsBadge(Deliverable);
+            shell.Attention.SetContracts(Deliverable);
 
             var outcome = snapshot.LastOutcome;
             if (!seeded)

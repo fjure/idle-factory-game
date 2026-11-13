@@ -50,6 +50,7 @@ namespace IdleFactory.Unity.UI
         private readonly Label title;
         private readonly ScrollView body;
         private readonly VisualElement notices;
+        private readonly VisualElement sheet;
         private readonly ScrollView stateScroll;
         private readonly VisualElement state;
         private readonly Label stateMark;
@@ -59,6 +60,7 @@ namespace IdleFactory.Unity.UI
         private readonly Button stateSecondary;
         private readonly Action onBack;
         private Action stateAction;
+        private bool backVisible = true;
 
         public PanelScaffold(VisualTreeAsset tree, StyleSheet styles, string headerTitle, Action onBack)
         {
@@ -79,6 +81,7 @@ namespace IdleFactory.Unity.UI
             title = Require<Label>("scaffold-title");
             body = Require<ScrollView>("scaffold-body");
             notices = Require<VisualElement>("scaffold-notices");
+            sheet = Require<VisualElement>("scaffold-sheet");
             stateScroll = Require<ScrollView>("scaffold-state-scroll");
             state = Require<VisualElement>("scaffold-state");
             stateMark = Require<Label>("scaffold-state-mark");
@@ -110,6 +113,15 @@ namespace IdleFactory.Unity.UI
 
         /// <summary>The layer above the body for notices; it is the last child of the stage, so it also draws above a sheet mounted there.</summary>
         public VisualElement NoticeLayer => notices;
+
+        /// <summary>
+        /// The sheet mount point (T535, P2-F17): an overlay inside the stage, above the body and below the notices, for a bottom sheet or side panel
+        /// that a panel docks over its body. Empty and not displayed until something is mounted in it.
+        /// </summary>
+        public VisualElement Sheet => sheet;
+
+        /// <summary>The shared 48 dp row class (T535, P2-F17): a run control, so the shell focus ring and the 44 pt floor apply, raised to 48 dp.</summary>
+        public const string RowClass = "scaffold-row";
 
         public VisualElement StateCard => state;
 
@@ -151,11 +163,13 @@ namespace IdleFactory.Unity.UI
         /// <summary>Shows or hides the header Back (the hub root has nothing to go back to). A hidden Back leaves the focus order.</summary>
         public bool BackVisible
         {
-            get => back.style.display != DisplayStyle.None;
+            get => backVisible;
             set
             {
+                backVisible = value;
                 back.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
                 back.focusable = value;
+                ApplyState();
             }
         }
 
@@ -277,8 +291,10 @@ namespace IdleFactory.Unity.UI
             var hasPrimary = showState && !string.IsNullOrEmpty(statePrimary.text);
             statePrimary.style.display = hasPrimary ? DisplayStyle.Flex : DisplayStyle.None;
             statePrimary.focusable = hasPrimary;
-            stateSecondary.style.display = showState ? DisplayStyle.Flex : DisplayStyle.None;
-            stateSecondary.focusable = showState;
+            // P2-F19: the state card's Back follows BackVisible, so a root (the hub) never offers a Back that has nowhere to go.
+            var showBack = showState && backVisible;
+            stateSecondary.style.display = showBack ? DisplayStyle.Flex : DisplayStyle.None;
+            stateSecondary.focusable = showBack;
         }
 
         private T Require<T>(string name) where T : VisualElement =>

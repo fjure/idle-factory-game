@@ -32,6 +32,12 @@ namespace IdleFactory.Unity.UI
         public const string Research = "research";
         public const string Prestige = "prestige";
 
+        /// <summary>T535: the Industry system view (additive). It hosts its own <c>IndustryPanel</c>; the Research panel keeps its Industry section.</summary>
+        public const string Industry = "industry";
+
+        /// <summary>T535: the hub ("Office", OD-9b): the cards of every system. It is a sheet (phone portrait) or side-panel view like Settings.</summary>
+        public const string Hub = "hub";
+
         /// <summary>The Settings sheet (T433, OD-8): opened by the gear in the top strip, not by a tab or a slot.</summary>
         public const string Settings = "settings";
 
@@ -49,7 +55,7 @@ namespace IdleFactory.Unity.UI
         }
 
         public static bool IsKnown(string id) =>
-            id == Build || id == Machine || id == MachineCard || id == Market || id == Contracts || id == Items || id == Research || id == Prestige || id == Settings;
+            id == Build || id == Machine || id == MachineCard || id == Market || id == Contracts || id == Items || id == Research || id == Prestige || id == Settings || id == Industry || id == Hub;
     }
 
     /// <summary>The section IDs a panel can be opened at (<see cref="IShellSectionPanel"/>).</summary>
