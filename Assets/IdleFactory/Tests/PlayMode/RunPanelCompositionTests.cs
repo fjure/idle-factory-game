@@ -31,7 +31,7 @@ namespace IdleFactory.Tests.PlayMode
 
         private static readonly string[] AllPanelIds =
         {
-            ShellPanelIds.Build, ShellPanelIds.Machine, ShellPanelIds.Market, ShellPanelIds.Contracts,
+            ShellPanelIds.Build, ShellPanelIds.Machine, ShellPanelIds.MachineCard, ShellPanelIds.Market, ShellPanelIds.Contracts,
             ShellPanelIds.Items, ShellPanelIds.Research, ShellPanelIds.Prestige, ShellPanelIds.Settings,
         };
 
@@ -164,13 +164,13 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
             yield return null;
             yield return null;
-            AssertPanelShown(shell, ShellPanelIds.Machine, "the built slot re-routes to the machine panel");
+            Assert.That(shell.IsCardOpen, Is.True, "the built slot hands over to the machine card (T534)");
 
             shell.CloseSheet();
             yield return null;
             Assert.That(Bootstrap.ShellPresenter.HandleWorldTap(Bootstrap.SlotGrid.WorldRectOf(0).center), Is.True);
             yield return null;
-            AssertPanelShown(shell, ShellPanelIds.Machine, "occupied slot");
+            Assert.That(shell.IsCardOpen, Is.True, "an occupied slot opens the machine card (T534)");
 
             Activate(shell.TabButton(ShellTab.Prestige));
             yield return null;
@@ -189,6 +189,7 @@ namespace IdleFactory.Tests.PlayMode
             var built = Bootstrap.RunCommands.Build(0, MinerId);
             Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
             Assert.That(Bootstrap.ShellPresenter.OpenSlot(0), Is.True);
+            Assert.That(shell.OpenDetails(0), Is.True, "the Details view is the former machine panel (T534)");
             yield return null;
             yield return null;
             AssertPanelShown(shell, ShellPanelIds.Machine, "machine panel");

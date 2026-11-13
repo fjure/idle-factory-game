@@ -36,7 +36,17 @@ namespace IdleFactory.Unity.Presentation
         {
         }
 
-        public ScaleLayout(int pixelWidth, int pixelHeight, float pixelsPerPoint, Rect unobstructedRect, string layoutId, Rect bounds, float margin = SlotGridLayout.HalfCellMargin)
+        /// <summary>
+        /// As the layout constructor, and the pan and fit extent also covers the depot and the deposit when they fit
+        /// (<see cref="FactoryWorldLayout.ViewBounds"/>, P1-F2). The run shell uses this one.
+        /// </summary>
+        public static ScaleLayout WithView(int pixelWidth, int pixelHeight, float pixelsPerPoint, Rect unobstructedRect, FactoryWorldLayout layout)
+        {
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            return new ScaleLayout(pixelWidth, pixelHeight, pixelsPerPoint, unobstructedRect, layout.LayoutId, layout.Bounds, layout.Margin, layout.ViewBounds);
+        }
+
+        public ScaleLayout(int pixelWidth, int pixelHeight, float pixelsPerPoint, Rect unobstructedRect, string layoutId, Rect bounds, float margin = SlotGridLayout.HalfCellMargin, Rect? viewBounds = null)
         {
             PixelWidth = pixelWidth;
             PixelHeight = pixelHeight;
@@ -45,6 +55,7 @@ namespace IdleFactory.Unity.Presentation
             LayoutId = layoutId ?? string.Empty;
             Bounds = bounds;
             Margin = margin;
+            ViewBounds = viewBounds ?? bounds;
         }
 
         public int PixelWidth { get; }
@@ -60,10 +71,16 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The fit margin in world units added around <see cref="Bounds"/>.</summary>
         public float Margin { get; }
 
+        /// <summary>
+        /// The second extent (P1-F2): <see cref="Bounds"/> plus the depot and the deposit. Defaults to <see cref="Bounds"/>. The model fits and pans over
+        /// it for the pan limits always, and for the fit only when that costs no integer scale (see <see cref="CameraScaleModel.ExtentFor"/>).
+        /// </summary>
+        public Rect ViewBounds { get; }
+
         /// <summary>The identity of a layout for the once-per-layout log: the rectangle changes with a sheet, the screen does not.</summary>
         internal string Key => $"{PixelWidth}x{PixelHeight}@{PixelsPerPoint:0.####}/{LayoutId}";
 
-        internal ScaleLayout WithRect(Rect rect) => new ScaleLayout(PixelWidth, PixelHeight, PixelsPerPoint, rect, LayoutId, Bounds, Margin);
+        internal ScaleLayout WithRect(Rect rect) => new ScaleLayout(PixelWidth, PixelHeight, PixelsPerPoint, rect, LayoutId, Bounds, Margin, ViewBounds);
     }
 
     /// <summary>What the model did when a bottom sheet opened (rule 7).</summary>
@@ -113,6 +130,8 @@ namespace IdleFactory.Unity.Presentation
         private Vector2 position;
         private int lowerBound = 1;
         private int fitScale = 1;
+        private Rect extent;
+        private Rect panExtent;
         private bool belowFloor;
 
         // Gesture (rules 4 and 5).
@@ -150,6 +169,29 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>n_fit of the last fit: the largest scale in the allowed range at which the factory fits the rectangle.</summary>
         public int FitScale => fitScale;
+
+        /// <summary>The extent the fit scale and the centring use now: <see cref="ScaleLayout.ViewBounds"/> when it fits at the same integer scale, else <see cref="ScaleLayout.Bounds"/>.</summary>
+        public Rect Extent => extent;
+
+        /// <summary>The extent the pan limits use: always <see cref="ScaleLayout.ViewBounds"/>, so the player can pan to the depot and the vein even where fit-all does not show them (P1-F2).</summary>
+        public Rect PanExtent => panExtent;
+
+        /// <summary>
+        /// P1-F2: the extent for a rectangle. The view extent (content plus depot and deposit) is used when the largest integer scale that fits
+        /// it is the same as for the content alone and the content itself fits at least once; otherwise the content extent is used, and the
+        /// depot and the vein may be out of view.
+        /// </summary>
+        public static Rect ExtentFor(ScaleLayout layout, Rect rect, int artPixelsPerCell)
+        {
+            if (layout.ViewBounds == layout.Bounds)
+            {
+                return layout.Bounds;
+            }
+
+            var content = LargestFittingScale(rect, layout.Bounds, artPixelsPerCell, layout.Margin);
+            var view = LargestFittingScale(rect, layout.ViewBounds, artPixelsPerCell, layout.Margin);
+            return content >= 1 && view >= content ? layout.ViewBounds : layout.Bounds;
+        }
 
         /// <summary>True when the runtime degrade is active: the floor could not be met and n is the largest that fits.</summary>
         public bool BelowFloor => belowFloor;
@@ -254,7 +296,7 @@ namespace IdleFactory.Unity.Presentation
             var previousScale = scale;
             var wasFitAll = scale <= fitScale;
             ApplyLayout(newLayout);
-            var largest = Math.Max(1, LargestFittingScale(newLayout.UnobstructedRect, newLayout.Bounds, Settings.ArtPixelsPerCell, newLayout.Margin));
+            var largest = Math.Max(1, LargestFittingScale(newLayout.UnobstructedRect, extent, Settings.ArtPixelsPerCell, newLayout.Margin));
             var outOfRange = scale < lowerBound || scale > UpperBound;
             if (outOfRange || (wasFitAll && scale > largest))
             {
@@ -271,8 +313,10 @@ namespace IdleFactory.Unity.Presentation
         {
             layout = newLayout;
             hasLayout = true;
+            extent = ExtentFor(newLayout, newLayout.UnobstructedRect, Settings.ArtPixelsPerCell);
+            panExtent = newLayout.ViewBounds;
             var minimum = MinScale(Settings, newLayout.PixelsPerPoint);
-            var largest = LargestFittingScale(newLayout.UnobstructedRect, newLayout.Bounds, Settings.ArtPixelsPerCell, newLayout.Margin);
+            var largest = LargestFittingScale(newLayout.UnobstructedRect, extent, Settings.ArtPixelsPerCell, newLayout.Margin);
             if (largest >= minimum && minimum <= Settings.MaxScale)
             {
                 belowFloor = false;
@@ -315,7 +359,7 @@ namespace IdleFactory.Unity.Presentation
         private Vector2 CenteredPosition(int n)
         {
             var offset = (layout.UnobstructedRect.center - ScreenCentre) / K(n);
-            return layout.Bounds.center - offset;
+            return extent.center - offset;
         }
 
         /// <summary>The world point under a screen pixel for a camera position and a (possibly fractional) scale.</summary>
@@ -330,14 +374,16 @@ namespace IdleFactory.Unity.Presentation
         {
             var rect = layout.UnobstructedRect;
             var relax = sheetOpen ? sheetRelaxWorld : 0f;
-            var extent = layout.Bounds;
+            var extent = panExtent;
+            var fitCentre = this.extent.center;
             var k = K(n);
             var rectCentreOffset = (rect.center - ScreenCentre) / k;
             var halfSpan = new Vector2(rect.width, rect.height) / (2f * k);
             var margin = layout.Margin + relax;
             var centre = camera + rectCentreOffset;
-            centre.x = ClampAxis(centre.x, extent.xMin - margin + halfSpan.x, extent.xMax + margin - halfSpan.x, extent.center.x);
-            centre.y = ClampAxis(centre.y, extent.yMin - margin + halfSpan.y, extent.yMax + margin - halfSpan.y, extent.center.y);
+            // An axis on which the rectangle is larger than the pan extent stays centred on the fit extent, as before the view extent existed.
+            centre.x = ClampAxis(centre.x, extent.xMin - margin + halfSpan.x, extent.xMax + margin - halfSpan.x, fitCentre.x);
+            centre.y = ClampAxis(centre.y, extent.yMin - margin + halfSpan.y, extent.yMax + margin - halfSpan.y, fitCentre.y);
             var result = centre - rectCentreOffset;
             return new Vector2(
                 SnapCoordinate(result.x, layout.PixelWidth, n, Settings.ArtPixelsPerCell),
@@ -553,11 +599,13 @@ namespace IdleFactory.Unity.Presentation
 
             sheetOpen = false;
             layout = layout.WithRect(fullRect);
+            extent = ExtentFor(layout, fullRect, Settings.ArtPixelsPerCell);
+            panExtent = layout.ViewBounds;
             if (!sheetTouchedByPlayer)
             {
                 // The layout may have changed while the sheet was open: the restored scale stays inside the allowed range and
                 // at or below the largest scale that fits (#520 follow-up 1).
-                var restoredLargest = Math.Max(1, LargestFittingScale(fullRect, layout.Bounds, Settings.ArtPixelsPerCell, layout.Margin));
+                var restoredLargest = Math.Max(1, LargestFittingScale(fullRect, extent, Settings.ArtPixelsPerCell, layout.Margin));
                 var restored = Math.Min(Math.Max(sheetPriorScale, lowerBound), UpperBound);
                 restored = Math.Min(restored, Math.Max(restoredLargest, lowerBound));
                 if (restored == sheetPriorScale)
@@ -574,7 +622,7 @@ namespace IdleFactory.Unity.Presentation
                 return;
             }
 
-            var largest = Math.Max(1, LargestFittingScale(fullRect, layout.Bounds, Settings.ArtPixelsPerCell, layout.Margin));
+            var largest = Math.Max(1, LargestFittingScale(fullRect, extent, Settings.ArtPixelsPerCell, layout.Margin));
             if (scale <= fitScale && scale > largest)
             {
                 scale = fitScale;

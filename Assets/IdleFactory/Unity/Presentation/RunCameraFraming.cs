@@ -49,7 +49,7 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The screen facts a fit needs for a camera, the world layout, the panel scale and the unobstructed rectangle.</summary>
         public static ScaleLayout Layout(Camera camera, FactoryWorldLayout worldLayout, float pixelsPerPoint, Rect visibleScreenArea) =>
-            new ScaleLayout(camera.pixelWidth, camera.pixelHeight, pixelsPerPoint, visibleScreenArea, worldLayout);
+            ScaleLayout.WithView(camera.pixelWidth, camera.pixelHeight, pixelsPerPoint, visibleScreenArea, worldLayout);
 
         /// <summary>The allowed scales <c>[n_min, maxScale]</c> for a panel scale (rule 2, with the 1 % tolerance).</summary>
         public ScaleRange ConfigureLimits(float pixelsPerPoint)
@@ -77,6 +77,12 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The world rectangle of a slot: the footprint a sheet has to keep in view.</summary>
         public Rect FrameSlot(int slot, FactoryWorldLayout worldLayout) => worldLayout.FootprintOf(new BuildingLocationId(slot));
+
+        /// <summary>
+        /// The world rectangle a selection keeps in view above a docked card: the machine's whole visual extent, the plate and the badge band
+        /// (SC-002, FR-016), not only the plate footprint.
+        /// </summary>
+        public Rect FrameMachine(int slot, FactoryWorldLayout worldLayout) => worldLayout.MachineRectOf(new BuildingLocationId(slot));
 
         /// <summary>The world rectangle of the whole grid.</summary>
         public Rect FrameContent(FactoryWorldLayout worldLayout) => worldLayout.Bounds;

@@ -23,6 +23,9 @@ namespace IdleFactory.Unity.UI
     {
         public const string Build = "build";
         public const string Machine = "machine";
+
+        /// <summary>T534: the docked machine card. It is not a sheet: the shell mounts it in the main row (phone) or the side panel (tablet, desktop).</summary>
+        public const string MachineCard = "machine-card";
         public const string Market = "market";
         public const string Contracts = "contracts";
         public const string Items = "items";
@@ -46,7 +49,7 @@ namespace IdleFactory.Unity.UI
         }
 
         public static bool IsKnown(string id) =>
-            id == Build || id == Machine || id == Market || id == Contracts || id == Items || id == Research || id == Prestige || id == Settings;
+            id == Build || id == Machine || id == MachineCard || id == Market || id == Contracts || id == Items || id == Research || id == Prestige || id == Settings;
     }
 
     /// <summary>The section IDs a panel can be opened at (<see cref="IShellSectionPanel"/>).</summary>

@@ -102,3 +102,9 @@
     margin-top: 6px;
     align-self: stretch;
 }
+
+/* T534 (FR-034, C5): the static one-second response of the Details view under reduced motion, or while no world effect sink is wired. */
+.mpanel__name--highlight {
+    background-color: var(--accent);
+    color: var(--on-accent);
+}

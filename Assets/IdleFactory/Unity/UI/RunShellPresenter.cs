@@ -37,6 +37,7 @@ namespace IdleFactory.Unity.UI
         private HashSet<string> boosted = new HashSet<string>(StringComparer.Ordinal);
         private bool overdriveActive;
         private bool disposed;
+        private FactoryWorldLayout orderedFor;
 
         public RunShellPresenter(
             RunSession session,
@@ -53,6 +54,7 @@ namespace IdleFactory.Unity.UI
             contractsFeed = new ContractsShellFeed(session, shell);
             shell.SlotSelectionChanged += HandleSelectionChanged;
             shell.OverdriveRequested += HandleOverdriveRequested;
+            shell.LocationActivated += HandleLocationActivated;
 
             // The ore vein mines only through RunCommands.Mine, which owns the rate cap (T359).
             shell.BindOreVein(new RunOreVeinSource(session, commands));
@@ -74,6 +76,7 @@ namespace IdleFactory.Unity.UI
             disposed = true;
             shell.SlotSelectionChanged -= HandleSelectionChanged;
             shell.OverdriveRequested -= HandleOverdriveRequested;
+            shell.LocationActivated -= HandleLocationActivated;
             shell.UnbindOreVein();
         }
 
@@ -160,21 +163,81 @@ namespace IdleFactory.Unity.UI
             {
                 shell.RefreshActivePanel();
             }
+
+            // T534: the card refreshes its model every frame (P2-F10) and the keyboard stop follows the camera.
+            shell.RefreshCard();
+            UpdateLocationOrder();
+            shell.RefreshLocationStop();
         }
+
+        /// <summary>
+        /// The keyboard order of the locations (R10): by <see cref="FactoryWorldLayout.SortKeyOf"/> (the row from the back), then by column from
+        /// the left, then by id. Plain data, no UI.
+        /// </summary>
+        public static IReadOnlyList<int> KeyboardOrder(FactoryWorldLayout layout)
+        {
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            var ids = new List<int>(layout.LocationCount);
+            for (var i = 0; i < layout.LocationCount; i++)
+            {
+                ids.Add(i);
+            }
+
+            ids.Sort((a, b) =>
+            {
+                var rowA = layout.SortKeyOf(new BuildingLocationId(a));
+                var rowB = layout.SortKeyOf(new BuildingLocationId(b));
+                if (rowA != rowB)
+                {
+                    return rowA.CompareTo(rowB);
+                }
+
+                var columnA = layout.CellOf(new BuildingLocationId(a)).x;
+                var columnB = layout.CellOf(new BuildingLocationId(b)).x;
+                return columnA != columnB ? columnA.CompareTo(columnB) : a.CompareTo(b);
+            });
+            return ids;
+        }
+
+        private void UpdateLocationOrder()
+        {
+            var layout = grid.Layout;
+            if (layout == null || ReferenceEquals(layout, orderedFor))
+            {
+                return;
+            }
+
+            orderedFor = layout;
+            shell.SetLocationOrder(KeyboardOrder(layout));
+        }
+
+        private void HandleLocationActivated(int slot) => OpenSlot(slot, true);
 
         /// <summary>Resolves a world tap to a slot and opens its sheet. Returns whether the tap hit a slot.</summary>
         public bool HandleWorldTap(Vector2 world)
         {
-            if (disposed || snapshot == null || !grid.TryHitSlot(world, out var slot))
+            if (disposed || snapshot == null)
             {
+                return false;
+            }
+
+            if (!grid.TryHitSlot(world, out var slot))
+            {
+                // A tap on empty world closes the card (US3 scenario 5). The marker-versus-machine tap priority belongs to T528 (P2-F13): no
+                // attention marker is a hit target yet, so a tap that hits no machine shape is empty world.
+                if (shell.IsCardOpen)
+                {
+                    shell.CloseMachineCard(false);
+                }
+
                 return false;
             }
 
             return OpenSlot(slot);
         }
 
-        /// <summary>Opens the build sheet, machine panel or the locked-slot notice for a slot.</summary>
-        public bool OpenSlot(int slot)
+        /// <summary>Opens the build sheet, the machine card or the locked-slot notice for a slot; <paramref name="focusCard"/> moves focus into the card (keyboard).</summary>
+        public bool OpenSlot(int slot, bool focusCard = false)
         {
             if (snapshot == null || slot < 0 || slot >= snapshot.Slots.Count)
             {
@@ -182,7 +245,7 @@ namespace IdleFactory.Unity.UI
             }
 
             var visual = grid.Visuals.Count > slot ? grid.Visuals[slot] : SlotGridModel.Describe(slot, snapshot, presentationKeyOf, overdriveActive, boosted, -1);
-            return shell.OpenSlot(slot, visual.Condition, visual.UnlockLevel);
+            return shell.OpenSlot(slot, visual.Condition, visual.UnlockLevel, focusCard);
         }
 
         private void RefreshStructureDependents()

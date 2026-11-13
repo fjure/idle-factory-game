@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- T534: the docked machine card (FR-016, R10). The root carries the scaffold class so the scaffold button, disabled and reason
+         classes apply (P2-F16: a docked variant by composition, no full-screen fill, see MachineCard.uss). -->
+    <ui:VisualElement name="machine-card" class="scaffold mcard">
+        <ui:VisualElement name="machine-card-header" class="mcard__header">
+            <ui:VisualElement name="machine-card-titles" class="mcard__titles">
+                <ui:Label name="machine-card-name" text="" class="mcard__name" />
+                <ui:Label name="machine-card-state" text="" class="mcard__state" />
+            </ui:VisualElement>
+            <ui:Button name="machine-card-close" text="" focusable="true" class="run-control scaffold-button scaffold-button--secondary mcard__close" />
+        </ui:VisualElement>
+        <ui:Button name="machine-card-upgrade" text="Upgrade" focusable="true" class="run-control scaffold-button scaffold-button--primary mcard__upgrade" />
+        <ui:Label name="machine-card-inline" text="" class="mcard__inline" />
+        <ui:ScrollView name="machine-card-more" class="run-scroll mcard__more">
+            <ui:VisualElement name="machine-card-footer" class="mcard__footer">
+                <ui:Label name="machine-card-cause" text="" class="mcard__cause" />
+                <ui:Button name="machine-card-details" text="Details &#8250;" focusable="true" class="run-control scaffold-button scaffold-button--secondary mcard__details" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

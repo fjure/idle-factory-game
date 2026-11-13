@@ -1,0 +1,227 @@
+/* T534 machine card (FR-016 to FR-019, FR-034, research R10, OD-9b UI/UX C1 to C6). Font sizes only through the shell --run-fs-*
+   variables, colours only through the shell tokens, touch targets 48 pt (C4), nothing is nowrap, and the only motion is none:
+   the static highlight below is a class switched on for one second (C5).
+
+   P2-F16 (docked variant): the PanelScaffold root is a full-screen opaque fill, which the card must never be. The card root carries the
+   scaffold class so the scaffold button, disabled-state and reason classes apply, and this sheet overrides the fill with a more
+   specific selector (.scaffold.mcard): relative position, no inset, a surface background and no header. PanelScaffold.uss is unchanged. */
+
+.scaffold.mcard {
+    position: relative;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: none;
+    flex-direction: column;
+    flex-grow: 0;
+    flex-shrink: 0;
+    background-color: var(--surface);
+    border-top-width: 1px;
+    border-top-color: var(--border);
+    overflow: hidden;
+}
+
+/* The card shows only while the shell is in its card state (it replaces the side panel's body on tablet and desktop). */
+.run-shell--card-open .scaffold.mcard {
+    display: flex;
+}
+
+.run-shell--card-open .run-panel > .run-scroll {
+    display: none;
+}
+
+/* Phone portrait: a bottom band. The shell sets its max height from the safe height (30 percent at 100 to 140 percent text, 45 percent
+   hard cap above that), so Upgrade stays in the first view and the rest scrolls. */
+.factory-hud--compact-portrait .scaffold.mcard {
+    width: 100%;
+}
+
+/* Phone landscape: a side column of about 40 percent of the width. */
+.factory-hud--compact-landscape .scaffold.mcard {
+    width: 40%;
+    border-top-width: 0;
+    border-left-width: 1px;
+    border-left-color: var(--border);
+}
+
+/* Tablet and desktop: the card fills the side panel under the tabs. */
+.run-panel .scaffold.mcard {
+    width: auto;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    border-top-width: 0;
+}
+
+.mcard__header {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 4px 4px 0 8px;
+}
+
+.mcard__titles {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.mcard__name {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-strong);
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+}
+
+.mcard__state {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-primary);
+    font-size: var(--run-fs-body);
+}
+
+/* The close control is icon only (the tooltip "Close" is its accessible name); without the icon sprite it shows the word. */
+.scaffold.mcard .mcard__close {
+    flex-shrink: 0;
+    min-width: 48px;
+    min-height: 48px;
+    margin: 0 0 0 4px;
+    padding: 0 8px;
+    background-position-x: center;
+    background-position-y: center;
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    -unity-background-image-tint-color: var(--text-primary);
+}
+
+.scaffold.mcard .mcard__upgrade {
+    flex-shrink: 0;
+    margin: 4px 8px 0 8px;
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+
+/* The stale-action or rejection line sits under Upgrade, so it appearing moves no control above it. */
+.mcard__inline {
+    flex-shrink: 0;
+    margin: 4px 8px 0 8px;
+    white-space: normal;
+    color: var(--warning);
+    font-size: var(--run-fs-caption);
+    display: none;
+}
+
+.scaffold.mcard .mcard__more {
+    flex-shrink: 1;
+    flex-grow: 0;
+    min-height: 0;
+    margin-top: 4px;
+}
+
+.mcard__footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 0 8px 4px 8px;
+}
+
+.mcard__cause {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 96px;
+    min-height: 24px;
+    white-space: normal;
+    color: var(--warning);
+    font-size: var(--run-fs-body);
+    background-position-x: left;
+    background-position-y: center;
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+}
+
+/* The cause line carries a resource or state icon in its left gutter. */
+.mcard__cause--icon {
+    padding-left: 30px;
+}
+
+.scaffold.mcard .mcard__details {
+    flex-shrink: 0;
+    margin: 0 0 0 4px;
+    padding: 4px 12px;
+}
+
+/* Phone landscape: the column is narrow, so the name takes the body size and the first view takes less room (C2, one-row header). */
+.factory-hud--compact-landscape .mcard__name {
+    font-size: var(--run-fs-body);
+}
+
+.factory-hud--compact-landscape .mcard__header {
+    padding: 2px 2px 0 8px;
+}
+
+.factory-hud--compact-landscape .scaffold.mcard .mcard__upgrade {
+    margin: 0 6px 0 6px;
+}
+
+.factory-hud--compact-landscape .mcard__footer {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.factory-hud--compact-landscape .scaffold.mcard .mcard__details {
+    margin: 2px 0 0 0;
+}
+
+.run-text-scale--150.factory-hud--compact-landscape .mcard__name,
+.run-text-scale--160.factory-hud--compact-landscape .mcard__name,
+.run-text-scale--170.factory-hud--compact-landscape .mcard__name,
+.run-text-scale--180.factory-hud--compact-landscape .mcard__name,
+.run-text-scale--190.factory-hud--compact-landscape .mcard__name,
+.run-text-scale--200.factory-hud--compact-landscape .mcard__name,
+.run-text-scale--150.factory-hud--compact-landscape .mcard__state,
+.run-text-scale--160.factory-hud--compact-landscape .mcard__state,
+.run-text-scale--170.factory-hud--compact-landscape .mcard__state,
+.run-text-scale--180.factory-hud--compact-landscape .mcard__state,
+.run-text-scale--190.factory-hud--compact-landscape .mcard__state,
+.run-text-scale--200.factory-hud--compact-landscape .mcard__state,
+.run-text-scale--150.factory-hud--compact-landscape .scaffold.mcard .mcard__upgrade,
+.run-text-scale--160.factory-hud--compact-landscape .scaffold.mcard .mcard__upgrade,
+.run-text-scale--170.factory-hud--compact-landscape .scaffold.mcard .mcard__upgrade,
+.run-text-scale--180.factory-hud--compact-landscape .scaffold.mcard .mcard__upgrade,
+.run-text-scale--190.factory-hud--compact-landscape .scaffold.mcard .mcard__upgrade,
+.run-text-scale--200.factory-hud--compact-landscape .scaffold.mcard .mcard__upgrade {
+    font-size: var(--run-fs-caption);
+    padding: 2px 6px;
+}
+
+.run-text-scale--150.factory-hud--compact-landscape .mcard__header,
+.run-text-scale--160.factory-hud--compact-landscape .mcard__header,
+.run-text-scale--170.factory-hud--compact-landscape .mcard__header,
+.run-text-scale--180.factory-hud--compact-landscape .mcard__header,
+.run-text-scale--190.factory-hud--compact-landscape .mcard__header,
+.run-text-scale--200.factory-hud--compact-landscape .mcard__header {
+    padding: 0 0 0 6px;
+}
+
+.run-text-scale--150.factory-hud--compact-landscape .scaffold.mcard .mcard__close,
+.run-text-scale--160.factory-hud--compact-landscape .scaffold.mcard .mcard__close,
+.run-text-scale--170.factory-hud--compact-landscape .scaffold.mcard .mcard__close,
+.run-text-scale--180.factory-hud--compact-landscape .scaffold.mcard .mcard__close,
+.run-text-scale--190.factory-hud--compact-landscape .scaffold.mcard .mcard__close,
+.run-text-scale--200.factory-hud--compact-landscape .scaffold.mcard .mcard__close {
+    margin: 0;
+}
+
+/* Static one-second response (FR-034, C5): used under reduced motion, and while no world effect sink is wired. The header takes the
+   accent fill. Nothing moves and nothing flashes. */
+.mcard--highlight .mcard__header {
+    background-color: var(--accent);
+}
+
+.mcard--highlight .mcard__name,
+.mcard--highlight .mcard__state {
+    color: var(--on-accent);
+}
