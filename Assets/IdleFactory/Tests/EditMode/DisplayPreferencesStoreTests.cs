@@ -305,13 +305,13 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void ThePersistentLockIsRetriedExactlyOnceThenFails()
+        public void ThePersistentLockIsRetriedBoundedThenFails()
         {
             var attempts = 0;
             var store = Store(new ScriptedFileSystem { OnReplace = () => { attempts++; throw Sharing("locked"); } });
 
             Assert.That(store.TrySave(ReducedMotionPreference.On), Is.False);
-            Assert.That(attempts, Is.EqualTo(2), "one bounded retry, not a loop");
+            Assert.That(attempts, Is.EqualTo(1 + DisplayPreferencesStore.RetryDelaysMilliseconds.Length), "bounded retries, not an open loop");
             Assert.That(store.HasUnsavedChoice, Is.True);
         }
 
@@ -332,7 +332,7 @@ namespace IdleFactory.Tests.EditMode
             var store = Store(new ScriptedFileSystem { OnReplace = () => { attempts++; throw new IOException("disk full", unchecked((int)0x80070070)); } });
 
             Assert.That(store.TrySave(ReducedMotionPreference.On), Is.False);
-            Assert.That(attempts, Is.EqualTo(1), "only sharing and lock violations earn the bounded retry");
+            Assert.That(attempts, Is.EqualTo(1), "only transient failures earn the bounded retry");
             Assert.That(store.HasUnsavedChoice, Is.True);
         }
 

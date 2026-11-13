@@ -58,6 +58,14 @@ namespace IdleFactory.Tests.EditMode
             return path;
         }
 
+        private static byte[] Concat(byte[] first, byte[] second)
+        {
+            var result = new byte[first.Length + second.Length];
+            Buffer.BlockCopy(first, 0, result, 0, first.Length);
+            Buffer.BlockCopy(second, 0, result, first.Length, second.Length);
+            return result;
+        }
+
         private string WriteV1(string text) => Write("display-v1.json", Encoding.UTF8.GetBytes(text));
 
         private string WriteV2(string text) => Write("display-v2.json", Encoding.UTF8.GetBytes(text));
@@ -136,11 +144,11 @@ namespace IdleFactory.Tests.EditMode
         public void ChangingTheMotionChoiceKeepsTheStoredZoomChoiceAndTheOtherWayRound()
         {
             var store = Store();
-            store.TrySaveShowZoomButtons(true);
-            store.TrySave(ReducedMotionPreference.Off);
+            Assert.That(store.TrySaveShowZoomButtons(true), Is.True);
+            Assert.That(store.TrySave(ReducedMotionPreference.Off), Is.True);
             Assert.That(File.ReadAllText(store.FilePath), Is.EqualTo("{\"version\":2,\"reducedMotion\":\"off\",\"showZoomButtons\":true}"));
 
-            store.TrySaveShowZoomButtons(false);
+            Assert.That(store.TrySaveShowZoomButtons(false), Is.True);
             Assert.That(File.ReadAllText(store.FilePath), Is.EqualTo("{\"version\":2,\"reducedMotion\":\"off\",\"showZoomButtons\":false}"));
         }
 
@@ -167,7 +175,7 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void V2KeyOrderWhitespaceAndABomDoNotMatter()
         {
-            Write("display-v2.json", new byte[] { 0xEF, 0xBB, 0xBF }.Concat2(Encoding.UTF8.GetBytes("\r\n\t{\"showZoomButtons\" :true,\r\n \"version\":2 , \"reducedMotion\":\"off\"}  \r\n")));
+            Write("display-v2.json", Concat(new byte[] { 0xEF, 0xBB, 0xBF }, Encoding.UTF8.GetBytes("\r\n\t{\"showZoomButtons\" :true,\r\n \"version\":2 , \"reducedMotion\":\"off\"}  \r\n")));
             var store = Store();
 
             Assert.That(store.Reload(), Is.EqualTo(ReducedMotionPreference.Off));
@@ -431,6 +439,87 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(store.ShowZoomButtons, Is.False, "a re-read keeps the unsaved choice");
         }
 
+        [TestCase(1, unchecked((int)0x80070497))]
+        [TestCase(2, unchecked((int)0x80070497))]
+        [TestCase(3, unchecked((int)0x80070497))]
+        [TestCase(1, unchecked((int)0x80070498))]
+        [TestCase(2, unchecked((int)0x80070020))]
+        [TestCase(3, unchecked((int)0x80070021))]
+        public void ATransientIoFailureOnTheReplaceIsRetriedAndThenSaves(int failures, int hresult)
+        {
+            var v2Path = WriteV2(ValidV2);
+            var attempts = 0;
+            var recording = new RecordingFileSystem { OnReplace = () => { if (attempts++ < failures) throw new IOException("transient", hresult); } };
+            var store = Store(recording);
+            store.Reload();
+
+            Assert.That(store.TrySaveShowZoomButtons(false), Is.True);
+            Assert.That(attempts, Is.EqualTo(failures + 1));
+            Assert.That(store.HasUnsavedChoice, Is.False);
+            Assert.That(File.ReadAllText(v2Path), Is.EqualTo("{\"version\":2,\"reducedMotion\":\"on\",\"showZoomButtons\":false}"));
+            Assert.That(File.Exists(store.TempFilePath), Is.False);
+        }
+
+        [Test]
+        public void AnAccessDeniedOnTheReplaceIsRetriedAndThenSaves()
+        {
+            var attempts = 0;
+            var store = Store(new RecordingFileSystem { OnReplace = () => { if (attempts++ < 2) throw new UnauthorizedAccessException(); } });
+
+            Assert.That(store.TrySave(ReducedMotionPreference.Off), Is.True);
+            Assert.That(attempts, Is.EqualTo(3));
+            Assert.That(Store().Reload(), Is.EqualTo(ReducedMotionPreference.Off));
+        }
+
+        [TestCase(unchecked((int)0x80070497))]
+        [TestCase(unchecked((int)0x80070020))]
+        public void AReplaceThatAlwaysFailsGivesUpAfterTheBoundedRetriesKeepsThePriorFileAndNeverThrows(int hresult)
+        {
+            var v2Path = WriteV2(ValidV2);
+            var original = File.ReadAllBytes(v2Path);
+            var attempts = 0;
+            var store = Store(new RecordingFileSystem { OnReplace = () => { attempts++; throw new IOException("locked", hresult); } });
+            store.Reload();
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var saved = true;
+            Assert.That(() => saved = store.TrySaveShowZoomButtons(false), Throws.Nothing);
+            watch.Stop();
+
+            Assert.That(saved, Is.False);
+            Assert.That(attempts, Is.EqualTo(1 + DisplayPreferencesStore.RetryDelaysMilliseconds.Length));
+            Assert.That(File.ReadAllBytes(v2Path), Is.EqualTo(original), "the prior file stays intact");
+            Assert.That(File.Exists(store.TempFilePath), Is.False, "the temp file is cleaned up");
+            Assert.That(store.HasUnsavedChoice, Is.True);
+            Assert.That(System.Linq.Enumerable.Sum(DisplayPreferencesStore.RetryDelaysMilliseconds), Is.LessThanOrEqualTo(150), "the main-thread wait stays bounded");
+            Assert.That(diagnostics, Is.Empty, "a failed write reports nothing and logs no path");
+        }
+
+        [Test]
+        public void OnlyTransientFailuresAreClassifiedAsRetryable()
+        {
+            Assert.That(DisplayPreferencesStore.IsTransient(new UnauthorizedAccessException()), Is.True);
+            Assert.That(DisplayPreferencesStore.IsTransient(new IOException("x", unchecked((int)0x80070497))), Is.True);
+            Assert.That(DisplayPreferencesStore.IsTransient(new IOException("x", unchecked((int)0x80070070))), Is.False, "disk full");
+            Assert.That(DisplayPreferencesStore.IsTransient(new IOException("x", unchecked((int)0x80070003))), Is.False, "path not found");
+            Assert.That(DisplayPreferencesStore.IsTransient(new InvalidOperationException()), Is.False);
+        }
+
+        [Test]
+        public void ManyConsecutiveRealSavesAllSucceedAndTheLastOneWins()
+        {
+            // Back-to-back File.Replace calls fail about 0.6 percent of the time on this host without the retry; none may now.
+            var store = Store();
+            for (var i = 0; i < 400; i++)
+            {
+                Assert.That(store.TrySaveShowZoomButtons(i % 2 == 0), Is.True, "save " + i);
+            }
+
+            Assert.That(Store().Reload(), Is.EqualTo(ReducedMotionPreference.FollowSystem));
+            Assert.That(File.ReadAllText(store.FilePath), Does.Contain("\"showZoomButtons\":false"));
+            Assert.That(File.Exists(store.TempFilePath), Is.False);
+        }
+
         [Test]
         public void AFailedTempWriteLeavesBothFilesUnchanged()
         {
@@ -510,6 +599,7 @@ namespace IdleFactory.Tests.EditMode
             public Exception ThrowOnRead;
             public Exception ThrowOnWriteTemp;
             public Exception ThrowOnReplace;
+            public Action OnReplace;
 
             public bool FileExists(string path) => inner.FileExists(path);
 
@@ -544,6 +634,7 @@ namespace IdleFactory.Tests.EditMode
             {
                 Steps.Add("replace");
                 Replaces.Add(tempPath + " -> " + destinationPath);
+                OnReplace?.Invoke();
                 if (ThrowOnReplace != null)
                 {
                     throw ThrowOnReplace;
@@ -553,17 +644,6 @@ namespace IdleFactory.Tests.EditMode
             }
 
             public void DeleteQuietly(string path) => inner.DeleteQuietly(path);
-        }
-    }
-
-    internal static class ByteArrayTestExtensions
-    {
-        public static byte[] Concat2(this byte[] first, byte[] second)
-        {
-            var result = new byte[first.Length + second.Length];
-            Buffer.BlockCopy(first, 0, result, 0, first.Length);
-            Buffer.BlockCopy(second, 0, result, first.Length, second.Length);
-            return result;
         }
     }
 }
