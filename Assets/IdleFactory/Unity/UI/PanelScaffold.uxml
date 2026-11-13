@@ -1,0 +1,24 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="scaffold-root" class="scaffold">
+        <ui:VisualElement name="scaffold-header" class="scaffold__header">
+            <ui:Button name="scaffold-back" text="Back" focusable="true" class="run-control scaffold-button scaffold-button--secondary scaffold__back" />
+            <ui:Label name="scaffold-title" text="" class="scaffold__title" />
+        </ui:VisualElement>
+        <ui:VisualElement name="scaffold-stage" class="scaffold__stage">
+            <ui:ScrollView name="scaffold-body" class="run-scroll scaffold__body" />
+            <ui:ScrollView name="scaffold-state-scroll" class="run-scroll scaffold__body scaffold__state-scroll">
+            <ui:VisualElement name="scaffold-state" class="scaffold__state">
+                <ui:Label name="scaffold-state-mark" text="" class="scaffold__mark" />
+                <ui:Label name="scaffold-state-title" text="" class="scaffold__state-title" />
+                <ui:Label name="scaffold-state-message" text="" class="scaffold__state-message" />
+                <ui:VisualElement name="scaffold-state-bar" class="scaffold__bar"><ui:VisualElement class="scaffold__bar-fill" /></ui:VisualElement>
+                <ui:VisualElement name="scaffold-state-actions" class="scaffold__actions">
+                    <ui:Button name="scaffold-state-primary" text="" focusable="true" class="run-control scaffold-button scaffold-button--primary" />
+                    <ui:Button name="scaffold-state-secondary" text="" focusable="true" class="run-control scaffold-button scaffold-button--secondary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            </ui:ScrollView>
+            <ui:VisualElement name="scaffold-notices" class="scaffold__notices" picking-mode="Ignore" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
