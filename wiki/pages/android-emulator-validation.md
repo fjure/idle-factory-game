@@ -1,8 +1,8 @@
 ---
 title: Android emulator validation
 type: howto
-sources: [S001, S008, S018, S022, S037]
-updated: 2026-11-06
+sources: [S001, S008, S018, S022, S037, S060]
+updated: 2026-11-13
 ---
 
 # Android emulator validation
@@ -68,3 +68,5 @@ Script fixes from T245: R20 assertion corrected, forced departure checkpoint, bl
 
 - F005 T351: never create `IdleFactory/Checkpoints` with `adb shell mkdir -p` before the first app launch (shell-owned; the game reports persistence.failed). See [batch D journeys](./f005-batch-d-journeys.md). (S037)
 - F004 scenario for the journey script: [F004 emulator scenario](./f004-emulator-scenario.md). (S045)
+
+- F006 T552: an atlas page of 2 MiB hung the Android load; cap every page at 512 x 512 (1 MiB), and uninstall only the game when `/data` is full. See [Android load hang](./f006-android-load-hang-atlas-page-cap.md) and [batch 4 pitfalls](./f006-batch-p3a-workflow-pitfalls.md). (S060)

@@ -1,9 +1,9 @@
 # What I Learned: World-First Factory Experience (F006)
 
 **Feature**: Make the factory the screen: a world deck, depot and labelled hub in place of the six-tab bar. Gameplay, content and saves stay unchanged.
-**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch, see the P2 section at the end)
-**Scope**: Phases P0 (T500-T509), P1 (T510-T518) and the first P2 batch (T519-T524, T532, T533, T538)
-**Implementation status**: P0 merged on main (Issues #678-#683; PRs #721-#726) plus the parent decisions OD-9a and OD-9b on `feat-006-maqa-batch1`. P1 merged (see P1 section); P2 first batch merged (see the P2 section); the rest of P2 and P3-P4 not started.
+**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch; P3 batch A, see the last section)
+**Scope**: Phases P0 (T500-T509), P1 (T510-T518), the first P2 batch (T519-T524, T532, T533, T538) and P3 batch A (T525, T526, T534, T535, T552-T554)
+**Implementation status**: 35 of 55 listed tasks are checked (T525, T526, T534, T535, T552-T554 merged in P3 batch A, main 6a26a12); T527-T531, T536-T541 and later phases are open. P0, P1, the first P2 batch and P3 batch A are merged.
 
 ---
 
@@ -259,3 +259,69 @@ Stop workers that wait on background work before QA; resume rate-limited workers
 - **Flash matrix**: per-family count of flashes per second with the FX, checked against the cap.
 - **K4 tail**: the 4 px pointer tail of the OD-12 badge anchor; `BadgeExtentBox` is 23x27.
 - **display-v2.json**: the strict, atomically written display preferences file with the Show zoom buttons toggle.
+
+---
+
+## P3 batch A: Key Decisions
+
+### 13. Find the cause by the artifact's size, not by guessing (T552)
+
+**What we did**: An Android build hung on load. The bisect ended at a 2 MiB atlas page (the F004 `machines` atlas, present since T440). The fix is an empirical rule: every atlas page is at most 512 x 512 RGBA32, enforced by `AtlasPageBudgetTests`, plus an `isLoading:false` gate in the journey.
+
+**Why**: The engine-side reason is unknown, so a recorded constant with a test is cheaper and safer than an unproven theory. The hang had been present for several merges and only surfaced at the gate.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep bisecting into Unity internals | No repository fix would result; the cost is open-ended |
+| Trust the green Windows suites | They load the same data in about 12 s, so they could never see it |
+
+**When you'd choose differently**: If the cause were in your own code, fix it there and drop the blanket cap.
+
+---
+
+### 14. Make the hub a registered view, not a new navigation system (T535)
+
+**What we did**: The Office hub is one more registered panel on the existing `ShellNavigationStack`; opening a system view from it replaces the hub, so one Back returns to the factory.
+
+**Why**: One Back path means one set of tests and no second place for focus bugs. The six-tab bar stays until T537, so no panel test had to migrate.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| A separate hub navigator | Two back stacks that must agree |
+| Remove the tab bar now | Forces a mass test migration in one Issue |
+
+**When you'd choose differently**: When the old entry cannot coexist with the new one for layout reasons.
+
+---
+
+### 15. Gate a batch on the review, then fix first (T543)
+
+**What we did**: The batch-A UI/UX review was REJECT (load hang, empty tap), the owner chose "fix first", and the re-run was ACCEPT_WITH_NOTES. The Play-Tester gate must precede batch B.
+
+**Why**: A rejected gate that is waved through puts unknown defects under the next batch.
+
+**When you'd choose differently**: For a cosmetic-only finding, carry it as a numbered item instead of blocking.
+
+---
+
+## P3 batch A: Concepts to Know
+
+### Synthetic input can fake a defect
+
+A scan-code-0 Escape is ignored by the Input System, so "Escape does not close" (A-F1) was a test artifact. Confirm a finding with the real input path before filing it.
+
+### A shared checkout is shared state
+
+A reviewer's `git checkout --detach` hit a worktree QA was using, and `git worktree remove` failed with the shell inside it. Give every role its own worktree and leave it before removing it.
+
+## P3 batch A: carried follow-ups
+
+`reviews/p3a-followups.md` (A-1 to A-13): A-5 specific cause on the card, A-6 Details scroll and landscape coverage, A-7 zoom-button hiding on touch, A-9 the 82 MB APK, A-10 SetPass re-measure, A-13 scene catalog rows and the C8 proofs. R-7 (no Android accessibility nodes) is deferred to a later feature by the owner.
+
+## P3 batch A: Glossary additions
+
+- **Details view**: the machine panel, reached from the docked card's `Details ›`.
+- **ViewBounds**: the camera extent covering content, depot and deposit, used for pan limits.
+- **Atlas page cap**: at most 512 x 512 RGBA32 (1 MiB) per page.
