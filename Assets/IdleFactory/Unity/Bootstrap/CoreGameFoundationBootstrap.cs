@@ -553,10 +553,14 @@ namespace IdleFactory.Unity.Bootstrap
             return true;
         }
 
-        private IMachineEffects machineEffects;
+        // One shared response policy for the card and the Details view; its sink is late-bound (T529 wires the pool after the panels exist).
+        private MachineFeedback machineFeedback;
 
         /// <summary>T529 hands the world effect pool here; until then the card answers with the static highlight (FR-034).</summary>
-        public void UseMachineEffects(IMachineEffects effects) => machineEffects = effects;
+        public void UseMachineEffects(IMachineEffects effects) => MachineResponses.Effects = effects;
+
+        /// <summary>The shared machine response policy (world effect through the sink, static highlight otherwise).</summary>
+        public MachineFeedback MachineResponses => machineFeedback ?? (machineFeedback = new MachineFeedback(() => CurrentReducedMotion.Reduced));
 
         // The location stop's ring surrounds the machine on screen: the world rectangle of the location through the camera, in panel points.
         private Rect? LocationScreenRect(int slot)
@@ -614,12 +618,12 @@ namespace IdleFactory.Unity.Bootstrap
                 () => new BuildSheetPresenter(runSession, runCommands, buildSheetTree, buildSheetStyles, icons));
             // T534: the card and the Details view answer a successful upgrade or switch-on through one policy (a world effect through the sink once
             // T529 wires the pool, otherwise and always under reduced motion the static one-second highlight, FR-034).
-            var machineFeedback = new MachineFeedback(() => CurrentReducedMotion.Reduced, machineEffects);
+            var machineFeedback = MachineResponses;
             TryComposePanel(ShellPanelIds.Machine,
                 () => new MachinePanelPresenter(runSession, runCommands, machinePanelTree, machinePanelStyles, icons, machineFeedback));
             TryComposePanel(ShellPanelIds.MachineCard,
                 () => new MachineCard(runSession, runCommands, machineCardTree, machineCardStyles, panelScaffoldStyles, icons, machineFeedback,
-                    () => slotGrid != null ? slotGrid.Layout : LatticeLayoutBuilder.ShippedForColumns(3)));
+                    () => slotGrid != null ? slotGrid.Layout : null));
             TryComposePanel(ShellPanelIds.Market,
                 () => new MarketPanelHost(runSession, runCommands, runShell, inventoryRatesTree, inventoryRatesStyles,
                     prioritiesTree, prioritiesStyles, expansionTree, expansionStyles, icons, sessionLog),
@@ -1064,7 +1068,7 @@ namespace IdleFactory.Unity.Bootstrap
                 else if (kind == LifecycleReturnKind.Return && result.Value != null && result.Value.OfflineSummary != null)
                 {
                     // P2-F12: the first refresh after an offline return reports no completion delta.
-                    (runShell?.Card as MachineCard)?.ResetModels(true);
+                    runShell?.ResetCardModels(true);
                     LastOfflineSummary = result.Value.OfflineSummary;
                 }
             }

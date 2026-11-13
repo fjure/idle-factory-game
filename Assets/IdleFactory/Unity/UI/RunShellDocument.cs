@@ -1578,6 +1578,12 @@ namespace IdleFactory.Unity.UI
             CloseSheet();
         }
 
+        /// <summary>A session was replaced or the player returned from offline: the card forgets its model baselines (P2-F12); with <paramref name="suppressDeltas"/> the next refresh reports no delta.</summary>
+        public void ResetCardModels(bool suppressDeltas)
+        {
+            (cardPanel as IMachineCardModels)?.ResetModels(suppressDeltas);
+        }
+
         /// <summary>Per-frame update of the open card (the card refreshes its model every frame).</summary>
         public void RefreshCard()
         {

@@ -98,7 +98,7 @@ namespace IdleFactory.Tests.PlayMode
             var cash = h.Session.ReadCash();
             
             CardHarness.Press(card.UpgradeButton);
-            Assert.That(card.InlineLabel.text, Is.EqualTo(RunRejectionCopy.For(RunReasons.CashInsufficient)), "a press shows the rejection inline and changes nothing");
+            Assert.That(card.InlineLabel.text, Does.StartWith("Need $").And.EndWith("more"), "the reason is visible text under Upgrade without hover or press (P2-F19)");
             Assert.That(card.InlineLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
             Assert.That(h.Session.ReadCash(), Is.EqualTo(cash));
             Assert.That(h.MachineAt(0).Level, Is.EqualTo(1));
@@ -200,6 +200,26 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(h.Card.Root.worldBound, Is.EqualTo(before), "nothing moves: the highlight changes colour only");
             yield return new WaitForSecondsRealtime(0.5f);
             Assert.That(h.Card.IsHighlighted, Is.False, "the highlight ends after its second");
+        }
+
+        [UnityTest]
+        public IEnumerator ASinkWiredAfterTheCardWasComposedStillReceivesTheEffect()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 8);
+            h.Build(0, "machine.miner");
+            yield return h.OpenCard(0);
+
+            // T529 wires the pool after the panels exist: the sink is late-bound on the shared policy, not captured at composition.
+            var sink = new RecordingEffects();
+            h.Feedback.Effects = sink;
+            CardHarness.Press(h.Card.UpgradeButton);
+            Assert.That(sink.Spawned, Is.EqualTo(new[] { (MachineResponseKind.UpgradeGlint, 0) }), "motion on: the late sink got the glint");
+            Assert.That(h.Card.IsHighlighted, Is.False);
+
+            h.Reduced = true;
+            CardHarness.Press(h.Card.UpgradeButton);
+            Assert.That(sink.Spawned.Count, Is.EqualTo(1), "reduced motion: no spawn even with the sink wired");
+            Assert.That(h.Card.IsHighlighted, Is.True, "the static highlight instead");
         }
 
         [UnityTest]
@@ -529,9 +549,21 @@ namespace IdleFactory.Tests.PlayMode
             h.Card.InlineLabel.style.display = DisplayStyle.Flex;
             yield return ShellRig.Settle();
 
-            // P2-F19: the notice overlays the world column, so it never covers Upgrade or the controls Back reaches.
-            Assert.That(Intersects(h.Shell.NoticeBar.worldBound, h.Card.UpgradeButton.worldBound), Is.False, $"{screen}: the notice never covers Upgrade");
-            Assert.That(Intersects(h.Shell.NoticeBar.worldBound, h.Card.Root.worldBound), Is.False, $"{screen}: the notice never covers the card");
+            // P2-F19: three overlays together (detail line, notice bar, world hint) leave Upgrade and the close control pickable.
+            h.Shell.DetailBar.style.display = DisplayStyle.Flex;
+            ((Label)h.Shell.DetailBar).text = "Cash: 1,234,567,890,123 and more digits to fill the line";
+            h.Shell.WorldHint.style.display = DisplayStyle.Flex;
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.Root.panel.Pick(h.Card.UpgradeButton.worldBound.center), Is.SameAs(h.Card.UpgradeButton), $"{screen}: Upgrade is pickable under three overlays");
+            Assert.That(h.Shell.Root.panel.Pick(h.Card.CloseButton.worldBound.center), Is.SameAs(h.Card.CloseButton), $"{screen}: Back (the card close) is pickable");
+            foreach (var overlay in new[] { h.Shell.DetailBar, h.Shell.NoticeBar, h.Shell.WorldHint })
+            {
+                // Three stacked overlays can outgrow a small world column at 200 % text and draw over the card edge, but they take no pointer.
+                Assert.That(overlay.pickingMode, Is.EqualTo(PickingMode.Ignore), $"{screen}: {overlay.name} takes no pointer, so it never steals a tap from the card");
+            }
+
+            // The notice overlays the world column, so it never covers Upgrade or the controls Back reaches.
+            Assert.That(h.Shell.Root.panel.Pick(h.Card.UpgradeButton.worldBound.center), Is.SameAs(h.Card.UpgradeButton), $"{screen}: a notice never steals a tap from Upgrade");
             Assert.That(h.Shell.HandleBack(), Is.True);
             Assert.That(h.Shell.IsCardOpen, Is.False, $"{screen}: Back closes the card");
             Assert.That(h.Shell.SelectedSlot, Is.EqualTo(-1));

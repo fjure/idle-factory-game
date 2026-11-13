@@ -64,7 +64,8 @@ namespace IdleFactory.Tests.PlayMode
                 harness.Session, commands, detailsTree, detailsStyles, ContractsPanelTestSupport.Icon, harness.Feedback);
             harness.Card = new MachineCard(
                 harness.Session, commands, Load<VisualTreeAsset>("MachineCard.uxml"), Load<StyleSheet>("MachineCard.uss"),
-                Load<StyleSheet>("PanelScaffold.uss"), ContractsPanelTestSupport.Icon, harness.Feedback);
+                Load<StyleSheet>("PanelScaffold.uss"), ContractsPanelTestSupport.Icon, harness.Feedback,
+                () => LatticeLayoutBuilder.ShippedForColumns(3));
             harness.Shell.Panels.Register(harness.Details);
             harness.Shell.Panels.Register(harness.Card);
             harness.Shell.Panels.Register(new TestShellPanel(ShellPanelIds.Build, "Build", 4));

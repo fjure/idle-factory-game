@@ -35,13 +35,15 @@ namespace IdleFactory.Unity.UI
     public sealed class MachineFeedback
     {
         private readonly Func<bool> reducedMotion;
-        private readonly IMachineEffects effects;
 
         public MachineFeedback(Func<bool> reducedMotion, IMachineEffects effects = null)
         {
             this.reducedMotion = reducedMotion;
-            this.effects = effects;
+            Effects = effects;
         }
+
+        /// <summary>The world effect sink. Late-bound: T529 sets it after the panels were composed, and every card and Details view sharing this object sees it.</summary>
+        public IMachineEffects Effects { get; set; }
 
         /// <summary>True while the effective reduced-motion state is on.</summary>
         public bool Reduced => reducedMotion != null && reducedMotion();
@@ -60,16 +62,23 @@ namespace IdleFactory.Unity.UI
         {
             Responses++;
             LastKind = kind;
-            if (effects != null && !Reduced)
+            var sink = Effects;
+            if (sink != null && !Reduced)
             {
                 LastWasWorldEffect = true;
-                effects.Spawn(kind, location);
+                sink.Spawn(kind, location);
                 return;
             }
 
             LastWasWorldEffect = false;
             showStatic?.Invoke();
         }
+    }
+
+    /// <summary>What the shell asks of a card whose models must be reset (a session replace or an offline return), without knowing the card type.</summary>
+    public interface IMachineCardModels
+    {
+        void ResetModels(bool offlineReturn = false);
     }
 
     /// <summary>The card's copy in one place (world-facing words follow reviews/world-copy.md: "location", never "slot", "plate" or "bay").</summary>
@@ -113,7 +122,7 @@ namespace IdleFactory.Unity.UI
     /// refresh never repeats a delta), and <see cref="ResetModels"/> runs on a session replace.
     /// </para>
     /// </summary>
-    public sealed class MachineCard : IShellPanel
+    public sealed class MachineCard : IShellPanel, IMachineCardModels
     {
         private readonly RunSession session;
         private readonly RunCommands commands;
@@ -159,7 +168,7 @@ namespace IdleFactory.Unity.UI
 
             this.icons = icons;
             this.feedback = feedback ?? new MachineFeedback(null);
-            this.layoutSource = layoutSource ?? (() => LatticeLayoutBuilder.ShippedForColumns(3));
+            this.layoutSource = layoutSource;
             var instance = tree.Instantiate();
             root = instance.Q<VisualElement>("machine-card") ?? throw new InvalidOperationException("MachineCard.uxml has no machine-card.");
             root.name = "machine-card";
@@ -321,7 +330,14 @@ namespace IdleFactory.Unity.UI
                 count = session.CopyMachineStates(states);
             }
 
-            model.Refresh(layoutSource(), factory, states, count, rates, suppressNext);
+            var layout = layoutSource?.Invoke();
+            if (layout == null)
+            {
+                // No world layout yet: the model stays idle and the card falls back to the machine's own state (no guessed layout).
+                return;
+            }
+
+            model.Refresh(layout, factory, states, count, rates, suppressNext);
             suppressNext = false;
         }
 
@@ -375,13 +391,18 @@ namespace IdleFactory.Unity.UI
             {
                 UpgradeButton.text = "Upgrade: " + MarketPanelParts.Money(next.Cost);
                 PanelScaffold.SetDisabled(UpgradeButton, false, null, null);
+                if (inlineLabel.text.StartsWith("Need $", StringComparison.Ordinal))
+                {
+                    ClearInline();
+                }
+
                 return;
             }
 
             // Cost and shortfall inside the button; the reason is also the tooltip (the accessible description) and the inline line.
             var shortfall = Math.Max(0L, next.Cost - cash);
             UpgradeButton.text = "Upgrade: " + MarketPanelParts.Money(next.Cost) + "\nNeed $" + QuantityFormatter.Format(shortfall);
-            PanelScaffold.SetDisabled(UpgradeButton, true, SlotSheetText.CashShortfall(next.Cost, cash), null);
+            PanelScaffold.SetDisabled(UpgradeButton, true, "Need $" + QuantityFormatter.Format(shortfall) + " more", inlineLabel);
         }
 
         private void RenderCause(MachineVisualState state, MachinePresentation presentation)
