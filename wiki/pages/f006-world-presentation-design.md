@@ -1,13 +1,13 @@
 ---
 title: F006 world presentation design (planned)
 type: component
-sources: [S056, S057, S058]
-updated: 2026-11-12
+sources: [S056, S057, S058, S059]
+updated: 2026-11-13
 ---
 
 # F006 world presentation design (partly implemented)
 
-Design from `research.md` R04-R08, R11, R23 of Feature 006. Implemented in batch P1: the layout seam (R04, T512), the sorting layers (T513), `CompletedCycles` (R08, T514) and the `ShellNavigationStack`/`ShellSheetHost` extraction (R11, T511). Deck, links, depot, vein and shortage ranking are still planned. See [batch P1](./f006-batch-p1-enabling-refactor.md). (S056, S058)
+Design from `research.md` R04-R08, R11, R23 of Feature 006. Implemented in batch P1: the layout seam (R04, T512), the sorting layers (T513), `CompletedCycles` (R08, T514) and the `ShellNavigationStack`/`ShellSheetHost` extraction (R11, T511). Art families for deck, links, depot, vein and edge, and the shortage-ranking models (T532), landed in P2; runtime wiring of deck, links, depot and vein is still planned. See [batch P1](./f006-batch-p1-enabling-refactor.md) and [batch P2](./f006-batch-p2-art-and-presentation.md). (S056, S058, S059)
 
 ## Layout seam (R04, implemented in T512)
 

@@ -1,9 +1,9 @@
 # What I Learned: World-First Factory Experience (F006)
 
 **Feature**: Make the factory the screen: a world deck, depot and labelled hub in place of the six-tab bar. Gameplay, content and saves stay unchanged.
-**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch, see the P1 section below)
-**Scope**: Phases P0 (T500-T509) and P1 (T510-T518)
-**Implementation status**: P0 merged on main (Issues #678-#683; PRs #721-#726) plus the parent decisions OD-9a and OD-9b on `feat-006-maqa-batch1`. P1 merged (see P1 section); P2-P4 not started.
+**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch, see the P2 section at the end)
+**Scope**: Phases P0 (T500-T509), P1 (T510-T518) and the first P2 batch (T519-T524, T532, T533, T538)
+**Implementation status**: P0 merged on main (Issues #678-#683; PRs #721-#726) plus the parent decisions OD-9a and OD-9b on `feat-006-maqa-batch1`. P1 merged (see P1 section); P2 first batch merged (see the P2 section); the rest of P2 and P3-P4 not started.
 
 ---
 
@@ -181,3 +181,81 @@ Moving `Library/` from the merged worktree into the next Issue's worktree makes 
 - **Layout seam**: `FactoryWorldLayout` plus `LatticeLayoutBuilder`; the one source of location geometry.
 - **OD-10 / OD-11 / OD-12**: owner decisions on Art Bible v1.1.0, the `CompletedCycles` design and the A-03 anchor K4.
 - **A-03**: the badge-anchor question; K0-K5 are the measured candidates.
+
+---
+
+# Batch P2: art families and the first ready gameplay and UI Issues (T519-T524, T532, T533, T538)
+
+**Generated**: 2026-11-13 (P2 batch). **Status**: P2 merged on main (Issues #692-#697, #701, #705, #709; PRs #737-#745, main 3177056) plus the checkbox mirror 8c5fb2e. Follow-ups P2-F1 to P2-F21 are in `reviews/p2-followups.md`. P3-P4 and the remaining P2 tasks (T525-T531) are not started.
+
+## P2 batch: Key Decisions
+
+### 9. Script the art that is geometry, render only what needs light (LINK and FX)
+
+**What we did**: Link tiles and FX sprites come from a scripted generator (`link_fx.py`) with a per-family flash matrix (caps Miner, Smelter and Press 10 fps, Assembler 8 fps) and a C8 ring proof, while ground, depot, deposit and edge pieces went through Blender rig-v2 headless plus a pixel pass. Trunk tiles were recoloured to keep the strict C8 ring rule.
+
+**Why**: Flat pixel shapes are exactly reproducible from code, so a measurable rule (flashes per second, ring clearance) can be a test instead of a review opinion. Lit volumes are cheaper to render than to draw.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Hand-paint every link and FX frame | No repeatable proof of the flash and ring limits |
+| Render everything in Blender | Needless for flat shapes, and the Blender MCP bridge was unreachable in every P2 task anyway |
+
+**When you'd choose differently**: For organic or lit art, a render pipeline pays off; for flat geometry with numeric budgets, a generator is better.
+
+---
+
+### 10. Decide "not needed" explicitly (F006-UI sprites)
+
+**What we did**: T523 recorded all three UI sprites as "not needed" (USS plus PanelIcons) in Art Bible 21.2 instead of drawing them.
+
+**Why**: A recorded decision stops a later task from rediscovering the question and keeps the atlas small.
+
+**When you'd choose differently**: If the Art Director finds the USS banner too plain (P2-F9), the decision reopens.
+
+---
+
+### 11. Make presentation models allocation-free and refresh them every frame
+
+**What we did**: `MachinePresentationModel` and `AttentionModel` rank shortages, cap markers at 2 plus store-full, and refresh without allocating. `CompletionsDelta` clears only inside `Refresh`.
+
+**Why**: The world view runs every frame, so garbage matters. The cost of this design is a trap: a caller that skips `Refresh` sees the same delta forever (P2-F10).
+
+**When you'd choose differently**: A model with an event queue would not need per-frame polling, but it would allocate or need pooling.
+
+---
+
+### 12. Retry a transient file-system failure, and test with injected failures (T538)
+
+**What we did**: `File.Replace` onto an existing file fails about 0.6 % of the time on this host (`IOException` 0x80070497), so the store retries at 15, 30 and 60 ms. Tests inject scripted failures before the real call and assert outcomes, not attempt counts.
+
+**Why**: The first QA fails were not logic bugs but host noise colliding with exact-count assertions. A retry makes the store robust; injected failures make the tests deterministic.
+
+**When you'd choose differently**: The retry blocks the main thread (P2-F21); for larger writes move it off-thread.
+
+---
+
+## P2 batch: Concepts to Know
+
+### Injected faults beat real-system assertions
+
+Where the real file system fails by chance, drive the code with a scripted failure and assert on the outcome. Real-FS tests then check only what must hold whatever the host does (`DisplayPreferencesStore` tests, f178a65).
+
+### Tokens-only scaffolds and the docked-card trap
+
+`PanelScaffold` uses design tokens only, proven by 84 Play Mode cases (8 classes x 100/150/200 %). Its opaque full-screen root does not fit the docked machine card, which must never cover machines, so T534 needs a variant or class-only reuse (P2-F16).
+
+### Housekeeping that bites again
+
+Stop workers that wait on background work before QA; resume rate-limited workers with SendMessage; when `git branch -d` fails from a stale main checkout, use a guarded `update-ref` after an ancestor check; the owner's open editor and a handed-over `Library/` (5 sequential Issues) are part of the lease picture.
+
+## P2 batch: carried follow-ups
+
+`reviews/p2-followups.md` (P2-F1 to F21). Notable: the K4 tail sprites still need a runtime swap and a `KeepOutOf` change to `BadgeExtentBox` (P2-F5, T526); the composite C8 proof is open (P2-F6, P2-F7); call `Refresh` every frame (P2-F10, T529); the "Show zoom buttons" copy needs a World Designer read (P2-F20, T547).
+
+## P2 batch: Glossary additions
+
+- **Flash matrix**: per-family count of flashes per second with the FX, checked against the cap.
+- **K4 tail**: the 4 px pointer tail of the OD-12 badge anchor; `BadgeExtentBox` is 23x27.
+- **display-v2.json**: the strict, atomically written display preferences file with the Show zoom buttons toggle.

@@ -1,13 +1,13 @@
 ---
 title: Feature 006 plan overview (planned)
 type: decision
-sources: [S056, S057, S058]
-updated: 2026-11-12
+sources: [S056, S057, S058, S059]
+updated: 2026-11-13
 ---
 
 # Feature 006 plan overview (planned, not implemented)
 
-F006 "World-First Factory Experience" makes the factory the screen. Gameplay, content and saves stay unchanged; the plan (revision 2) passed seven review lenses including the new World Designer. Status: planning complete; batch P0 (T502-T508) merged (see [baseline](./f006-p0-baseline.md)); batch P1, the enabling refactor (T510-T518), merged on 2026-11-12 (see [P1](./f006-batch-p1-enabling-refactor.md)). (S056, S057, S058)
+F006 "World-First Factory Experience" makes the factory the screen. Gameplay, content and saves stay unchanged; the plan (revision 2) passed seven review lenses including the new World Designer. Status: planning complete; batch P0 (T502-T508) merged (see [baseline](./f006-p0-baseline.md)); batch P1, the enabling refactor (T510-T518), merged on 2026-11-12 (see [P1](./f006-batch-p1-enabling-refactor.md)); batch P2, art families plus T532, T533 and T538, merged on 2026-11-13 (see [P2](./f006-batch-p2-art-and-presentation.md)). (S056, S057, S058, S059)
 
 ## Phases and gates
 
