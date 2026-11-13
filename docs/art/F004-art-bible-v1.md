@@ -94,7 +94,7 @@ Budgets are those of `specs/004-visual-identity/reviews/performance-budgets.md` 
 | 1 to 3: average FPS at least 60, p95 present-interval bucket at most 19 ms, 0 intervals of 50 ms or more | L1: at most 12 extra sprite renderers (all 12 slots running). L2: at most 12 Point lights | T444, W004-V and W003-S with all 12 slots running and lit | all three met with lighting on, in a valid ABA session |
 | 4: Windows host frame ms p95 within the T122 range (0.02 to 0.04 ms) | none expected | T444 | unchanged |
 | 5: 0 steady-state GC allocations per frame | accent frame index comes from the shared clock, lights are static: 0 allocations | T431 (`PresentationAllocationTests`), T442 (600-frame W004-V player run) | 0 samples with accents on and, if L2 is adopted, with lights on |
-| 6 and 7: world-art texture at most 8 MB, atlas pages at most 1024 x 1024 | accents: 4 machines x 6 frames x 80 x 64 x 4 B = 491,520 B (0.47 MB, derived, before padding) | T444 build report | the whole world set within 8 MB; accents are about 6 % of the budget |
+| 6 and 7: world-art texture at most 8 MB, atlas pages at most 512 x 512 RGBA32 (1 MiB; amended after T552, 21.9 item 8) | accents: 4 machines x 6 frames x 80 x 64 x 4 B = 491,520 B (0.47 MB, derived, before padding) | T444 build report | the whole world set within 8 MB; accents are about 6 % of the budget |
 | 8: SetPass per world-camera render on W004-V at most 0.86 (B2 0.78 + 10 %) | L1: same material and atlas family as the body, so no added state change is expected. L2: adds a light pass | T444 (graphical Editor probe, same method as the B2 addendum) | at most 0.86 with lighting on |
 | 9: guest CPU regression at most max(10 %, 2 points) | none expected | T444 | within |
 | 10: APK file size at most 150 MB (owner decision 2026-11-04, replaces "+10 MB against the paired B1") | B2 is 46.3 MB; T440 added +0.09 MB of entries for seven families | T444 (clean build) | within; no longer the tightest budget (risk R-3, section 19) |
@@ -113,7 +113,7 @@ The F006 world layers sit beside the F004 slot sprites and replace the F004 floo
 | World sprite renderers | at most 1 per branch pip + 8 FX + props at most 0.5 per eligible cell + 1 depot + 1 deposit | 12 + 8 + 9 + 1 + 1 = 31 (eligible cells = 30 cells - 12 occupied = 18, props at most 9) |
 | Renderers in the world camera | F004 cap 61 (section 2.2) + 31 + 3 | at most 95, below the 173 single-pass tier of the owner's budget 8 restatement (`wiki/pages/f004-batch-12-final-verification.md`) |
 | SetPass | +1 for the world atlas, net of the removed floor atlas; +1 for the FX atlas while active | budget 8 limit 0.86 on W004-V is re-measured; the Tilemap uses the slot sprite material |
-| Texture | from the section 21.4 table with padding and page rounding | planned 1.25 MiB, worst case 2.50 MiB; each atlas at most one 1024 x 1024 page |
+| Texture | from the section 21.4 table with padding and page rounding | planned 1.25 MiB, worst case 2.50 MiB; every atlas page at most 512 x 512 (1 MiB), a fallback adds a page instead of enlarging one |
 
 The L1 accent budget (at most 12 accent renderers) is unchanged; the FX pool of 8 is separate (3 active + 5 draining tails, R12).
 
@@ -302,7 +302,7 @@ None. Alpha is 0 or 255 (`check_alpha`); quantisation to the palette uses CIELAB
 | Cue icon | at least 12 x 12 art px (`check_cue_icon_size`); shipped size 23 x 23 | contract; measured (23 x 23 opaque) |
 | Sprite layers per slot | at most 5 drawn, plus 1 selection frame on one slot; at most 61 per 12-slot factory | derived (section 2.2) |
 | Text in art | locked-plate digits `2` to `5` and tier numerals only; authored 3 x 5 bitmap font | section 8.5 |
-| Atlas | one Sprite Atlas v2 per family, RGBA32, point filter, no mipmaps, padding 2, no rotation, pages at most 1024 x 1024 | research R10, budget 7 |
+| Atlas | one Sprite Atlas v2 per family, RGBA32, point filter, no mipmaps, padding 2, no rotation, pages at most 512 x 512 (1 MiB RGBA32); an atlas may use more than one page (T552) | research R10, budget 7 |
 
 **Amendment (v1.1.0, signed off at OD-10), F006 caps** (`rule`; the measuring tasks are in P2):
 
@@ -312,7 +312,7 @@ None. Alpha is 0 or 255 (`check_alpha`); quantisation to the palette uses CIELAB
 | FX per location | one 250 ms coalescing window; offline arrivals produce no effect (research R12, G-5) |
 | Per-family pace cap | `ActivityPace` of 6, 8 or 10 fps is capped per machine family by its measured flash rate; the Assembler stays at 8 fps or below |
 | Prop height | at most 24 art px (research R06); the concept `prop-crate` (36) and `prop-lamp` (44) are re-drawn to 24 or less |
-| Atlas | the F006 world and FX atlases follow the Atlas row above and the page plan of section 21.4: each at most one 1024 x 1024 page |
+| Atlas | the F006 world and FX atlases follow the Atlas row above and the page plan of section 21.4: each one page of at most 512 x 512 as planned |
 | Colours per sprite | within the family allowance of section 21.2 and at most 12 including `ink_0` |
 
 ## 7. Machine silhouettes
@@ -798,10 +798,10 @@ By family:
 
 | Atlas | Padded px | Planned page | Page px | Fill | Page bytes (RGBA32) | Fallback page if the packer fails | Fallback bytes |
 |---|---|---|---|---|---|---|---|
-| World | 190,956 | 512 x 512 | 262,144 | 72.8 % | 1,048,576 (1.00 MiB) | 1024 x 512 | 2,097,152 (2.00 MiB) |
+| World | 190,956 | 512 x 512 | 262,144 | 72.8 % | 1,048,576 (1.00 MiB) | a second 512 x 512 page | 2,097,152 (2.00 MiB, two pages) |
 | FX | 57,144 | 256 x 256 | 65,536 | 87.2 % | 262,144 (0.25 MiB) | 512 x 256 | 524,288 (0.50 MiB) |
 
-- Each atlas has **one page of at most 1024 x 1024** (budget 7); the fallback pages are also within it.
+- Each atlas page is **at most 512 x 512, 1 MiB RGBA32** (budget 7 as amended after T552). The F006 atlases are planned as one page each; the world fallback is a second page, not a larger one.
 - Planned total 1,310,720 B (1.25 MiB); worst case with both fallbacks 2,621,440 B (2.50 MiB, 2.62 MB).
 - Budget 6 (world-art texture at most 8 MB): the F004 measured total is 3.05 MB (`wiki/pages/f004-batch-12-final-verification.md`) **including the floor atlas that F006 removes**, so the F004 + F006 worst case is at most 3.05 + 2.62 = 5.67 MB, margin at least 2.33 MB. The build-report measurement confirms it (a P2 gate, not made here).
 - The planned pages leave 27.2 % (world) and 12.8 % (FX) free; a packer that misses the planned page uses the fallback, which is within budget, so the planned page is not a pass criterion.
@@ -862,4 +862,5 @@ Recorded by the F006 MAQA parent from the independent T525 review (`specs/006-wo
 5. **P2-F7 / P2-F23, owner decision (accept, conditional).** EDGE pieces are placed on the **front margin row only**: `-fl` on the front-left diagonal, `-fr` on the front-right diagonal and `-corner` at the front apex, for every stage. The deck top is `floor_0`, the same as the field, and a seam every 35 px is accepted. The front-only stage-2 wall is the "Walled yard" candidate and stays provisional until T527 proves zero wall pixels in any C8 ring, the wall not outweighing the front-row machine plates (otherwise its top band drops to `steel_1`), and the SC-006 shuffled-order trial at 9 of 10 or better. No side or back wall unless a keep-out proof allows it.
 6. **P2-F9 / P2-F22, owner decision.** The "Office" hub entry gets a NEW 24 px `ui_text` glyph authored through the F003 UI-icon pipeline with an Art Director pixel review. F006-UI changes from 0 to 1 sprite (21.2); the attention dot and the banner stay plain USS. Until the glyph exists, the hub shows the visible word "Office" with the contracts glyph as a temporary fallback.
 7. **P2-F5.** The production K4 tail is in the shipped F004 cue sprites (T526), and `FactoryWorldLayout.KeepOutOf` uses the 23 x 27 badge extent. A full F004 re-import from `art-source/f004` would revert the tails; `F004AssetContractTests` guards this.
+8. **Page cap (T552, #750, PR #754).** An Android GLES3 player stuck on load (`Loading.AsyncRead` at 100 %) whenever a 2 MiB atlas page (the F004 `machines` atlas, 512 x 1024 RGBA32, since T440) was referenced; pages of 1 MiB or less load in about 3 s. The cause inside Unity or the emulator is not identified, so the rule is empirical: every atlas page is at most 512 x 512 RGBA32 (1 MiB), enforced by `F004SpriteAtlasSettings.MaxPageSize`/`MaxPageBytes` and `AtlasPageBudgetTests`. The F004 `machines` atlas now has two pages (1.0 + 0.25 MiB); total bytes fell. Budget 8 (SetPass) must be re-measured, because body and accent frames may sit on different pages (T531, T544).
 
