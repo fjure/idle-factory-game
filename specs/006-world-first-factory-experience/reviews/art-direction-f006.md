@@ -253,6 +253,8 @@ All four lenses recommend ACCEPT, with these conditions.
 | UI/UX | Supports the front-row-only rule (side rows are 1 to 2 px from machine columns). Wall stays provisional until the T527 C8 proof (P1-F5). |
 | Game Designer/PO | Accept, conditional. (1) Run the SC-006 shuffled-order trial at T527. (2) If stages order worse than 9 of 10, add the depot parapet (already in the depot s2 art) and a back-edge treatment only where a keep-out proof allows. (3) Record the front-row-only rule in section 21.4. Cost: it reads as a retaining lip, not an enclosed yard. |
 
+**Owner decision (2026-11-13, recorded by the parent):** ACCEPT, conditional. A front-only wall is the stage-2 "Walled yard" candidate, on the front margin row only. It stays provisional (P1-F5) until T527 shows: the C8 ring proof with zero wall pixels in any ring, the wall not outweighing the front-row machine plates (Art Director E1; otherwise the top band drops to `steel_1`), and the SC-006 shuffled-order trial at 9 of 10 or better (Game Designer/PO). No side or back wall unless a keep-out proof allows it. The front-row-only rule and the iso-diagonal piece layout go into Art Bible §21.4 with the parent's revision. Carried as P2-F23.
+
 ### P2-F9: hub entry glyph for "Office"
 
 The positions differ.
