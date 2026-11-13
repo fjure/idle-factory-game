@@ -213,3 +213,26 @@ The entry always shows the icon and the word "Office" (tested on every class at 
 | A-4 | Done: the shortfall shows once, inside the Upgrade button (FR-016); the inline line is only the rejection a press answers with. |
 
 **New tests.** `HubPanelTests`, `BackOrderTests`, `HubPlayerTests` (`StandalonePlayer`), `HubTestSupport` (harness), and the cases named above.
+
+## T536 (#708): panel consistency pass
+
+**Re-baselined tests (old to new).**
+
+| File | Test / line | Old | New | Reason | Expectation changed? | Issue |
+|---|---|---|---|---|---|---|
+| `Tests/PlayMode/PanelScaffoldTests.cs` | `NoticesLayerAboveTheBodyAndHoldAtEveryClassAndScale` | the notice layer overlapped the body (`Intersects(notice, body)` was true) | the layer takes its own room below the body, so a notice never covers a body control (`Intersects` is false); it is still the last sibling and still wins hit testing | P2-F19: up to three notices at 640x360 and 200 % must leave the primary action and Back usable | yes | #708 |
+
+No other existing assertion changed. In particular the layout suites of every panel (`ContractsPanelTests`, `ContractsAutoDeliverPanelTests`, `ItemsPanelTests`, `ResearchPanelTests`, `IndustryPanelTests`, `PrestigePanelTests`, `SettingsSheetTests`, the Market suites, `OfflineSummaryPanelTests`, `StartupStatusPanelTests`, `TextScaleLayoutTests`, `RunTextScaleTests`, `MachineCardTests`, `HubPanelTests`) pass unchanged with the scaffold scope in place. One first run failed `ContractsAutoDeliverPanelTests.ABonusWindowCountsDownAndEndsWithoutAJumpInTheLayout` (the card shrank by 1.5 px when Deliver turned disabled, because the scaffold's disabled look carries 1 px top and bottom borders against the control's 1.5 px). That was a production defect of the new disabled look, fixed in `PanelScaffold.uss` (a hosted control keeps its top, bottom and right border widths and only the left bar grows); the test is unchanged.
+
+**Decisions.**
+- **One scope class, no per-panel edits of the look.** The shell adds `scaffold-scope` to every panel root it mounts (`RunShellDocument.MarkScaffoldScope`), to the confirmation dialog card and to the notice line; the two status surfaces carry it from construction. `FactoryRun.uss` imports `PanelScaffold.uss` (`@import`), so the scaffold rules reach every shell descendant and no bootstrap change or scene field is needed (the status surfaces import it from their own sheets because they can be mounted before the shell exists). A hosted button keeps its `run-button` look and spacing (destructive and primary fills included) and takes only the scaffold's 48 pt floor (`.scaffold-scope .scaffold-button`) and the one disabled look (`scaffold-button--disabled`, kept in step by `RunShellDocument.SetSoftDisabled`).
+- **48 pt floor.** The value buttons of the Market inventory (`MarketPanelParts.NewValueButton`) and the status surfaces' controls are raised from 44 to 48 pt.
+- **Empty templates.** Items and Contracts show the scaffold's empty template (`scaffold__state--empty`: marker, title "Nothing here yet", their own message) through `ScaffoldEmpty`; the hub and `PanelScaffold` already use it.
+- **P2-F18.** The loading mark is three separate blocks, not a bar filled to 33 %; it is static in every motion mode (UI/UX C5), so reduced motion needs no other form.
+- **P2-F19.** The scaffold notice layer is in flow below the body (at most 70 % of the stage), not an overlay. `SurfaceConsistencyTests.ThreeNoticesLeaveBackAndThePrimaryActionUsable` proves it on three screen classes at 100 and 200 % (640x360 at 200 % included). The shell's own notice line is one bar at a time (unchanged).
+- **#555.** `StartupStatusPanel` watches the reduced-motion state it was given (every 250 ms, a read of the bootstrap's cached value) and calls `ApplyReducedMotion` on a change, so the spinner stops and resumes while the surface is open. `ReducedMotionTests.TheStartupSpinnerFollowsTheReducedMotionStateWhileTheSurfaceIsOpen` covers both directions.
+- **HubAttentionFeed (T535 Architect F3).** The per-frame path is a revision compare; the Research and Overdrive reads walk the catalog and the state directly (no snapshot is built). Only the Prestige preview still allocates (the domain call returns a new object; a domain change is out of scope) and it is re-read at most once per timeline second.
+- **Locked reasons (T535 Product Owner note).** The Overdrive card reads "Overdrive unlocks after <condition>." in the shared `UnlockCopy` wording, and the Prestige card reads "Not ready yet: needs Factory Value <threshold>".
+- **A-6 (panel part).** Details opens at the top of the sheet scroll (`MachinePanelPresenter.OnShown`).
+
+**New tests.** `Tests/PlayMode/F006/SurfaceConsistencyTests.cs` (scaffold scope, classes, 48 pt floor and disabled look on Market with inventory, priorities and expansion, Contracts, Items, Research, Industry, Prestige and Settings; the empty templates; the hub's scope and error state; the dialog and the notice line; the Offline summary and the start-up status; three notices at the worst case) and the #555 case in `ReducedMotionTests`.

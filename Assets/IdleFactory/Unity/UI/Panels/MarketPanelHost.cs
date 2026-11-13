@@ -143,12 +143,13 @@ namespace IdleFactory.Unity.UI.Panels
             return label;
         }
 
-        /// <summary>A number the player can focus or tap to read exactly: a 44 pt control that shows a compact value.</summary>
+        /// <summary>A number the player can focus or tap to read exactly: a control (48 pt, T536) that shows a compact value.</summary>
         public static Button NewValueButton(string name, string cssClass)
         {
             var button = new Button { name = name, focusable = true };
             button.AddToClassList("run-control");
             button.AddToClassList(cssClass);
+            button.AddToClassList(RunShellDocument.ScaffoldButtonClass);
             return button;
         }
 

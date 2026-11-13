@@ -165,8 +165,11 @@ namespace IdleFactory.Unity.UI.Panels
 
     /// <summary>
     /// Feeds <see cref="HubAttention"/> for Research (a node can be bought, or unspent IP waits in Industry), Prestige (eligible) and Overdrive
-    /// (ready). It reads the existing snapshots and previews only (no new rule, A-6) and only when the run changed, at most every
-    /// <see cref="ReadSeconds"/>. Contracts has its own feed (<see cref="ContractsShellFeed"/>).
+    /// (ready). It reads existing state only (no new rule, A-6) and only when the run changed, at most every <see cref="ReadSeconds"/>.
+    /// Contracts has its own feed (<see cref="ContractsShellFeed"/>). T536 (T535 Architect F3): the per-frame path is allocation-free (a revision
+    /// compare), and so are the Research and Overdrive reads (they walk the catalog and the state directly instead of building snapshots). Only the
+    /// Prestige preview allocates, because the domain call returns a new object; it is re-read when the structure changed or the timeline second
+    /// moved, so at most once per second.
     /// </summary>
     public sealed class HubAttentionFeed
     {
@@ -179,6 +182,9 @@ namespace IdleFactory.Unity.UI.Panels
         private long keyStructure = -1;
         private long keyQuantity = -1;
         private long keySecond = -1;
+        private long prestigeStructure = -1;
+        private long prestigeSecond = -1;
+        private bool prestigeEligible;
         private float lastReadTime = float.NegativeInfinity;
 
         public HubAttentionFeed(RunSession session, RunCommands commands, HubAttention attention)
@@ -192,6 +198,7 @@ namespace IdleFactory.Unity.UI.Panels
         public void Invalidate()
         {
             keyStructure = -1;
+            prestigeStructure = -1;
             lastReadTime = float.NegativeInfinity;
         }
 
@@ -213,12 +220,7 @@ namespace IdleFactory.Unity.UI.Panels
 
         private void Read()
         {
-            var research = false;
-            var nodes = RunSnapshots.Research(session).Nodes;
-            for (var i = 0; i < nodes.Count && !research; i++)
-            {
-                research = nodes[i].CanPurchase;
-            }
+            var research = AnyResearchAffordable();
 
             // Unspent Influence Points wait in Industry, which the Research view hosts (R-01): they keep the Research flag (the former tab dot).
             if (!research && session.Permanent != null && session.Permanent.Ip > 0)
@@ -227,9 +229,55 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             attention.Set(HubCard.Research, research);
-            var prestige = commands.GetPrestigePreview();
-            attention.Set(HubCard.Prestige, prestige.IsSuccess && prestige.Value != null && prestige.Value.IsEligible);
-            attention.Set(HubCard.Overdrive, RunSnapshots.Overdrive(session).State == OverdriveStage.Ready);
+            var second = keySecond;
+            if (prestigeStructure != keyStructure || prestigeSecond != second)
+            {
+                prestigeStructure = keyStructure;
+                prestigeSecond = second;
+                var prestige = commands.GetPrestigePreview();
+                prestigeEligible = prestige.IsSuccess && prestige.Value != null && prestige.Value.IsEligible;
+            }
+
+            attention.Set(HubCard.Prestige, prestigeEligible);
+            attention.Set(HubCard.Overdrive, OverdriveReady());
+        }
+
+        /// <summary>The rule of <c>RunSnapshots.Research</c> (CanPurchase) without building the snapshot: not at max, prerequisites met, RP covers the cost.</summary>
+        private bool AnyResearchAffordable()
+        {
+            var state = session.State;
+            var content = session.Catalog.ResearchInContentOrder;
+            for (var i = 0; i < content.Count; i++)
+            {
+                var def = content[i];
+                var level = (int)state.ResearchLevel(def.Id);
+                if (level >= def.MaxLevel)
+                {
+                    continue;
+                }
+
+                var met = true;
+                for (var p = 0; p < def.Prerequisites.Count && met; p++)
+                {
+                    var pre = def.Prerequisites[p];
+                    met = state.ResearchLevel(pre.ResearchId) >= pre.Level;
+                }
+
+                if (met && state.Rp >= def.RpCostTable[level])
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>The rule of <c>RunSnapshots.Overdrive</c> (Ready) without building the snapshot: unlocked, neither active nor cooling down.</summary>
+        private bool OverdriveReady()
+        {
+            var state = session.State;
+            var now = session.TimelineUtcMs;
+            return state.IsUnlocked(IdleFactory.Run.Domain.RunState.OverdriveUnlockId) && !state.Overdrive.IsActive(now) && !state.Overdrive.IsCoolingDown(now);
         }
     }
 
@@ -563,7 +611,11 @@ namespace IdleFactory.Unity.UI.Panels
                             case OverdriveStage.Ready: status = "Ready"; break;
                             case OverdriveStage.Active: status = "On, " + Mmss(overdrive.RemainingMs) + " left"; reason = "Overdrive is already on"; break;
                             case OverdriveStage.CoolingDown: status = "Cooling down, " + Mmss(overdrive.RemainingMs); reason = "Overdrive is cooling down"; break;
-                            default: status = "Locked"; reason = "Overdrive is not unlocked yet"; break;
+                            default:
+                                // T536 (T535 Product Owner note): a locked card states the condition, in the shared unlock wording.
+                                status = "Locked";
+                                reason = "Overdrive unlocks after " + UnlockCopy.After(session.Catalog, overdrive.Unlock) + ".";
+                                break;
                         }
 
                         break;
@@ -572,7 +624,11 @@ namespace IdleFactory.Unity.UI.Panels
                     case HubCard.Prestige:
                     {
                         var preview = owner.commands.GetPrestigePreview();
-                        status = preview.IsSuccess && preview.Value != null && preview.Value.IsEligible ? "Ready" : "Not ready yet";
+                        var eligible = preview.IsSuccess && preview.Value != null && preview.Value.IsEligible;
+                        // T536 (T535 Product Owner note): a card that is not ready says what it waits for, by the plain Factory Value wording of the panel.
+                        status = eligible ? "Ready" : preview.IsSuccess && preview.Value != null
+                            ? "Not ready yet: needs Factory Value " + QuantityFormatter.Format(preview.Value.Threshold)
+                            : "Not ready yet";
                         break;
                     }
 

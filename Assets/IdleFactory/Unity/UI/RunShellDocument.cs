@@ -437,6 +437,9 @@ namespace IdleFactory.Unity.UI
             }
 
             root.styleSheets.Add(styleSheet);
+            // T536 (FR-023, SC-009): the confirmation dialog and the notice line are scaffold surfaces like every hosted panel.
+            MarkScaffoldScope(dialogCard);
+            MarkScaffoldScope(noticeBar);
             oreVeinWanted = false;
             hasLastLayoutSize = false;
             oreVein.Root.style.display = DisplayStyle.None;
@@ -1979,6 +1982,8 @@ namespace IdleFactory.Unity.UI
                     panelContent.Add(panel.Root);
                 }
 
+                // T536 (FR-023, SC-009): every hosted panel is a scaffold surface (scope class, scaffold buttons and the one disabled look).
+                MarkScaffoldScope(panel.Root);
                 panel.Root.style.display = DisplayStyle.Flex;
                 placeholder.style.display = DisplayStyle.None;
                 panelTitle.text = string.IsNullOrEmpty(title) ? panel.Title : title;
@@ -2503,6 +2508,46 @@ namespace IdleFactory.Unity.UI
         public static void SetSoftDisabled(VisualElement control, bool disabled)
         {
             control.EnableInClassList("run-control--soft-disabled", disabled);
+            // T536: a scaffold button also takes the scaffold's one disabled look (shape, text and contrast), so every panel disables alike.
+            if (control.ClassListContains(ScaffoldButtonClass))
+            {
+                control.EnableInClassList(ScaffoldDisabledClass, disabled);
+            }
+        }
+
+        /// <summary>The scope class of a scaffold surface (T536): a descendant button takes the scaffold's 48 pt floor and disabled look.</summary>
+        public const string ScaffoldScopeClass = "scaffold-scope";
+
+        public const string ScaffoldButtonClass = "scaffold-button";
+
+        public const string ScaffoldDisabledClass = "scaffold-button--disabled";
+
+        /// <summary>
+        /// Makes a hosted surface (a panel root, the dialog card, the notice line) a scaffold surface (T536, FR-023, SC-009): adds the scope class
+        /// and the scaffold button class to every run control button in it that is not a scaffold row. Idempotent; a button a panel creates
+        /// later through <see cref="CreateButton"/> carries the class from the start.
+        /// </summary>
+        public static void MarkScaffoldScope(VisualElement root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            root.AddToClassList(ScaffoldScopeClass);
+            root.Query<Button>().ForEach(MarkScaffoldButton);
+        }
+
+        private static void MarkScaffoldButton(Button button)
+        {
+            if (button.ClassListContains("run-control") && !button.ClassListContains(PanelScaffold.RowClass) && !button.ClassListContains(ScaffoldButtonClass))
+            {
+                button.AddToClassList(ScaffoldButtonClass);
+                if (button.ClassListContains("run-control--soft-disabled"))
+                {
+                    button.AddToClassList(ScaffoldDisabledClass);
+                }
+            }
         }
 
         public static bool IsSoftDisabled(VisualElement control) => control.ClassListContains("run-control--soft-disabled");
@@ -2783,6 +2828,7 @@ namespace IdleFactory.Unity.UI
             button.AddToClassList("run-control");
             button.AddToClassList("run-button");
             button.AddToClassList(primary ? "run-button--primary" : "run-button--secondary");
+            button.AddToClassList(ScaffoldButtonClass);
             return button;
         }
 
