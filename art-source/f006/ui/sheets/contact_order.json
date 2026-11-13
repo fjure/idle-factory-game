@@ -1,0 +1,18 @@
+{
+  "columns": [
+    "F003-UI-ICON-TAB-CONTRACTS (enabled)",
+    "F003-UI-ICON-TAB-FACTORY (enabled)",
+    "F003-UI-ICON-TAB-ITEMS (enabled)",
+    "F003-UI-ICON-TAB-MARKET (enabled)",
+    "F003-UI-ICON-TAB-PRESTIGE (enabled)",
+    "F003-UI-ICON-TAB-RESEARCH (enabled)",
+    "F006-UI-OFFICE (enabled)",
+    "F006-UI-OFFICE (selected)"
+  ],
+  "rows": [
+    "--surface at 1x",
+    "--surface at 4x",
+    "--bg at 4x"
+  ],
+  "note": "column 1 is the contracts glyph, the two last columns are the new Office glyph"
+}

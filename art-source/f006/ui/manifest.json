@@ -1,0 +1,74 @@
+{
+  "entries": [
+    {
+      "assetId": "f006-ui-office",
+      "briefRow": null,
+      "canvas": [
+        24,
+        24
+      ],
+      "checkReport": "art-source/f006/ui/check-report.json",
+      "checkReportHash": "5884ea8390438e4da9ce926f3460952ad75471efa0a6d36513dca4dcd18c231a",
+      "confusionPeers": [
+        "F003-UI-ICON-TAB-CONTRACTS",
+        "F003-UI-ICON-TAB-ITEMS",
+        "F003-UI-ICON-STORAGE",
+        "F003-UI-ICON-REMOVE"
+      ],
+      "displayMultiples": [
+        1,
+        2,
+        3
+      ],
+      "distinctFrom": "F003-UI-ICON-TAB-CONTRACTS",
+      "f006Task": "T554",
+      "family": "ui",
+      "footprintPx": [
+        24,
+        24
+      ],
+      "format": "UI",
+      "fps": 0,
+      "frames": [
+        {
+          "file": "f006-ui-office/f006-ui-office_00.png",
+          "sha256": "97f3bdd84f7e25bb5fb4a1f11a80c77ba8ee9d93e00a1cb468f8a61b1953b268"
+        }
+      ],
+      "glyph": "desk in-tray holding a stack of three cards",
+      "id": "f006-ui-office",
+      "key": "F006-UI-OFFICE",
+      "kind": "ui-icon",
+      "palette": {
+        "id": "f004-palette",
+        "ids": [
+          "ui_text"
+        ],
+        "version": "1.0.0"
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "pivotPx": [
+        12,
+        12
+      ],
+      "ppu": 24,
+      "provenance": {
+        "date": "2026-11-13",
+        "generativeModel": "none",
+        "license": "authored: project-owned scripted drawing, no third-party material",
+        "route": "scripted F003 UI-icon pipeline",
+        "script": "art-source/f006/ui/pipeline_ui_office.py",
+        "scriptVersion": "t554-1"
+      },
+      "retina": "none: integer display multiples only, no @2x file (F003 convention)",
+      "route": "scripted",
+      "sha256": "97f3bdd84f7e25bb5fb4a1f11a80c77ba8ee9d93e00a1cb468f8a61b1953b268",
+      "surface": "hub entry (Office)",
+      "tint": "runtime token (--text-primary, --text-muted, --accent); file colour is ui_text"
+    }
+  ],
+  "schemaVersion": 1
+}
