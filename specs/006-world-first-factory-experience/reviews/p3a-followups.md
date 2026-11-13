@@ -30,3 +30,17 @@
 | A-11 | T534 Architect | Move `IMachineEffects`/`MachineResponseKind` to Presentation when T529 wires `EffectPool`; ResetBaseline on card show; split `RunShellDocument.cs` (about 3,240 lines). | T529, T528, T535/T537 |
 | A-12 | T534 UI/UX | No C2 leader/pointer from card to machine on landscape and tablet; Close icon has no accessible name beyond the tooltip (see R-7). | T535/T537; later feature |
 | A-13 | T526 | Register the F006 catalog rows in the scene catalog and flip placed rows to required; remove the F004 floor atlas; C8 proof with the K4 tail over a trunk; luminance in `cue_over_lane_contrast`. | T527 |
+
+## Batch-end gates (2026-11-13)
+
+| Gate | Result |
+|---|---|
+| All batch Issues merged and closed | #698 T525 (PR #747), #706 T534 (#748), #699 T526 (#749), #752 T554 (#753), #750 T552 (#754), #751 T553 (#755), #707 T535 (#756). All merged through `scripts/maqa-merge.ps1` after independent QA PASS; T534 and T535 each had one review fix round. Main is 6a26a12. |
+| Independent reviews | T525: five lenses (record in `art-direction-f006.md`). T534: Architect APPROVE_WITH_NOTES, UI/UX ACCEPT_WITH_NOTES. T526: Art Director + Performance APPROVED_WITH_CONDITIONS. T554: Art Director APPROVED_WITH_CONDITIONS. T552: Technical Art + DevOps APPROVE_WITH_NOTES. T535: Architect APPROVE_WITH_NOTES, UI/UX ACCEPT_WITH_NOTES, PO ACCEPT_WITH_NOTES. |
+| Unity suites on the last Issue commit | Edit Mode 2874/2874, Play Mode 2986/2986 (T535 QA, `b84078a`). |
+| Tagged Windows test-player suite | `scripts/test-unity.ps1 -StandaloneWindowsPlayer` on main `6a26a12`, leases `unity,emulator`: PlayerPlayMode 65/65, exit 0 (new: MachineCard and Hub player smoke tests). |
+| Android | The T552 fix APK passes `scripts/android-emulator-journey.ps1` (first scene 4 s after the graphics device); the batch-A touch re-run loaded in 4.4 s. |
+| Art pipeline | 348 passed on the batch branch (`836c3a9`, after T554 and the Art Bible amendments). |
+| after_implement hooks | Wiki ingest S060, learn review (P3 batch A section), wiki lint (1 prose link fixed; 6 stale-date findings on pages citing S056 remain open). `check-after-implement-hooks.ps1` PASS 7/7. |
+| Stale-worktree report | No batch-4 Issue worktree is left. `f006-batch4-end-player` (detached, warm Library) is kept for the next session; the older entries are unchanged. |
+| Play-Tester | **Ran** as the T543 batch-A gate (Play-Tester + UI/UX, re-run after T552/T553); the owner saw the reports and gave the go for batch B. T535 (batch B) is covered by the T543 batch-B gate after T536 and T537. |
