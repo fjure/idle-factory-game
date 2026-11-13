@@ -103,6 +103,56 @@
     display: none;
 }
 
+/* The "Show zoom buttons" switch (T538, FR-008a): a 48 point target (OD-9b C4); its state is text and a filled mark, never colour alone. */
+.set-toggle {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 48px;
+    margin-top: 8px;
+    padding: 4px 8px;
+    background-color: var(--surface);
+    border-width: 1.5px;
+    border-color: var(--text-muted);
+}
+
+.set-toggle--on {
+    border-color: var(--accent);
+    background-color: var(--bg);
+}
+
+.set-toggle__mark {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    border-width: 2px;
+    border-color: var(--text-primary);
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.set-toggle--on .set-toggle__mark {
+    background-color: var(--accent);
+}
+
+.set-toggle__label {
+    flex-shrink: 1;
+    flex-grow: 1;
+    white-space: normal;
+    font-size: var(--run-fs-body);
+    color: var(--text-primary);
+    -unity-text-align: middle-left;
+}
+
+.set-toggle__state {
+    flex-shrink: 0;
+    margin-left: 6px;
+    white-space: normal;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    -unity-text-align: middle-left;
+}
+
 /* The live state sits above the radios (T475, T455 F1). */
 .set-effective {
     flex-shrink: 0;

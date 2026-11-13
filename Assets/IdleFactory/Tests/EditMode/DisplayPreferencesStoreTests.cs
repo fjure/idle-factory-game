@@ -11,7 +11,8 @@ using NUnit.Framework;
 namespace IdleFactory.Tests.EditMode
 {
     /// <summary>
-    /// T432 (Feature 004 FR-001, FR-020, research R11): the display-preferences file is read by a strict token walk with a 4 KB
+    /// T432 (Feature 004 FR-001, FR-020, research R11), re-baselined for the v2 file by F006 T538 (R20; the v2 cases are in
+    /// <see cref="DisplayPreferencesV2Tests"/>; here the v1 file is still the input and the v2 file the write target): the display-preferences file is read by a strict token walk with a 4 KB
     /// limit, everything invalid reads as followSystem with one code-only diagnostic per session, the write is atomic and leaves
     /// the prior file on failure, checkpoint and session-log cleanup never touch it, and the reduced-motion resolver matrix holds.
     /// </summary>
@@ -123,7 +124,7 @@ namespace IdleFactory.Tests.EditMode
             WriteRaw(json + new string(' ', DisplayPreferencesStore.MaxFileBytes + 1 - json.Length));
             var store = Store();
 
-            Assert.That(new FileInfo(store.FilePath).Length, Is.EqualTo(DisplayPreferencesStore.MaxFileBytes + 1));
+            Assert.That(new FileInfo(store.V1FilePath).Length, Is.EqualTo(DisplayPreferencesStore.MaxFileBytes + 1));
             Assert.That(store.Reload(), Is.EqualTo(ReducedMotionPreference.FollowSystem));
             Assert.That(diagnostics, Is.EqualTo(new[] { DisplayPreferencesStore.InvalidDiagnosticCode }));
         }
@@ -135,7 +136,7 @@ namespace IdleFactory.Tests.EditMode
             WriteRaw(json + new string(' ', DisplayPreferencesStore.MaxFileBytes - json.Length));
             var store = Store();
 
-            Assert.That(new FileInfo(store.FilePath).Length, Is.EqualTo(DisplayPreferencesStore.MaxFileBytes));
+            Assert.That(new FileInfo(store.V1FilePath).Length, Is.EqualTo(DisplayPreferencesStore.MaxFileBytes));
             Assert.That(store.Reload(), Is.EqualTo(ReducedMotionPreference.On));
             Assert.That(diagnostics, Is.Empty);
         }
@@ -246,8 +247,8 @@ namespace IdleFactory.Tests.EditMode
             var store = Store();
 
             Assert.That(store.TrySave(ReducedMotionPreference.Off), Is.True);
-            Assert.That(store.FilePath, Is.EqualTo(Path.Combine(root, "IdleFactory", "Preferences", "display-v1.json")));
-            Assert.That(File.ReadAllText(store.FilePath), Is.EqualTo("{\"version\":1,\"reducedMotion\":\"off\"}"));
+            Assert.That(store.FilePath, Is.EqualTo(Path.Combine(root, "IdleFactory", "Preferences", "display-v2.json")));
+            Assert.That(File.ReadAllText(store.FilePath), Is.EqualTo("{\"version\":2,\"reducedMotion\":\"off\",\"showZoomButtons\":false}"));
             Assert.That(Directory.GetFiles(PreferencesDirectory), Has.Length.EqualTo(1), "no temp file is left behind");
 
             var fresh = Store();
@@ -266,7 +267,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(Store().Reload(), Is.EqualTo(ReducedMotionPreference.On));
             Assert.That(store.TrySave(ReducedMotionPreference.FollowSystem), Is.True);
             Assert.That(Store().Reload(), Is.EqualTo(ReducedMotionPreference.FollowSystem));
-            Assert.That(Directory.GetFiles(PreferencesDirectory), Has.Length.EqualTo(1));
+            Assert.That(Directory.GetFiles(PreferencesDirectory, "*.tmp"), Is.Empty, "no temp file is left behind");
+            Assert.That(Directory.GetFiles(PreferencesDirectory), Has.Length.EqualTo(2), "the invalid v1 file stays next to the v2 file");
         }
 
         [Test]
@@ -298,17 +300,18 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(attempts, Is.EqualTo(2));
             Assert.That(store.HasUnsavedChoice, Is.False);
             Assert.That(Store().Reload(), Is.EqualTo(ReducedMotionPreference.On));
-            Assert.That(Directory.GetFiles(PreferencesDirectory), Has.Length.EqualTo(1));
+            Assert.That(Directory.GetFiles(PreferencesDirectory, "*.tmp"), Is.Empty);
+            Assert.That(Directory.GetFiles(PreferencesDirectory), Has.Length.EqualTo(2), "the v1 file stays next to the new v2 file");
         }
 
         [Test]
-        public void ThePersistentLockIsRetriedExactlyOnceThenFails()
+        public void ThePersistentLockIsRetriedBoundedThenFails()
         {
             var attempts = 0;
             var store = Store(new ScriptedFileSystem { OnReplace = () => { attempts++; throw Sharing("locked"); } });
 
             Assert.That(store.TrySave(ReducedMotionPreference.On), Is.False);
-            Assert.That(attempts, Is.EqualTo(2), "one bounded retry, not a loop");
+            Assert.That(attempts, Is.EqualTo(1 + DisplayPreferencesStore.RetryDelaysMilliseconds.Length), "bounded retries, not an open loop");
             Assert.That(store.HasUnsavedChoice, Is.True);
         }
 
@@ -329,7 +332,7 @@ namespace IdleFactory.Tests.EditMode
             var store = Store(new ScriptedFileSystem { OnReplace = () => { attempts++; throw new IOException("disk full", unchecked((int)0x80070070)); } });
 
             Assert.That(store.TrySave(ReducedMotionPreference.On), Is.False);
-            Assert.That(attempts, Is.EqualTo(1), "only sharing and lock violations earn the bounded retry");
+            Assert.That(attempts, Is.EqualTo(1), "only transient failures earn the bounded retry");
             Assert.That(store.HasUnsavedChoice, Is.True);
         }
 
@@ -572,8 +575,28 @@ namespace IdleFactory.Tests.EditMode
             public void ReplaceOrMove(string tempPath, string destinationPath)
             {
                 OnReplace?.Invoke();
-                inner.ReplaceOrMove(tempPath, destinationPath);
+                StableReplace(inner, tempPath, destinationPath);
             }
+
+        /// <summary>
+        /// The real replace, retried inside the double until it succeeds, so a genuine host failure (about 0.6 percent of replaces
+        /// onto an existing file, HResult 0x80070497) never adds an attempt the store can see. Attempt counts stay deterministic.
+        /// </summary>
+        private static void StableReplace(IDisplayPreferencesFileSystem inner, string tempPath, string destinationPath)
+        {
+            for (var attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    inner.ReplaceOrMove(tempPath, destinationPath);
+                    return;
+                }
+                catch (IOException) when (attempt < 200)
+                {
+                    System.Threading.Thread.Sleep(5);
+                }
+            }
+        }
 
             public void DeleteQuietly(string path)
             {

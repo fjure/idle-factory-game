@@ -20,6 +20,9 @@ namespace IdleFactory.Unity.UI.Panels
         public const string OffName = "settings-radio-off";
         public const string GroupLabelText = "Reduced motion";
         public const string SelectedSuffix = "(selected)";
+        public const string ZoomToggleName = "settings-zoom-toggle";
+        public const string ZoomToggleText = "Show zoom buttons";
+        public const string ZoomHintText = "Adds zoom buttons to the factory view. Pinch zoom still works.";
         public const string NotSavedText = "Not saved. Choose again.";
 
         private static readonly ReducedMotionPreference[] Order =
@@ -40,6 +43,8 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly Label[] radioSuffixes = new Label[3];
         private readonly Label effectiveLine;
         private readonly Label notSaved;
+        private readonly Button zoomToggle;
+        private readonly Label zoomState;
 
         /// <param name="refreshEffective">Re-resolves the effective state (file and OS signal I/O); called when the sheet opens.</param>
         /// <param name="currentEffective">The cached effective state; called after a change, once the store's event has refreshed it.</param>
@@ -73,6 +78,24 @@ namespace IdleFactory.Unity.UI.Panels
                 BuildRadio(i);
             }
 
+            zoomToggle = new Button { name = ZoomToggleName, focusable = true };
+            zoomToggle.AddToClassList("run-control");
+            zoomToggle.AddToClassList("set-toggle");
+            var zoomMark = new VisualElement { name = ZoomToggleName + "-mark", pickingMode = PickingMode.Ignore };
+            zoomMark.AddToClassList("set-toggle__mark");
+            var zoomLabel = new Label(ZoomToggleText) { name = ZoomToggleName + "-label", pickingMode = PickingMode.Ignore };
+            zoomLabel.AddToClassList("set-toggle__label");
+            zoomState = new Label(string.Empty) { name = ZoomToggleName + "-state", pickingMode = PickingMode.Ignore };
+            zoomState.AddToClassList("set-toggle__state");
+            zoomToggle.Add(zoomMark);
+            zoomToggle.Add(zoomLabel);
+            zoomToggle.Add(zoomState);
+            zoomToggle.clicked += () => SetShowZoomButtons(!store.ShowZoomButtons);
+            card.Add(zoomToggle);
+            var zoomHint = new Label(ZoomHintText) { name = "settings-zoom-hint" };
+            zoomHint.AddToClassList("set-hint");
+            card.Add(zoomHint);
+
             PanelIcons.Mark(notSaved, icons, PanelIcons.Warning);
             Render(currentEffective());
         }
@@ -90,6 +113,10 @@ namespace IdleFactory.Unity.UI.Panels
         public Label SelectedSuffixOf(Button radio) => radio.Q<Label>(radio.name + "-suffix");
         public Label EffectiveLine => effectiveLine;
         public Label NotSavedNote => notSaved;
+
+        /// <summary>The "Show zoom buttons" switch (T538, FR-008a): it only stores the choice; the shell reads it to place the zoom stack.</summary>
+        public Button ZoomToggle => zoomToggle;
+        public Label ZoomToggleState => zoomState;
 
         /// <summary>The radio that carries the selected choice.</summary>
         public ReducedMotionPreference Selected => store.Preference;
@@ -114,6 +141,13 @@ namespace IdleFactory.Unity.UI.Panels
         public void Choose(ReducedMotionPreference preference)
         {
             store.TrySave(preference);
+            Render(currentEffective());
+        }
+
+        /// <summary>Applies the zoom-buttons choice as a tap on its switch does: writes it, then shows the stored state.</summary>
+        public void SetShowZoomButtons(bool show)
+        {
+            store.TrySaveShowZoomButtons(show);
             Render(currentEffective());
         }
 
@@ -176,6 +210,11 @@ namespace IdleFactory.Unity.UI.Panels
                 radioLabels[i].text = Labels[i];
                 radios[i].tooltip = GroupLabelText + ": " + Labels[i] + (selected ? ", selected" : string.Empty);
             }
+
+            var zoomOn = store.ShowZoomButtons;
+            zoomToggle.EnableInClassList("set-toggle--on", zoomOn);
+            zoomState.text = zoomOn ? "On" : "Off";
+            zoomToggle.tooltip = ZoomToggleText + ": " + (zoomOn ? "on" : "off");
 
             effectiveLine.text = EffectiveText(preference, effective, systemAvailable());
             var unsaved = store.HasUnsavedChoice;

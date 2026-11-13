@@ -200,7 +200,7 @@ namespace IdleFactory.Tests.PlayMode
                 .Select(file => file.Substring(root.Length).TrimStart('\\', '/').Replace('\\', '/'))
                 .Where(file => file.Contains("/Preferences/"))
                 .ToList();
-            Assert.That(written, Is.EqualTo(new[] { "IdleFactory/Preferences/display-v1.json" }), "one preference file and no leftover temp file");
+            Assert.That(written, Is.EqualTo(new[] { "IdleFactory/Preferences/display-v2.json" }), "one preference file (v2) and no leftover temp file");
         }
 
         [Test]
