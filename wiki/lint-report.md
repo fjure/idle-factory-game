@@ -1,14 +1,21 @@
 # Wiki Lint Report — 2026-11-13
 
-Scope: pass after the F006 batch P2 ingest (S059). Config: stale_after_days 90, auto_fix index-and-links. Corpus: 120 pages, 58+1 sources (S059 new). Mechanical checks clean for the P2 scope: index-drift 0 (both new P2 pages listed in INDEX.md, no dead index lines), links 0 broken in the F006 pages and index, orphans 0 (both P2 pages have inbound links), citations 0 unknown IDs, contradictions 0 markers (no `> ⚠ conflict:` marker). Mechanical fixes applied: 0 (none needed; INDEX.md not regenerated).
+Scope: full pass after the F006 batch 4 ingest (S060, commit b4675b4). Config: stale_after_days 90, auto_fix index-and-links. Corpus: 125 pages, 60 sources (S001-S060).
 
-Full-corpus link sweep was not completed in this pass (output exceeded the read budget); links were verified for all F006 pages and the index.
+Mechanical checks: index-drift 0 (all 125 pages listed in INDEX.md, no dead index lines), links 1 (see row 1, not fixed), orphans 0 (every page has an inbound link), unknown source IDs 0. Contradictions: 0 unresolved `> ⚠ conflict:` markers; no pairwise comparison was run in this pass. Mechanical fixes applied: 0 (INDEX.md was already in sync, and the one broken link is prose, see row 1).
+
+Carried from the previous pass: row 3 of the earlier report (f004-display-preferences-store.md superseded note) is resolved; the note now points to the F006 P2 page and cites S059. The earlier stale rows for S056 are still open (rows 2-7 below). The earlier citations row (batch P2 pages) is clean.
 
 | # | Check | Severity | Page | Finding | Suggested fix |
 |---|-------|----------|------|---------|---------------|
-| 1 | stale | semantic | future-free-building-vision.md, pixel-camera-scale.md, run-shell-and-panels.md, unity-presentation-boundary.md, visual-identity-art-direction.md | Each cites S056 with `updated: 2026-11-11`; S056 was re-ingested on 2026-11-13 (sources.md). Carried over from the P1 pass, not re-verified. | Re-read each page against S056's P2 changes; if still accurate, bump `updated`. Not auto-fixed. |
-| 2 | stale | semantic | f006-batch-p1-enabling-refactor.md | Cites S056 with `updated: 2026-11-12`; S056 re-ingested 2026-11-13. | Same as row 1. Not auto-fixed. |
-| 3 | stale | semantic | f004-display-preferences-store.md | Describes `display-v1.json` only. The P2 page (T538) introduces `display-v2.json` with v1 fallback when v2 is absent (S059). The predecessor page carries no superseded note. Not a contradiction, but the page is now partly out of date. | Add a short "superseded in F006 P2 by display-v2.json (S059)" note with a link to [F006 batch P2 art and presentation](./f006-batch-p2-art-and-presentation.md). Owner or ingest edit. |
-| 4 | citations | semantic | f006-batch-p2-art-and-presentation.md, f006-batch-p2-workflow-pitfalls.md | Checked: every prose line carries (S059). No findings. | None. |
+| 1 | links | mechanical | android-emulator-profiling.md | Line 26 contains `SurfaceView[…](BLAST)`, which Markdown renders as a relative link to a nonexistent page `BLAST`. It is a SurfaceFlinger layer name, not a page link. Not auto-fixed because the fix edits prose. | Escape the brackets in the page: `SurfaceView\[…\]\(BLAST\)` or wrap the layer name in backticks. Owner or ingest edit. |
+| 2 | stale | semantic | f006-batch-p1-enabling-refactor.md | `updated: 2026-11-12`; cites S056, which was re-ingested 2026-11-13. Carried over from the previous pass. | Re-read against S056's latest changes; if still accurate, bump `updated`. Not auto-fixed. |
+| 3 | stale | semantic | future-free-building-vision.md | `updated: 2026-11-11`; cites S056 (re-ingested 2026-11-13). Carried over. | Same as row 2. |
+| 4 | stale | semantic | pixel-camera-scale.md | `updated: 2026-11-11`; cites S056 (re-ingested 2026-11-13). Carried over. | Same as row 2. |
+| 5 | stale | semantic | run-shell-and-panels.md | `updated: 2026-11-11`; cites S056 (re-ingested 2026-11-13). Carried over. | Same as row 2. |
+| 6 | stale | semantic | unity-presentation-boundary.md | `updated: 2026-11-11`; cites S056 (re-ingested 2026-11-13). Carried over. | Same as row 2. |
+| 7 | stale | semantic | visual-identity-art-direction.md | `updated: 2026-11-11`; cites S056 (re-ingested 2026-11-13). Carried over. | Same as row 2. |
 
-Contradiction sampling (bounded): the P2 pages were compared with f006-plan-overview, f006-world-presentation-design, f004-display-preferences-store and the P2 follow-up references. No incompatible claims found. The P1 status conflict from the previous pass (f006-plan-overview line 10 vs line 32) is no longer present: line 10 reports P0 and P1 merged and P2 merged, consistent with line 32.
+Citations (checked on the batch 4 pages): f006-batch-p3a-art-review-and-import.md has some bullets under a cited lead line (S060) without their own ID. They are sub-points of the cited paragraph, so no finding. Related-link lines in the batch 4 pages are navigation, not claims.
+
+Stale check: no page is older than 90 days (cutoff 2026-08-15). Source-reingest check: 6 pages (rows 2-7) are older than the last ingest of S056.
