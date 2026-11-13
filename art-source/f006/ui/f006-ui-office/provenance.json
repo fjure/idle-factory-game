@@ -1,0 +1,117 @@
+{
+  "artBibleVersion": "F004-PAB v1.1.0",
+  "assetId": "f006-ui-office",
+  "briefVersion": "none: one sprite added by owner decision P2-F9, spec in Art Bible 21.2 UI row",
+  "candidateSelection": "none: a single deterministic render, no candidates, no seed",
+  "checkReportHash": "5884ea8390438e4da9ce926f3460952ad75471efa0a6d36513dca4dcd18c231a",
+  "license": "authored: project-owned scripted drawing, no third-party material",
+  "outputs": [
+    {
+      "path": "art-source/f006/ui/f006-ui-office/f006-ui-office_00.png",
+      "pixelHash": "871a457730f037f994b9dcdd72c14ecc734403c39f1b81f303877f47b98c2e2f",
+      "sha256": "97f3bdd84f7e25bb5fb4a1f11a80c77ba8ee9d93e00a1cb468f8a61b1953b268"
+    }
+  ],
+  "parameters": {
+    "artBibleSection": "21.2 UI row (owner decision P2-F9 -> P2-F22), 21.4, 21.9 item 6",
+    "briefRow": null,
+    "canvas": [
+      24,
+      24
+    ],
+    "colour": "ui_text",
+    "confusionPeers": [
+      "F003-UI-ICON-TAB-CONTRACTS",
+      "F003-UI-ICON-TAB-ITEMS",
+      "F003-UI-ICON-STORAGE",
+      "F003-UI-ICON-REMOVE"
+    ],
+    "date": "2026-11-13",
+    "displayMultiples": [
+      1,
+      2,
+      3
+    ],
+    "distinctFrom": "F003-UI-ICON-TAB-CONTRACTS",
+    "glyph": "desk in-tray holding a stack of three cards",
+    "issue": 752,
+    "key": "F006-UI-OFFICE",
+    "minStrokePx": 2,
+    "pivotPx": [
+      12,
+      12
+    ],
+    "ppu": 24,
+    "primitiveKinds": [
+      "polyline",
+      "line",
+      "rect-array",
+      "polyline",
+      "line"
+    ],
+    "primitives": 5,
+    "randomness": "none",
+    "route": "scripted F003 UI-icon pipeline, no generative model",
+    "scriptVersion": "t554-1",
+    "seed": null,
+    "surface": "hub entry (Office)",
+    "taskId": "T554"
+  },
+  "pixelPass": {
+    "paletteId": "f004-palette",
+    "paletteVersion": "1.0.0",
+    "scriptSha256": "1f6d8cd71a65c1f0eb67f4170b7ae957e2ae9e300bd8cf105d2b4fc326a76b4e",
+    "steps": [
+      "reduce_for_route(scripted)",
+      "threshold_alpha",
+      "quantize(ui group)",
+      "no outline (one-colour tinted glyph)"
+    ]
+  },
+  "producedBy": "Asset Artist (scripted route, Art Director lens pending), MAQA T554 / Issue #752, 2026-11-13",
+  "reviewedBy": "pending: Art Director pixel review in a fresh session (T554 acceptance)",
+  "revision": 1,
+  "route": "scripted",
+  "sources": [
+    {
+      "path": "art-source/f006/ui/pipeline_ui_office.py",
+      "sha256": "e29745528a5f6bbc54a008d8a94da79c7ea6acbf0a34e7c381a824c569a56be6"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/cues.py",
+      "sha256": "16de4b1be14f195da650f8d9aa4f50d0fd581eb596d0574409281546f65295b4"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/ui_icons.py",
+      "sha256": "acc26d20233b2bc7a55996c7282bef2b79d5b00b8b609fe7c0841769d3c03367"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/ui_icons_draw.py",
+      "sha256": "236059c03925a530792b293ebf2b094bfa88a39e53da84dc6da8c25ba6df13a1"
+    },
+    {
+      "path": "tools/art-pipeline/art_pipeline/ui_icons_glyphs.py",
+      "sha256": "7437002d8a392c88524f569a93e21ffc5f006d8240b17ae70b12775b02450e1b"
+    }
+  ],
+  "tools": [
+    {
+      "name": "art-source/f006/ui/pipeline_ui_office.py",
+      "version": "t554-1"
+    },
+    {
+      "name": "art_pipeline.ui_icons (toolkit, unchanged)",
+      "version": "t438-1"
+    },
+    {
+      "name": "Pillow",
+      "version": "11.3.0 (pinned in tools/art-pipeline/pyproject.toml)"
+    },
+    {
+      "name": "Python",
+      "version": ">=3.12,<3.14"
+    }
+  ],
+  "touchUp": [],
+  "trainingDataNote": "not applicable: no generative model, LoRA or training data is used on the scripted route"
+}
