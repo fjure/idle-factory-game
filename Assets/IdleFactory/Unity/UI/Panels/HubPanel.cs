@@ -449,6 +449,11 @@ namespace IdleFactory.Unity.UI.Panels
                     break;
             }
 
+            if (card != HubCard.Overdrive)
+            {
+                shell.NoteOpenedFromHub();
+            }
+
             return true;
         }
 

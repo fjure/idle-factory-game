@@ -332,6 +332,44 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(h.Shell.IsSheetOpen, Is.False, "the entry toggles the hub closed");
         }
 
+        public static IEnumerable<ShellScreen> LandscapePhones() => ShellScreens.All().Where(screen => screen.Expected == FactoryHudLayout.CompactLandscape);
+
+        public static IEnumerable<int> LandscapePercents() => new[] { 120, 200 };
+
+        // U-1 (OD-9b C1): the entry never covers the framed world. The camera's rectangle excludes the floating entry on a landscape phone.
+        [UnityTest]
+        public IEnumerator TheLandscapeEntryNeverCoversTheRectangleTheCameraFrames(
+            [ValueSource(nameof(LandscapePhones))] ShellScreen screen, [ValueSource(nameof(LandscapePercents))] int percent)
+        {
+            yield return Make(screen, percent);
+            var where = screen + " @" + percent + "%";
+            Assert.That(h.Shell.HubEntryOverlay, Is.True, where + ": the entry floats over the world column");
+            Assert.That(h.Shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True, where);
+            var framed = new Rect(area.xMin, screen.Height - area.yMax, area.width, area.height);
+            Assert.That(framed.height, Is.GreaterThan(0f), where);
+            Assert.That(Intersects(framed, h.Shell.HubEntryButton.worldBound), Is.False, where + ": the entry is outside the framed world " + framed + " vs " + h.Shell.HubEntryButton.worldBound);
+        }
+
+        // U-3: closing a system view that a hub card opened returns focus to the Office entry (the invoker).
+        [UnityTest]
+        public IEnumerator ClosingASystemViewOpenedFromTheHubReturnsFocusToTheEntry()
+        {
+            yield return Make(Phone(), 100);
+            foreach (var (card, id) in Openable.Where(item => item.Card != HubCard.Industry))
+            {
+                h.Shell.OpenHub();
+                yield return ShellRig.Settle();
+                CardHarness.Press(h.Hub.CardButton(card));
+                yield return ShellRig.Settle();
+                Assert.That(h.Shell.ActivePanelId, Is.EqualTo(id));
+                var inside = h.Shell.PanelContent.Q<Button>("test-panel-button-0") ?? h.Shell.CloseButton;
+                inside.Focus();
+                h.Shell.CloseSheet();
+                yield return new WaitForSecondsRealtime(0.4f);
+                Assert.That(h.Shell.Root.panel.focusController.focusedElement, Is.SameAs(h.Shell.HubEntryButton), card + ": focus returns to the Office entry");
+            }
+        }
+
         [UnityTest]
         public IEnumerator FocusMovesIntoTheHubAndReturnsToTheEntryWhenItCloses()
         {

@@ -191,7 +191,7 @@ No other existing assertion changed (the 36 world and shell frames were re-captu
 - phone landscape from 120 % text (the strip wraps, and a fifth control adds a whole line that the machine card cannot give up: Upgrade must stay in the first view at 640x360 and 200 %): an overlay at the bottom of the world column beside the zoom column, 48 dp, no flow;
 - every other class and scale: in the strip, before the gear, 48 dp.
 
-The entry always shows the icon and the word "Office" (tested on every class at 100 and 200 %). T537 rebuilds the persistent layer and chooses the final place. The overlay does not cut the camera's rectangle (carried to T537, with the other persistent-layer geometry).
+The entry always shows the icon and the word "Office" (tested on every class at 100 and 200 %). T537 rebuilds the persistent layer and chooses the final place. The camera's rectangle excludes the landscape overlay (OD-9b C1, fix round U-1): like the ore vein, it ends above the entry or starts right of it, whichever leaves the larger fitting scale (`TheLandscapeEntryNeverCoversTheRectangleTheCameraFrames`, 640x360 and 844x390 at 120 and 200 %). Closing a system view that a hub card opened returns focus to the entry (U-3, `ClosingASystemViewOpenedFromTheHubReturnsFocusToTheEntry`).
 
 **Decisions.**
 - **P2-F16 (scaffold root):** the hub uses the scaffold's classes and rows by composition, like the card: the hub root carries `scaffold` and `HubPanel.uss` overrides the full-screen fill with `.scaffold.hub` (relative, no inset, transparent). It is a registered shell panel, so the shell's own sheet (phone portrait) or side panel (other classes) holds it; the sheet header with Close belongs to the shell. `PanelScaffold.uss` changed only additively.

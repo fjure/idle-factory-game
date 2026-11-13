@@ -740,6 +740,26 @@ namespace IdleFactory.Unity.UI
 
             var leftPoint = zoom.width > 0f ? Mathf.Max(bounds.xMin, zoom.xMax) : bounds.xMin;
             var bottomPoint = bounds.yMax;
+            if (HubEntryOverlay && HubEntryButton.resolvedStyle.display != DisplayStyle.None && !float.IsNaN(HubEntryButton.worldBound.yMin) && !float.IsNaN(HubEntryButton.worldBound.xMax))
+            {
+                // U-1 (C1): the landscape overlay never covers the framed world. As for the ore vein, the rectangle either ends above the entry or starts
+                // right of it, whichever leaves the larger fitting scale (the larger area breaks a tie).
+                var entry = HubEntryButton.worldBound;
+                var above = entry.yMin > topPoint ? Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, Mathf.Min(bottomPoint, entry.yMin)) : Rect.zero;
+                var beside = entry.xMax < bounds.xMax ? Rect.MinMaxRect(Mathf.Max(leftPoint, entry.xMax), topPoint, bounds.xMax, bottomPoint) : Rect.zero;
+                var entryLayout = WorldLayoutFor(root.panel.visualTree.worldBound);
+                var aboveScale = FittingScale(above, entryLayout, pixelsPerPoint);
+                var besideScale = FittingScale(beside, entryLayout, pixelsPerPoint);
+                if (beside.width > 0f && (besideScale > aboveScale || (besideScale == aboveScale && beside.width * beside.height > above.width * above.height)))
+                {
+                    leftPoint = beside.xMin;
+                }
+                else if (above.width > 0f)
+                {
+                    bottomPoint = above.yMax;
+                }
+            }
+
             var available = Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, bottomPoint);
             if (oreVeinWanted && IsDisplayed(oreVein.Root))
             {
@@ -1307,8 +1327,9 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
+            var fromHub = hubInvokedPanelId != null && hubInvokedPanelId == activePanelId;
             CloseSheet(false);
-            FocusWhenReady(SettingsButton);
+            FocusWhenReady(fromHub ? HubEntryButton : SettingsButton);
         }
 
         private void ToggleSettings()
@@ -1414,7 +1435,8 @@ namespace IdleFactory.Unity.UI
             var focused = root.panel?.focusController?.focusedElement as VisualElement;
             var focusWasInside = focused != null && panelHost.Contains(focused) && !tabBar.Contains(focused);
             var wasSettings = settingsOpen;
-            var wasHub = IsHubFamilyOpen;
+            var wasHub = IsHubFamilyOpen || (hubInvokedPanelId != null && hubInvokedPanelId == activePanelId);
+            hubInvokedPanelId = null;
             sheetOpen = false;
             detailsFromCard = false;
             activeTab = ShellTab.Factory;
@@ -1425,7 +1447,7 @@ namespace IdleFactory.Unity.UI
             UpdateSheetState();
             if (returnFocusToTab && focusWasInside)
             {
-                FocusWhenReady(wasSettings ? SettingsButton : wasHub ? HubEntryButton : TabButton(ShellTab.Factory));
+                FocusWhenReady(wasHub ? HubEntryButton : wasSettings ? SettingsButton : TabButton(ShellTab.Factory));
             }
         }
 

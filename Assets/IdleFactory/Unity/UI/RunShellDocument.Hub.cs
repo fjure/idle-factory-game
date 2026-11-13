@@ -44,6 +44,15 @@ namespace IdleFactory.Unity.UI
 
         private bool hubEntryOverlay;
 
+        /// <summary>True while the entry floats over the bottom of the world column (phone landscape from 120 percent text).</summary>
+        public bool HubEntryOverlay => hubEntryOverlay && HubEntryButton != null && HubEntryButton.parent == worldColumn;
+
+        // U-3: the system view a hub card opened; closing it returns focus to the Office entry (the invoker).
+        private string hubInvokedPanelId;
+
+        /// <summary>Called by the hub after a card opened a system view, so that closing the view returns focus to the entry.</summary>
+        public void NoteOpenedFromHub() => hubInvokedPanelId = activePanelId;
+
         // Where the entry lives (T537 rebuilds the persistent layer; this keeps every T534 and F005 layout invariant meanwhile):
         // - phone portrait: a 48 dp row of its own under the strip, because the strip's four controls already fill 360 pt at the worst-case values;
         // - phone landscape from 120 percent text: an overlay at the bottom of the world column, beside the zoom column, because the strip wraps there and a
