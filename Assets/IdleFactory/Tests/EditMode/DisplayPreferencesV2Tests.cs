@@ -640,8 +640,28 @@ namespace IdleFactory.Tests.EditMode
                     throw ThrowOnReplace;
                 }
 
-                inner.ReplaceOrMove(tempPath, destinationPath);
+                StableReplace(inner, tempPath, destinationPath);
             }
+
+        /// <summary>
+        /// The real replace, retried inside the double until it succeeds, so a genuine host failure (about 0.6 percent of replaces
+        /// onto an existing file, HResult 0x80070497) never adds an attempt the store can see. Attempt counts stay deterministic.
+        /// </summary>
+        private static void StableReplace(IDisplayPreferencesFileSystem inner, string tempPath, string destinationPath)
+        {
+            for (var attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    inner.ReplaceOrMove(tempPath, destinationPath);
+                    return;
+                }
+                catch (IOException) when (attempt < 200)
+                {
+                    System.Threading.Thread.Sleep(5);
+                }
+            }
+        }
 
             public void DeleteQuietly(string path) => inner.DeleteQuietly(path);
         }
