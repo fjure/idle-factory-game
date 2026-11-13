@@ -219,6 +219,9 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The key prefix of the locked-plate digit labels (<c>F004-LABEL-LOCK-L2</c> to <c>-L5</c>).</summary>
         public const string LockLabelKeyPrefix = "F004-LABEL-LOCK-L";
 
+        /// <summary>The prefix of the additive Feature 006 world-art keys (<c>F006-GROUND-BASE</c> and so on, the upper-cased asset id).</summary>
+        public const string F006Prefix = "F006-";
+
         /// <summary>The additive F004 icon without a Feature 003 key.</summary>
         public const string SettingsIconKey = "F004-UI-ICON-SETTINGS";
 
@@ -674,6 +677,7 @@ namespace IdleFactory.Unity.Presentation
             map[SettingsIconKey] = new PresentationSpriteRequirement(SettingsIconKey, 1f, 1f, 0.5f, 0.5f, 1, 1, false);
 
             AddF004Rows(map);
+            AddF006Rows(map);
             return map;
         }
 
@@ -704,6 +708,73 @@ namespace IdleFactory.Unity.Presentation
 
             // T471: the floor tile, 70 x 54 art px at PPU 24, pivot (35, 27) (centre). Not a canvas layer.
             map[FloorTileKey] = new PresentationSpriteRequirement(FloorTileKey, 70f / 24f, 54f / 24f, 0.5f, 0.5f, 1, 1, true, false);
+        }
+
+        // T526 (Feature 006): the imported world art. One row per shipped F006 key (40 static world frames plus the 8 FX entries, Art Bible
+        // 21.4), derived from the approved source manifests: world size is canvas px / 24 (PPU = D = 24), the pivot is a whole art pixel
+        // (rule P1), and the frame count is the sprite's frame count. None of these is a canvas layer (each is placed on its own anchor)
+        // and none is required: the shipped scene catalog does not carry F006 keys until T527 wires the placement, and a required row would
+        // fail the scene closed. T527 flips the rows it places to required.
+        private static void AddF006Rows(Dictionary<string, PresentationSpriteRequirement> map)
+        {
+            // key, canvas width px, canvas height px, pivot x px, pivot y px, frames
+            var rows = new (string Key, int Width, int Height, int PivotX, int PivotY, int Frames)[]
+            {
+            ("F006-DEPOSIT-HIGHLIGHT", 48, 34, 24, 12, 1),
+            ("F006-DEPOSIT-REST-S1", 48, 34, 24, 12, 1),
+            ("F006-DEPOSIT-REST-S2", 48, 34, 24, 12, 1),
+            ("F006-DEPOSIT-REST-S3", 48, 34, 24, 12, 1),
+            ("F006-DEPOT-S1-EMPTY", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S1-FULL", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S1-HIGH", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S1-LOW", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S2-EMPTY", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S2-FULL", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S2-HIGH", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S2-LOW", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S3-EMPTY", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S3-FULL", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S3-HIGH", 80, 76, 40, 20, 1),
+            ("F006-DEPOT-S3-LOW", 80, 76, 40, 20, 1),
+            ("F006-EDGE-GANTRY-CORNER", 70, 84, 35, 29, 1),
+            ("F006-EDGE-GANTRY-FL", 70, 84, 35, 29, 1),
+            ("F006-EDGE-GANTRY-FR", 70, 84, 35, 29, 1),
+            ("F006-EDGE-RAILING-CORNER", 70, 66, 35, 29, 1),
+            ("F006-EDGE-RAILING-FL", 70, 66, 35, 29, 1),
+            ("F006-EDGE-RAILING-FR", 70, 66, 35, 29, 1),
+            ("F006-EDGE-RAILING-QUIET-FL", 70, 66, 35, 29, 1),
+            ("F006-EDGE-RAILING-QUIET-FR", 70, 66, 35, 29, 1),
+            ("F006-EDGE-WALL-CORNER", 70, 78, 35, 29, 1),
+            ("F006-EDGE-WALL-FL", 70, 78, 35, 29, 1),
+            ("F006-EDGE-WALL-FR", 70, 78, 35, 29, 1),
+            ("F006-FOUNDATION-FLAT", 70, 36, 35, 18, 1),
+            ("F006-FOUNDATION-OUTLINE", 70, 36, 35, 18, 1),
+            ("F006-FX-BRANCH-PIP", 14, 10, 7, 5, 6),
+            ("F006-FX-BUILD-DUST", 48, 28, 24, 14, 6),
+            ("F006-FX-COMPLETION-HIGHLIGHT", 68, 36, 34, 18, 1),
+            ("F006-FX-COMPLETION-POP", 68, 36, 34, 18, 6),
+            ("F006-FX-SPARK", 20, 16, 10, 8, 6),
+            ("F006-FX-STEAM", 24, 32, 12, 0, 6),
+            ("F006-FX-UPGRADE-GLINT", 24, 24, 12, 12, 6),
+            ("F006-FX-VEIN-CHIP", 48, 34, 24, 12, 6),
+            ("F006-GROUND-BASE", 70, 54, 35, 27, 1),
+            ("F006-GROUND-DECK", 70, 54, 35, 27, 1),
+            ("F006-GROUND-HATCH", 70, 54, 35, 27, 1),
+            ("F006-LINK-BRANCH", 70, 54, 35, 27, 1),
+            ("F006-LINK-BRANCH-ACTIVE", 70, 54, 35, 27, 1),
+            ("F006-LINK-JUNCTION", 70, 54, 35, 27, 1),
+            ("F006-LINK-TRUNK", 70, 54, 35, 27, 1),
+            ("F006-PROP-CRATE-SMALL", 24, 20, 12, 5, 1),
+            ("F006-PROP-CRATE-STACK", 30, 24, 15, 6, 1),
+            ("F006-PROP-LAMP-POST", 14, 24, 7, 2, 1),
+            ("F006-PROP-PALLET", 30, 16, 15, 6, 1),
+            };
+            foreach (var row in rows)
+            {
+                map[row.Key] = new PresentationSpriteRequirement(
+                    row.Key, row.Width / 24f, row.Height / 24f, row.PivotX / (float)row.Width, row.PivotY / (float)row.Height,
+                    row.Frames, row.Frames, false, false);
+            }
         }
     }
 }

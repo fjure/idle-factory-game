@@ -363,7 +363,15 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The row of a location counted from the back (0); the index <see cref="TrunkOf"/> takes.</summary>
         public int RowOf(BuildingLocationId id) => SortKeyOf(id);
 
-        /// <summary>The badge box (0) and the two marker boxes (1, 2) of a location in world units: no lane, deposit or depot may cover them.</summary>
+        /// <summary>
+        /// The badge extent (0) and the two marker boxes (1, 2) of a location in world units: no deposit, depot, prop or wall tile may cover them.
+        /// Box 0 is <see cref="StateCueGeometry.BadgeExtentBox"/>, the 23 x 27 art px badge plus its K4 pointer tail (T526: the production tail
+        /// sprites are imported, and the tail is opaque art, so a decoration must stay off it). Lanes are not checked against these boxes, by
+        /// geometry: a location's badge and marker boxes lie over its own trunk and branch, and lanes draw below the overlay layer, so the cue
+        /// reads over the lane by its fill (cue fill against the lane is at least 3.5:1, the 1 px ink outline only 1.2 to 1.5:1; the
+        /// contrast gate is palette membership, not luminance; Art Direction F-2, P1-F3). The lane-versus-keep-out question is therefore
+        /// answered here in the doc and not by a check (T526 decision).
+        /// </summary>
         public Rect KeepOutOf(BuildingLocationId id, int index)
         {
             if (index < 0 || index >= KeepOutCount)
@@ -371,7 +379,7 @@ namespace IdleFactory.Unity.Presentation
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            var box = index == 0 ? StateCueGeometry.BadgeBox() : StateCueGeometry.MarkerBox(index - 1);
+            var box = index == 0 ? StateCueGeometry.BadgeExtentBox() : StateCueGeometry.MarkerBox(index - 1);
             return new Rect(AnchorOf(id) + box.position, box.size);
         }
 
