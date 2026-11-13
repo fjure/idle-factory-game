@@ -423,28 +423,28 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Covers**: FR-014, FR-025; research R17.
 - [X] T518 *Parent* after T516 and T517 (done 2026-11-11, e6c2d2a): Record the owner decisions **OD-12** (A-03 anchor) and **OD-10** (Art Bible v1.1.0 sign-off, including the world-layer budget and the texture table) in the Art Bible revision log and in `plan.md`.
   - **Covers**: FR-004.
-- [ ] T519 [P] [US2] 3D and Render Artist (Technical Artist lens), after T518.
+- [X] T519 [P] [US2] 3D and Render Artist (Technical Artist lens), after T518.
   - **Family**: F006-GROUND (deck, base, hatch with the §8.5 padlock and digit kept, and edge/corner/T tiles per the OD-9 edge style), plus F006-FOUNDATION (flat outline and solid 70×35 diamonds, no plinth wall).
   - **Route**: Blender rig-v2, then the deterministic pixel pass and provenance.
   - **Paths**: `art-source/f006/ground/` and `art-source/f006/foundation/`.
   - **Validation**: `scripts/test-art-pipeline.ps1` exits 0.
   - **Resources**: gpu.
   - **Covers**: FR-011, FR-012, FR-044; research R06, R17.
-- [ ] T520 [P] [US2] 3D and Render Artist (Technical Artist lens), after T518.
+- [X] T520 [P] [US2] 3D and Render Artist (Technical Artist lens), after T518.
   - **Family**: F006-DEPOT (4 fill states × 3 stage variants = 12 sprites) and F006-DEPOSIT (vein plus a 6-frame chip loop).
   - **Route**: Blender rig-v2, then the pixel pass and provenance.
   - **Paths**: `art-source/f006/depot/` and `art-source/f006/deposit/`.
   - **Validation**: the pipeline exits 0, including `check_flash` on the chip loop.
   - **Resources**: gpu.
   - **Covers**: FR-010a, FR-013, FR-044; research R07, R23.
-- [ ] T521 [P] [US2] 3D and Render Artist (Technical Artist and World Designer lenses), after T518.
+- [X] T521 [P] [US2] 3D and Render Artist (Technical Artist and World Designer lenses), after T518.
   - **Family**: F006-PROP (props at most 24 art px tall; static lamps in steel or teal, never `lit_*`) and F006-EDGE (railing, wall and gantry per stage).
   - **Route**: Blender rig-v2.
   - **Paths**: `art-source/f006/prop/` and `art-source/f006/edge/`.
   - **Validation**: the pipeline exits 0.
   - **Resources**: gpu.
   - **Covers**: FR-011, FR-015, FR-036, FR-044; research R06, R15.
-- [ ] T522 [P] [US2] Asset Artist (Art Director lens), after T518.
+- [X] T522 [P] [US2] Asset Artist (Art Director lens), after T518.
   - **Family**: F006-LINK (trunk, branch, active branch, pip) and F006-FX:
     - completion pop, spark, steam, build dust and upgrade glint, each 6 frames;
     - a static reduced-motion highlight.
@@ -456,14 +456,14 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
     - the Assembler is capped at 8 fps or lower.
   - **Resources**: none.
   - **Covers**: FR-013, FR-015, FR-029, FR-034, FR-044; research R07, R12.
-- [ ] T523 [P] [US2] Asset Artist (UI/UX lens), after T518.
+- [X] T523 [P] [US2] Asset Artist (UI/UX lens), after T518.
   - **Family**: F006-UI sprites, only where UI Toolkit styling cannot express the hub entry icon, the attention indicator or the banner frame. Otherwise record "not needed" in the Art Bible.
   - **Route**: scripted.
   - **Path**: `art-source/f006/ui/`. Record the "needed" or "not needed" decision per element in the Art Bible v1.1 family table.
   - **Validation**: `scripts/test-art-pipeline.ps1` exits 0 when any sprite is produced.
   - **Resources**: none.
   - **Covers**: FR-020, FR-023, FR-044.
-- [ ] T524 [P] [US2] Asset Artist (Art Director lens), after T518.
+- [X] T524 [P] [US2] Asset Artist (Art Director lens), after T518.
   - **Change**: apply the OD-12 anchor to the cue overlay geometry in `Assets/IdleFactory/Unity/Presentation/StateCueSet.cs` (`StateCueGeometry`) and to the cue sheets under `art-source/f006/`. Re-baseline `Assets/IdleFactory/Tests/EditMode/StateCueSetTests.cs`.
   - **Re-run**: the SC-001 sheet generation inputs.
   - **Validation**: the pipeline exits 0 and the `StateCueSetTests` re-baseline is recorded.
@@ -556,7 +556,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 
 **Independent test**: Model tests, plus the SC-004 trial on seeded captures (T546).
 
-- [ ] T532 [US4] Gameplay Developer (Software Architect, Game Systems/Economy Low-tier and Test/QA lenses), after T514 and T512. This task runs in P2, before T528 and T529, which consume its model. Attention marker positions come from `FactoryWorldLayout` (trunk junction, depot cell), not from the depot view.
+- [X] T532 [US4] Gameplay Developer (Software Architect, Game Systems/Economy Low-tier and Test/QA lenses), after T514 and T512. This task runs in P2, before T528 and T529, which consume its model. Attention marker positions come from `FactoryWorldLayout` (trunk junction, depot cell), not from the depot view.
   - **Multiple causes**: one world marker per shortage resource, at most 2 visible, ranked by the shortage order. The strip indicator shows the top resource plus "+N" for the others. Every marker shows its resource icon.
   - **No numbers in the world** (FR-030): no rate or efficiency numbers appear in the world. A test asserts that no world-space text element shows a number.
   - **Models**: `MachinePresentationModel.cs` and `AttentionModel.cs` in `Presentation/World/`, per `contracts/presentation-model.md` §2–3.
@@ -578,7 +578,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 
 **Independent test**: `MachineCardTests` and `CardCameraTests` on every class at 100, 150 and 200 %, plus the SC-003 journey counts.
 
-- [ ] T533 [US3] UI/UX Developer (Art Director and Test/QA lenses), after T511.
+- [X] T533 [US3] UI/UX Developer (Art Director and Test/QA lenses), after T511.
   - **Scaffold**: `Assets/IdleFactory/Unity/UI/PanelScaffold.cs`, `.uxml` and `.uss`.
     - A header with back.
     - Primary and secondary button classes.
@@ -679,7 +679,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Measure**: run the T502 probe and record before→after in `reviews/baseline.md`.
   - **Resources**: unity, emulator.
   - **Covers**: FR-007–FR-010, FR-008a, SC-001, SC-010; research R11.
-- [ ] T538 [P] [US1] Gameplay Developer (Security/Privacy Low-tier and Test/QA lenses), after T500.
+- [X] T538 [P] [US1] Gameplay Developer (Security/Privacy Low-tier and Test/QA lenses), after T500.
   - **Store**: `Assets/IdleFactory/Unity/Persistence/DisplayPreferencesStore.cs` v2 per R20:
     - `display-v2.json` = `{"version":2,"reducedMotion":…,"showZoomButtons":bool}`;
     - "If display-v2.json exists, read it with the v2 strict parser; invalid → defaults plus diagnostic, no v1 fallback";
