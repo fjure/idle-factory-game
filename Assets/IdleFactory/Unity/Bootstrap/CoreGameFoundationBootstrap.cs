@@ -52,6 +52,8 @@ namespace IdleFactory.Unity.Bootstrap
         [SerializeField] private VisualTreeAsset machineCardTree;
         [SerializeField] private StyleSheet machineCardStyles;
         [SerializeField] private StyleSheet panelScaffoldStyles;
+        [SerializeField] private VisualTreeAsset hubPanelTree;
+        [SerializeField] private StyleSheet hubPanelStyles;
         [SerializeField] private VisualTreeAsset inventoryRatesTree;
         [SerializeField] private StyleSheet inventoryRatesStyles;
         [SerializeField] private VisualTreeAsset prioritiesTree;
@@ -638,6 +640,11 @@ namespace IdleFactory.Unity.Bootstrap
                 () => new ResearchPanel(runSession, runCommands, researchStyles, icons,
                     new IndustryPanel(runSession, runCommands, industryStyles, icons)),
                 panel => ((ResearchPanel)panel).CancelForRotation);
+            // T535: the hub ("Office") and the Industry system view. The hub lists a card for every system; Industry hosts its own panel instance.
+            TryComposePanel(ShellPanelIds.Industry,
+                () => new IndustryPanel(runSession, runCommands, industryStyles, icons, ShellPanelIds.Industry));
+            TryComposePanel(ShellPanelIds.Hub,
+                () => new HubPanel(runSession, runCommands, hubPanelTree, hubPanelStyles, panelScaffoldStyles, icons));
             TryComposePanel(ShellPanelIds.Settings,
                 () => new SettingsPanelPresenter(DisplayPreferences, RefreshReducedMotion, () => CurrentReducedMotion,
                     () => SystemReducedMotionAvailable, settingsTree, settingsStyles, icons));

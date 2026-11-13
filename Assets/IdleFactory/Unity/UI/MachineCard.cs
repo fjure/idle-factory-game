@@ -402,7 +402,9 @@ namespace IdleFactory.Unity.UI
             // Cost and shortfall inside the button; the reason is also the tooltip (the accessible description) and the inline line.
             var shortfall = Math.Max(0L, next.Cost - cash);
             UpgradeButton.text = "Upgrade: " + MarketPanelParts.Money(next.Cost) + "\nNeed $" + QuantityFormatter.Format(shortfall);
-            PanelScaffold.SetDisabled(UpgradeButton, true, "Need $" + QuantityFormatter.Format(shortfall) + " more", inlineLabel);
+            // T535 (A-4, U-A6): the shortfall shows once, inside the button (FR-016), which is also its visible reason for touch users (P2-F19). The inline
+            // line is for the rejection a press answers with, so no second line moves Details and the controls below Upgrade when the shortfall appears.
+            PanelScaffold.SetDisabled(UpgradeButton, true, "Need $" + QuantityFormatter.Format(shortfall) + " more", null);
         }
 
         private void RenderCause(MachineVisualState state, MachinePresentation presentation)

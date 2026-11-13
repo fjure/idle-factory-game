@@ -13,8 +13,8 @@
         <ui:Label name="machine-card-inline" text="" class="mcard__inline" />
         <ui:ScrollView name="machine-card-more" class="run-scroll mcard__more">
             <ui:VisualElement name="machine-card-footer" class="mcard__footer">
-                <ui:Label name="machine-card-cause" text="" class="mcard__cause" />
                 <ui:Button name="machine-card-details" text="Details &#8250;" focusable="true" class="run-control scaffold-button scaffold-button--secondary mcard__details" />
+                <ui:Label name="machine-card-cause" text="" class="mcard__cause" />
             </ui:VisualElement>
         </ui:ScrollView>
     </ui:VisualElement>

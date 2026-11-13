@@ -1,0 +1,84 @@
+/* T535 hub ("Office", FR-020 to FR-022, OD-9b C3 to C6). Font sizes only through the shell --run-fs-* variables, colours only through the shell
+   tokens, rows 48 dp (C4), nothing is nowrap, nothing animates (C5).
+
+   P2-F16 (variant used): the PanelScaffold root is a full-screen opaque fill, which a sheet or side-panel view must not be. The hub root carries the
+   scaffold class so the scaffold row, reason and state classes apply, and this sheet overrides the fill with the more specific selector
+   .scaffold.hub (relative, no inset, no extra background: the shell sheet or side panel already draws the surface). PanelScaffold.uss is unchanged
+   apart from the shared .scaffold-row (P2-F17). The header, Back and Close belong to the shell sheet, so the hub root offers no Back (P2-F19). */
+
+.scaffold.hub {
+    position: relative;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    flex-direction: column;
+    flex-grow: 0;
+    flex-shrink: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.hub__list {
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 8px;
+}
+
+.hub__row {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.scaffold .scaffold-row.hub__card {
+    justify-content: flex-start;
+}
+
+.hub__body {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.hub__title {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-strong);
+    font-size: var(--run-fs-body);
+    -unity-font-style: bold;
+    -unity-text-align: middle-left;
+}
+
+.hub__status {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-secondary);
+    font-size: var(--run-fs-caption);
+    -unity-text-align: middle-left;
+}
+
+/* The attention flag is a word and a bullet on an accent outline (shape and text, never colour alone). */
+.hub__flag {
+    flex-shrink: 0;
+    margin: 0 0 0 8px;
+    padding: 0 6px;
+    white-space: normal;
+    color: var(--on-accent);
+    background-color: var(--accent);
+    font-size: var(--run-fs-caption);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.hub__state {
+    margin: 8px;
+}
+
+/* Phone landscape and narrow side panels: the status takes the full row below the title; keep the flag from squeezing the title. */
+.factory-hud--compact-landscape .hub__list {
+    padding: 4px 8px;
+}

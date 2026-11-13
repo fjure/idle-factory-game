@@ -78,6 +78,23 @@ namespace IdleFactory.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// T535 (R11, FR-021), re-baselined: Android Back arrives as Escape, and the shell is the only place that acts on it. The hub ("Office") is one more
+        /// sheet frame of that same <c>HandleBack</c> path (hub or system view, then the factory), so the activity still adds no back handling and no second
+        /// path pops the hub. The behaviour itself is covered in Play Mode by <c>BackOrderTests</c>.
+        /// </summary>
+        [Test]
+        public void TheHubIsPoppedByTheSameShellHandleBackPathAsEveryOtherFrame()
+        {
+            var shell = File.ReadAllText(ProjectPath("Assets", "IdleFactory", "Unity", "UI", "RunShellDocument.cs"));
+            var hub = File.ReadAllText(ProjectPath("Assets", "IdleFactory", "Unity", "UI", "RunShellDocument.Hub.cs"));
+
+            Assert.That(shell, Does.Contain("Android Back arrives as Escape"), "T247: the shell reads the Back key as Escape");
+            Assert.That(shell, Does.Contain("IsHubFamilyOpen"), "the hub counts as a closable sheet frame of the one back path");
+            Assert.That(hub, Does.Not.Contain("HandleBack"), "the hub has no back handling of its own");
+            Assert.That(hub, Does.Not.Contain("KeyCode.Escape"));
+        }
+
         [Test]
         public void DesktopBackgroundExecutionIsAppliedByARuntimeInitializerThatSkipsTheEditor()
         {

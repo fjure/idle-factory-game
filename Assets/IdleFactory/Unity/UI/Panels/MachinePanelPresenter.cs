@@ -434,7 +434,15 @@ namespace IdleFactory.Unity.UI
             var focused = blockers.focusController?.focusedElement as VisualElement;
             var focusWasInside = focused != null && blockers.Contains(focused);
             blockers.Clear();
-            blockers.style.display = infos == null || infos.Count == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+            // T535 (A-3, U-A8): a switched-off machine says so in the status line and offers Switch on in the actions section. The "switched off"
+            // blocker row and its second Switch on button duplicated both, so Inactive is not listed as a blocker here.
+            var listed = 0;
+            for (var k = 0; infos != null && k < infos.Count; k++)
+            {
+                listed += infos[k].Kind == MachineBlocker.Inactive ? 0 : 1;
+            }
+
+            blockers.style.display = listed == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             if (focusWasInside)
             {
                 // FR-030: decided after the Upgrade control has been rendered (its enabled state is part of the order).
@@ -448,6 +456,11 @@ namespace IdleFactory.Unity.UI
 
             for (var i = 0; i < infos.Count; i++)
             {
+                if (infos[i].Kind == MachineBlocker.Inactive)
+                {
+                    continue;
+                }
+
                 blockers.Add(CreateBlocker(infos[i], i, factory));
             }
         }

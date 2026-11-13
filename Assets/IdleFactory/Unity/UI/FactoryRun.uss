@@ -201,6 +201,66 @@
     -unity-background-image-tint-color: var(--on-accent);
 }
 
+/* Hub entry (T535, FR-020, OD-9b H-02): the icon and the visible word "Office" side by side, never the icon alone, 48 dp high, with the
+   system-attention dot as an overlay in the corner (a bullet glyph, so the dot is a shape and not colour alone). The word is one short word and
+   never truncates at 200 % text; the entry keeps its width and the strip wraps around it. */
+.run-control.run-hub-entry {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0 6px;
+    margin: 0 2px;
+    background-color: var(--surface-raised);
+}
+
+/* Phone portrait: the entry has a row of its own under the strip, at the right edge. */
+.run-control.run-hub-entry.run-hub-entry--row {
+    align-self: flex-end;
+    flex-shrink: 0;
+    margin: 2px 4px 0 0;
+}
+
+/* Phone landscape from 120 percent text: the strip wraps, so the entry floats at the bottom of the world column beside the zoom column (no flow, so no
+   line is added to the strip and the machine card keeps its height). */
+.run-control.run-hub-entry.run-hub-entry--overlay {
+    position: absolute;
+    left: 104px;
+    bottom: 4px;
+    margin: 0;
+}
+
+/* While a sheet is open on a phone in portrait the sheet has its own Close and Back, and the world above it is short: the own-row entry steps aside
+   (it returns, with focus, when the sheet closes). */
+.run-shell--sheet-open .run-control.run-hub-entry.run-hub-entry--row {
+    display: none;
+}
+
+.run-hub-entry__label {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: var(--run-fs-caption);
+    -unity-font-style: bold;
+    color: var(--text-primary);
+    margin: 0 0 0 4px;
+    padding: 0;
+}
+
+.run-hub-entry__dot {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 2px;
+    font-size: var(--run-fs-caption);
+    white-space: nowrap;
+    -unity-font-style: bold;
+    color: var(--accent);
+    margin: 0;
+    padding: 0;
+}
+
 /* Gear (T433, OD-8): last element of the top strip, fixed 44x44, never shrunk. The glyph is two squares (one turned 45 degrees) with a hole. */
 .run-gear {
     width: 44px;

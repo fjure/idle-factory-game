@@ -1205,6 +1205,8 @@ MonoBehaviour:
   machineCardTree: {fileID: 9197481963319205126, guid: ee8e891df4e83cc45ac37ab1585d8f12, type: 3}
   machineCardStyles: {fileID: 7433441132597879392, guid: f8b2fcd799a18cb48994dbcf69c56218, type: 3}
   panelScaffoldStyles: {fileID: 7433441132597879392, guid: 56d1e1aca3e9e93428c64b8e87d2a7c2, type: 3}
+  hubPanelTree: {fileID: 9197481963319205126, guid: 866702e4ec6cb8b42b7f2f513a34e767, type: 3}
+  hubPanelStyles: {fileID: 7433441132597879392, guid: a95e91d65627c1343943f64234b98285, type: 3}
   inventoryRatesTree: {fileID: 9197481963319205126, guid: 735bc475a3826e74f84a91e6c7cbce22, type: 3}
   inventoryRatesStyles: {fileID: 7433441132597879392, guid: 27a766ab1016f384498be90123593293, type: 3}
   prioritiesTree: {fileID: 9197481963319205126, guid: d22311e1ea8d8ce46b78992c528395dd, type: 3}

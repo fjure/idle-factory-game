@@ -115,7 +115,7 @@ namespace IdleFactory.Tests.PlayMode
             var cash = h.Session.ReadCash();
             
             CardHarness.Press(card.UpgradeButton);
-            Assert.That(card.InlineLabel.text, Does.StartWith("Need $").And.EndWith("more"), "the reason is visible text under Upgrade without hover or press (P2-F19)");
+            Assert.That(card.InlineLabel.text, Is.EqualTo(RunRejectionCopy.For(RunReasons.CashInsufficient)), "the press answers with a visible reason line under Upgrade (P2-F19); before it the shortfall is already in the button text");
             Assert.That(card.InlineLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
             Assert.That(h.Session.ReadCash(), Is.EqualTo(cash));
             Assert.That(h.MachineAt(0).Level, Is.EqualTo(1));
@@ -505,6 +505,46 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(button.worldBound.width, Is.GreaterThanOrEqualTo(48f - Tolerance), $"{screen} @{percent}%: {button.name} width");
                 Assert.That(button.worldBound.height, Is.GreaterThanOrEqualTo(48f - Tolerance), $"{screen} @{percent}%: {button.name} height");
             }
+        }
+
+        // T535 (A-1 re-run R-1, A-2 U-A5, A-4 U-A6): Details is the first control of the scrolling part, spans its width and never moves with the cause
+        // line (it is the first control of the scrolling part); the shortfall shows once, in the Upgrade button.
+        [UnityTest]
+        public IEnumerator DetailsKeepsOnePlaceIsNeverASliverAndTheShortfallShowsOnce(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            // An unaffordable upgrade (shortfall inside the button) on a running machine: no cause line.
+            yield return Make(screen, percent, MinerCost);
+            var id = h.Build(0, "machine.miner");
+            yield return h.OpenCard(0);
+            var where = $"{screen} @{percent}%";
+            var card = h.Card;
+            Assert.That(card.CauseLabel.style.display.value, Is.EqualTo(DisplayStyle.None), where);
+            Assert.That(card.UpgradeButton.text, Does.Contain("Need $"), where + ": the shortfall is inside the button");
+            Assert.That(card.InlineLabel.style.display.value, Is.EqualTo(DisplayStyle.None), where + ": and not repeated in a second line (A-4)");
+            card.More.scrollOffset = Vector2.zero;
+            yield return ShellRig.Settle();
+            var offset = card.DetailsButton.worldBound.yMin - card.More.contentViewport.worldBound.yMin;
+            var first = card.DetailsButton.worldBound;
+            Assert.That(first.width, Is.GreaterThanOrEqualTo(48f - Tolerance), where + ": not a sliver");
+            Assert.That(first.height, Is.GreaterThanOrEqualTo(48f - Tolerance), where);
+            var viewport = card.More.contentViewport.worldBound;
+            Assert.That(first.xMin, Is.GreaterThanOrEqualTo(viewport.xMin - Tolerance), where + ": Details left edge");
+            Assert.That(first.xMax, Is.LessThanOrEqualTo(viewport.xMax + Tolerance), where + ": Details right edge");
+
+            // Switched off: the cause line appears below Details. Details stayed where it was, relative to Upgrade, and is still whole.
+            Assert.That(h.Commands.SetActive(id, false).IsSuccess, Is.True);
+            h.Shell.RefreshCard();
+            yield return ShellRig.Settle();
+            Assert.That(card.CauseLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex), where);
+            Assert.That(card.CauseLabel.worldBound.yMin, Is.GreaterThanOrEqualTo(card.DetailsButton.worldBound.yMax - Tolerance), where + ": the cause is below Details");
+            card.More.scrollOffset = Vector2.zero;
+            yield return ShellRig.Settle();
+            var second = card.DetailsButton.worldBound;
+            Assert.That(second.yMin - card.More.contentViewport.worldBound.yMin, Is.EqualTo(offset).Within(0.5f), where + ": Details is still the first control of the scrolling part");
+            Assert.That(second.xMin, Is.EqualTo(first.xMin).Within(0.5f), where);
+            Assert.That(second.width, Is.GreaterThanOrEqualTo(48f - Tolerance), where + ": still not a sliver (a scrollbar may take a few points)");
+            Assert.That(second.xMax, Is.LessThanOrEqualTo(card.More.contentViewport.worldBound.xMax + Tolerance), where + ": not clipped at the right edge (A-1)");
         }
 
         [UnityTest]

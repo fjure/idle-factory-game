@@ -169,3 +169,47 @@ T534 (FR-016 to FR-019, FR-024, SC-002, research R10) adds the docked `MachineCa
 | tablet-landscape 1024x768 | 200 % | 1 | in view | in view |
 | tablet-portrait 768x1024 | 100 % | 1 | in view | in view |
 | tablet-portrait 768x1024 | 200 % | 1 | partly (70 %) | partly (73 %) |
+
+## Hub ("Office"), back order and P3-A carried items (T535)
+
+T535 (FR-020 to FR-022, FR-024, research R11, OD-9b C3 to C6) adds `HubPanel` (registry id `hub`), the additive `ShellPanelIds.Industry` id, the "Office" entry, and `HubAttention`. The six-tab bar stays until T537 removes it, so `SelectTab` and `TabButton` keep working and **no panel test was migrated to the hub**; the two `RunShellTestNavigation` bodies are unchanged (hub-then-row navigation is new in `HubPanelTests` and `BackOrderTests`). The hub and the tab bar are two entries to the same registry views.
+
+**Re-baselined tests (old to new).**
+
+| File | Test / line | Old | New | Reason | Expectation changed? | Issue |
+|---|---|---|---|---|---|---|
+| `Tests/PlayMode/MachinePanelTests.cs` | `TheActiveToggleSwitchesTheMachineOffAndOnAndKeepsProgress` | a switched-off machine lists the blocker "This machine is switched off." with a second "Switch on" button (`BlockerButtons.Count == 1`) | no blocker row and no second button; the one Switch on is `ActiveButton` | A-3 (U-A8) | yes | #707 |
+| `Tests/PlayMode/MachineCardTests.cs` | `AnUnaffordableUpgradeShowsTheShortfallInsideTheButtonAndKeepsItsReason` | after a press the inline line read "Need $... more" (the same text the button already carries) | after a press it reads the rejection copy ("Not enough Cash."); before a press it is hidden | A-4 (U-A6): the shortfall shows once | yes | #707 |
+| `Tests/PlayMode/RunPanelCompositionTests.cs` | `AllPanelIds` (4 tests: every id registered once, rebuild, failed panel, blocked import) | 9 ids | 11 ids, adds `ShellPanelIds.Industry` and `ShellPanelIds.Hub` | the bootstrap composes the Industry view and the hub (R11) | yes, count +2 | #707 |
+| `Tests/PlayMode/Fixtures/Screenshots/F004-B2/*.png` (36 frames: `w003s-*` and `w004v-*`, world and shell, 9 screen classes) | `RenderParityTests.TheCapturedFramesMatchTheCommittedPostSwitchBaselines` | committed post-switch frames without the entry | frames regenerated through the harness' own write mode (`IDLEFACTORY_RENDER_BASELINE_WRITE=1`, no hand edit); the shell frames show the "Office" entry, the world frames follow the camera rectangle (the strip is 4 dp higher where it holds the 48 dp entry, and phone portrait has the entry row) | FR-020; the visible persistent layer changed | yes (images) | #707 |
+| `Tests/EditMode/AndroidBackGestureTests.cs` | new `TheHubIsPoppedByTheSameShellHandleBackPathAsEveryOtherFrame` | none | pins that the hub is one more sheet frame of the single `HandleBack` path with no back handling of its own | R11, FR-021 | n/a, added | #707 |
+
+No other existing assertion changed (the 36 world and shell frames were re-captured, not edited; the comparison tolerance is unchanged). In particular the layout suites (`RunHudLayoutTests`, `RunTextScaleTests`, `MachineCardTests` first view at 640x360 and 200 %, `CardCameraTests`) pass unchanged with the entry present, because of where the entry lives (below). `HubPlayerTests` checks both new ids in the packaged scene.
+
+**Where the hub entry lives (and why).** Nothing in the strip could give up width or height without breaking a recorded invariant, so the one `hub-entry` button is re-parented by the shell (`PlaceHubEntry`, like the Overdrive control):
+- phone portrait (the strip's four controls already fill 360 pt at the worst-case values): a 48 dp row of its own at the top of the world column; the camera frames below it like a notice bar (`HubEntryOnItsOwnRow`); it steps aside while a sheet is open, because the sheet has its own Close;
+- phone landscape from 120 % text (the strip wraps, and a fifth control adds a whole line that the machine card cannot give up: Upgrade must stay in the first view at 640x360 and 200 %): an overlay at the bottom of the world column beside the zoom column, 48 dp, no flow;
+- every other class and scale: in the strip, before the gear, 48 dp.
+
+The entry always shows the icon and the word "Office" (tested on every class at 100 and 200 %). T537 rebuilds the persistent layer and chooses the final place. The overlay does not cut the camera's rectangle (carried to T537, with the other persistent-layer geometry).
+
+**Decisions.**
+- **P2-F16 (scaffold root):** the hub uses the scaffold's classes and rows by composition, like the card: the hub root carries `scaffold` and `HubPanel.uss` overrides the full-screen fill with `.scaffold.hub` (relative, no inset, transparent). It is a registered shell panel, so the shell's own sheet (phone portrait) or side panel (other classes) holds it; the sheet header with Close belongs to the shell. `PanelScaffold.uss` changed only additively.
+- **P2-F17:** `PanelScaffold` gained a sheet mount point (`scaffold-sheet`, `PanelScaffold.Sheet`) and the shared `.scaffold-row` class (`PanelScaffold.RowClass`, 48 dp, a `run-control`, so the shell focus ring applies). The hub rows use `.scaffold-row`. The mount point is exercised by `TheScaffoldStateCardOffersNoBackWhenTheRootHidesIt`; the hub itself mounts into the shell sheet.
+- **P2-F19:** the scaffold state card's Back now follows `BackVisible`. The hub offers no Back at its root (the shell sheet has Close). Every disabled card passes its `reasonLabel` (visible text) and tooltip. A notice of each kind at 640x360 and 200 % leaves the layout, the cards and Close usable (`ThreeNoticesLeaveTheCardsAndTheCloseControlUsableAtTheWorstCase`; the shell shows one notice at a time, so the three bars are notice, detail line and hint).
+- **Hub entry glyph (P2-F9, P2-F22; T554 approved the new "Office" glyph):** the icon is the single constant `HubCards.EntryIconKey`. **Fallback in use: the contracts glyph (`F003-UI-ICON-TAB-CONTRACTS`).** The new glyph (`art-source/f006/ui/f006-ui-office`) is not imported: the runtime icon lookup is the scene's `PresentationSpriteCatalog`, the F006 catalog rows are not registered in the scene yet (A-13, T527), and the F006 importer has no UI-icon family, so an import would need a new family, importer rules, atlas and contract-test changes in shared art tooling: out of proportion for this Issue. The swap is one constant plus a catalog row. **When it lands, the hub entry icon must stay distinguishable from the Contracts card icon** (the card keeps `F003-UI-ICON-TAB-CONTRACTS`, `HubCards.IconKeyOf`).
+- **ContractsShellFeed re-point:** the feed writes `shell.Attention.SetContracts(n)` (the hub's Contracts card flag and the entry dot). Until T537 removes the tab bar the shell mirrors the count to the Contracts tab badge, so `UiReviewFixesTests` and `ContractsAutoDeliverPanelTests` are unchanged. Research, Prestige and Overdrive flags come from `HubAttentionFeed` (existing snapshots and the prestige preview only; no new rule, A-6). Unspent IP keeps the Research flag (the former tab dot).
+- **Back order:** the hub, the Industry view and Settings are single frames of the existing `ShellNavigationStack` (sheet frame). A system view opened from the hub replaces it as the one sheet, so one Back returns to the factory (FR-021).
+- **Scene:** two serialized fields (`hubPanelTree`, `hubPanelStyles`) were added to the bootstrap and set through a temporary `-executeMethod` editor script (deleted before the commit). The scene diff is those two lines.
+- **`RunShellDocument.cs`:** it grew by about 20 lines of wiring (the partial class declaration, a few one-line hook calls, the unobstructed-rect bar). All hub logic is in `HubPanel.cs` and the new `RunShellDocument.Hub.cs`.
+
+**P3-A carried items.**
+
+| Id | Action |
+|---|---|
+| A-1 | The card footer is one column with `Details ›` first and the cause line below it in every class, so Details spans the footer width instead of being squeezed beside the cause line. Covered by `DetailsKeepsOnePlaceIsNeverASliverAndTheShortfallShowsOnce` on every class at 100 and 200 % (including 640x360 at 200 %). |
+| A-2 | Same change: Details keeps its place relative to Upgrade when the cause line appears (the cause grows below it). |
+| A-3 | The Details view no longer lists the "switched off" blocker nor its second "Switch on" button for an inactive machine (`MachinePanelPresenter`, one loop guard). |
+| A-4 | Done: the shortfall shows once, inside the Upgrade button (FR-016); the inline line is only the rejection a press answers with. |
+
+**New tests.** `HubPanelTests`, `BackOrderTests`, `HubPlayerTests` (`StandalonePlayer`), `HubTestSupport` (harness), and the cases named above.
