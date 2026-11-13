@@ -442,7 +442,7 @@ namespace IdleFactory.Tests.EditMode
                     Assert.That(settings.overridden, Is.True, platform);
                     Assert.That(settings.format, Is.EqualTo(TextureImporterFormat.RGBA32), platform);
                     Assert.That(settings.textureCompression, Is.EqualTo(TextureImporterCompression.Uncompressed), platform);
-                    Assert.That(settings.maxTextureSize, Is.LessThanOrEqualTo(1024), platform);
+                    Assert.That(settings.maxTextureSize, Is.LessThanOrEqualTo(F004SpriteAtlasSettings.MaxPageSize), platform);
                 }
 
                 Assert.That(F004SpriteAtlasSettings.FindAtlasPaths(), Does.Contain(atlasPath));
