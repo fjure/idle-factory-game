@@ -774,7 +774,7 @@ By family:
 | PROP | 4 | 2,016 | 2,808 |
 | DEPOSIT | 4 | 6,528 | 7,904 |
 
-**FX atlas** (animated effects, one shared clock): 42 frames.
+**FX atlas** (animated effects, one shared clock): 43 frames (42 planned at OD-10, plus the completion highlight added after T525, 21.9).
 
 | Family | Sprite id | Canvas (art px) | Frames | Opaque-canvas px | Padded px (w+4)(h+4) | Role |
 |---|---|---|---|---|---|---|
@@ -785,19 +785,20 @@ By family:
 | FX | `f006-fx-build-dust` | 48 x 28 | 6 | 8,064 | 9,984 | one-shot at the foundation |
 | FX | `f006-fx-upgrade-glint` | 24 x 24 | 6 | 3,456 | 4,704 | one-shot on the body |
 | FX | `f006-fx-vein-chip` | 48 x 34 | 6 | 9,792 | 11,856 | manual-mining loop on the deposit (R23) |
-| **Total** | | | 42 | 43,368 | 54,264 | |
+| FX | `f006-fx-completion-highlight` | 68 x 36 | 1 | 2,448 | 2,880 | static reduced-motion form of the completion pop (1 s), not machine-anchored, no flash |
+| **Total** | | | 43 | 45,816 | 57,144 | |
 
 **Page rounding** (`derived`):
 
 | Atlas | Padded px | Planned page | Page px | Fill | Page bytes (RGBA32) | Fallback page if the packer fails | Fallback bytes |
 |---|---|---|---|---|---|---|---|
 | World | 190,956 | 512 x 512 | 262,144 | 72.8 % | 1,048,576 (1.00 MiB) | 1024 x 512 | 2,097,152 (2.00 MiB) |
-| FX | 54,264 | 256 x 256 | 65,536 | 82.8 % | 262,144 (0.25 MiB) | 512 x 256 | 524,288 (0.50 MiB) |
+| FX | 57,144 | 256 x 256 | 65,536 | 87.2 % | 262,144 (0.25 MiB) | 512 x 256 | 524,288 (0.50 MiB) |
 
 - Each atlas has **one page of at most 1024 x 1024** (budget 7); the fallback pages are also within it.
 - Planned total 1,310,720 B (1.25 MiB); worst case with both fallbacks 2,621,440 B (2.50 MiB, 2.62 MB).
 - Budget 6 (world-art texture at most 8 MB): the F004 measured total is 3.05 MB (`wiki/pages/f004-batch-12-final-verification.md`) **including the floor atlas that F006 removes**, so the F004 + F006 worst case is at most 3.05 + 2.62 = 5.67 MB, margin at least 2.33 MB. The build-report measurement confirms it (a P2 gate, not made here).
-- The planned pages leave 27.2 % (world) and 17.2 % (FX) free; a packer that misses the planned page uses the fallback, which is within budget, so the planned page is not a pass criterion.
+- The planned pages leave 27.2 % (world) and 12.8 % (FX) free; a packer that misses the planned page uses the fallback, which is within budget, so the planned page is not a pass criterion.
 
 ### 21.5 Keep-out proofs (Art Director conditions 2, 3 and 6)
 
@@ -817,13 +818,13 @@ By family:
 | 3 Gantry line | 8 | gantry 3 (**a separate art pass**, new art), depot 4, deposit dressing 1 |
 | Total | 40 | equals the world atlas total of 21.4 |
 
-FX (42 frames) are shared by all stages. Stage 2 and stage 3 art must exist before the progression is accepted (World Designer condition).
+FX (43 frames) are shared by all stages. Stage 2 and stage 3 art must exist before the progression is accepted (World Designer condition).
 
 ### 21.7 Depot visibility and motion rules
 
 - **Depot.** Visible at 640 x 360 and at 200 % text: the hopper opening and the `copper_*` collar show the delivery, and the lamp tip is **inside the sprite canvas with at least 2 art px of headroom** so partial-depot views (phone portrait at 75 %, 640 x 360) do not crop it. Trunks end at the depot (World Designer condition): `link-junction` meets the depot cell and no link joins two machines. Evidence: the direction-sheet classes at those two views.
 - **Vein.** Scenery only; it is drawn legibly on every class where the camera frames it, and a class where it is out of view is **recorded** as out of view (World Designer condition), not hidden by art.
-- **Flash.** The flash rule of 6.4 holds: at most 3 flashes per second, and the F006 composite requirement is at most 2 per second for body + accent + FX (the Assembler is already at 3, R12). Static lamps never flicker.
+- **Flash.** The flash rule of 6.4 holds: at most 3 flashes per second, and the F006 composite requirement is at most 2 per second for body + accent + FX. The F004 spike Assembler measured 3 flashes/s; the production Assembler measures 0 alone and 2 with the completion pop (T522 `check_flash`). Pace caps per family: Miner, Smelter and Press 10 fps; Assembler 8 fps, kept as conservative headroom. The reduced-motion form of the completion pop is `f006-fx-completion-highlight`, a static 1 s highlight. Static lamps never flicker.
 - **Railing noise (UI/UX F6, Art Director A4).** The quiet railing variants are used near badges and the depot; the post pattern does not grow in stage 2 or 3.
 - **Reduced motion (C5).** A static fallback exists for every animation. No FX plays. Machine loops show frame 0. The branch pip is replaced by `link-branch-active`. The completion pop is replaced by the R12 static 1 s highlight on the card or the depot (manifest `stillFrame` 3 of the pop stays as the evidence-sheet still). The vein chip loop shows `deposit-highlight`. Build dust, upgrade glint, spark and steam show nothing. The zero-flash gate holds in every case.
 
@@ -840,7 +841,19 @@ Decided by the owner on 2026-11-11 and recorded by the parent at T518. Inputs: t
    - pips are `copper_2` with an `ink_0` ring and are ring-safe;
    - the C8 ring rule stays strict: no `steel_*` in any ring (set R, OD-9b Art Director condition 2);
    - the wall stays a stage-2 candidate. No wall tile is drawn on an edge that fails the keep-out proof.
-2. **Flash wording (clarifies 21.7).** At most 3 flashes per second overall. F006 FX add at most 2 per second on top of a machine loop. The Assembler loop, already at 3 (R12), keeps its ≤8 fps cap, and no FX may push a composite above 3.
+2. **Flash wording (clarifies 21.7).** At most 3 flashes per second overall. F006 FX add at most 2 per second on top of a machine loop. The Assembler (3 flashes/s in the F004 spike, 0 alone and 2 with the completion pop in production) keeps its ≤8 fps cap, and no FX may push a composite above 3.
 3. **Trunk under the badge band (T517 finding).** The `steel_1` trunk lane of the concept lies inside the C8 ring for every anchor (62 to 120 ring px). Owner decision: **recolour the trunk**. The strict ring rule stands. Where the trunk passes the badge band (art y 16..39 of the row), P2 LINK art (`link-trunk`, `link-junction`) uses only set R tones. The 21.2 LINK row, with lane body `dim_0`, already complies. The C8 re-run of 9.4a proves it for every class.
 4. **OD-12: A-03 badge anchor K4.** The badge keeps its overlay anchor at bottom-centre (59, 33) (cue geometry table in section 3.2) and gains a **4 art px pointer tail** toward its own machine, drawn in `ink_0` and the badge fill, palette-exact. Measured by T517: no regression on any overlap, row-band or ring measure; attribution ratio 1.14, a directional cue; legibility unchanged (23 px at n_min, DEV-2 unchanged). The tail also serves UI/UX C2, linking the card to its machine on landscape and tablet. The T517 tail is a mock. The badge is an F004 cue sprite (b23), so the production tail goes through the cue-sprite pipeline with a brief and an Art Director pixel review in P2. The parent assigns it with the P2 art briefs.
 5. **Notes from QA, no rule change.** Research R12 says lamps "use steel or teal tones"; this Bible governs: `copper_2` head, `steel_3` cap, no `teal_*`. In the 6.5 Atlas row, "one Sprite Atlas v2 per family" means per F006 atlas (world and FX).
+### 21.9 Corrections and owner decisions after T525 (2026-11-13)
+
+Recorded by the F006 MAQA parent from the independent T525 review (`specs/006-world-first-factory-experience/reviews/art-direction-f006.md`) and the owner decisions of 2026-11-13. No style change; corrections, one added FX sprite and two owner decisions.
+
+1. **P2-F2.** `f006-fx-completion-highlight` (68 x 36, 1 frame) is added to the 21.4 FX table and named in 21.7. FX atlas: 43 frames, padded 57,144 px, 87.2 % of the 256 x 256 page; the planned and worst-case byte totals are unchanged. Confirmed in the engine by T526 (`F006AssetContractTests`).
+2. **P2-F3.** The Assembler wording in 21.7 and 21.8 item 2 now cites the measurements: 3 flashes/s in the F004 spike, 0 alone and 2 with the completion pop in production. Caps: Miner, Smelter, Press 10 fps; Assembler 8 fps.
+3. **P2-F4.** Lamps are static, with a `copper_2` head and a `steel_3` cap; no `teal_*`, no `lit_*` (21.2, 21.8 item 5). Research R12's "steel or teal tones" is superseded.
+4. **P2-F1.** GROUND has 3 frames. All edge, corner and quiet art belongs to EDGE (T521); no ground edge, corner or T tiles are owed.
+5. **P2-F7 / P2-F23, owner decision (accept, conditional).** EDGE pieces are placed on the **front margin row only**: `-fl` on the front-left diagonal, `-fr` on the front-right diagonal and `-corner` at the front apex, for every stage. The deck top is `floor_0`, the same as the field, and a seam every 35 px is accepted. The front-only stage-2 wall is the "Walled yard" candidate and stays provisional until T527 proves zero wall pixels in any C8 ring, the wall not outweighing the front-row machine plates (otherwise its top band drops to `steel_1`), and the SC-006 shuffled-order trial at 9 of 10 or better. No side or back wall unless a keep-out proof allows it.
+6. **P2-F9 / P2-F22, owner decision.** The "Office" hub entry gets a NEW 24 px `ui_text` glyph authored through the F003 UI-icon pipeline with an Art Director pixel review. F006-UI changes from 0 to 1 sprite (21.2); the attention dot and the banner stay plain USS. Until the glyph exists, the hub shows the visible word "Office" with the contracts glyph as a temporary fallback.
+7. **P2-F5.** The production K4 tail is in the shipped F004 cue sprites (T526), and `FactoryWorldLayout.KeepOutOf` uses the 23 x 27 badge extent. A full F004 re-import from `art-source/f004` would revert the tails; `F004AssetContractTests` guards this.
+
