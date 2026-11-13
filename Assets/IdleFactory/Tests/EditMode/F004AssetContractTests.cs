@@ -563,6 +563,8 @@ namespace IdleFactory.Tests.EditMode
             var byAsset = shipped.entries.ToDictionary(entry => entry.assetId, StringComparer.Ordinal);
             Assert.That(byAsset.Count, Is.EqualTo(shipped.entries.Length), "asset ids are unique");
 
+            // T526 (P2-F5): the five badge sprites are the approved F006 K4 tail sprites; their hashes come from art-source/f006/cue.
+            var k4Tails = F004ArtIntegration.ReadSourceEntries("art-source/f006/cue/manifest.json").ToDictionary(entry => entry.AssetId, entry => entry.FrameHashes, StringComparer.Ordinal);
             var expected = 0;
             foreach (var family in F004ArtIntegration.FamilyNames)
             {
@@ -577,7 +579,8 @@ namespace IdleFactory.Tests.EditMode
                         Assert.That(shippedEntry.key, Is.EqualTo(F004ArtIntegration.KeyOf(entry.AssetId, entry.Key)), entry.AssetId);
                         Assert.That(shippedEntry.intentionallyEmpty, Is.EqualTo(entry.IntentionallyEmpty), entry.AssetId);
                         Assert.That((shippedEntry.frames ?? new ShippedFrame[0]).Select(frame => frame.sha256),
-                            Is.EqualTo(entry.FrameHashes), entry.AssetId + " keeps the hashes of its source manifest");
+                            Is.EqualTo(k4Tails.TryGetValue(entry.AssetId, out var tailHashes) ? tailHashes : entry.FrameHashes),
+                            entry.AssetId + " keeps the hashes of its source manifest (the K4 tail sprites for the badges)");
                     }
                 }
             }
