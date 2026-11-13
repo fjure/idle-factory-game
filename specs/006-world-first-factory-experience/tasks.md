@@ -472,7 +472,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: the pipeline exits 0 and the `StateCueSetTests` re-baseline is recorded.
   - **Resources**: unity, because of the `StateCueSetTests` re-baseline.
   - **Covers**: FR-014, FR-025; research R17.
-- [ ] T525 [US2] Independent read-only reviews per family, after T519–T524:
+- [X] T525 [US2] Independent read-only reviews per family, after T519–T524:
   - Art Director in a fresh session, not the producer;
   - World Designer conformance;
   - UI/UX (cue legibility on the new backdrop);
@@ -481,7 +481,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   Record them in `specs/006-world-first-factory-experience/reviews/art-direction-f006.md` and `reviews/world-bible-conformance.md` (part 1). The Game Systems/Economy Low-tier lens confirms "no pacing effect" for the vein.
   - **Resources**: none.
   - **Covers**: FR-044, FR-047, SC-013; research R17, R23.
-- [ ] T526 [US2] Technical Artist (Art Director and Performance lenses), after T525 and T513.
+- [X] T526 [US2] Technical Artist (Art Director and Performance lenses), after T525 and T513.
   - **Import**: approved families into `Assets/IdleFactory/Art/F006/` through the manifest:
     - one world atlas holding the static families;
     - one FX atlas;
@@ -592,7 +592,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Tests**: `PanelScaffoldTests` (Play Mode, every class at 100, 150 and 200 %).
   - **Resources**: unity.
   - **Covers**: FR-005, FR-023; research R11.
-- [ ] T534 [US3] UI/UX Developer (Software Architect, Test/QA and UI/UX Reviewer later lenses), after T512, T532 and T533.
+- [X] T534 [US3] UI/UX Developer (Software Architect, Test/QA and UI/UX Reviewer later lenses), after T512, T532 and T533.
   - **Card**: `Assets/IdleFactory/Unity/UI/MachineCard.cs`, `.uxml` and `.uss`. One instance, **docked only**:
     - phone portrait: a bottom band, "≤ 30 % at 100–140 % text, ≤ 45 % hard cap";
     - phone landscape: a side column of about 40 % width, Upgrade pinned;
@@ -615,13 +615,13 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Re-baseline**: record the affected panel tests in `test-rebaseline.md`.
   - **Resources**: unity, emulator.
   - **Covers**: FR-016–FR-019, FR-024, SC-002, SC-003; research R10.
-- [ ] T552 [US3] Gameplay Developer (DevOps/Operations and Test/QA lenses), after T534. Added 2026-11-13 by the owner decision on the T543 batch-A gate (`reviews/uiux-f006-A.md` U-A1).
+- [X] T552 [US3] Gameplay Developer (DevOps/Operations and Test/QA lenses), after T534. Added 2026-11-13 by the owner decision on the T543 batch-A gate (`reviews/uiux-f006-A.md` U-A1).
   - **Defect**: the Android GLES3 APK of `origin/main` 810507d never leaves loading on `emulator-5554` (`SetGameState isLoading: true` for 8+ minutes, `Loading.AsyncRead` at 100 % CPU, no frame), while the Windows player of the same commit loads in about 12 s and the F004 T411 APK loads in under 40 s on the same emulator.
   - **Work**: find the first bad merge by bisecting the Android build over the F006 merges (P1 to T526), with a clean Android Library; record each probe. Fix the cause in its owning code or import settings, or, if the cause is outside the repository, record it with evidence and a workaround for the owner.
   - **Tests**: an Android load check on the emulator through `scripts/android-emulator-journey.ps1` (first frame and a playable shell within the journey's limit), plus a regression test at the cause where one can run below the engine boundary.
   - **Resources**: unity, emulator.
   - **Covers**: FR-024, SC-002 (Android class); research R16.
-- [ ] T553 [US3] UI/UX Developer (Test/QA lens), after T534. Added 2026-11-13 by the owner decision on the T543 batch-A gate (`reviews/uiux-f006-A.md` U-A2, `reviews/playtest-agent-f006-A.md` A-F1).
+- [X] T553 [US3] UI/UX Developer (Test/QA lens), after T534. Added 2026-11-13 by the owner decision on the T543 batch-A gate (`reviews/uiux-f006-A.md` U-A2, `reviews/playtest-agent-f006-A.md` A-F1).
   - **Defect**: an empty-world tap closes the machine card but not the Details view, because `RunShellPresenter.HandleWorldTap` closes only while `shell.IsCardOpen`. This breaks US3 scenario 5 and FR-021.
   - **Fix**: an empty-world tap closes the Details view and the card and returns focus to the location, through the existing close path. Do not change the marker-vs-machine tap priority (T528).
   - **Tests**: a presenter-level `MachineCardTests` or `CardCameraTests` case that drives `HandleWorldTap` through `RunShellPresenter` with Details open, in portrait and landscape.
@@ -634,13 +634,13 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 
 **Independent test**: `HubPanelTests`, `BackOrderTests` and `SurfaceConsistencyTests`, plus the journey counts.
 
-- [ ] T554 [P] [US6] Asset Artist (Art Director lens), after T525. Added 2026-11-13 by the owner decision on P2-F9 (`reviews/p2-followups.md` P2-F22, Art Bible 21.9 item 6).
+- [X] T554 [P] [US6] Asset Artist (Art Director lens), after T525. Added 2026-11-13 by the owner decision on P2-F9 (`reviews/p2-followups.md` P2-F22, Art Bible 21.9 item 6).
   - **Family**: F006-UI, one sprite: a NEW 24 px `ui_text` glyph for the "Office" hub entry (for example a desk tray or a stack of cards), distinct from `F003-UI-ICON-TAB-CONTRACTS`.
   - **Route**: the F003 UI-icon pipeline, scripted, under `art-source/f006/ui/`, with manifest, provenance and check report; then an Art Director pixel review in a fresh session and the Art Bible 21.2/21.4 F006-UI count changed from 0 to 1.
   - **Validation**: `scripts/test-art-pipeline.ps1` exits 0. The Unity import and the swap in `HubPanel` follow in T535 if it has not yet merged, otherwise in T536.
   - **Resources**: none.
   - **Covers**: FR-020, FR-044.
-- [ ] T535 [US6] UI/UX Developer (Software Architect and Test/QA lenses), after T533, T534, T552 and T553.
+- [X] T535 [US6] UI/UX Developer (Software Architect and Test/QA lenses), after T533, T534, T552 and T553.
   - **Hub**: `Assets/IdleFactory/Unity/UI/Panels/HubPanel.cs`, `.uxml` and `.uss` on `PanelScaffold`.
   - **Cards**: Market, Contracts, Items, Research (the RP value in its status), Industry, Overdrive, Prestige and Settings.
     - Industry gets an additive `ShellPanelIds` id that hosts `IndustryPanel`, with `IsKnown` updated.
