@@ -121,3 +121,51 @@ Totals: 75 `SelectTab` lines and 47 `TabButton` lines (production `RunShellDocum
 | File | Test / line | Old | New | Reason (FR/SC/decision) | Expectation changed? | Issue |
 |---|---|---|---|---|---|---|
 | _example_ `RunHudLayoutTests.cs` | `Name` / L171 | `shell.TabButton(ShellTab.Market)` | `RunShellTestNavigation.EntryControl(shell, ShellTab.Market)` | R11, OD-9b | no | #nnn |
+
+## Machine card, Details and camera view extent (T534)
+
+T534 (FR-016 to FR-019, FR-024, SC-002, research R10) adds the docked `MachineCard`; the machine panel becomes its Details view. A machine tap opens the card when one is registered. Without a registered card, `OpenSlot` opens the machine panel directly as before, so every test that registers only `MachinePanelPresenter` is unchanged (`MachinePanelTests`, `MachinePanelGuidanceTests`, `BuildPricePanelTests`, `UiIconSurfaceRig`, the `ShellRig` panel suites).
+
+**Re-baselined tests (the scene wires the card, so bootstrap-based tests now see it).**
+
+| File | Test / line | Old | New | Reason | Expectation changed? | Issue |
+|---|---|---|---|---|---|---|
+| `RunPanelCompositionTests.cs` | `AllPanelIds` (4 tests: every id registered once, rebuild, failed panel, blocked import) | 8 ids | 9 ids, adds `ShellPanelIds.MachineCard` | the card is a registered panel (R10) | yes, count +1 | #706 |
+| `RunPanelCompositionTests.cs` | `EverySlotTapOpensTheBuildSheetOrTheMachinePanel...` (2 lines) | `ActivePanelId == Machine` | `shell.IsCardOpen` | FR-016: an occupied location opens the card; the build sheet hands over to the new machine's card | yes | #706 |
+| `RunPanelCompositionTests.cs` | `AVisiblePanelRefreshesWhenTheRunChanges` | `OpenSlot(0)` shows the machine panel | `OpenSlot(0)` then `OpenDetails(0)` | the panel is the Details view | no (same panel asserted) | #706 |
+| `SlotGridTests.cs` | `ATapOpensTheBuildSheet...` (2 lines, 1 line removed) | machine panel active, root mounted in `PanelContent` | card open | as above; the panel is mounted only when Details opens | yes | #706 |
+
+**New tests.** `MachineCardTests`, `MachineDetailsParityTests`, `CardCameraTests`, `KeyboardTraversalTests`, `MachineCardPlayerTests` (`StandalonePlayer`), `ViewBoundsTests`, `CardBackFrameTests`. `ShellNavigationStack` gained `HasCard`/`PopCard` as default interface members, so `ShellNavigationStackTests` is unchanged.
+
+**Decisions.**
+- **P2-F16 (scaffold root):** a docked variant by composition. The card root carries the `scaffold` class and `MachineCard.uss` overrides the full-screen fill with `.scaffold.mcard` (relative, no inset, surface background, no header). `PanelScaffold.*` is untouched. Buttons use the scaffold classes and `PanelScaffold.SetDisabled` with its reason label and tooltip (P2-F19).
+- **P2-F19:** the shell notice bar lies in the world column and never overlaps the card (tested at every class at 200 %). Scaffold notices (up to 3) are not used by the card.
+- **P2-F10, P2-F12, P2-F13:** the card owns one `MachinePresentationModel`, refreshes it every frame from cached snapshots, reads `LimitingResourceId` and `AttentionModel.ShortOnCopy` from it, and calls `ResetModels` (baseline reset, offline suppression); a session replace rebuilds the card with the panels. Tap priority between attention markers and machine shapes is not touched (no marker is a hit target yet): carried by T528.
+- **Items and boosts (FR-018):** the F003 to F005 machine panel had no Item or boost entry point, so nothing is lost; none was added.
+- **Effects (FR-034):** `EffectPool` is T529. The card calls the `IMachineEffects` seam; with no sink wired, and always under reduced motion, it shows a static one-second highlight (tested).
+- **Keyboard:** one focusable location stop stands for the world locations (arrows move its cursor in `SortKeyOf` order, Enter or Space opens). On tablet and desktop Overdrive sits in the panel header and the tab bar after the card until T537 rebuilds the persistent layer.
+
+**Camera view extent (P1-F2).** `ScaleLayout.ViewBounds` (default `Bounds`) and `FactoryWorldLayout.ViewBounds` (content, depot, deposit). Pan limits always use it; fit-all and centring use it only when it keeps the integer fit scale. Selection framing uses `MachineRectOf` (plate plus badge band), not only the plate footprint.
+
+**Measured, SC-002 guidance (unobscured world share with the card open).** Portrait at 200 % text 0.42 (45 % hard cap), landscape 0.52 to 0.57 (the specified 40 % column), tablet and desktop above 0.70. Compact phones are below the 50 % and 70 % guidance by design of the cap and column; asserted floors are 0.40, 0.50 and 0.70. Depot and vein visibility per class is written by `CardCameraTests` as `T534-VISIBILITY` lines in the test result output (P2-F6 camera part; the composite proof stays with T527).
+
+**Depot and vein visibility at fit-all (measured by `CardCameraTests`, P1-F2, P2-F6 camera part).** "Partly" is the share of the sprite extent inside the view; the player can still pan to both (pan extent). The composite proof stays with T527.
+
+| Screen class | Text | n_fit | Depot | Vein |
+|---|---|---|---|---|
+| desktop 1280x720 | 100 % | 2 | in view | in view |
+| desktop 1280x720 | 200 % | 2 | partly (89 %) | partly (94 %) |
+| desktop 1920x1080 | 100 % | 4 | partly (67 %) | partly (70 %) |
+| desktop 1920x1080 | 200 % | 4 | partly (60 %) | partly (61 %) |
+| phone-landscape 640x360 | 100 % | 1 | in view | in view |
+| phone-landscape 640x360 | 200 % | 1 | in view | in view |
+| phone-landscape 844x390 | 100 % | 1 | in view | in view |
+| phone-landscape 844x390 | 200 % | 1 | in view | in view |
+| phone-portrait 360x640 | 100 % | 1 | partly (70 %) | partly (73 %) |
+| phone-portrait 360x640 | 200 % | 1 | partly (40 %) | partly (39 %) |
+| phone-portrait 390x844 | 100 % | 1 | partly (89 %) | partly (94 %) |
+| phone-portrait 390x844 | 200 % | 1 | partly (59 %) | partly (60 %) |
+| tablet-landscape 1024x768 | 100 % | 2 | partly (24 %) | partly (20 %) |
+| tablet-landscape 1024x768 | 200 % | 1 | in view | in view |
+| tablet-portrait 768x1024 | 100 % | 1 | in view | in view |
+| tablet-portrait 768x1024 | 200 % | 1 | partly (70 %) | partly (73 %) |
