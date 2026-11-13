@@ -225,7 +225,16 @@ namespace IdleFactory.Unity.UI
             {
                 // A tap on empty world closes the card (US3 scenario 5). The marker-versus-machine tap priority belongs to T528 (P2-F13): no
                 // attention marker is a hit target yet, so a tap that hits no machine shape is empty world.
-                if (shell.IsCardOpen)
+                if (shell.IsDetailsFromCard)
+                {
+                    // T553 (U-A2): with the Details view open the card is hidden, so IsCardOpen is false. The tap still closes both, through the
+                    // existing close path (Details returns to the card, the card closes and the camera restores) and focus returns to the location.
+                    var detailsSlot = shell.SelectedSlot;
+                    shell.CloseSheetOrDetails();
+                    shell.CloseMachineCard(false);
+                    shell.FocusLocation(detailsSlot);
+                }
+                else if (shell.IsCardOpen)
                 {
                     shell.CloseMachineCard(false);
                 }
