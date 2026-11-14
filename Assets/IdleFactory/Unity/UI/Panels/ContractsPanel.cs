@@ -89,7 +89,12 @@ namespace IdleFactory.Unity.UI.Panels
 
             // A wrapped label is wrapped in a container (wiki: UI Toolkit HUD layout pitfalls), or a bounded scroll view clamps its height.
             emptyBox = MakeCard("contracts-empty-box", "contracts-card--plain");
+            // T536 (FR-023): the scaffold's empty template (marker, title, message) instead of a panel-specific card.
+            ScaffoldEmpty.Style(emptyBox);
+            emptyBox.Add(ScaffoldEmpty.Mark("contracts-empty-mark"));
+            emptyBox.Add(ScaffoldEmpty.Title("contracts-empty-title"));
             emptyLabel = MakeText("contracts-empty", "contracts-line");
+            emptyLabel.AddToClassList("scaffold__state-message");
             WrappedLabelFit.Attach(emptyLabel);
             PanelIcons.Mark(emptyLabel, icons, PanelIcons.Lock);
             emptyBox.Add(emptyLabel);

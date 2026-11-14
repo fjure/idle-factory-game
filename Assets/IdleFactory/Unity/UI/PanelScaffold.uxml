@@ -11,7 +11,7 @@
                 <ui:Label name="scaffold-state-mark" text="" class="scaffold__mark" />
                 <ui:Label name="scaffold-state-title" text="" class="scaffold__state-title" />
                 <ui:Label name="scaffold-state-message" text="" class="scaffold__state-message" />
-                <ui:VisualElement name="scaffold-state-bar" class="scaffold__bar"><ui:VisualElement class="scaffold__bar-fill" /></ui:VisualElement>
+                <ui:VisualElement name="scaffold-state-bar" class="scaffold__bar"><ui:VisualElement class="scaffold__bar-fill" /><ui:VisualElement class="scaffold__bar-fill" /><ui:VisualElement class="scaffold__bar-fill" /></ui:VisualElement>
                 <ui:VisualElement name="scaffold-state-actions" class="scaffold__actions">
                     <ui:Button name="scaffold-state-primary" text="" focusable="true" class="run-control scaffold-button scaffold-button--primary" />
                     <ui:Button name="scaffold-state-secondary" text="" focusable="true" class="run-control scaffold-button scaffold-button--secondary" />

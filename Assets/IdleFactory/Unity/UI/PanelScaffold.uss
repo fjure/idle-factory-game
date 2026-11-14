@@ -83,7 +83,8 @@
 /* The one disabled state (shape, text and contrast, never dimming alone): square corners and a thick left bar instead of the
    rounded outline, the plain surface instead of a fill, muted text that still reads at 4.5:1 or better, and a reason line the
    caller shows beside it. The control stays focusable (soft-disabled) and the opacity stays 1. */
-.scaffold .scaffold-button.scaffold-button--disabled {
+.scaffold .scaffold-button.scaffold-button--disabled,
+.scaffold-scope .scaffold-button.scaffold-button--disabled {
     background-color: var(--surface);
     color: var(--text-muted);
     border-top-left-radius: 0;
@@ -98,6 +99,21 @@
     border-top-color: var(--border);
     border-bottom-width: 1px;
     border-bottom-color: var(--border);
+}
+
+/* T536 (FR-023, SC-009): the scope class of every panel the shell hosts (the shell adds it to each mounted panel root, the dialog and the notice
+   line). A hosted button keeps its own run-button look and spacing and takes only the scaffold's 48 pt floor and the one disabled look above. */
+.scaffold-scope .scaffold-button {
+    min-width: 48px;
+    min-height: 48px;
+}
+
+/* A hosted control keeps its height when it turns disabled (no layout jump): its top, bottom and right borders stay at the run-control width, and
+   only the left bar grows. */
+.scaffold-scope .scaffold-button.scaffold-button--disabled.run-control {
+    border-top-width: 1.5px;
+    border-bottom-width: 1.5px;
+    border-right-width: 1.5px;
 }
 
 .scaffold__reason {
@@ -191,19 +207,20 @@
     margin-top: 4px;
 }
 
-/* A static bar for the loading state: no animation, so reduced motion needs no other form. */
+/* The loading state's busy mark (T536, P2-F18): three separate blocks with gaps. A bar filled to a fraction reads as progress; separate blocks
+   read as "working" with no amount, so the static form needs no other form under reduced motion (UI/UX C5). Nothing animates. */
 .scaffold__bar {
     display: none;
+    flex-direction: row;
     flex-shrink: 0;
     height: 8px;
     margin-top: 8px;
-    background-color: var(--surface);
-    border-width: 1px;
-    border-color: var(--border);
 }
 
 .scaffold__bar-fill {
-    width: 33%;
+    width: 24px;
+    height: 8px;
+    margin-right: 6px;
     background-color: var(--accent);
 }
 
@@ -222,14 +239,13 @@
     margin: 0 8px 8px 0;
 }
 
-/* Notices sit last in the stage, so they layer above the body and above any sheet mounted in it. The layer takes no pointer;
-   its rows do. */
+/* Notices sit last in the stage, so they draw above any sheet mounted in it. T536 (P2-F19): they take their own room below the body instead of
+   covering it, so up to three notices at 200 % on a 640 x 360 screen never cover a primary action or Back for the short notices the game writes (at most about 40 characters;
+   the body scrolls in the room that is left). The layer takes no pointer; its rows do. */
 .scaffold__notices {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
     flex-direction: column;
+    flex-shrink: 0;
+    max-height: 70%;
 }
 
 .scaffold__notice {
