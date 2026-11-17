@@ -33,6 +33,8 @@ namespace IdleFactory.Unity.UI.Panels
         private readonly Label rpLabel;
         private readonly Label emptyLabel;
         private readonly Label panHint;
+        private readonly Label cueLeft;
+        private readonly Label cueRight;
         private readonly ScrollView graphScroll;
         private readonly VisualElement canvas;
         private readonly VisualElement edgeLayer;
@@ -122,10 +124,26 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             graphScroll.Add(canvas);
-            root.Add(graphScroll);
+            // T555 (U-B5): the hint sits above the graph, where the player is looking, and each edge that has more behind it carries a visible cue (a bar
+            // with an arrow, never colour alone), so a clipped column at phone width is never unexplained.
             panHint = MakeText("research-pan-hint", "research-hint");
             panHint.text = PanHintText;
             root.Add(panHint);
+            var frame = new VisualElement { name = "research-graph-frame" };
+            frame.AddToClassList("research-graph-frame");
+            cueRight = MakeText("research-cue-right", "research-cue");
+            cueRight.AddToClassList("research-cue--right");
+            cueRight.text = "›";
+            cueRight.pickingMode = PickingMode.Ignore;
+            cueLeft = MakeText("research-cue-left", "research-cue");
+            cueLeft.AddToClassList("research-cue--left");
+            cueLeft.text = "‹";
+            cueLeft.pickingMode = PickingMode.Ignore;
+            frame.Add(graphScroll);
+            frame.Add(cueLeft);
+            frame.Add(cueRight);
+            root.Add(frame);
+            graphScroll.horizontalScroller.valueChanged += _ => UpdateCues();
 
             canvas.RegisterCallback<FocusInEvent>(OnNodeFocusIn);
             // Trickle down: the default focus switch of a navigation event runs at the target, before a bubbling handler could stop it.
@@ -175,6 +193,12 @@ namespace IdleFactory.Unity.UI.Panels
         public Label RpLabel => rpLabel;
         public Label EmptyLabel => emptyLabel;
         public Label PanHint => panHint;
+
+        /// <summary>The edge cue at the right of the graph, shown while more Research lies to the right (T555, U-B5).</summary>
+        public Label CueRight => cueRight;
+
+        /// <summary>The edge cue at the left of the graph, shown once the graph is panned right.</summary>
+        public Label CueLeft => cueLeft;
         public ScrollView GraphScroll => graphScroll;
         public VisualElement Canvas => canvas;
         public VisualElement Detail => detail;
@@ -777,6 +801,21 @@ namespace IdleFactory.Unity.UI.Panels
             var viewport = graphScroll.contentViewport;
             var overflows = viewport != null && canvas.layout.width > viewport.layout.width + 1f;
             SetDisplayed(panHint, overflows);
+            UpdateCues();
+        }
+
+        private void UpdateCues()
+        {
+            var viewport = graphScroll.contentViewport;
+            if (viewport == null || cueLeft == null || cueRight == null)
+            {
+                return;
+            }
+
+            var hidden = canvas.layout.width - viewport.layout.width;
+            var offset = graphScroll.scrollOffset.x;
+            SetDisplayed(cueRight, hidden > 1f && offset < hidden - 1f);
+            SetDisplayed(cueLeft, hidden > 1f && offset > 1f);
         }
 
         // ---------------------------------------------------------------------------------------------------

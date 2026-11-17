@@ -327,3 +327,22 @@
 .scaffold-row .run-icon {
     margin-right: 8px;
 }
+
+/* T555 (U-B8): a read-only value (Market Stock, Net rate and Sells for, the build Cost, the capacity lines) is a focusable value the player can read
+   exactly, but it is not a button: no border box, the flat sheet colour instead of a raised fill, the text flush left. It keeps the 44 pt target and the shell focus ring. The chain is three
+   classes so it wins over the panels' own value rules. */
+.run-control.scaffold-button.scaffold-value,
+.scaffold-scope .run-control.scaffold-button.scaffold-value {
+    background-color: var(--surface);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding: 4px 0;
+    -unity-text-align: middle-left;
+    color: var(--text-strong);
+}

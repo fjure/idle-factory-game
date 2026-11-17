@@ -401,8 +401,9 @@ namespace IdleFactory.Unity.UI
             card.Container.Add(card.Capped);
             card.Container.Add(card.Makes);
             card.Container.Add(card.Uses);
-            card.Container.Add(card.Reason);
+            // T555 (U-B8): one placement for a disabled control's reason, directly below the control (Market, the hub and Industry do the same).
             card.Container.Add(card.Build);
+            card.Container.Add(card.Reason);
             card.Container.Add(card.Feedback);
             card.Build.clicked += () => OnBuildClicked(card);
             BindExact(card);

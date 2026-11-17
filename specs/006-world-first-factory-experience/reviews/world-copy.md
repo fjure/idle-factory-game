@@ -95,3 +95,10 @@ Player-facing strings changed in T537 (#710). All are in code; T547 should confi
 - Locked resource line with no condition: "Locked: not unlocked yet."
 - Production attention indicator accessible name: "Short on <resource>, N machines, M more causes. Select the first one." (the visible text is only the count and "+N").
 - Hub entry: visible word "Office" (unchanged), accessible name "Office, N systems need attention".
+
+## T555 copy changes for the World Designer (T547)
+
+Player-facing strings changed in T555 (#760), the gate-B fixes. Both are in code; T547 should confirm them against naming rules:
+
+- Hub Contracts row while no contract offer is unlocked and none is active: "Locked: unlocks after <condition>" (the condition in the shared `UnlockCopy` wording, for example "Locked: unlocks after you produce Iron Plate or Gear or Iron Bar"); with no offers in the catalog: "Locked: unlocks after you build more of the factory". It replaces "Nothing ready to deliver", which stays for an unlocked, idle Contracts system. The row's accessible name carries the status, so it names the lock.
+- Research view: no new copy. The existing hint "Scroll sideways to see more Research." moved above the graph, and the graph edge cue is an arrow glyph (no words).

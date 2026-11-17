@@ -16,6 +16,9 @@ namespace IdleFactory.Unity.UI
     /// </list>
     /// None of these places is inside the world column on a phone, so the persistent layer never covers the framed world; on tablet and desktop the
     /// camera rectangle starts below the strip.
+    /// T555 (owner decision 2026-11-17, "keep Cash and Overdrive visible"): while the machine card, Details or a sheet is open on a phone in landscape the
+    /// action column steps aside, but Cash, the store fill and Overdrive stay: the strip turns into a one-row band at the top of the world column (the
+    /// camera rectangle starts below it, as on tablet) and Overdrive joins it. See <see cref="SetSheetOpen"/>.
     /// </summary>
     internal sealed class PersistentLayer
     {
@@ -31,6 +34,7 @@ namespace IdleFactory.Unity.UI
         private readonly Label attentionCount;
         private readonly Label attentionMore;
         private int attentionSlot = -1;
+        private bool sheetOpen;
 
         public PersistentLayer(VisualElement root)
         {
@@ -46,6 +50,15 @@ namespace IdleFactory.Unity.UI
             attentionCount = root.Q<Label>("attention-count");
             attentionMore = root.Q<Label>("attention-more");
         }
+
+        /// <summary>
+        /// Tells the layer whether the machine card, Details or a sheet (including the hub) is open. It changes where the strip and Overdrive live on a phone
+        /// in landscape (<see cref="IsStatusBand"/>); call <see cref="Place"/> afterwards.
+        /// </summary>
+        public void SetSheetOpen(bool open) => sheetOpen = open;
+
+        /// <summary>True when Cash, the store fill and Overdrive form the one-row band above the world on a phone in landscape (a card or sheet is open).</summary>
+        public bool IsStatusBand(FactoryHudLayout layout) => layout == FactoryHudLayout.CompactLandscape && sheetOpen;
 
         /// <summary>True when every element the layer needs was found in the UXML.</summary>
         public bool IsComplete => strip != null && actionBar != null && hubEntry != null && overdrive != null && gear != null && attention != null &&
@@ -71,7 +84,8 @@ namespace IdleFactory.Unity.UI
         public void Place(FactoryHudLayout layout, VisualElement body, VisualElement worldColumn, VisualElement panelHeaderSlot)
         {
             var side = FactoryHudDocument.HasSidePanel(layout);
-            var stripParent = side ? worldColumn : body;
+            var band = IsStatusBand(layout);
+            var stripParent = side || band ? worldColumn : body;
             if (strip.parent != stripParent)
             {
                 stripParent.Insert(0, strip);
@@ -109,9 +123,11 @@ namespace IdleFactory.Unity.UI
                 worldColumn.Insert(oreVeinRoot != null && oreVeinRoot.parent == worldColumn ? worldColumn.IndexOf(oreVeinRoot) : worldColumn.childCount, zoomColumn);
             }
 
-            var overdriveParent = side ? panelHeaderSlot : actionBar;
+            var overdriveParent = side ? panelHeaderSlot : band ? strip : actionBar;
             if (overdrive.parent != overdriveParent)
             {
+                // Reparenting drops focus; Overdrive keeps it when it had it (a keyboard user opening a sheet must not lose their place).
+                var focused = overdrive.focusController?.focusedElement == overdrive;
                 if (overdriveParent == actionBar)
                 {
                     actionBar.Insert(actionBar.IndexOf(hubEntry) + 1, overdrive);
@@ -119,6 +135,11 @@ namespace IdleFactory.Unity.UI
                 else
                 {
                     overdriveParent.Add(overdrive);
+                }
+
+                if (focused)
+                {
+                    overdrive.schedule.Execute(() => overdrive.Focus());
                 }
             }
         }
