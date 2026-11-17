@@ -35,3 +35,32 @@ T536 merged without a fix round. Its two review majors were not regressions and 
 | B-17 | Office glyph | `f006-ui-office` is still not imported. The hub entry uses the contracts glyph behind `HubCards.EntryIconKey`. | T527 (with A-13) |
 
 The open items from `p2-followups.md` and `p3a-followups.md` (A-9, A-10, A-11 remainder, A-13) remain carried as recorded there.
+
+## T527 (P2 strand)
+
+| Task | Issue | PR | Commit | QA | Reviews |
+|---|---|---|---|---|---|
+| T527 | #700 | #762 | `d63f18a` | PASS: Edit Mode 2933/2933, Play Mode 3197/3197, art pipeline 348, settings noise OK | Architect APPROVE_WITH_NOTES; Art Director with Technical Artist, Performance, and World Designer with Product Owner ACCEPT_WITH_NOTES |
+
+T527 merged without a fix round. No review finding was a blocker or major. The Art Director amended the worker's EDGE wording; the parent recorded it as Art Bible 21.10. The `test-rebaseline.md` pixel counts were corrected (155 and 241 per frame).
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-1 | Architect 1 | `DeckPlan.BuildProps` takes a modulus by `span + 1`; a prop wider or taller than a cell gives a modulus of 0. Unreachable with shipped props. Guard and test. | T529 |
+| C-2 | Architect 7 | `FactoryDeckView.OnDestroy` calls `Destroy` on HideAndDontSave tiles; use `DestroyImmediate` in Edit Mode. | T529 |
+| C-3 | Architect 5, Performance P2 | No warm-state 0-allocation test for the deck view after the floor allocation test was removed. | T529 (`F006AllocationTests`) |
+| C-4 | Architect 6 | `F006SceneWiring.WriteCompositionSettings` overwrites prop weights and densities on every run, which would clobber later World Designer tuning. Write only when empty or default. | T542 |
+| C-5 | Architect 2 | The layout composition is static global state (`LatticeLayoutBuilder.activeSettings`); consumers must get the layout only through `Shipped(orientation)`, and the plan should name the single-bootstrap assumption. | T534 |
+| C-6 | Architect 3 | `PresentationSpriteCatalog.PlacedF006Keys` must be declared before `Registry` (static initializer order). Add a guard test or compute it in a method. | T531 |
+| C-7 | Architect 4, Art Bible 21.9 item 7 | A full F004 re-import reverts the K4 tails; tests catch it. Make `F004ArtIntegration` run the swap or fail with a pointer. | T547 |
+| C-8 | Performance P1, Art Bible 21.10 item 3 | Edge sprite renderers (7 to 11) are outside the 31-sprite world budget; about 103 renderers at 12 locations against the derived 95 (tier 173). | T531 census; T528 decides on the third Tilemap |
+| C-9 | Performance list | T531 measurement list: W006-V workload, budgets 1 to 11, renderer census per layout, SetPass with card closed and 3 FX, `reviews/performance-b4.md`. | T531 |
+| C-10 | Art Director 3 | The cue luminance ratios are not in the `cue_over_lane_contrast` gate, because adding them requires regenerating `art-source/f006/link` records. Needs an art-source task before T542, or an accepted risk recorded in T547. | Owner decision (new art task or T547) |
+| C-11 | Art Director 3 | Runtime check that a `copper_2` pip with its `ink_0` ring passes the ring rule under a K4 tail. | T528 |
+| C-12 | Art Director 2, 6; World Designer W1, W2 | Look items for the trials: gantry 9 px under the depot, floating stage-3 props, the dark base near the background tone (the V seems to float), the front-only wall reads as a fence. | T546 trials; owner final visual gate |
+| C-13 | World Designer W3 | Props sit only on empty or locked cells, so a fully built factory loses its stage-3 density. Check in the stage trial. | T540 |
+| C-14 | World Designer W4, Art Director 1 | The depot is outside the fit-all view at 640x360 and 200 % (recorded, reachable by panning). Confirm it stays discoverable. | T534, T542 |
+| C-15 | QA minor 1 | `F004AssetContractTests` floor tone check moved from `Is.EqualTo` to `Is.SubsetOf`; still excludes `floor_2`. | Accepted |
+| C-16 | Worker | SC-006 shuffled-order trial not run. A preliminary independent trial on the six `t527-proofs` captures is possible; the binding trial is T546 with the owner. | T530/T546 |
+
+The World Designer confirmed the prop weights and densities (0.20, 0.30, 0.40).

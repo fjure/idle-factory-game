@@ -730,9 +730,9 @@ Packing rule: every frame is counted at (w + 4) x (h + 4) art px, that is 2 px o
 | EDGE | `f006-edge-railing-corner` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1 Open deck |
 | EDGE | `f006-edge-railing-quiet-fl` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1, low-noise variant near badges and depot (F6, A4) |
 | EDGE | `f006-edge-railing-quiet-fr` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1, low-noise variant near badges and depot (F6, A4) |
-| EDGE | `f006-edge-wall-fl` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, candidate pending C8 ring proof |
-| EDGE | `f006-edge-wall-fr` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, candidate pending C8 ring proof |
-| EDGE | `f006-edge-wall-corner` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, candidate pending C8 ring proof |
+| EDGE | `f006-edge-wall-fl` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, C8 ring and keep-out proof passed (T527, 21.10); provisional until SC-006 |
+| EDGE | `f006-edge-wall-fr` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, C8 ring and keep-out proof passed (T527, 21.10); provisional until SC-006 |
+| EDGE | `f006-edge-wall-corner` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, C8 ring and keep-out proof passed (T527, 21.10); provisional until SC-006 |
 | EDGE | `f006-edge-gantry-fl` | 70 x 84 | 1 | 5,880 | 6,512 | stage 3 Gantry line, new art |
 | EDGE | `f006-edge-gantry-fr` | 70 x 84 | 1 | 5,880 | 6,512 | stage 3 Gantry line, new art |
 | EDGE | `f006-edge-gantry-corner` | 70 x 84 | 1 | 5,880 | 6,512 | stage 3 Gantry line, new art |
@@ -863,4 +863,12 @@ Recorded by the F006 MAQA parent from the independent T525 review (`specs/006-wo
 6. **P2-F9 / P2-F22, owner decision.** The "Office" hub entry gets a NEW 24 px `ui_text` glyph authored through the F003 UI-icon pipeline with an Art Director pixel review. F006-UI changes from 0 to 1 sprite (21.2); the attention dot and the banner stay plain USS. Until the glyph exists, the hub shows the visible word "Office" with the contracts glyph as a temporary fallback.
 7. **P2-F5.** The production K4 tail is in the shipped F004 cue sprites (T526), and `FactoryWorldLayout.KeepOutOf` uses the 23 x 27 badge extent. A full F004 re-import from `art-source/f004` would revert the tails; `F004AssetContractTests` guards this.
 8. **Page cap (T552, #750, PR #754).** An Android GLES3 player stuck on load (`Loading.AsyncRead` at 100 %) whenever a 2 MiB atlas page (the F004 `machines` atlas, 512 x 1024 RGBA32, since T440) was referenced; pages of 1 MiB or less load in about 3 s. The cause inside Unity or the emulator is not identified, so the rule is empirical: every atlas page is at most 512 x 512 RGBA32 (1 MiB), enforced by `F004SpriteAtlasSettings.MaxPageSize`/`MaxPageBytes` and `AtlasPageBudgetTests`. The F004 `machines` atlas now has two pages (1.0 + 0.25 MiB); total bytes fell. Budget 8 (SetPass) must be re-measured, because body and accent frames may sit on different pages (T531, T544).
+
+### 21.10 EDGE placement as built (T527, 2026-11-17)
+
+Recorded by the F006 MAQA parent from the T527 (#700, PR #762) Art Director review, which amended the worker's proposal. No style change.
+
+1. **Placement.** EDGE pieces are placed on the front margin row only, as a V below the content extent: `-fl` and `-fr` step one half cell apart (35 x 17 art px, 2:1), one piece per lattice column each side, from the lattice edge columns to the front apex, with `-corner` at the apex. The upper ends sit at the front margin row pivot or lower so that the opaque pixels clear the content extent and the depot by at least 6 art px (`EdgeClearancePixels`; measured 22 px railing and wall, 9 px gantry). WorldBase carries extra front rows so the V never floats over bare background. Quiet railing variants are used within one lattice cell of the depot. No back, left or right pieces unless a keep-out proof allows them (21.9 item 5). Proofs: `specs/006-world-first-factory-experience/reviews/t527-composite-proofs.md`.
+2. **Wall status.** T527 proved zero wall pixels in any C8 ring or keep-out, and the E1 reading (wall luminance mass 0.58 to 0.59 of the front-row plate-plus-machine mass, under 0.75) passes, so the `steel_1` top-band fallback is not applied. The stage-2 wall stays provisional (P1-F5) until the SC-006 shuffled-order trial reaches 9 of 10 (T546). If that trial or a playtest names the wall as visually heavy, the fallback is a source-art change in a new art task.
+3. **Budget note.** Edge pieces are sprite renderers, `2 x columns + 1` per layout (7 to 11), and are not in the 2.2a / 21.3 sum of 31 world sprites. T531 records the census; the budget line is amended then, or T528 moves the edges into the third Tilemap slot.
 
