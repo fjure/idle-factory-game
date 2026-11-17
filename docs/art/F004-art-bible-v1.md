@@ -872,3 +872,15 @@ Recorded by the F006 MAQA parent from the T527 (#700, PR #762) Art Director revi
 2. **Wall status.** T527 proved zero wall pixels in any C8 ring or keep-out, and the E1 reading (wall luminance mass 0.58 to 0.59 of the front-row plate-plus-machine mass, under 0.75) passes, so the `steel_1` top-band fallback is not applied. The stage-2 wall stays provisional (P1-F5) until the SC-006 shuffled-order trial reaches 9 of 10 (T546). If that trial or a playtest names the wall as visually heavy, the fallback is a source-art change in a new art task.
 3. **Budget note.** Edge pieces are sprite renderers, `2 x columns + 1` per layout (7 to 11), and are not in the 2.2a / 21.3 sum of 31 world sprites. T531 records the census; the budget line is amended then, or T528 moves the edges into the third Tilemap slot.
 
+
+### 21.11 Cue contrast over the LINK lane (T556, #763, 2026-11-17)
+
+Recorded by the F006 MAQA parent from the T556 Art Director review. No style change and no recolour.
+
+1. **Rule.** Rule C1 (derivation in section 9.4) and section 9.3 are applied to every LINK lane tone (`dim_0`, `ink_1`, `ink_0`, `copper_1`, `copper_2`). A cue fill (`cue_warn`, `cue_alert`, `cue_info`, `cue_neutral`, `cue_dim`, `cue_ok`, `cvd_green`, `cvd_pink`) passes over a tone when the fill OR its 1 px `ink_0` outline reaches 3:1 (`art_pipeline.color.contrast_ratio`, `cue_over_lane_contrast`, `art-source/f006/link/check-report.json`). The fill need not carry by itself: shape is the primary carrier and colour is supplemental (section 8.2), and CVD does not change a luminance ratio.
+2. **Result.** The fill carries over `dim_0`, `ink_1` and `ink_0` (3.52:1 for `cue_alert` over `dim_0`, up to 13.62:1). The outline carries over `copper_1` (3.47:1) and `copper_2` (6.57:1), where every fill is under 3:1 except `cue_neutral` over `copper_1` (3.93:1); the worst fill is `cue_alert` over `copper_1` at 1.49:1. No pair is without a carrier.
+3. **Decision: accepted with an area limit, not recoloured.** The outline-only case is accepted because it covers about 1 px per badge in the ring. Recolouring would change F004 sprites and palette use. Limits, per badge on the densest frame of every layout (K0 and K4):
+   - `copper_1`: at most 12 px under any badge mask (measured 11, outline pixels included) and at most 2 px in the 1 px ring (measured 1). The ring is the visible measure; the mask count guards against a badge landing on a dash run.
+   - `copper_2` (active dashes): 0 px under any badge mask and 0 in the ring.
+   - Any outline-only lane tone not listed here fails the gate.
+4. **Maintenance.** The gate reports the average per badge. A change to a cue, lane, badge anchor or palette that breaks a limit, or that adds an outline-only tone, is re-decided in this section. A per-badge maximum is a later-task upgrade.

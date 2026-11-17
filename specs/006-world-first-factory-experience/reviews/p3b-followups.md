@@ -64,3 +64,13 @@ T527 merged without a fix round. No review finding was a blocker or major. The A
 | C-16 | Worker | SC-006 shuffled-order trial not run. A preliminary independent trial on the six `t527-proofs` captures is possible; the binding trial is T546 with the owner. | T530/T546 |
 
 The World Designer confirmed the prop weights and densities (0.20, 0.30, 0.40).
+
+## T556 (owner decision on C-10)
+
+The Art Director accepted the outline-carried copper pairs with an area limit (no recolour); the parent recorded it as Art Bible 21.11.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-17 | T556 Art Director F1 | The area gate is a per-badge average, not a per-badge maximum. Add a maximum when lane art changes. | Later art task |
+| C-18 | T556 Art Director F2 | Thin margins (outline over `copper_1` 3.47:1, `cue_alert` over `dim_0` 3.52:1); CVD-simulated luminance is not computed in the cue gate. | Later art task |
+| C-19 | T556 Art Director F3 | The gate note still points to the T522 report; reword at the next pipeline regeneration (never hand-edit the report). | Later art task |
