@@ -248,6 +248,19 @@
     max-height: 70%;
 }
 
+/* T537 (T536 UI/UX MAJOR): the notice rows scroll inside the layer. Three long notices at 640 x 360 and 200 % text are taller than 70 % of the stage; the
+   layer keeps its cap, the rows scroll in it, and every dismiss button stays reachable. The layer itself takes no pointer; the scroll view and the rows do. */
+.scaffold__notices .scaffold__notices-scroll {
+    flex-shrink: 1;
+    flex-grow: 0;
+    min-height: 0;
+    display: none;
+}
+
+.scaffold__notices .scaffold__notices-scroll--shown {
+    display: flex;
+}
+
 .scaffold__notice {
     flex-direction: row;
     align-items: center;

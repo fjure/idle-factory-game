@@ -5,13 +5,16 @@ using UnityEngine.UIElements;
 namespace IdleFactory.Unity.UI
 {
     /// <summary>
-    /// The hub part of the run shell (T535, FR-020 to FR-022, research R11, OD-9b): the "Office" entry in the top strip with its attention dot, and
+    /// The hub part of the run shell (T535, FR-020 to FR-022, research R11, OD-9b): the "Office" entry of the persistent layer with its attention dot, and
     /// the open, toggle and Overdrive hand-over the hub cards use. It lives in its own file so <c>RunShellDocument.cs</c> does not grow further (T534
     /// Architect finding 3); the hub's logic is in <see cref="HubPanel"/>. The shell only wires: it opens the hub as the one sheet, through the
     /// existing card close and <see cref="CloseSheet"/> paths, and holds no rule.
     /// </summary>
     public sealed partial class RunShellDocument
     {
+        /// <summary>The bullet glyph of the hub entry's attention dot: a shape, so the dot never rests on colour alone.</summary>
+        public const string DotGlyph = "•";
+
         private VisualElement hubEntryIcon;
         private Label hubEntryDot;
         private Label hubEntryLabel;
@@ -19,7 +22,7 @@ namespace IdleFactory.Unity.UI
         /// <summary>The system-attention state of the hub: the feeds write it, the hub entry dot and the hub cards show it. It outlives a shell rebuild.</summary>
         public HubAttention Attention { get; } = new HubAttention();
 
-        /// <summary>The hub entry in the top strip: the icon and the visible word "Office" (never the icon alone), with the attention dot.</summary>
+        /// <summary>The hub entry of the persistent layer (bottom row, right column or strip, see <see cref="PersistentLayer"/>): the icon and the visible word "Office" (never the icon alone), with the attention dot.</summary>
         public Button HubEntryButton { get; private set; }
 
         /// <summary>The visible text of the hub entry ("Office").</summary>
@@ -34,56 +37,11 @@ namespace IdleFactory.Unity.UI
         // The hub, the Industry view and Settings are system views that Back and Close pop in one step (the back order: hub, system view or Settings).
         private bool IsHubFamilyOpen => sheetOpen && (activePanelId == ShellPanelIds.Hub || activePanelId == ShellPanelIds.Industry);
 
-        /// <summary>
-        /// True while the entry sits on a row of its own at the top of the world column (phone portrait): the camera frames below it like a notice bar.
-        /// </summary>
-        public bool HubEntryOnItsOwnRow => HubEntryButton != null && worldColumn != null && HubEntryButton.parent == worldColumn && !hubEntryOverlay;
-
-        /// <summary>The least world height, in points, that must remain for the camera below the entry row; below it the row is not cut from the camera's rectangle.</summary>
-        public const float MinWorldBelowHubRow = 120f;
-
-        private bool hubEntryOverlay;
-
-        /// <summary>True while the entry floats over the bottom of the world column (phone landscape from 120 percent text).</summary>
-        public bool HubEntryOverlay => hubEntryOverlay && HubEntryButton != null && HubEntryButton.parent == worldColumn;
-
         // U-3: the system view a hub card opened; closing it returns focus to the Office entry (the invoker).
         private string hubInvokedPanelId;
 
         /// <summary>Called by the hub after a card opened a system view, so that closing the view returns focus to the entry.</summary>
         public void NoteOpenedFromHub() => hubInvokedPanelId = activePanelId;
-
-        // Where the entry lives (T537 rebuilds the persistent layer; this keeps every T534 and F005 layout invariant meanwhile):
-        // - phone portrait: a 48 dp row of its own under the strip, because the strip's four controls already fill 360 pt at the worst-case values;
-        // - phone landscape from 120 percent text: an overlay at the bottom of the world column, beside the zoom column, because the strip wraps there and a
-        //   fifth control would add a line that the machine card (Upgrade in the first view at 640x360 and 200 percent) cannot give up;
-        // - everything else: in the strip, before the gear.
-        private void PlaceHubEntry()
-        {
-            if (HubEntryButton == null || worldColumn == null)
-            {
-                return;
-            }
-
-            var ownRow = Layout == FactoryHudLayout.CompactPortrait;
-            var overlay = Layout == FactoryHudLayout.CompactLandscape && TextScalePercent >= 120;
-            var home = ownRow || overlay ? worldColumn : topStrip;
-            if (HubEntryButton.parent != home)
-            {
-                if (home == worldColumn)
-                {
-                    worldColumn.Insert(0, HubEntryButton);
-                }
-                else
-                {
-                    topStrip.Insert(topStrip.IndexOf(SettingsButton), HubEntryButton);
-                }
-            }
-
-            hubEntryOverlay = overlay;
-            HubEntryButton.EnableInClassList("run-hub-entry--row", ownRow);
-            HubEntryButton.EnableInClassList("run-hub-entry--overlay", overlay);
-        }
 
         private bool QueryHub()
         {
@@ -108,7 +66,7 @@ namespace IdleFactory.Unity.UI
             Attention.Changed -= OnAttentionChanged;
         }
 
-        // The contracts count still drives the tab badge until T537 removes the tab bar; the hub entry dot shows any system flag.
+        // The hub entry dot shows any system flag (Contracts, Research, Prestige, Overdrive).
         private void OnAttentionChanged()
         {
             if (HubEntryButton == null)
@@ -116,8 +74,6 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
-            contractsDeliverable = Attention.ContractsDeliverable;
-            ApplyContractsBadge();
             var any = Attention.Any;
             hubEntryDot.text = any ? DotGlyph : string.Empty;
             hubEntryDot.style.display = any ? DisplayStyle.Flex : DisplayStyle.None;

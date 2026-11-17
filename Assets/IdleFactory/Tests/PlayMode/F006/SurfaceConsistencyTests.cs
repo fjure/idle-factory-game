@@ -291,7 +291,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             var mark = box.Q<Label>(prefix + "-empty-mark");
             var title = box.Q<Label>(prefix + "-empty-title");
             Assert.That(mark?.ClassListContains("scaffold__mark"), Is.True, context + ": marker (a shape, not colour alone)");
-            Assert.That(title?.text, Is.EqualTo(ScaffoldEmpty.TitleText), context + ": title");
+            Assert.That(title?.text, Is.EqualTo(prefix == "contracts" ? IdleFactory.Unity.UI.Panels.ContractsPanel.LockedTitle : ScaffoldEmpty.TitleText), context + ": title (a locked state names the lock, T537)");
             Assert.That(message.ClassListContains("scaffold__state-message"), Is.True, context + ": message");
             Assert.That(string.IsNullOrEmpty(message.text), Is.False, context + ": says what is missing");
             Assert.That(box.resolvedStyle.borderLeftWidth, Is.EqualTo(6f).Within(0.01f), context + ": the template's left bar reaches the box");

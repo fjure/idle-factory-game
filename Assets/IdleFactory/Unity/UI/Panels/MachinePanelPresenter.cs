@@ -507,7 +507,7 @@ namespace IdleFactory.Unity.UI
             var close = shell.CloseButton;
             shell.FocusWhenReady(close != null && close.resolvedStyle.display != DisplayStyle.None && close.style.display != DisplayStyle.None
                 ? close
-                : shell.TabButton(ShellTab.Factory));
+                : shell.HubEntryButton);
         }
 
         /// <summary>

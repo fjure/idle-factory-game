@@ -96,14 +96,22 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen);
             var shell = rig.Shell;
-            shell.SetRp(10, true);
             shell.Panels.Register(new TestShellPanel(ShellPanelIds.Market, "Market", 3, false));
+
+            // T537: with no panel open every persistent control is in the traversal order (the six tabs are gone; the hub entry and the gear took their place).
+            var idleNames = shell.GetFocusOrder().Select(element => element.name).ToList();
+            foreach (var expected in new[] { "cash", "store", "hub-entry", "overdrive", "settings", "zoom-in", "zoom-out" })
+            {
+                Assert.That(idleNames, Does.Contain(expected), $"{screen}: '{expected}' is in the traversal order");
+            }
+
+            Assert.That(idleNames.Where(name => name.StartsWith("tab-", StringComparison.Ordinal)), Is.Empty, $"{screen}: no tab remains");
             shell.SelectTab(ShellTab.Market);
             yield return ShellRig.Settle();
 
             var order = shell.GetFocusOrder().ToList();
             var names = order.Select(element => element.name).ToList();
-            foreach (var expected in new[] { "cash", "rp", "store", "overdrive", "zoom-in", "zoom-out", "tab-factory", "tab-market", "tab-contracts", "tab-items", "tab-research", "tab-prestige", "test-panel-button-0", "test-panel-button-2" })
+            foreach (var expected in new[] { "test-panel-button-0", "test-panel-button-2" })
             {
                 Assert.That(names, Does.Contain(expected), $"{screen}: '{expected}' is in the traversal order");
             }
@@ -140,77 +148,31 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator EnterAndSpaceActivateATabAndTheSelectedTabIsMarkedBeyondColor([ValueSource(nameof(Screens))] ShellScreen screen)
+        public IEnumerator EnterAndSpaceActivateTheHubEntryAndItsAttentionDotIsAShapeNotOnlyAColor([ValueSource(nameof(Screens))] ShellScreen screen)
         {
             yield return Open(screen);
             var shell = rig.Shell;
-            var market = shell.TabButton(ShellTab.Market);
-            market.Focus();
+            var entry = shell.HubEntryButton;
+            entry.Focus();
             yield return null;
 
             // Enter and Space reach a Button as the input system's Submit navigation event.
-            Submit(market);
+            Submit(entry);
             yield return ShellRig.Settle();
-            Assert.That(shell.ActiveTab, Is.EqualTo(ShellTab.Market));
+            Assert.That(shell.IsHubOpen, Is.True, $"{screen}: the entry opens the hub");
             Assert.That(shell.IsSheetOpen, Is.True);
-            Assert.That(market.ClassListContains("run-tab--selected"), Is.True, "the selected tab is marked");
-            Assert.That(market.resolvedStyle.borderTopWidth, Is.GreaterThanOrEqualTo(3f), "the selected tab has an accent bar, not color alone");
-            Assert.That(market.Q<Label>().resolvedStyle.unityFontStyleAndWeight, Is.EqualTo(FontStyle.Bold), "and a bold label");
-            Assert.That(shell.TabButton(ShellTab.Factory).ClassListContains("run-tab--selected"), Is.False);
 
-            if (!shell.IsSidePanelLayout)
-            {
-                Submit(market);
-                yield return ShellRig.Settle();
-                Assert.That(shell.IsSheetOpen, Is.False, "activating the open tab again closes its sheet on a phone");
-                Assert.That(shell.ActiveTab, Is.EqualTo(ShellTab.Factory));
-            }
-
-            shell.TabButton(ShellTab.Prestige).Focus();
-            yield return null;
-            Submit(shell.TabButton(ShellTab.Prestige));
+            Submit(entry);
             yield return ShellRig.Settle();
-            Assert.That(shell.ActiveTab, Is.EqualTo(ShellTab.Prestige));
-        }
+            Assert.That(shell.IsHubOpen, Is.False, $"{screen}: activating the entry again closes the hub");
+            Assert.That(shell.IsSheetOpen, Is.False);
 
-        [UnityTest]
-        public IEnumerator LeftAndRightArrowsMoveAlongTheTabBar([ValueSource(nameof(Screens))] ShellScreen screen)
-        {
-            yield return Open(screen);
-            var shell = rig.Shell;
-            var tabs = Enum.GetValues(typeof(ShellTab)).Cast<ShellTab>().Select(shell.TabButton).ToArray();
-            tabs[0].Focus();
-            yield return null;
-
-            for (var i = 1; i < tabs.Length; i++)
-            {
-                Key(Focused(tabs[0]), KeyCode.RightArrow);
-                yield return null;
-                Assert.That(Focused(tabs[0]), Is.SameAs(tabs[i]), $"{screen}: Right moves from tab {i} to tab {i + 1}");
-            }
-
-            Key(Focused(tabs[0]), KeyCode.RightArrow);
-            yield return null;
-            Assert.That(Focused(tabs[0]), Is.SameAs(tabs[5]), "the last tab stops the arrow");
-
-            for (var i = tabs.Length - 2; i >= 0; i--)
-            {
-                Key(Focused(tabs[0]), KeyCode.LeftArrow);
-                yield return null;
-                Assert.That(Focused(tabs[0]), Is.SameAs(tabs[i]), $"{screen}: Left moves back to tab {i + 1}");
-            }
-
-            Key(Focused(tabs[0]), KeyCode.LeftArrow);
-            yield return null;
-            Assert.That(Focused(tabs[0]), Is.SameAs(tabs[0]), "the first tab stops the arrow");
-
-            // The navigation events of the input system move the same way.
-            Send(tabs[0], NavigationMoveEvent.GetPooled(NavigationMoveEvent.Direction.Right));
-            yield return null;
-            Assert.That(Focused(tabs[0]), Is.SameAs(tabs[1]));
-            Send(tabs[1], NavigationMoveEvent.GetPooled(NavigationMoveEvent.Direction.Left));
-            yield return null;
-            Assert.That(Focused(tabs[0]), Is.SameAs(tabs[0]));
+            // The attention dot is a bullet glyph (a shape) next to the visible word, and the accessible name says it in words.
+            shell.Attention.Set(IdleFactory.Unity.UI.Panels.HubCard.Research, true);
+            yield return ShellRig.Settle();
+            Assert.That(shell.IsHubDotShown, Is.True);
+            Assert.That(shell.HubEntryButton.Q<Label>("hub-entry-dot").text, Is.EqualTo(RunShellDocument.DotGlyph));
+            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office, 1 system needs attention"));
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -222,7 +184,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen);
             var shell = rig.Shell;
-            var invoker = shell.TabButton(ShellTab.Prestige);
+            var invoker = shell.CashButton;
             invoker.Focus();
             var log = new List<string>();
             OpenDialog(invoker, log);
@@ -247,7 +209,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Focused(invoker), Is.SameAs(shell.DialogCancelButton), "the Next navigation event is trapped too");
 
             // Focus moved outside the dialog by any means returns to it.
-            shell.TabButton(ShellTab.Market).Focus();
+            shell.StoreButton.Focus();
             yield return ShellRig.Settle();
             Assert.That(shell.GetFocusOrder().Contains(Focused(invoker)), Is.True, "focus never rests outside the open dialog");
             Assert.That(Focused(invoker), Is.SameAs(shell.DialogCancelButton), "and returns to Cancel");
@@ -285,12 +247,12 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(log, Is.EqualTo(new[] { "cancel:Back" }));
             Assert.That(Focused(invoker), Is.SameAs(invoker), "focus returns after Android Back");
 
-            // With no dialog open, Back closes the sheet, and focus lands on the Factory tab instead of a hidden control.
+            // With no dialog open, Back closes the sheet, and focus lands on the hub entry instead of a hidden control.
             Assert.That(shell.HandleBack(), Is.True);
             yield return ShellRig.Settle();
             Assert.That(shell.ActiveTab, Is.EqualTo(ShellTab.Factory));
             Assert.That(shell.IsSheetOpen, Is.False);
-            Assert.That(Focused(invoker), Is.SameAs(shell.TabButton(ShellTab.Factory)), "focus is not left on a closed sheet");
+            Assert.That(Focused(invoker), Is.SameAs(shell.HubEntryButton), "focus is not left on a closed sheet");
             yield return null;
             Assert.That(shell.HandleBack(), Is.False, "with nothing open, Back is left to the platform");
         }
@@ -300,7 +262,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen);
             var shell = rig.Shell;
-            var invoker = shell.TabButton(ShellTab.Items);
+            var invoker = shell.SettingsButton;
             invoker.Focus();
             var log = new List<string>();
             OpenDialog(invoker, log, destructive: false);
@@ -326,7 +288,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen);
             var shell = rig.Shell;
-            OpenDialog(shell.TabButton(ShellTab.Prestige), new List<string>(), destructive: true);
+            OpenDialog(shell.CashButton, new List<string>(), destructive: true);
             yield return ShellRig.Settle();
 
             Assert.That(shell.DialogConfirmButton.ClassListContains("run-button--destructive"), Is.True);
@@ -367,8 +329,8 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(ShellScreens.All().First());
             var shell = rig.Shell;
             var log = new List<string>();
-            OpenDialog(shell.TabButton(ShellTab.Items), log);
-            shell.RequestConfirmation(new ConfirmationRequest { Title = "Second", Message = "second", Invoker = shell.TabButton(ShellTab.Research), OnCancel = reason => log.Add("second:" + reason) });
+            OpenDialog(shell.SettingsButton, log);
+            shell.RequestConfirmation(new ConfirmationRequest { Title = "Second", Message = "second", Invoker = shell.HubEntryButton, OnCancel = reason => log.Add("second:" + reason) });
             yield return ShellRig.Settle();
 
             Assert.That(log, Is.EqualTo(new[] { "cancel:Replaced" }), "the first request ends as Replaced, never as Confirmed");
@@ -385,10 +347,16 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen);
             var shell = rig.Shell;
-            shell.SetRp(10, true);
             shell.Panels.Register(new TestShellPanel(ShellPanelIds.Research, "Research", 3, false));
-            shell.SelectTab(ShellTab.Research);
-            yield return ShellRig.Settle();
+
+            // T537: the persistent controls are checked with no panel open (a phone in landscape hides them while a sheet is open), then the sheet.
+            foreach (var withSheet in new[] { false, true })
+            {
+            if (withSheet)
+            {
+                shell.SelectTab(ShellTab.Research);
+                yield return ShellRig.Settle();
+            }
 
             foreach (var control in shell.GetFocusOrder().OfType<Button>())
             {
@@ -415,15 +383,18 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(control.worldBound.width, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{screen}: {control.name} width");
                 Assert.That(control.worldBound.height, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{screen}: {control.name} height");
             }
+            }
 
             // A control that loses focus loses its ring.
+            shell.CloseSheet();
+            yield return ShellRig.Settle();
             var first = shell.CashButton;
             first.Focus();
             yield return null;
             shell.StoreButton.Focus();
             yield return null;
             Assert.That(first.ClassListContains("run-control--focused"), Is.False);
-            shell.TabButton(ShellTab.Market).Blur();
+            shell.StoreButton.Blur();
             shell.StoreButton.Blur();
             yield return null;
             Assert.That(shell.FocusRing.resolvedStyle.display, Is.EqualTo(DisplayStyle.None), "the ring is hidden when nothing is focused");
@@ -480,10 +451,9 @@ namespace IdleFactory.Tests.PlayMode
             shell.StoreButton.Focus();
             yield return null;
             Assert.That(shell.DetailText, Does.StartWith("Store:"), "the detail line follows focus");
-            shell.RpButton.Focus();
             shell.CashButton.Focus();
             yield return null;
-            shell.TabButton(ShellTab.Market).Focus();
+            shell.HubEntryButton.Focus();
             yield return null;
             Assert.That(shell.DetailText, Is.Empty, "blur hides the exact value when nothing is pinned");
 
@@ -494,7 +464,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(shell.DetailText, Is.EqualTo("Cash: 1,234,567,890"));
             shell.SetCash(2_000_000_000L);
             Assert.That(shell.DetailText, Is.EqualTo("Cash: 2,000,000,000"), "the pinned line updates with the number");
-            shell.TabButton(ShellTab.Market).Focus();
+            shell.StoreButton.Focus();
             yield return null;
             Assert.That(shell.IsDetailPinned, Is.True, "focus leaving does not close a pinned line");
             Send(shell.CashButton, ClickEvent.GetPooled());
@@ -567,7 +537,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(shell.DetailBar.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
 
             shell.ShowNotice("Not enough Cash.", ShellNoticeKind.Error);
-            Send(shell.TabButton(ShellTab.Market), PointerDownEvent.GetPooled());
+            Send(shell.StoreButton, PointerDownEvent.GetPooled());
             Assert.That(shell.NoticeText, Is.Empty, $"{screen}: the next press on the UI clears a transient notice");
         }
 
@@ -577,7 +547,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(ShellScreens.All().First());
             var shell = rig.Shell;
             var log = new List<string>();
-            OpenDialog(shell.TabButton(ShellTab.Prestige), log);
+            OpenDialog(shell.CashButton, log);
             Assert.That(shell.IsConfirmationOpen, Is.True);
             Assert.That(shell.Build(), Is.True);
             Assert.That(log, Is.EqualTo(new[] { "cancel:" + ConfirmationCloseReason.Cancelled }), "a rebuild tells the waiting panel it was cancelled");
@@ -585,7 +555,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return rig.Layout();
 
             log.Clear();
-            OpenDialog(shell.TabButton(ShellTab.Prestige), log);
+            OpenDialog(shell.CashButton, log);
             UnityEngine.Object.DestroyImmediate(shell);
             Assert.That(log, Is.EqualTo(new[] { "cancel:" + ConfirmationCloseReason.Cancelled }), "destroying the shell cancels it too, and never confirms");
         }

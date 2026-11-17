@@ -186,6 +186,8 @@ namespace IdleFactory.Tests.PlayMode.F006
             rig.registrations.Add(shell.Panels.Register(new ResearchPanel(rig.Session, commands, Styles("ResearchPanel"), icons,
                 new IndustryPanel(rig.Session, commands, Styles("IndustryPanel"), icons))));
             rig.registrations.Add(shell.Panels.Register(new PrestigePresenter(rig.Session, commands, Tree("PrestigePanel"), Styles("PrestigePanel"), icons)));
+            // T537: the systems are reached through the hub ("Office"), so the baseline rig composes it too.
+            rig.registrations.Add(shell.Panels.Register(HubHarness.NewHub(rig.Session, commands)));
             rig.Offline = new OfflineSummaryPanel(catalog, () => throw new InvalidOperationException("the baseline never retries a return"), Styles("OfflineSummaryPanel"), icons);
 
             rig.Presenter = new RunShellPresenter(rig.Session, commands, shell, rig.Grid,

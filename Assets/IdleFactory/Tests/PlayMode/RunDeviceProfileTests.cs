@@ -240,12 +240,30 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(profile.MillimetersFor(44f, pixelsPerPoint), Is.GreaterThanOrEqualTo(7f), "44 pt is at least 7 mm");
 
             // Measured on screen: a 44 pt control is 44 pt tall in the panel, which is at least 7 mm physically.
-            foreach (var control in new VisualElement[] { shell.ZoomInButton, shell.CloseButton, shell.TabButton(ShellTab.Market), shell.CashButton })
+            // T537: a phone in landscape hides the persistent columns while a sheet is open, so each state checks the controls it shows.
+            for (var pass = 0; pass < 2; pass++)
             {
-                var minimum = Mathf.Min(control.worldBound.width, control.worldBound.height);
-                Assert.That(minimum, Is.GreaterThanOrEqualTo(44f - Tolerance), control.name);
-                Assert.That(profile.MillimetersFor(minimum, pixelsPerPoint), Is.GreaterThanOrEqualTo(7f - 0.05f), $"{control.name} is {minimum} pt");
+                if (pass == 1)
+                {
+                    shell.CloseSheet();
+                    yield return ShellRig.Settle();
+                }
+
+                foreach (var control in new VisualElement[] { shell.ZoomInButton, shell.CloseButton, shell.HubEntryButton, shell.CashButton })
+                {
+                    if (!RunShellLayoutAssertions.IsDisplayed(control))
+                    {
+                        continue;
+                    }
+
+                    var minimum = Mathf.Min(control.worldBound.width, control.worldBound.height);
+                    Assert.That(minimum, Is.GreaterThanOrEqualTo(44f - Tolerance), control.name);
+                    Assert.That(profile.MillimetersFor(minimum, pixelsPerPoint), Is.GreaterThanOrEqualTo(7f - 0.05f), $"{control.name} is {minimum} pt");
+                }
             }
+
+            shell.SelectTab(ShellTab.Market);
+            yield return ShellRig.Settle();
 
             Assert.That(shell.Layout, Is.EqualTo(expected), $"the layout class follows the panel-point size ({width / pixelsPerPoint:0}x{height / pixelsPerPoint:0} pt)");
             Assert.That(FactoryHudDocument.HasSidePanel(shell.Layout), Is.False, "a 420 dpi phone keeps the phone layout in both orientations");

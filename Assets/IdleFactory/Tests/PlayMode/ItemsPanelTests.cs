@@ -95,7 +95,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen);
             Assert.That(Shown(panel.EmptyLabel), Is.True);
-            Assert.That(panel.EmptyLabel.text, Is.EqualTo("No Items yet — earn them from contracts."));
+            Assert.That(panel.EmptyLabel.text, Is.EqualTo("Earn them from contracts."));
             Assert.That(Shown(panel.StacksSection), Is.False);
             Assert.That(Shown(panel.EffectsSection), Is.False);
         }

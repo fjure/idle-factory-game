@@ -207,14 +207,15 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void NeitherFileMeansDefaultsAndTheOncePerSessionDiagnostic()
+        public void NeitherFileMeansDefaultsWithoutADiagnostic()
         {
+            // T537 (A-8): a first launch has no preferences file. Absent is not invalid, so nothing is reported.
             var store = Store();
 
             Assert.That(store.Reload(), Is.EqualTo(ReducedMotionPreference.FollowSystem));
             Assert.That(store.ShowZoomButtons, Is.False);
             store.Reload();
-            Assert.That(diagnostics, Is.EqualTo(new[] { DisplayPreferencesStore.InvalidDiagnosticCode }));
+            Assert.That(diagnostics, Is.Empty);
             Assert.That(File.Exists(store.FilePath), Is.False, "reading never creates a file");
         }
 
@@ -541,7 +542,7 @@ namespace IdleFactory.Tests.EditMode
 
             Assert.That(store.Reload(), Is.EqualTo(ReducedMotionPreference.FollowSystem), "a lone temp file is not a preferences file");
             Assert.That(store.ShowZoomButtons, Is.False);
-            Assert.That(diagnostics, Is.EqualTo(new[] { DisplayPreferencesStore.InvalidDiagnosticCode }));
+            Assert.That(diagnostics, Is.Empty, "a lone temp file means no preferences file: absent, not invalid (T537, A-8)");
 
             Assert.That(store.TrySave(ReducedMotionPreference.Off), Is.True);
             Assert.That(File.Exists(store.TempFilePath), Is.False, "the write consumed the stale temp file");

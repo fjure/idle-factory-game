@@ -83,10 +83,9 @@ namespace IdleFactory.Tests.PlayMode
 
     /// <summary>
     /// The one seam through which a panel test opens a shell panel or reaches the control that opens it (F006 T515, research R19, SC-007).
-    /// Today both members delegate to the six-tab bar exactly as the tests call it directly (<c>SelectTab</c>, <c>TabButton</c>), so behaviour is
-    /// identical. When the hub ("Office", OD-9b) replaces the bar, only these two bodies change: <see cref="OpenPanel"/> navigates hub, then row,
-    /// and <see cref="EntryControl"/> returns the 48 dp hub row. The hub and the card are mutually exclusive and offer no duplicate path (UI/UX C3),
-    /// so a migrated test must not also press a tab. No test calls these yet; the call sites to switch are listed in
+    /// T537 retired the six-tab bar: <see cref="OpenPanel"/> opens the panel through the internal <c>SelectTab</c> shim (the hub card of the tab
+    /// opens the same panel), and <see cref="EntryControl"/> returns the control the player presses to reach it, the hub entry ("Office"). The hub and
+    /// the card are mutually exclusive and offer no duplicate path (UI/UX C3). The call sites that moved are listed in
     /// <c>specs/006-world-first-factory-experience/reviews/test-rebaseline.md</c>.
     /// </summary>
     public static class RunShellTestNavigation
@@ -95,7 +94,7 @@ namespace IdleFactory.Tests.PlayMode
         public static void OpenPanel(RunShellDocument shell, ShellTab tab) => shell.SelectTab(tab);
 
         /// <summary>The control that opens the panel of <paramref name="tab"/>: for focus, geometry, accessible-name and keyboard assertions.</summary>
-        public static Button EntryControl(RunShellDocument shell, ShellTab tab) => shell.TabButton(tab);
+        public static Button EntryControl(RunShellDocument shell, ShellTab tab) => shell.HubEntryButton;
     }
 
     /// <summary>A panel a test mounts into the shell: a button list and a long text, as the worst case of a real panel.</summary>
@@ -249,6 +248,9 @@ namespace IdleFactory.Tests.PlayMode
         private void ApplyProfileAndScale(ShellDeviceProfile? profile, int textScalePercent)
         {
             Profile = profile ?? ShellDeviceProfile.Default;
+            // T537 (FR-008a): a touch profile hides the zoom buttons unless the preference is on. The rig turns it on so the layout tests cover the
+            // worst case (every persistent control present); the zoom matrix (PersistentLayerTests) sets the preference itself.
+            Shell.ShowZoomButtonsPreference = true;
             Shell.ApplyDeviceProfile(Profile);
             TextScalePercent = textScalePercent;
             Shell.ApplyTextScale(textScalePercent / 100f);

@@ -20,6 +20,7 @@ namespace IdleFactory.Unity.UI
         private readonly SlotGridView grid;
         private readonly ContractsShellFeed contractsFeed;
         private readonly IdleFactory.Unity.UI.Panels.HubAttentionFeed hubFeed;
+        private readonly ProductionAttentionFeed productionFeed;
         private readonly Func<string, string> presentationKeyOf;
         private readonly List<MachineStateView> machineBuffer = new List<MachineStateView>();
         private MachineStateView[] views = new MachineStateView[16];
@@ -27,12 +28,9 @@ namespace IdleFactory.Unity.UI
         private int previousViewCount = -1;
         private long structureRevision = -1;
         private long lastCash = long.MinValue;
-        private long lastRp = long.MinValue;
-        private long lastIp = long.MinValue;
         private long lastUsed = long.MinValue;
         private long lastCapacity = long.MinValue;
         private long overdriveSecond = long.MinValue;
-        private bool researchStarted;
         private bool factoryDirty = true;
         private RunFactorySnapshot snapshot;
         private HashSet<string> boosted = new HashSet<string>(StringComparer.Ordinal);
@@ -54,6 +52,7 @@ namespace IdleFactory.Unity.UI
             this.presentationKeyOf = presentationKeyOf ?? throw new ArgumentNullException(nameof(presentationKeyOf));
             contractsFeed = new ContractsShellFeed(session, shell);
             hubFeed = new IdleFactory.Unity.UI.Panels.HubAttentionFeed(session, commands, shell.Attention);
+            productionFeed = new ProductionAttentionFeed(session, shell);
             shell.SlotSelectionChanged += HandleSelectionChanged;
             shell.OverdriveRequested += HandleOverdriveRequested;
             shell.LocationActivated += HandleLocationActivated;
@@ -89,6 +88,7 @@ namespace IdleFactory.Unity.UI
             structureRevision = -1;
             contractsFeed.Invalidate();
             hubFeed.Invalidate();
+            productionFeed.Invalidate();
         }
 
         /// <summary>Per-frame update: hot reads for the strip, a snapshot only when something structural or a machine state changed.</summary>
@@ -100,7 +100,6 @@ namespace IdleFactory.Unity.UI
             }
 
             var cash = session.ReadCash();
-            var rp = session.ReadRp();
             var inventory = session.State.Inventory;
             var used = inventory.Total;
             var capacity = inventory.Capacity;
@@ -116,20 +115,6 @@ namespace IdleFactory.Unity.UI
             {
                 lastCash = cash;
                 shell.SetCash(cash);
-            }
-
-            if (rp != lastRp || structureChanged)
-            {
-                lastRp = rp;
-                shell.SetRp(rp, rp > 0 || researchStarted);
-            }
-
-            // The unspent Influence Points mark the Research tab until they are spent in Industry (R-01).
-            var ip = session.Permanent == null ? 0L : session.Permanent.Ip;
-            if (ip != lastIp)
-            {
-                lastIp = ip;
-                shell.SetIndustryPoints(ip);
             }
 
             if (used != lastUsed || capacity != lastCapacity)
@@ -159,11 +144,14 @@ namespace IdleFactory.Unity.UI
                 RenderFactory();
             }
 
-            // The Contracts tab badge and the auto-delivered notice show on every tab (T330).
+            // The auto-delivered contracts notice shows over every view (T330); the deliverable count feeds the hub entry dot.
             contractsFeed.Update();
 
             // T535: the Research, Prestige and Overdrive flags of the hub card and the hub entry dot show on the factory screen.
             hubFeed.Update(Time.realtimeSinceStartup);
+
+            // T537: the production attention indicator (shortage or store full) of the persistent layer.
+            productionFeed.Update(Time.realtimeSinceStartup);
 
             if (shell.IsSheetOpen)
             {
@@ -275,12 +263,6 @@ namespace IdleFactory.Unity.UI
                 }
             }
 
-            researchStarted = false;
-            var nodes = RunSnapshots.Research(session).Nodes;
-            for (var i = 0; i < nodes.Count && !researchStarted; i++)
-            {
-                researchStarted = nodes[i].Level > 0;
-            }
         }
 
         private bool OverdriveTimed()

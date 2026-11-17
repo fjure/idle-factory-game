@@ -50,6 +50,7 @@ namespace IdleFactory.Unity.UI
         private readonly Label title;
         private readonly ScrollView body;
         private readonly VisualElement notices;
+        private readonly ScrollView noticeScroll;
         private readonly VisualElement sheet;
         private readonly ScrollView stateScroll;
         private readonly VisualElement state;
@@ -81,6 +82,7 @@ namespace IdleFactory.Unity.UI
             title = Require<Label>("scaffold-title");
             body = Require<ScrollView>("scaffold-body");
             notices = Require<VisualElement>("scaffold-notices");
+            noticeScroll = Require<ScrollView>("scaffold-notices-scroll");
             sheet = Require<VisualElement>("scaffold-sheet");
             stateScroll = Require<ScrollView>("scaffold-state-scroll");
             state = Require<VisualElement>("scaffold-state");
@@ -145,7 +147,7 @@ namespace IdleFactory.Unity.UI
             get
             {
                 var list = new List<VisualElement>();
-                foreach (var child in notices.Children())
+                foreach (var child in noticeScroll.contentContainer.Children())
                 {
                     list.Add(child);
                 }
@@ -211,9 +213,10 @@ namespace IdleFactory.Unity.UI
         /// <summary>Layers a notice above the body (and above any sheet) with a dismiss button; returns its text label.</summary>
         public Label ShowNotice(string text, ScaffoldNoticeKind kind = ScaffoldNoticeKind.Info)
         {
-            while (notices.childCount >= MaxNotices)
+            var content = noticeScroll.contentContainer;
+            while (content.childCount >= MaxNotices)
             {
-                notices.RemoveAt(0);
+                content.RemoveAt(0);
             }
 
             var row = new VisualElement { name = "scaffold-notice" };
@@ -224,13 +227,28 @@ namespace IdleFactory.Unity.UI
             row.Add(label);
             var dismiss = CreateButton("scaffold-notice-dismiss", "Dismiss", false);
             dismiss.tooltip = "Dismiss notice";
-            dismiss.clicked += () => row.RemoveFromHierarchy();
+            dismiss.clicked += () =>
+            {
+                row.RemoveFromHierarchy();
+                RefreshNoticeLayer();
+            };
             row.Add(dismiss);
-            notices.Add(row);
+            content.Add(row);
+            RefreshNoticeLayer();
             return label;
         }
 
-        public void ClearNotices() => notices.Clear();
+        public void ClearNotices()
+        {
+            noticeScroll.contentContainer.Clear();
+            RefreshNoticeLayer();
+        }
+
+        /// <summary>The scroll view that holds the notice rows (T537): it scrolls when the rows are taller than the layer's 70 % cap.</summary>
+        public ScrollView NoticeScroll => noticeScroll;
+
+        // The scroll view takes room only while a notice shows (an empty scroll view would keep its minimum height).
+        private void RefreshNoticeLayer() => noticeScroll.EnableInClassList("scaffold__notices-scroll--shown", noticeScroll.contentContainer.childCount > 0);
 
         /// <summary>Creates a scaffold button (a run control, so the shell focus ring and 44 pt floor apply; the scaffold raises it to 48 pt).</summary>
         public static Button CreateButton(string name, string text, bool primary)

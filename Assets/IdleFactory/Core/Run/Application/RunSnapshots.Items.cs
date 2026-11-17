@@ -418,12 +418,66 @@ namespace IdleFactory.Run.Application
                     met &= ok;
                 }
                 bool atMax = level >= def.MaxLevel;
-                long cost = atMax ? 0 : def.RpCostTable[level];
+                long cost = ResearchCost(def, level);
                 string reason = !met ? RunReasons.ResearchPrerequisite : atMax ? RunReasons.LevelMax : state.Rp < cost ? RunReasons.RpInsufficient : null;
-                nodes.Add(new ResearchNodeSnapshot(def, level, cost, prerequisites, Depth(catalog, def, 0), reason == null, reason));
+                nodes.Add(new ResearchNodeSnapshot(def, level, cost, prerequisites, Depth(catalog, def, 0), CanPurchaseResearch(state, def), reason));
             }
             nodes.Sort((a, b) => a.Depth != b.Depth ? a.Depth.CompareTo(b.Depth) : contentIndex[a.ResearchId].CompareTo(contentIndex[b.ResearchId]));
             return new ResearchSnapshot(session.StructureRevision, session.QuantityRevision, session.TimelineUtcMs, state.Rp, nodes.ToArray());
+        }
+
+        /// <summary>The RP cost of the next level of a Research, or 0 at its maximum level (the cost table has no entry there).</summary>
+        private static long ResearchCost(ResearchDef def, int level) => level >= def.MaxLevel || level < 0 || level >= def.RpCostTable.Count ? 0 : def.RpCostTable[level];
+
+        /// <summary>
+        /// The single rule of "this Research can be bought now": not at its maximum level, every prerequisite met and the RP covering the next
+        /// cost. <see cref="Research"/> (its CanPurchase) and <see cref="AnyResearchAffordable"/> (the hub attention feed) both call it, so the two
+        /// cannot drift (T537, T536 Architect). It allocates nothing. <c>RunCommands.PurchaseResearch</c> checks the same conditions one by one to
+        /// return the first rejection code in its contract order, so it keeps its own sequence; <c>RunSnapshotPredicateParityTests</c> pins the
+        /// command and the predicate together.
+        /// </summary>
+        public static bool CanPurchaseResearch(RunState state, ResearchDef def)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            if (def == null) throw new ArgumentNullException(nameof(def));
+            int level = (int)state.ResearchLevel(def.Id);
+            if (level >= def.MaxLevel || level >= def.RpCostTable.Count) return false;
+            for (int p = 0; p < def.Prerequisites.Count; p++)
+            {
+                ResearchPrerequisite pre = def.Prerequisites[p];
+                if (state.ResearchLevel(pre.ResearchId) < pre.Level) return false;
+            }
+            return state.Rp >= def.RpCostTable[level];
+        }
+
+        /// <summary>True when any Research can be bought now (<see cref="CanPurchaseResearch"/>). Allocation-free; the hub attention feed reads it.</summary>
+        public static bool AnyResearchAffordable(RunSession session)
+        {
+            if (session == null) throw new ArgumentNullException(nameof(session));
+            IReadOnlyList<ResearchDef> content = session.Catalog.ResearchInContentOrder;
+            for (int i = 0; i < content.Count; i++)
+            {
+                if (CanPurchaseResearch(session.State, content[i])) return true;
+            }
+            return false;
+        }
+
+        /// <summary>The single Overdrive stage rule: locked until unlocked, then active, cooling down or ready. <see cref="Overdrive"/> and the hub feed share it.</summary>
+        public static OverdriveStage OverdriveStageAt(RunState state, long now)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            if (!state.IsUnlocked(RunState.OverdriveUnlockId)) return OverdriveStage.Locked;
+            OverdriveState od = state.Overdrive;
+            if (od.IsActive(now)) return OverdriveStage.Active;
+            if (od.IsCoolingDown(now)) return OverdriveStage.CoolingDown;
+            return OverdriveStage.Ready;
+        }
+
+        /// <summary>True when Overdrive can be activated now (<see cref="OverdriveStageAt"/> is Ready). Allocation-free.</summary>
+        public static bool OverdriveReady(RunSession session)
+        {
+            if (session == null) throw new ArgumentNullException(nameof(session));
+            return OverdriveStageAt(session.State, session.TimelineUtcMs) == OverdriveStage.Ready;
         }
 
         /// <summary>The longest prerequisite chain above a Research; a cycle (which content validation rejects) stops at 1024.</summary>
@@ -470,29 +524,22 @@ namespace IdleFactory.Run.Application
             RunState state = session.State;
             long now = session.TimelineUtcMs;
             OverdriveState od = state.Overdrive;
-            OverdriveStage status;
+            OverdriveStage status = OverdriveStageAt(state, now);
             long remaining = 0;
             string reason = null;
-            if (!state.IsUnlocked(RunState.OverdriveUnlockId))
+            if (status == OverdriveStage.Locked)
             {
-                status = OverdriveStage.Locked;
                 reason = RunReasons.CommandInvalid;
             }
-            else if (od.IsActive(now))
+            else if (status == OverdriveStage.Active)
             {
-                status = OverdriveStage.Active;
                 remaining = od.ActiveUntilUtcMs.Value - now;
                 reason = RunReasons.OverdriveActive;
             }
-            else if (od.IsCoolingDown(now))
+            else if (status == OverdriveStage.CoolingDown)
             {
-                status = OverdriveStage.CoolingDown;
                 remaining = od.CooldownUntilUtcMs.Value - now;
                 reason = RunReasons.OverdriveCoolingDown;
-            }
-            else
-            {
-                status = OverdriveStage.Ready;
             }
             return new OverdriveStatus(session.StructureRevision, session.QuantityRevision, now, status, remaining, catalog.Overdrive,
                 od.ActiveUntilUtcMs, od.CooldownUntilUtcMs, reason == null, reason);

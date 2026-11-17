@@ -246,7 +246,7 @@ namespace IdleFactory.Unity.Persistence
         public string TempFilePath => Path.Combine(directory, TempFileName);
 
         /// <summary>
-        /// Reads the file and makes its content the in-memory choice. Missing, unreadable, oversized or invalid content reads as
+        /// Reads the file and makes its content the in-memory choice. A missing file reads as the defaults without a diagnostic (first launch). Unreadable, oversized or invalid content reads as
         /// <c>followSystem</c> and hidden zoom buttons. A choice whose write failed stays in effect until a write succeeds. Never throws.
         /// </summary>
         public ReducedMotionPreference Reload()
@@ -393,7 +393,14 @@ namespace IdleFactory.Unity.Persistence
                 }
 
                 var v1Path = V1FilePath;
-                if (files.FileExists(v1Path) && TryReadBounded(v1Path, out var v1Bytes) && TryParse(v1Bytes, out var v1Motion))
+                if (!files.FileExists(v1Path))
+                {
+                    // T537 (A-8): a first launch has neither file. Absent is not invalid, so the defaults apply without the diagnostic.
+                    UseDefaults(false);
+                    return;
+                }
+
+                if (TryReadBounded(v1Path, out var v1Bytes) && TryParse(v1Bytes, out var v1Motion))
                 {
                     Preference = v1Motion;
                     ShowZoomButtons = false;
@@ -427,11 +434,11 @@ namespace IdleFactory.Unity.Persistence
             return true;
         }
 
-        private void UseDefaults()
+        private void UseDefaults(bool report = true)
         {
             Preference = ReducedMotionPreference.FollowSystem;
             ShowZoomButtons = false;
-            if (!invalidReported)
+            if (report && !invalidReported)
             {
                 invalidReported = true;
                 try

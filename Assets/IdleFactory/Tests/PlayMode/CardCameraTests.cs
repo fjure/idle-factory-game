@@ -257,6 +257,7 @@ namespace IdleFactory.Tests.PlayMode
             controller.Fit(RunCameraFraming.Layout(camera, layout, h.Rig.PixelsPerPoint, area));
 
             var content = ScreenRectOf(camera, layout.Bounds);
+            // OD-9b C1: never clip a machine column, on every class and text scale (T537 folds the zoom column into the right column on a phone in landscape).
             AssertInside(area, content, $"{screen} @{percent}%: the factory content is fully in view at fit-all");
             var depot = Visibility(area, ScreenRectOf(camera, layout.DepotRect));
             var vein = Visibility(area, ScreenRectOf(camera, layout.DepositRect));

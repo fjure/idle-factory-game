@@ -329,7 +329,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(top.y, Is.LessThan(viewport.yMax), "and it is on screen");
             var focused = Focused(rig.Root);
             Assert.That(focused, Is.Not.Null, "focus did not stay on the hidden Prestige button");
-            Assert.That(focused, Is.SameAs(rig.Shell.TabButton(ShellTab.Research)), "focus moved to the Research tab, a control that stays visible");
+            Assert.That(focused, Is.SameAs(rig.Shell.SheetFocusFallback), "focus moved to the hub entry (or the sheet Close), a control that stays visible");
         }
 
         [UnityTest]
@@ -359,31 +359,6 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(Shown(prestige.SaleBannerLabel), Is.False, "the banner belongs to the moment after the sale");
             Assert.That(Shown(prestige.IndustryCard), Is.True, "the pointer stays while IP is unspent");
-        }
-
-        [UnityTest]
-        public IEnumerator TheResearchTabShowsADotAndAnAccessibleNameWhileIpIsUnspent([ValueSource(nameof(Representative))] ShellScreen screen)
-        {
-            rig = ShellRig.Create(screen, null, 100);
-            rigs.Add(rig);
-            yield return rig.Layout();
-            var shell = rig.Shell;
-            var tab = shell.TabButton(ShellTab.Research);
-            Assert.That(Shown(shell.ResearchBadge), Is.False, "no IP, no dot");
-            Assert.That(tab.tooltip, Is.Not.StartWith("Research, "));
-
-            shell.SetIndustryPoints(25);
-            yield return ShellRig.Settle();
-            Assert.That(Shown(shell.ResearchBadge), Is.True);
-            Assert.That(shell.ResearchBadge.text, Is.EqualTo(RunShellDocument.DotGlyph));
-            Assert.That(tab.tooltip, Is.EqualTo("Research, 25 IP to spend in Industry"));
-            Assert.That(shell.IndustryPoints, Is.EqualTo(25));
-            Assert.That(tab.worldBound.height, Is.GreaterThanOrEqualTo(43.5f), "the dot does not change the 44 pt tab");
-
-            shell.SetIndustryPoints(0);
-            yield return ShellRig.Settle();
-            Assert.That(Shown(shell.ResearchBadge), Is.False, "spending the IP clears the dot");
-            Assert.That(tab.tooltip, Is.EqualTo("Research"));
         }
 
         // ---------------------------------------------------------------------------------------------------

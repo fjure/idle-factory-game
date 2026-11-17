@@ -1328,6 +1328,8 @@ namespace IdleFactory.Unity.Bootstrap
             }
 
             slotGrid.SetProjectedPixelsPerCell(CurrentPixelsPerCell);
+            // T537 (FR-008a): the zoom buttons show on touch only with the "Show zoom buttons" preference (pointer profiles always).
+            runShell.ShowZoomButtonsPreference = DisplayPreferences.ShowZoomButtons;
             if (cameraController.HasLayout)
             {
                 // Hidden in a single-level range; at the ends of a longer range the button stays reachable and says why it does nothing (rule 4).

@@ -256,7 +256,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(focused, Is.Not.SameAs(panel.ActiveButton));
             Assert.That(focused.panel, Is.Not.Null);
             Assert.That(focused.resolvedStyle.display, Is.Not.EqualTo(DisplayStyle.None));
-            Assert.That(focused == rig.Shell.CloseButton || focused == rig.Shell.TabButton(ShellTab.Factory), Is.True, "the shell default target");
+            Assert.That(focused == rig.Shell.CloseButton || focused == rig.Shell.HubEntryButton, Is.True, "the shell default target");
         }
 
         [UnityTest]

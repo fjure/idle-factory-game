@@ -82,6 +82,15 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Bootstrap.PanelDiagnostics, Is.Empty);
         }
 
+        /// <summary>T537: opens a system view the way the player does after the tab bar was removed: the hub entry, then the card of the system.</summary>
+        private static void OpenFromHub(RunShellDocument shell, ShellTab tab)
+        {
+            Activate(shell.HubEntryButton);
+            var card = shell.Root.Q<Button>("hub-card-" + tab.ToString().ToLowerInvariant());
+            Assert.That(card, Is.Not.Null, "the hub has a card for " + tab);
+            Activate(card);
+        }
+
         private static void Activate(VisualElement target)
         {
             using (var submit = NavigationSubmitEvent.GetPooled())
@@ -137,14 +146,14 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator EveryTabTapOpensItsRegisteredPanelAndNeverThePlaceholder()
+        public IEnumerator EveryHubCardOpensItsRegisteredPanelAndNeverThePlaceholder()
         {
             yield return StartLiveRun();
             var shell = Bootstrap.RunShell;
 
             foreach (var tab in PanelTabs)
             {
-                Activate(shell.TabButton(tab));
+                OpenFromHub(shell, tab);
                 yield return null;
                 AssertPanelShown(shell, ShellPanelIds.ForTab(tab), tab + " tab");
                 Assert.That(shell.PlaceholderText, Does.Not.Contain("not available"), tab.ToString());
@@ -174,7 +183,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return null;
             Assert.That(shell.IsCardOpen, Is.True, "an occupied slot opens the machine card (T534)");
 
-            Activate(shell.TabButton(ShellTab.Prestige));
+            OpenFromHub(shell, ShellTab.Prestige);
             yield return null;
             AssertPanelShown(shell, ShellPanelIds.Prestige, "a tab after a slot sheet");
         }
@@ -245,7 +254,7 @@ namespace IdleFactory.Tests.PlayMode
 
             foreach (var tab in PanelTabs)
             {
-                Activate(shell.TabButton(tab));
+                OpenFromHub(shell, tab);
                 yield return null;
                 AssertPanelShown(shell, ShellPanelIds.ForTab(tab), "after the rebuild, " + tab);
             }
@@ -270,12 +279,12 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(shell.Panels.IsRegistered(ShellPanelIds.Prestige), Is.False);
             Assert.That(shell.Panels.Count, Is.EqualTo(AllPanelIds.Length - 1), "Nothing is published for the failed panel; the others stay.");
 
-            Activate(shell.TabButton(ShellTab.Prestige));
+            shell.SelectTab(ShellTab.Prestige);
             yield return null;
             Assert.That(shell.PlaceholderText, Does.Contain("not available"));
             Assert.That(Placeholder(shell).style.display.value, Is.EqualTo(DisplayStyle.Flex));
 
-            Activate(shell.TabButton(ShellTab.Market));
+            OpenFromHub(shell, ShellTab.Market);
             yield return null;
             AssertPanelShown(shell, ShellPanelIds.Market, "the other panels are unaffected");
         }
@@ -323,7 +332,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(shell, Is.Not.Null);
             Assert.That(bootstrap.PanelDiagnostics, Is.Empty);
             Assert.That(shell.Panels.Count, Is.EqualTo(AllPanelIds.Length));
-            Activate(shell.TabButton(ShellTab.Contracts));
+            OpenFromHub(shell, ShellTab.Contracts);
             yield return null;
             AssertPanelShown(shell, ShellPanelIds.Contracts, "after the recovery");
         }

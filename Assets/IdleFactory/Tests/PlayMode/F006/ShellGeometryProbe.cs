@@ -96,7 +96,7 @@ namespace IdleFactory.Tests.PlayMode.F006
         /// <summary>The persistent elements of the shell, by UXML name, in the order their labels are listed.</summary>
         public static readonly string[] PersistentNames =
         {
-            "top-strip", "overdrive", "zoom-column", "factory-ore-vein", "detail-line", "notice", "world-hint", "tab-bar",
+            "top-strip", "action-bar", "overdrive", "zoom-column", "factory-ore-vein", "detail-line", "notice", "world-hint",
         };
 
         // ------------------------------------------------------------------------------------------------------
