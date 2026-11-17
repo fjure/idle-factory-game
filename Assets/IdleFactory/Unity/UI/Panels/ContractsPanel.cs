@@ -29,6 +29,9 @@ namespace IdleFactory.Unity.UI.Panels
         public const string ProductionHint = "Completes automatically.";
         public const string AutoDeliverShortStock = "Auto-deliver was on; stock was short.";
         public const string ItemLimitText = "Item reward limit reached this run";
+        /// <summary>The title of the locked state (the message under it is the unlock condition).</summary>
+        public const string LockedTitle = "Contracts are locked";
+
         public const string CompletionBlockedText = "Waiting to complete: that number is too large to handle. It tries again automatically.";
 
         private readonly RunSession session;
@@ -89,7 +92,13 @@ namespace IdleFactory.Unity.UI.Panels
 
             // A wrapped label is wrapped in a container (wiki: UI Toolkit HUD layout pitfalls), or a bounded scroll view clamps its height.
             emptyBox = MakeCard("contracts-empty-box", "contracts-card--plain");
+            // T536 (FR-023): the scaffold's empty template (marker, title, message) instead of a panel-specific card.
+            ScaffoldEmpty.Style(emptyBox, "contracts-card", "contracts-card--plain");
+            emptyBox.Add(ScaffoldEmpty.Mark("contracts-empty-mark"));
+            // T537 (T536 copy): the box shows only while no offer is unlocked, so its title names the lock above the unlock condition.
+            emptyBox.Add(ScaffoldEmpty.Title("contracts-empty-title", LockedTitle));
             emptyLabel = MakeText("contracts-empty", "contracts-line");
+            emptyLabel.AddToClassList("scaffold__state-message");
             WrappedLabelFit.Attach(emptyLabel);
             PanelIcons.Mark(emptyLabel, icons, PanelIcons.Lock);
             emptyBox.Add(emptyLabel);
@@ -749,7 +758,7 @@ namespace IdleFactory.Unity.UI.Panels
                 }
             }
 
-            shell.FocusWhenReady(shell.TabButton(ShellTab.Contracts));
+            shell.FocusWhenReady(shell.SheetFocusFallback);
         }
 
         private bool IsVisible(VisualElement element)

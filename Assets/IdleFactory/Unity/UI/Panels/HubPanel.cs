@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using IdleFactory.Run.Application;
+using IdleFactory.Run.Content;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -29,12 +30,11 @@ namespace IdleFactory.Unity.UI.Panels
         public const string HubLabel = "Office";
 
         /// <summary>
-        /// The icon key of the hub entry: ONE swappable reference (P2-F9, P2-F22). The Art Director approved a new "Office" glyph (T554,
-        /// <c>art-source/f006/ui/f006-ui-office</c>) that is not yet imported into the runtime sprite catalog (the scene catalog registration of the F006
-        /// rows is T527/A-13), so the contracts glyph stands in. To switch, change this one constant to the imported key; nothing else changes. The hub
-        /// icon must stay distinguishable from the Contracts card icon once the new glyph lands: <see cref="IconKeyOf"/> keeps the contracts glyph for the card.
+        /// The icon key of the hub entry: ONE swappable reference (P2-F9, P2-F22). It is the imported "Office" glyph (T554,
+        /// <c>art-source/f006/ui/f006-ui-office</c>; imported and registered in the scene catalog by T527, B-17), a desk in-tray with a stack of cards.
+        /// It stays distinct from the Contracts card icon (<see cref="IconKeyOf"/> keeps the contracts glyph for the card).
         /// </summary>
-        public const string EntryIconKey = "F003-UI-ICON-TAB-CONTRACTS";
+        public const string EntryIconKey = "F006-UI-OFFICE";
 
         public static string TitleOf(HubCard card) => card.ToString();
 
@@ -165,8 +165,11 @@ namespace IdleFactory.Unity.UI.Panels
 
     /// <summary>
     /// Feeds <see cref="HubAttention"/> for Research (a node can be bought, or unspent IP waits in Industry), Prestige (eligible) and Overdrive
-    /// (ready). It reads the existing snapshots and previews only (no new rule, A-6) and only when the run changed, at most every
-    /// <see cref="ReadSeconds"/>. Contracts has its own feed (<see cref="ContractsShellFeed"/>).
+    /// (ready). It reads existing state only (no new rule, A-6) and only when the run changed, at most every <see cref="ReadSeconds"/>.
+    /// Contracts has its own feed (<see cref="ContractsShellFeed"/>). T536 (T535 Architect F3): the per-frame path is allocation-free (a revision
+    /// compare), and so are the Research and Overdrive reads (they call the shared predicates next to the snapshot builders, <c>RunSnapshots.AnyResearchAffordable</c> and <c>RunSnapshots.OverdriveReady</c>, which the snapshot builders use too). Only the
+    /// Prestige preview allocates, because the domain call returns a new object; it is re-read when the structure changed or the timeline second
+    /// moved, so at most once per second.
     /// </summary>
     public sealed class HubAttentionFeed
     {
@@ -179,6 +182,9 @@ namespace IdleFactory.Unity.UI.Panels
         private long keyStructure = -1;
         private long keyQuantity = -1;
         private long keySecond = -1;
+        private long prestigeStructure = -1;
+        private long prestigeSecond = -1;
+        private bool prestigeEligible;
         private float lastReadTime = float.NegativeInfinity;
 
         public HubAttentionFeed(RunSession session, RunCommands commands, HubAttention attention)
@@ -192,6 +198,7 @@ namespace IdleFactory.Unity.UI.Panels
         public void Invalidate()
         {
             keyStructure = -1;
+            prestigeStructure = -1;
             lastReadTime = float.NegativeInfinity;
         }
 
@@ -213,12 +220,7 @@ namespace IdleFactory.Unity.UI.Panels
 
         private void Read()
         {
-            var research = false;
-            var nodes = RunSnapshots.Research(session).Nodes;
-            for (var i = 0; i < nodes.Count && !research; i++)
-            {
-                research = nodes[i].CanPurchase;
-            }
+            var research = RunSnapshots.AnyResearchAffordable(session);
 
             // Unspent Influence Points wait in Industry, which the Research view hosts (R-01): they keep the Research flag (the former tab dot).
             if (!research && session.Permanent != null && session.Permanent.Ip > 0)
@@ -227,9 +229,17 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             attention.Set(HubCard.Research, research);
-            var prestige = commands.GetPrestigePreview();
-            attention.Set(HubCard.Prestige, prestige.IsSuccess && prestige.Value != null && prestige.Value.IsEligible);
-            attention.Set(HubCard.Overdrive, RunSnapshots.Overdrive(session).State == OverdriveStage.Ready);
+            var second = keySecond;
+            if (prestigeStructure != keyStructure || prestigeSecond != second)
+            {
+                prestigeStructure = keyStructure;
+                prestigeSecond = second;
+                var prestige = commands.GetPrestigePreview();
+                prestigeEligible = prestige.IsSuccess && prestige.Value != null && prestige.Value.IsEligible;
+            }
+
+            attention.Set(HubCard.Prestige, prestigeEligible);
+            attention.Set(HubCard.Overdrive, RunSnapshots.OverdriveReady(session));
         }
     }
 
@@ -463,6 +473,9 @@ namespace IdleFactory.Unity.UI.Panels
             return (total / 60).ToString(CultureInfo.InvariantCulture) + ":" + (total % 60).ToString("00", CultureInfo.InvariantCulture);
         }
 
+        /// <summary>The start of the Contracts row status while no contract is unlocked (T555, U-B3).</summary>
+        public const string LockedContractsPrefix = "Locked: ";
+
         private sealed class Row
         {
             private readonly HubPanel owner;
@@ -523,6 +536,34 @@ namespace IdleFactory.Unity.UI.Panels
 
             public Label Reason { get; }
 
+            // T555 (U-B3): while no contract offer is unlocked (and none is active) the row says so, with the unlock condition in the shared wording, like the
+            // locked Overdrive row, instead of "Nothing ready to deliver".
+            private static string ContractsStatus(RunSession session, HubAttention attention)
+            {
+                if (attention.ContractsDeliverable > 0)
+                {
+                    return attention.ContractsDeliverable.ToString(CultureInfo.InvariantCulture) + " ready to deliver";
+                }
+
+                var data = RunSnapshots.Contracts(session);
+                var anyUnlocked = false;
+                var conditions = new List<UnlockCondition>();
+                for (var i = 0; i < data.Offers.Count; i++)
+                {
+                    anyUnlocked |= data.Offers[i].Unlocked;
+                    conditions.Add(data.Offers[i].Unlock);
+                }
+
+                if (anyUnlocked || data.Active != null)
+                {
+                    return "Nothing ready to deliver";
+                }
+
+                return conditions.Count == 0
+                    ? LockedContractsPrefix + "unlocks after you build more of the factory"
+                    : LockedContractsPrefix + "unlocks after " + UnlockCopy.AfterAny(session.Catalog, conditions);
+            }
+
             /// <summary>Redraws the card. Returns whether the card opens a registered system view (Overdrive has none and returns false).</summary>
             public bool Update(RunShellDocument shell, HubAttention attention)
             {
@@ -542,9 +583,7 @@ namespace IdleFactory.Unity.UI.Panels
                     }
 
                     case HubCard.Contracts:
-                        status = attention.ContractsDeliverable > 0
-                            ? attention.ContractsDeliverable.ToString(CultureInfo.InvariantCulture) + " ready to deliver"
-                            : "Nothing ready to deliver";
+                        status = ContractsStatus(session, attention);
                         break;
                     case HubCard.Items:
                         status = QuantityFormatter.Format(RunSnapshots.Items(session).TotalCount) + " owned";
@@ -563,7 +602,14 @@ namespace IdleFactory.Unity.UI.Panels
                             case OverdriveStage.Ready: status = "Ready"; break;
                             case OverdriveStage.Active: status = "On, " + Mmss(overdrive.RemainingMs) + " left"; reason = "Overdrive is already on"; break;
                             case OverdriveStage.CoolingDown: status = "Cooling down, " + Mmss(overdrive.RemainingMs); reason = "Overdrive is cooling down"; break;
-                            default: status = "Locked"; reason = "Overdrive is not unlocked yet"; break;
+                            default:
+                                // T536 (T535 Product Owner note): a locked card states the condition, in the shared unlock wording.
+                                status = "Locked";
+                                // T537 (T536 copy): content without an unlock condition says so instead of "unlocks after it unlocks".
+                                reason = overdrive.Unlock == null
+                                    ? "Overdrive is not unlocked yet"
+                                    : "Overdrive unlocks after " + UnlockCopy.After(session.Catalog, overdrive.Unlock) + ".";
+                                break;
                         }
 
                         break;
@@ -572,7 +618,11 @@ namespace IdleFactory.Unity.UI.Panels
                     case HubCard.Prestige:
                     {
                         var preview = owner.commands.GetPrestigePreview();
-                        status = preview.IsSuccess && preview.Value != null && preview.Value.IsEligible ? "Ready" : "Not ready yet";
+                        var eligible = preview.IsSuccess && preview.Value != null && preview.Value.IsEligible;
+                        // T536 (T535 Product Owner note): a card that is not ready says what it waits for, by the plain Factory Value wording of the panel.
+                        status = eligible ? "Ready" : preview.IsSuccess && preview.Value != null
+                            ? "Not ready yet: needs Factory Value " + QuantityFormatter.Format(preview.Value.Threshold)
+                            : "Not ready yet";
                         break;
                     }
 

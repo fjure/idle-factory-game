@@ -181,7 +181,7 @@ namespace IdleFactory.Tests.PlayMode
             h.Shell.Attention.Set(HubCard.Market, true);
             Assert.That(h.Shell.IsHubDotShown, Is.True, "the entry dot shows with the hub closed");
             Assert.That(h.Shell.HubEntryButton.tooltip, Does.Contain("4 systems need attention"));
-            Assert.That(h.Shell.ContractsDeliverable, Is.EqualTo(2), "the Contracts tab badge still follows until the tab bar goes (T537)");
+            Assert.That(h.Shell.Attention.ContractsDeliverable, Is.EqualTo(2), "the deliverable count lives in the hub attention (the tab badge went with the tab bar, T537)");
 
             h.Shell.OpenHub();
             yield return ShellRig.Settle();
@@ -194,6 +194,27 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(h.Hub.CardButton(HubCard.Contracts).tooltip, Does.Contain("Needs attention"), "the flag is part of the accessible name");
             h.Shell.Attention.Clear();
             Assert.That(h.Shell.IsHubDotShown, Is.False);
+        }
+
+        // T555 (U-B3, FR-020): while Contracts are locked the row states the lock and its condition, like the locked Overdrive row, and never the
+        // "Nothing ready to deliver" of an unlocked system.
+        [UnityTest]
+        public IEnumerator TheContractsRowShowsTheLockWhileContractsAreLockedAndNothingToDeliverOnceTheyAreNot([ValueSource(nameof(Screens))] ShellScreen screen)
+        {
+            yield return Make(screen, 100);
+            h.Shell.OpenHub();
+            yield return ShellRig.Settle();
+            var locked = h.Hub.StatusOf(HubCard.Contracts);
+            Assert.That(locked, Does.StartWith(HubPanel.LockedContractsPrefix + "unlocks after "), $"{screen}: the row says Contracts are locked and why");
+            Assert.That(locked, Does.Not.Contain("ready to deliver"), screen.ToString());
+            Assert.That(h.Hub.CardButton(HubCard.Contracts).tooltip, Does.Contain("Locked"), $"{screen}: the accessible name carries the lock");
+
+            h.Shell.CloseSheet();
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.UnlockContracts(h.Session);
+            h.Shell.OpenHub();
+            yield return ShellRig.Settle();
+            Assert.That(h.Hub.StatusOf(HubCard.Contracts), Is.EqualTo("Nothing ready to deliver"), $"{screen}: unlocked and idle");
         }
 
         [UnityTest]
@@ -336,14 +357,14 @@ namespace IdleFactory.Tests.PlayMode
 
         public static IEnumerable<int> LandscapePercents() => new[] { 120, 200 };
 
-        // U-1 (OD-9b C1): the entry never covers the framed world. The camera's rectangle excludes the floating entry on a landscape phone.
+        // U-1 (OD-9b C1): the entry never covers the framed world. T537 gave it a home outside the world column (the right column on a phone in landscape), so the camera's rectangle excludes it by construction.
         [UnityTest]
         public IEnumerator TheLandscapeEntryNeverCoversTheRectangleTheCameraFrames(
             [ValueSource(nameof(LandscapePhones))] ShellScreen screen, [ValueSource(nameof(LandscapePercents))] int percent)
         {
             yield return Make(screen, percent);
             var where = screen + " @" + percent + "%";
-            Assert.That(h.Shell.HubEntryOverlay, Is.True, where + ": the entry floats over the world column");
+            Assert.That(h.Shell.WorldColumn.Contains(h.Shell.HubEntryButton), Is.False, where + ": the entry is outside the world column (the action bar, T537)");
             Assert.That(h.Shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True, where);
             var framed = new Rect(area.xMin, screen.Height - area.yMax, area.width, area.height);
             Assert.That(framed.height, Is.GreaterThan(0f), where);

@@ -588,8 +588,8 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(shipped.entries.Length, Is.EqualTo(expected), "the shipped manifest holds no entry of a family T440 does not import");
             Assert.That(shipped.entries.Select(entry => entry.family).Distinct().OrderBy(f => f, StringComparer.Ordinal),
                 Is.EqualTo(F004ArtIntegration.FamilyNames.OrderBy(f => f, StringComparer.Ordinal)));
-            Assert.That(shipped.entries.Count(entry => entry.assetId.Contains("floor")), Is.EqualTo(1),
-                "T471: the 70 x 54 floor tile (the T456 floor period) is imported");
+            Assert.That(shipped.entries.Count(entry => entry.assetId.Contains("floor")), Is.EqualTo(0),
+                "T527 (A-13): the F004 floor tile, its family folder and its atlas are removed; the F006 deck replaces them");
         }
 
         [Test]
@@ -636,7 +636,7 @@ namespace IdleFactory.Tests.EditMode
         {
             var shipped = ReadShippedManifest();
             var f004Keys = shipped.entries.Select(entry => entry.key).Where(key => key.StartsWith("F004-", StringComparison.Ordinal)).ToArray();
-            Assert.That(f004Keys.Length, Is.EqualTo(10), "four accent layers, four lock labels, the settings icon and the floor tile");
+            Assert.That(f004Keys.Length, Is.EqualTo(9), "four accent layers, four lock labels and the settings icon (T527 removed the floor tile)");
 
             WithSceneCatalog(catalog =>
             {
@@ -666,8 +666,10 @@ namespace IdleFactory.Tests.EditMode
         {
             var shipped = ReadShippedManifest();
             var keys = shipped.entries.Where(entry => !entry.intentionallyEmpty).Select(entry => entry.key).ToArray();
-            Assert.That(keys, Has.Length.EqualTo(87), "77 Feature 003 keys with art and the 10 F004-only keys");
+            Assert.That(keys, Has.Length.EqualTo(86), "77 Feature 003 keys with art and the 9 F004-only keys (T527 removed the floor tile)");
 
+            // T527 (A-13): the placed F006 rows (ground, props, edges and the hub glyph) are required too.
+            keys = keys.Concat(PresentationSpriteCatalog.PlacedF006Keys).Append(PresentationSpriteCatalog.OfficeIconKey).ToArray();
             WithSceneCatalog(scene =>
             {
                 var entries = new List<PresentationSpriteEntry>();
@@ -919,59 +921,27 @@ namespace IdleFactory.Tests.EditMode
 
         // ---- T471: the floor family and the importer hardening -------------------------------------------------------
 
-        private const string FloorAssetId = "f004-floor-tile";
-        private const string FloorKey = "F004-FLOOR-TILE";
-        private const string FloorPath = F004ImportRules.ArtRoot + "/floor/f004-floor-tile_00.png";
+        private const string F004FloorKey = "F004-FLOOR-TILE";
+        private const string F006GroundBasePath = "Assets/IdleFactory/Art/F006/ground/f006-ground-base_00.png";
 
         [Test]
-        public void TheFloorTileIsImportedAtPpu24WithItsPivotOnTheTileCentreAndPointFilter()
+        public void TheF004FloorFamilyAndItsAtlasAreRemovedAndTheStrictCatalogStillFailsClosedWithoutTheRequiredRows()
         {
-            var shipped = ReadShippedManifest();
-            var entry = shipped.entries.Single(e => e.assetId == FloorAssetId);
-            Assert.That(entry.family, Is.EqualTo("floor"));
-            Assert.That(entry.key, Is.EqualTo(FloorKey));
-            Assert.That(entry.ppu, Is.EqualTo(24), "TA-2: PPU = artPixelsPerCell = 24, not 64");
-            Assert.That(entry.canvas, Is.EqualTo(new[] { 70, 54 }), "the T456 lattice pitch is the floor period");
-            Assert.That(entry.frames, Has.Length.EqualTo(1));
-            Assert.That(entry.intentionallyEmpty, Is.False);
-
-            var importer = AssetImporter.GetAtPath(FloorPath) as TextureImporter;
-            Assert.That(importer, Is.Not.Null, FloorPath);
-            Assert.That(importer.spritePixelsPerUnit, Is.EqualTo(24f));
-            Assert.That(importer.filterMode, Is.EqualTo(FilterMode.Point));
-            Assert.That(importer.mipmapEnabled, Is.False, "no mipmaps");
-            Assert.That(importer.textureCompression, Is.EqualTo(TextureImporterCompression.Uncompressed));
-            Assert.That(importer.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
-
-            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(FloorPath);
-            Assert.That(sprite, Is.Not.Null);
-            Assert.That(sprite.rect.size, Is.EqualTo(new Vector2(70f, 54f)));
-            Assert.That(sprite.pivot, Is.EqualTo(new Vector2(35f, 27f)), "TA-3: pivot (35, 27) is a whole art pixel on the slot footprint centre");
-            Assert.That(sprite.texture.filterMode, Is.EqualTo(FilterMode.Point));
-            Assert.That(sprite.bounds.size.x, Is.EqualTo(70f / 24f).Within(1e-4f));
-            Assert.That(sprite.bounds.size.y, Is.EqualTo(54f / 24f).Within(1e-4f));
-        }
-
-        [Test]
-        public void TheFloorKeyIsRegisteredInTheSceneCatalogAtTheLatticePeriodSizeAndRequired()
-        {
+            // T527 (A-13, Art Bible 2.2a): the deck Tilemap replaces the F004 floor pool, family folder and atlas.
+            Assert.That(Directory.Exists(F004ImportRules.ArtRoot + "/floor"), Is.False);
+            Assert.That(File.Exists(F004SpriteAtlasSettings.AtlasFolder + "/floor" + F004SpriteAtlasSettings.AtlasExtension), Is.False);
+            Assert.That(F004ArtIntegration.FamilyNames, Does.Not.Contain("floor"));
+            Assert.That(F004ArtIntegration.AtlasFamilies, Does.Not.Contain("floor"));
             WithSceneCatalog(catalog =>
             {
                 Assert.That(catalog.Diagnostics, Is.Empty);
-                Assert.That(catalog.TryGetEntry(FloorKey, out var floor), Is.True);
-                Assert.That(floor.FrameCount, Is.EqualTo(1));
-                Assert.That(floor.FramesPerSecond, Is.Null);
-                Assert.That(AssetDatabase.GetAssetPath(floor.Sprite), Is.EqualTo(FloorPath));
-                Assert.That(floor.Sprite.rect.width / floor.Sprite.pixelsPerUnit, Is.EqualTo(SlotGridLayout.PitchX).Within(1e-4f),
-                    "world width is the lattice column pitch");
-                Assert.That(floor.Sprite.rect.height / floor.Sprite.pixelsPerUnit, Is.EqualTo(SlotGridLayout.PitchY).Within(1e-4f),
-                    "world height is the lattice row pitch");
+                Assert.That(catalog.TryGetEntry(F004FloorKey, out _), Is.False, "the scene catalog no longer registers the floor tile");
             });
 
             var strict = new PresentationSpriteCatalog { RequireRegistryRows = true };
-            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new Regex(@"^presentation\.key\.unresolved: F00[34]-"));
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new Regex(@"^presentation\.key\.unresolved: F00[346]-"));
             strict.Configure(new[] { new PresentationSpriteEntry("F003-SLOT-EMPTY", TightSprite()) });
-            Assert.That(strict.IsValid, Is.False, "a catalog that requires the registry rows fails closed without the other rows, the floor among them");
+            Assert.That(strict.IsValid, Is.False, "a catalog that requires the registry rows fails closed without the other rows");
         }
 
         [Test]
@@ -1197,12 +1167,13 @@ namespace IdleFactory.Tests.EditMode
             var allowedOverlay = new HashSet<string>(AllowedOverlayBackdrop, StringComparer.Ordinal);
             var allowedFrame = new HashSet<string>(toneOf.Values.Where(t => !FrameForbiddenBackdrop.Contains(t)), StringComparer.Ordinal);
 
-            var floor = LoadShipped(shipped, FloorKey);
+            // T527: the F004 floor tile is gone; the field under the slots is the F006 base tile (floor_0 only, 70 x 54 on the same lattice period).
+            var floor = new ArtLayer(F006GroundBasePath);
             Assert.That(new[] { floor.Width, floor.Height }, Is.EqualTo(new[] { 70, 54 }));
-            // The shipped tile is fully opaque and uses floor_0 plus the 32 px of the two floor_1 detail clusters. It carries no floor_2 pixel (the Art Bible
-            // allows floor_2 only as 1 px highlights), so the floor adds no tone outside A_ov; the ring count over floor_2 below pins that.
+            // The shipped tile is fully opaque and uses floor_0 (and at most floor_1). It carries no floor_2 pixel (the Art Bible allows floor_2 only as 1 px
+            // highlights), so the field adds no tone outside A_ov; the ring count over floor_2 below pins that.
             var floorTones = floor.Pixels.Select(p => p.a == 255 && toneOf.TryGetValue((p.r << 16) | (p.g << 8) | p.b, out var t) ? t : "other").Distinct().OrderBy(t => t, StringComparer.Ordinal);
-            Assert.That(floorTones, Is.EqualTo(new[] { "floor_0", "floor_1" }), "every floor pixel is opaque and a floor_0 or floor_1 palette tone");
+            Assert.That(floorTones, Is.SubsetOf(new[] { "floor_0", "floor_1" }), "every field pixel is opaque and a floor_0 or floor_1 palette tone");
 
             var plate = LoadShipped(shipped, "F003-SLOT-OCCUPIED-BASE");
             var frame = LoadShipped(shipped, "F003-SLOT-SELECTED-FRAME");

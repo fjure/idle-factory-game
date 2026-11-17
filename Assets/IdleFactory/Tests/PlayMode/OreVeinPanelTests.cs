@@ -512,7 +512,7 @@ namespace IdleFactory.Tests.PlayMode
                     expected = OreVeinHoldEnd.Released;
                     break;
                 default:
-                    shell.TabButton(ShellTab.Market).Focus();
+                    shell.StoreButton.Focus();
                     expected = OreVeinHoldEnd.FocusLoss;
                     break;
             }
@@ -568,19 +568,22 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator TheVeinComesAfterTheHudStripAndBeforeTheTabBarWithAVisibleFocusRing()
+        public IEnumerator TheVeinComesAfterTheHudStripAndBeforeTheActionBarWithAVisibleFocusRing()
         {
             var fake = new FakeSource();
             yield return OpenWith(fake);
             var order = shell.GetFocusOrder().ToList();
             var index = order.IndexOf(vein.Root);
             Assert.That(index, Is.GreaterThanOrEqualTo(0), "the vein is focusable");
-            foreach (var strip in new VisualElement[] { shell.CashButton, shell.StoreButton, shell.OverdriveButton })
+            foreach (var strip in new VisualElement[] { shell.CashButton, shell.StoreButton })
             {
                 Assert.That(order.IndexOf(strip), Is.LessThan(index), strip.name + " comes before the vein");
             }
 
-            Assert.That(order.IndexOf(shell.TabButton(ShellTab.Factory)), Is.GreaterThan(index), "the tab bar comes after the vein");
+            if (!shell.IsSidePanelLayout)
+            {
+                Assert.That(order.IndexOf(shell.HubEntryButton), Is.GreaterThan(index), "the action bar (hub entry) comes after the vein on a phone");
+            }
             vein.Root.Focus();
             yield return ShellRig.Settle();
             Assert.That(shell.FocusRingTarget, Is.SameAs(vein.Root));
@@ -858,7 +861,7 @@ namespace IdleFactory.Tests.PlayMode
         // ---------------------------------------------------------------------------------------------------
 
         [UnityTest]
-        public IEnumerator TheVeinNeverOverlapsSlotsTheStripTheTabBarOrTheSheetAtEveryScreenClass(
+        public IEnumerator TheVeinNeverOverlapsSlotsTheStripTheActionBarOrTheSheetAtEveryScreenClass(
             [ValueSource(nameof(Screens))] ShellScreen screen, [Values(100, 200)] int percent)
         {
             var fake = new FakeSource();
@@ -917,7 +920,7 @@ namespace IdleFactory.Tests.PlayMode
                 ("detail line", (VisualElement)shell.DetailBar),
                 ("notice", shell.NoticeBar),
                 ("world hint", shell.WorldHint),
-                ("tab bar", shell.TabBar),
+                ("action bar", shell.ActionBar),
                 ("panel host", shell.PanelHost),
             })
             {

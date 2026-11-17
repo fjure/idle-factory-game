@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,6 +8,7 @@ using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI.Panels;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
 namespace IdleFactory.Tests.PlayMode
@@ -219,6 +221,54 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(view.RendererOf(3, SlotGridView.SlotRendererRole.Machine).sprite.name, Does.EndWith("-0"));
             Assert.That(occupied.name, Does.EndWith("-0"));
         }
+
+#if UNITY_EDITOR
+        // ---------------------------------------------------------------------------------------------------
+        // T536 (#555): the start-up status surface follows the reduced-motion state while it is open
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator TheStartupSpinnerFollowsTheReducedMotionStateWhileTheSurfaceIsOpen()
+        {
+            var reduced = false;
+            var standalone = new OfflineSummaryPanelTestSupport.StandaloneRig(ShellScreens.All().First());
+            var status = RunSceneRun.NewRoot();
+            try
+            {
+                var run = StatusPersistenceRig.Create(status, new StatusTestClock());
+                var styles = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.StyleSheet>("Assets/IdleFactory/Unity/UI/Panels/StartupStatusPanel.uss");
+                var panel = new StartupStatusPanel(run.Persistence, run.Legacy, styles, null, () => reduced);
+                yield return standalone.Mount(panel, 100);
+                panel.ShowImporting();
+                yield return new WaitForSeconds(0.4f);
+                var first = panel.Spinner.style.rotate.value.angle.value;
+                yield return new WaitForSeconds(0.3f);
+                Assert.That(panel.Spinner.style.rotate.value.angle.value, Is.Not.EqualTo(first), "the spinner turns in normal motion");
+
+                // The preference turns on while the surface is open: nobody calls ApplyReducedMotion, the surface notices by itself.
+                reduced = true;
+                yield return new WaitForSeconds(StartupStatusPanel.MotionWatchMilliseconds / 1000f + 0.4f);
+                var frozen = panel.Spinner.style.rotate.value.angle.value;
+                yield return new WaitForSeconds(0.4f);
+                Assert.That(panel.Spinner.style.rotate.value.angle.value, Is.EqualTo(frozen), "reduced motion stops the spinner at its current frame");
+                Assert.That(panel.IsSpinning, Is.False);
+
+                // And turns off again: the spinner resumes.
+                reduced = false;
+                yield return new WaitForSeconds(StartupStatusPanel.MotionWatchMilliseconds / 1000f + 0.4f);
+                var resumed = panel.Spinner.style.rotate.value.angle.value;
+                yield return new WaitForSeconds(0.3f);
+                Assert.That(panel.Spinner.style.rotate.value.angle.value, Is.Not.EqualTo(resumed), "the spinner resumes when reduced motion turns off");
+                Assert.That(panel.IsSpinning, Is.True);
+                panel.Unmount();
+            }
+            finally
+            {
+                standalone.Dispose();
+                RunSceneRun.DeleteRoot(status);
+            }
+        }
+#endif
 
         private static void AssertSame(Dictionary<string, byte[]> before, Dictionary<string, byte[]> after, string name)
         {

@@ -18,9 +18,9 @@ namespace IdleFactory.Unity.UI
     }
 
     /// <summary>
-    /// The responsive shell of the Feature 003 run screen (T112): the top strip (Cash, RP, store usage, Overdrive), the six
-    /// tabs, the bottom sheet or side panel that panels mount into, the shared confirmation dialog, the exact-value detail
-    /// line and the notice line. It clones <c>FactoryRun.uxml</c>, owns no gameplay rule and reads state only through
+    /// The responsive shell of the Feature 003 run screen (T112): the persistent layer (Cash, store usage, the hub entry, production
+    /// attention, mining and Overdrive; see <see cref="PersistentLayer"/>), the bottom sheet or side panel that panels mount into, the shared
+    /// confirmation dialog, the exact-value detail line and the notice line. It clones <c>FactoryRun.uxml</c>, owns no gameplay rule and reads state only through
     /// values handed to it by <see cref="RunShellPresenter"/>. T113 to T118 add panels through <see cref="Panels"/>
     /// without editing it.
     /// </summary>
@@ -35,25 +35,13 @@ namespace IdleFactory.Unity.UI
         /// <summary>How long a transient notice stays before it clears on its own (T192, F-1).</summary>
         public const float DefaultNoticeSeconds = 6f;
 
-        private static readonly ShellTab[] Tabs =
-        {
-            ShellTab.Factory, ShellTab.Market, ShellTab.Contracts, ShellTab.Items, ShellTab.Research, ShellTab.Prestige,
-        };
-
         private static readonly string[] TabNames = { "Factory", "Market", "Contracts", "Items", "Research", "Prestige" };
-
-        private static readonly string[] TabIconKeys =
-        {
-            "F003-UI-ICON-TAB-FACTORY", "F003-UI-ICON-TAB-MARKET", "F003-UI-ICON-TAB-CONTRACTS",
-            "F003-UI-ICON-TAB-ITEMS", "F003-UI-ICON-TAB-RESEARCH", "F003-UI-ICON-TAB-PRESTIGE",
-        };
 
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private VisualTreeAsset visualTree;
         [SerializeField] private StyleSheet styleSheet;
 
         private readonly ShellPanelRegistry registry = new ShellPanelRegistry();
-        private readonly Button[] tabButtons = new Button[6];
         private readonly List<IDisposable> exactValueHandles = new List<IDisposable>();
         private Func<string, Sprite> iconResolver = key => null;
 
@@ -64,8 +52,7 @@ namespace IdleFactory.Unity.UI
         private VisualElement topStrip;
         private VisualElement panelHost;
         private VisualElement panelHeaderSlot;
-        private VisualElement panelTabsSlot;
-        private VisualElement tabBar;
+        private PersistentLayer layer;
         private VisualElement panelContent;
         private ScrollView panelScroll;
         private VisualElement dialogLayer;
@@ -84,7 +71,6 @@ namespace IdleFactory.Unity.UI
         private int lockNoticeSlot = -1;
         private bool emptyHintWanted;
         private Label cashValue;
-        private Label rpValue;
         private Label storeValue;
         private Label overdriveCaption;
         private VisualElement storeBarFill;
@@ -98,6 +84,11 @@ namespace IdleFactory.Unity.UI
         private bool zoomStateKnown;
         private bool zoomInShown;
         private bool zoomOutShown;
+        private bool rawZoomInVisible;
+        private bool rawZoomInAtLimit;
+        private bool rawZoomOutVisible;
+        private bool rawZoomOutAtLimit;
+        private bool showZoomButtonsPreference;
         private OreVeinControl oreVein;
         private bool oreVeinWanted;
         private FactoryWorldLayout worldLayout;
@@ -145,12 +136,6 @@ namespace IdleFactory.Unity.UI
         private long storeUsed;
         private long storeCapacity;
         private OverdriveStatus overdriveStatus;
-        private Label contractsBadge;
-        private Label researchBadge;
-        private long industryPoints;
-        private Label contractsTabLabel;
-        private int contractsDeliverable;
-        private ContractsBadgeMode contractsBadgeMode = ContractsBadgeMode.None;
 
         // Device profile and text scale (T191).
         private ShellDeviceProfile deviceProfile = ShellDeviceProfile.Default;
@@ -270,7 +255,7 @@ namespace IdleFactory.Unity.UI
         public bool IsConfirmationOpen => dialogRequest != null;
 
         public Button CashButton { get; private set; }
-        public Button RpButton { get; private set; }
+        public Button AttentionButton => layer?.AttentionButton;
         public Button StoreButton { get; private set; }
         public Button OverdriveButton { get; private set; }
         public Button ZoomInButton { get; private set; }
@@ -283,7 +268,9 @@ namespace IdleFactory.Unity.UI
         /// <summary>The ore vein overlay's input and feedback (T359). It is hidden until a mining source is bound.</summary>
         public OreVeinControl OreVein => oreVein;
         public VisualElement PanelHost => panelHost;
-        public VisualElement TabBar => tabBar;
+
+        /// <summary>The bottom row (phone portrait) or right column (phone landscape) that holds the hub entry and Overdrive; hidden on tablet and desktop.</summary>
+        public VisualElement ActionBar => layer?.ActionBar;
         public VisualElement WorldColumn => worldColumn;
         public VisualElement PanelContent => panelContent;
         public ScrollView PanelScroll => panelScroll;
@@ -319,9 +306,7 @@ namespace IdleFactory.Unity.UI
         public string DetailText => detailLine?.text ?? string.Empty;
         public bool IsDetailPinned => pinnedHost != null;
         public string PlaceholderText => placeholderTitle?.text ?? string.Empty;
-        public string StatusText => cashValue == null ? string.Empty : $"{cashValue.text}|{rpValue.text}|{storeValue.text}|{overdriveCaption.text}";
-
-        public Button TabButton(ShellTab tab) => tabButtons[(int)tab];
+        public string StatusText => cashValue == null ? string.Empty : $"{cashValue.text}|{storeValue.text}|{overdriveCaption.text}";
 
         public bool Configure(UIDocument document, VisualTreeAsset tree, StyleSheet styles, Func<string, Sprite> icons = null)
         {
@@ -373,10 +358,17 @@ namespace IdleFactory.Unity.UI
             topStrip = root.Q<VisualElement>("top-strip");
             panelHost = root.Q<VisualElement>("panel-host");
             panelHeaderSlot = root.Q<VisualElement>("panel-header-slot");
-            panelTabsSlot = root.Q<VisualElement>("panel-tabs-slot");
-            tabBar = root.Q<VisualElement>("tab-bar");
+            layer = new PersistentLayer(root);
             panelContent = root.Q<VisualElement>("panel-content");
             panelScroll = root.Q<ScrollView>("panel-scroll");
+            if (panelScroll != null)
+            {
+                panelScroll.RegisterCallback<WheelEvent>(ReleasePanelHold, TrickleDown.TrickleDown);
+                panelScroll.RegisterCallback<PointerDownEvent>(ReleasePanelHold, TrickleDown.TrickleDown);
+                panelScroll.RegisterCallback<KeyDownEvent>(ReleasePanelHold, TrickleDown.TrickleDown);
+                panelScroll.RegisterCallback<NavigationMoveEvent>(ReleasePanelHold, TrickleDown.TrickleDown);
+            }
+
             panelTitle = root.Q<Label>("panel-title");
             detailLine = root.Q<Label>("detail-line");
             noticeBar = root.Q<VisualElement>("notice");
@@ -384,7 +376,6 @@ namespace IdleFactory.Unity.UI
             noticeIcon = root.Q<VisualElement>("notice-icon");
             worldHint = root.Q<VisualElement>("world-hint");
             cashValue = root.Q<Label>("cash-value");
-            rpValue = root.Q<Label>("rp-value");
             storeValue = root.Q<Label>("store-value");
             overdriveCaption = root.Q<Label>("overdrive-caption");
             storeBarFill = root.Q<VisualElement>("store-bar-fill");
@@ -399,7 +390,6 @@ namespace IdleFactory.Unity.UI
             dialogTitle = root.Q<Label>("dialog-title");
             dialogMessage = root.Q<Label>("dialog-message");
             CashButton = root.Q<Button>("cash");
-            RpButton = root.Q<Button>("rp");
             StoreButton = root.Q<Button>("store");
             OverdriveButton = root.Q<Button>("overdrive");
             SettingsButton = root.Q<Button>("settings");
@@ -408,25 +398,15 @@ namespace IdleFactory.Unity.UI
             CloseButton = root.Q<Button>("panel-close");
             DialogCancelButton = root.Q<Button>("dialog-cancel");
             DialogConfirmButton = root.Q<Button>("dialog-confirm");
-            for (var i = 0; i < Tabs.Length; i++)
-            {
-                tabButtons[i] = root.Q<Button>("tab-" + TabNames[i].ToLowerInvariant());
-            }
-
-            contractsBadge = root.Q<Label>("tab-contracts-badge");
-            researchBadge = root.Q<Label>("tab-research-badge");
-            contractsTabLabel = tabButtons[(int)ShellTab.Contracts]?.Q<Label>(className: "run-tab__label");
-
             if (body == null || main == null || worldColumn == null || topStrip == null || panelHost == null ||
-                panelHeaderSlot == null || panelTabsSlot == null || tabBar == null || panelContent == null ||
+                panelHeaderSlot == null || !layer.IsComplete || panelContent == null ||
                 panelScroll == null || panelTitle == null || detailLine == null || noticeLabel == null || noticeBar == null || noticeIcon == null || worldHint == null ||
-                cashValue == null || rpValue == null || storeValue == null || overdriveCaption == null ||
+                cashValue == null || storeValue == null || overdriveCaption == null ||
                 storeBarFill == null || overdriveIcon == null || zoomColumn == null || oreVein == null || dialogLayer == null ||
                 dialogCard == null || dialogIcon == null || focusRing == null || dialogTitle == null || dialogMessage == null ||
-                CashButton == null || RpButton == null || StoreButton == null || OverdriveButton == null || SettingsButton == null ||
+                CashButton == null || StoreButton == null || OverdriveButton == null || SettingsButton == null ||
                 ZoomInButton == null || ZoomOutButton == null || CloseButton == null ||
-                DialogCancelButton == null || DialogConfirmButton == null || Array.IndexOf(tabButtons, null) >= 0 ||
-                contractsBadge == null || contractsTabLabel == null)
+                DialogCancelButton == null || DialogConfirmButton == null)
             {
                 return Fail("The run shell UXML is malformed or missing required named elements.");
             }
@@ -437,6 +417,9 @@ namespace IdleFactory.Unity.UI
             }
 
             root.styleSheets.Add(styleSheet);
+            // T536 (FR-023, SC-009): the confirmation dialog and the notice line are scaffold surfaces like every hosted panel.
+            MarkScaffoldScope(dialogCard);
+            MarkScaffoldScope(noticeBar);
             oreVeinWanted = false;
             hasLastLayoutSize = false;
             oreVein.Root.style.display = DisplayStyle.None;
@@ -447,13 +430,16 @@ namespace IdleFactory.Unity.UI
             BuildLocationStop();
             ApplyIcons();
             built = true;
+            zoomStateKnown = false;
+            rawZoomInVisible = true;
+            rawZoomOutVisible = true;
+            rawZoomInAtLimit = false;
+            rawZoomOutAtLimit = false;
+            ApplyZoomState();
             Error = string.Empty;
             SetCash(0);
-            SetRp(0, false);
             SetStore(0, 0);
             SetOverdrive(null);
-            UpdateTabSelection();
-            ApplyContractsBadge();
             ShowPanel(null, null, -1);
             RebindCard();
             if (AutoProbeDevice)
@@ -477,6 +463,7 @@ namespace IdleFactory.Unity.UI
         public ShellScaleDecision ApplyDeviceProfile(ShellDeviceProfile profile)
         {
             deviceProfile = profile;
+            ApplyZoomState();
             var settings = uiDocument != null ? uiDocument.panelSettings : null;
             RestorePanelScale();
             var authored = ShellPanelScale.AuthoredPixelsPerPoint(settings, profile.ScreenWidthPx, profile.ScreenHeightPx, profile.Dpi);
@@ -513,7 +500,6 @@ namespace IdleFactory.Unity.UI
             }
 
             ApplyCardCap();
-            PlaceHubEntry();
         }
 
         private void ProbeNow(bool includeFontScale)
@@ -623,29 +609,8 @@ namespace IdleFactory.Unity.UI
                 element.style.paddingTop = top;
             }
 
-            // The tab bar and the Overdrive control move between the phone and side-panel positions (UX-1).
-            var sidePanel = FactoryHudDocument.HasSidePanel(Layout);
-            var tabParent = sidePanel ? panelTabsSlot : body;
-            if (tabBar.parent != tabParent)
-            {
-                tabParent.Add(tabBar);
-            }
-
-            // On a phone the top strip spans the whole width above the sheet row, so a side sheet in landscape never squeezes it;
-            // on tablet and desktop it sits above the world, beside the full-height side panel.
-            var stripParent = sidePanel ? worldColumn : body;
-            if (topStrip.parent != stripParent)
-            {
-                stripParent.Insert(0, topStrip);
-            }
-
-            var overdriveParent = sidePanel ? panelHeaderSlot : topStrip;
-            if (OverdriveButton.parent != overdriveParent)
-            {
-                overdriveParent.Add(OverdriveButton);
-            }
-
-            PlaceHubEntry();
+            // T537: the persistent controls move between the phone and side-panel homes (see PersistentLayer).
+            PlacePersistentLayer();
 
             // The card docks in the side panel on tablet and desktop and as a band or column in the main row on phones; the camera waits for
             // the new band after a resize or rotation (the band is known before the reframe).
@@ -721,7 +686,8 @@ namespace IdleFactory.Unity.UI
                 return false;
             }
 
-            var topPoint = Mathf.Max(bounds.yMin, strip.yMax);
+            // On a phone the strip lies outside the world column (above it in portrait, a column beside it in landscape); only on tablet and desktop it sits in it.
+            var topPoint = topStrip.parent == worldColumn ? Mathf.Max(bounds.yMin, strip.yMax) : bounds.yMin;
             foreach (var bar in new[] { detailLine, noticeBar, worldHint })
             {
                 // The notice, detail and hint bars overlay the first slot row, so the camera frames below them (T192, F-8).
@@ -731,35 +697,9 @@ namespace IdleFactory.Unity.UI
                 }
             }
 
-            if (HubEntryOnItsOwnRow && HubEntryButton.resolvedStyle.display != DisplayStyle.None && !float.IsNaN(HubEntryButton.worldBound.yMax) &&
-                bounds.yMax - Mathf.Max(topPoint, HubEntryButton.worldBound.yMax) >= MinWorldBelowHubRow)
-            {
-                // The phone portrait's entry row is chrome like a notice bar: the camera frames below it while the world keeps a usable height.
-                topPoint = Mathf.Max(topPoint, HubEntryButton.worldBound.yMax);
-            }
-
-            var leftPoint = zoom.width > 0f ? Mathf.Max(bounds.xMin, zoom.xMax) : bounds.xMin;
+            // The zoom column cuts the world only while it sits in the world column (on a phone in landscape it is in the right column).
+            var leftPoint = zoomColumn.parent == worldColumn && zoom.width > 0f ? Mathf.Max(bounds.xMin, zoom.xMax) : bounds.xMin;
             var bottomPoint = bounds.yMax;
-            if (HubEntryOverlay && HubEntryButton.resolvedStyle.display != DisplayStyle.None && !float.IsNaN(HubEntryButton.worldBound.yMin) && !float.IsNaN(HubEntryButton.worldBound.xMax))
-            {
-                // U-1 (C1): the landscape overlay never covers the framed world. As for the ore vein, the rectangle either ends above the entry or starts
-                // right of it, whichever leaves the larger fitting scale (the larger area breaks a tie).
-                var entry = HubEntryButton.worldBound;
-                var above = entry.yMin > topPoint ? Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, Mathf.Min(bottomPoint, entry.yMin)) : Rect.zero;
-                var beside = entry.xMax < bounds.xMax ? Rect.MinMaxRect(Mathf.Max(leftPoint, entry.xMax), topPoint, bounds.xMax, bottomPoint) : Rect.zero;
-                var entryLayout = WorldLayoutFor(root.panel.visualTree.worldBound);
-                var aboveScale = FittingScale(above, entryLayout, pixelsPerPoint);
-                var besideScale = FittingScale(beside, entryLayout, pixelsPerPoint);
-                if (beside.width > 0f && (besideScale > aboveScale || (besideScale == aboveScale && beside.width * beside.height > above.width * above.height)))
-                {
-                    leftPoint = beside.xMin;
-                }
-                else if (above.width > 0f)
-                {
-                    bottomPoint = above.yMax;
-                }
-            }
-
             var available = Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, bottomPoint);
             if (oreVeinWanted && IsDisplayed(oreVein.Root))
             {
@@ -815,136 +755,45 @@ namespace IdleFactory.Unity.UI
         }
 
         // ------------------------------------------------------------------------------------------------------
-        // Contracts tab badge (T330, ui-surfaces-f005.md tab-contracts-badge)
+        // Production attention (T537, FR-026)
         // ------------------------------------------------------------------------------------------------------
 
-        /// <summary>How the Contracts tab shows the number of deliverable contracts.</summary>
-        public enum ContractsBadgeMode
-        {
-            /// <summary>Nothing is deliverable: no badge, the tab reads "Contracts".</summary>
-            None = 0,
-
-            /// <summary>"Contracts (n)" (n above 9 reads "9+"; the accessible name carries the exact number).</summary>
-            Count = 1,
-
-            /// <summary>"Contracts !" when the count does not fit the tab.</summary>
-            Bang = 2,
-
-            /// <summary>The compact fallback: a "•" dot in the corner of the tab.</summary>
-            Dot = 3,
-        }
-
-        /// <summary>The visible text of the Contracts tab label: "Contracts", "Contracts (n)" or "Contracts !".</summary>
-        public string ContractsTabText => contractsTabLabel != null ? contractsTabLabel.text : string.Empty;
-
-        /// <summary>The compact badge glyph (a bullet).</summary>
-        public const string DotGlyph = "•";
-
-        /// <summary>The badge text element of the Contracts tab (<c>tab-contracts-badge</c>).</summary>
-        public Label ContractsBadge => contractsBadge;
-
-        /// <summary>The number of deliverable contracts the badge was last given.</summary>
-        public int ContractsDeliverable => contractsDeliverable;
-
-        /// <summary>The form the badge currently takes (None while nothing is deliverable).</summary>
-        public ContractsBadgeMode ContractsBadgeForm => contractsBadgeMode;
-
         /// <summary>
-        /// Sets the number of contracts that can be delivered now (computed by the caller from the contracts snapshot; the shell holds no rule).
-        /// 0 clears the badge. The form is chosen by measuring the tab: "Contracts (n)", else "Contracts !", else the "•" dot. The accessible
-        /// name (the tooltip) is "Contracts, n deliverable", or "Contracts" when cleared.
+        /// Shows the production attention indicator of the persistent layer for a strip of the attention model (the shortage resource with its icon,
+        /// the count and "+N", or store full), or hides it. A tap selects the first affected location through <see cref="LocationActivated"/>.
         /// </summary>
-        public void SetContractsBadge(int deliverable)
+        public void SetProductionAttention(AttentionStrip strip, string causeText, string iconKey)
         {
             if (!EnsureReady())
             {
                 return;
             }
 
-            contractsDeliverable = Math.Max(0, deliverable);
-            ApplyContractsBadge();
+            layer.SetProductionAttention(strip, causeText, element => SetIcon(element, iconKey));
         }
 
-        /// <summary>The "•" dot on the Research tab while unspent Influence Points exist (R-01); the tab's tooltip is its accessible name.</summary>
-        public Label ResearchBadge => researchBadge;
+        /// <summary>The location the production attention indicator selects on a tap, or -1 while it shows nothing.</summary>
+        public int ProductionAttentionSlot => layer?.AttentionSlot ?? -1;
 
-        /// <summary>The unspent IP the Research tab indicator was last given.</summary>
-        public long IndustryPoints => industryPoints;
+        /// <summary>True while the production attention indicator shows.</summary>
+        public bool IsProductionAttentionShown => layer != null && layer.IsAttentionShown;
 
-        /// <summary>
-        /// Sets the unspent Influence Points (the caller reads them from the permanent state; the shell holds no rule). Above 0 the Research tab
-        /// shows a dot and its accessible name reads "Research, N IP to spend in Industry"; 0 clears both.
-        /// </summary>
-        public void SetIndustryPoints(long ip)
+        /// <summary>The visible count of the production attention indicator (the affected machines), or empty.</summary>
+        public string ProductionAttentionCountText => layer?.AttentionCountText ?? string.Empty;
+
+        /// <summary>The visible "+N" of the production attention indicator, or empty.</summary>
+        public string ProductionAttentionMoreText => layer?.AttentionMoreText ?? string.Empty;
+
+        /// <summary>The world layout the production attention is cut for: the bootstrap's, or the F004 lattice for the panel's orientation. Null before the first layout.</summary>
+        internal FactoryWorldLayout CurrentWorldLayout()
         {
-            if (!built)
+            if (worldLayout != null)
             {
-                return;
+                return worldLayout;
             }
 
-            industryPoints = Math.Max(0L, ip);
-            var button = tabButtons[(int)ShellTab.Research];
-            var any = industryPoints > 0;
-            if (researchBadge != null)
-            {
-                researchBadge.text = any ? DotGlyph : string.Empty;
-                researchBadge.style.display = any ? DisplayStyle.Flex : DisplayStyle.None;
-            }
-
-            button.tooltip = any ? "Research, " + QuantityFormatter.Format(industryPoints) + " IP to spend in Industry" : "Research";
+            return hasLastLayoutSize ? LatticeLayoutBuilder.Shipped(LatticeLayoutBuilder.OrientationFor(lastLayoutWidth, lastLayoutHeight)) : null;
         }
-
-        private static string ContractsBadgeCount(int deliverable) =>
-            deliverable > 9 ? "9+" : deliverable.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-        private void ApplyContractsBadge()
-        {
-            if (!built || contractsBadge == null || contractsTabLabel == null)
-            {
-                return;
-            }
-
-            var button = tabButtons[(int)ShellTab.Contracts];
-            if (contractsDeliverable <= 0)
-            {
-                contractsBadgeMode = ContractsBadgeMode.None;
-                contractsBadge.text = string.Empty;
-                contractsBadge.style.display = DisplayStyle.None;
-                contractsTabLabel.text = "Contracts";
-                button.tooltip = "Contracts";
-                return;
-            }
-
-            var countText = "(" + ContractsBadgeCount(contractsDeliverable) + ")";
-            var mode = ContractsBadgeMode.Dot;
-            var available = button.contentRect.width;
-            if (float.IsNaN(available) || available <= 0f)
-            {
-                // Not laid out yet: the short form fits every width; the geometry callback refines it.
-                mode = ContractsBadgeMode.Count;
-            }
-            else
-            {
-                available -= button.resolvedStyle.paddingLeft + button.resolvedStyle.paddingRight + 10f;
-                if (MeasureTabText("Contracts " + countText) <= available)
-                {
-                    mode = ContractsBadgeMode.Count;
-                }
-                else if (MeasureTabText("Contracts !") <= available)
-                {
-                    mode = ContractsBadgeMode.Bang;
-                }
-            }
-
-            contractsBadgeMode = mode;
-            contractsTabLabel.text = mode == ContractsBadgeMode.Count ? "Contracts " + countText : mode == ContractsBadgeMode.Bang ? "Contracts !" : "Contracts";
-            contractsBadge.text = mode == ContractsBadgeMode.Dot ? DotGlyph : string.Empty;
-            contractsBadge.style.display = mode == ContractsBadgeMode.Dot ? DisplayStyle.Flex : DisplayStyle.None;
-            button.tooltip = "Contracts, " + contractsDeliverable.ToString(System.Globalization.CultureInfo.InvariantCulture) + " deliverable";
-        }
-
-        private float MeasureTabText(string text) =>
-            contractsTabLabel.MeasureTextSize(text, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
 
         // ------------------------------------------------------------------------------------------------------
         // Top strip values
@@ -961,20 +810,6 @@ namespace IdleFactory.Unity.UI
             cashValue.text = QuantityFormatter.Format(value);
             CashButton.tooltip = "Cash " + cashValue.text;
             RefreshDetailFor(CashButton);
-        }
-
-        /// <summary>Sets RP; the RP cell is hidden until the player has unlocked RP (UX-1).</summary>
-        public void SetRp(long value, bool unlocked)
-        {
-            if (!EnsureReady())
-            {
-                return;
-            }
-
-            rp = value;
-            rpValue.text = QuantityFormatter.Format(value);
-            RpButton.style.display = unlocked ? DisplayStyle.Flex : DisplayStyle.None;
-            RefreshDetailFor(RpButton);
         }
 
         public void SetStore(long used, long capacity)
@@ -1050,6 +885,7 @@ namespace IdleFactory.Unity.UI
             overdriveCaption.text = caption;
             SetIcon(overdriveIcon, iconKey);
             OverdriveButton.EnableInClassList("run-overdrive--active", active);
+            OverdriveButton.EnableInClassList("run-overdrive--ready", !soft);
             SetSoftDisabled(OverdriveButton, soft);
             // The accessible name leads with the control's name, then its state and the reason (F9: the icon alone never names it).
             OverdriveButton.tooltip = "Overdrive " + caption + ". " + reason;
@@ -1433,7 +1269,7 @@ namespace IdleFactory.Unity.UI
             }
 
             var focused = root.panel?.focusController?.focusedElement as VisualElement;
-            var focusWasInside = focused != null && panelHost.Contains(focused) && !tabBar.Contains(focused);
+            var focusWasInside = focused != null && panelHost.Contains(focused);
             var wasSettings = settingsOpen;
             var wasHub = IsHubFamilyOpen || (hubInvokedPanelId != null && hubInvokedPanelId == activePanelId);
             hubInvokedPanelId = null;
@@ -1447,7 +1283,7 @@ namespace IdleFactory.Unity.UI
             UpdateSheetState();
             if (returnFocusToTab && focusWasInside)
             {
-                FocusWhenReady(wasHub ? HubEntryButton : wasSettings ? SettingsButton : TabButton(ShellTab.Factory));
+                FocusWhenReady(wasHub ? HubEntryButton : wasSettings ? SettingsButton : HubEntryButton);
             }
         }
 
@@ -1644,6 +1480,11 @@ namespace IdleFactory.Unity.UI
             cardBandPending = false;
             cardPanel?.OnHidden();
             root?.EnableInClassList("run-shell--card-open", false);
+            if (layer != null && root != null)
+            {
+                PlacePersistentLayer();
+            }
+
             if (clearSelection)
             {
                 SetSelectedSlot(-1);
@@ -1964,6 +1805,7 @@ namespace IdleFactory.Unity.UI
 
             activePanelId = id;
             settingsOpen = id == ShellPanelIds.Settings;
+            HoldPanelAtTop();
             foreach (var child in panelContent.Children())
             {
                 if (child != placeholder)
@@ -1979,6 +1821,8 @@ namespace IdleFactory.Unity.UI
                     panelContent.Add(panel.Root);
                 }
 
+                // T536 (FR-023, SC-009): every hosted panel is a scaffold surface (scope class, scaffold buttons and the one disabled look).
+                MarkScaffoldScope(panel.Root);
                 panel.Root.style.display = DisplayStyle.Flex;
                 placeholder.style.display = DisplayStyle.None;
                 panelTitle.text = string.IsNullOrEmpty(title) ? panel.Title : title;
@@ -1992,9 +1836,21 @@ namespace IdleFactory.Unity.UI
                 placeholder.style.display = DisplayStyle.Flex;
             }
 
-            UpdateTabSelection();
             ActivePanelChanged?.Invoke(id);
         }
+
+        // T555 (U-B6): every system view and Details opens scrolled to the top, with its heading, machine name and status in view, also when focus moves into
+        // the view as it opens (a programmatic focus must not scroll the sheet past its header). The hold ends with the player's first scroll or key input.
+        private bool panelTopHold;
+        private int programmaticFocus;
+
+        private void HoldPanelAtTop()
+        {
+            panelTopHold = true;
+            panelScroll.scrollOffset = Vector2.zero;
+        }
+
+        private void ReleasePanelHold(EventBase evt) => panelTopHold = false;
 
         private void RefreshPlaceholder()
         {
@@ -2044,38 +1900,27 @@ namespace IdleFactory.Unity.UI
             panelContent.Add(placeholder);
         }
 
+        /// <summary>
+        /// Places the persistent controls for the current class and the sheet state (T555): on a phone in landscape, while the card or a sheet is open,
+        /// Cash, the store fill and Overdrive stay on screen as a one-row band above the world (the camera rectangle starts below it).
+        /// </summary>
+        private void PlacePersistentLayer()
+        {
+            layer.SetSheetOpen(sheetOpen || cardOpen);
+            layer.Place(Layout, body, worldColumn, panelHeaderSlot);
+            root.EnableInClassList("run-shell--status-band", layer.IsStatusBand(Layout));
+        }
+
+        /// <summary>True while Cash, the store fill and Overdrive form the band above the world (phone landscape with the card or a sheet open).</summary>
+        public bool IsStatusBandShown => layer != null && layer.IsStatusBand(Layout);
+
         private void UpdateSheetState()
         {
             // On a phone the sheet is closed until a tab or slot opens it; the side panel of tablet and desktop is always there.
             root.EnableInClassList("run-shell--sheet-open", sheetOpen);
+            PlacePersistentLayer();
             UpdateEmptyHint();
             UpdateOreVeinVisibility();
-        }
-
-        private void UpdateTabSelection()
-        {
-            for (var i = 0; i < Tabs.Length; i++)
-            {
-                tabButtons[i].EnableInClassList("run-tab--selected", Tabs[i] == activeTab);
-            }
-        }
-
-        private void OnTabClicked(ShellTab tab)
-        {
-            if (!IsSidePanelLayout && tab != ShellTab.Factory && tab == activeTab && sheetOpen)
-            {
-                // Tapping the open phone tab again closes its sheet.
-                CloseSheet();
-                return;
-            }
-
-            if (tab == ShellTab.Factory && selectedSlot < 0 && !sheetOpen && IsSidePanelLayout)
-            {
-                ShowPanel(null, null, -1);
-                return;
-            }
-
-            SelectTab(tab);
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -2183,7 +2028,7 @@ namespace IdleFactory.Unity.UI
                 }
                 else
                 {
-                    FocusWhenReady(TabButton(activeTab));
+                    FocusWhenReady(SheetFocusFallback);
                 }
             }
 
@@ -2496,16 +2341,20 @@ namespace IdleFactory.Unity.UI
         // Controls, focus and icons
         // ------------------------------------------------------------------------------------------------------
 
-        /// <summary>
-        /// Marks a control as disabled with its reason shown elsewhere: it stays focusable (Art Bible 9.4), looks disabled and
-        /// the command behind it must reject activation with the reason. A real <c>SetEnabled(false)</c> removes focus.
-        /// </summary>
-        public static void SetSoftDisabled(VisualElement control, bool disabled)
-        {
-            control.EnableInClassList("run-control--soft-disabled", disabled);
-        }
+        /// <summary>Marks a control as soft-disabled (see <see cref="ScaffoldScope.SetSoftDisabled"/>; the logic moved there in T537).</summary>
+        public static void SetSoftDisabled(VisualElement control, bool disabled) => ScaffoldScope.SetSoftDisabled(control, disabled);
 
-        public static bool IsSoftDisabled(VisualElement control) => control.ClassListContains("run-control--soft-disabled");
+        /// <summary>The scope class of a scaffold surface (T536); see <see cref="ScaffoldScope.ScopeClass"/>.</summary>
+        public const string ScaffoldScopeClass = ScaffoldScope.ScopeClass;
+
+        public const string ScaffoldButtonClass = ScaffoldScope.ButtonClass;
+
+        public const string ScaffoldDisabledClass = ScaffoldScope.DisabledClass;
+
+        /// <summary>Makes a hosted surface a scaffold surface (T536, FR-023, SC-009); see <see cref="ScaffoldScope.Mark"/>.</summary>
+        public static void MarkScaffoldScope(VisualElement root) => ScaffoldScope.Mark(root);
+
+        public static bool IsSoftDisabled(VisualElement control) => ScaffoldScope.IsSoftDisabled(control);
 
         /// <summary>The focusable, enabled, displayed controls in tab order, restricted to the dialog while it is open.</summary>
         public IReadOnlyList<VisualElement> GetFocusOrder()
@@ -2587,6 +2436,13 @@ namespace IdleFactory.Unity.UI
             return true;
         }
 
+        /// <summary>
+        /// Where focus falls back to when its target is gone and a panel may be open: the hub entry while it is on screen (portrait, tablet, desktop),
+        /// else the sheet's Close (a phone in landscape hides the persistent columns while a sheet is open).
+        /// </summary>
+        public Button SheetFocusFallback => HubEntryButton != null && IsDisplayed(HubEntryButton) ? HubEntryButton
+            : CloseButton != null && IsDisplayed(CloseButton) ? CloseButton : HubEntryButton;
+
         /// <summary>Gives an element focus as soon as it can take it (its style may not be resolved the frame it was shown).</summary>
         public void FocusWhenReady(VisualElement element)
         {
@@ -2601,7 +2457,7 @@ namespace IdleFactory.Unity.UI
             FocusRetryPending = false;
 
             var initial = element.focusController?.focusedElement;
-            element.Focus();
+            FocusProgrammatic(element);
             if (element.focusController?.focusedElement == element)
             {
                 return;
@@ -2628,7 +2484,7 @@ namespace IdleFactory.Unity.UI
                     return;
                 }
 
-                element.Focus();
+                FocusProgrammatic(element);
                 if (element.focusController?.focusedElement == element)
                 {
                     item.Pause();
@@ -2642,6 +2498,19 @@ namespace IdleFactory.Unity.UI
             focusRetry = item;
             focusRetryElement = element;
             FocusRetryPending = true;
+        }
+
+        private void FocusProgrammatic(VisualElement element)
+        {
+            programmaticFocus++;
+            try
+            {
+                element.Focus();
+            }
+            finally
+            {
+                programmaticFocus--;
+            }
         }
 
         private IVisualElementScheduledItem focusRetry;
@@ -2688,8 +2557,16 @@ namespace IdleFactory.Unity.UI
                 PositionFocusRing();
             }
 
-            // A clipped control scrolls into view when it receives focus (UI surfaces contract, Controls).
-            ScrollIntoView(target);
+            // A clipped control scrolls into view when it receives focus (UI surfaces contract, Controls). A view that has just opened stays at its
+            // top when the shell itself moves focus into it (T555, U-B6).
+            if (panelTopHold && programmaticFocus > 0 && panelScroll.contentContainer.Contains(target))
+            {
+                panelScroll.scrollOffset = Vector2.zero;
+            }
+            else
+            {
+                ScrollIntoView(target);
+            }
         }
 
         /// <summary>
@@ -2783,6 +2660,7 @@ namespace IdleFactory.Unity.UI
             button.AddToClassList("run-control");
             button.AddToClassList("run-button");
             button.AddToClassList(primary ? "run-button--primary" : "run-button--secondary");
+            button.AddToClassList(ScaffoldButtonClass);
             return button;
         }
 
@@ -2813,21 +2691,16 @@ namespace IdleFactory.Unity.UI
         private void ApplyIcons()
         {
             SetIcon(root.Q<VisualElement>("cash-icon"), "F003-UI-ICON-CASH");
-            SetIcon(root.Q<VisualElement>("rp-icon"), "F003-UI-ICON-RP");
             SetIcon(root.Q<VisualElement>("store-icon"), "F003-UI-ICON-STORAGE");
             SetIcon(root.Q<VisualElement>("panel-close-icon"), "F003-UI-ICON-CLOSE");
             SetIcon(root.Q<VisualElement>("world-hint-icon"), "F003-UI-ICON-BUILD");
             ApplySettingsGlyph(root.Q<VisualElement>("settings-icon"));
             ApplyHubIcon();
-            foreach (var host in new VisualElement[] { CashButton, RpButton, StoreButton })
+            foreach (var host in new VisualElement[] { CashButton, StoreButton })
             {
                 SetIcon(PinHintOf(host), "F003-UI-ICON-INFO");
             }
 
-            for (var i = 0; i < Tabs.Length; i++)
-            {
-                SetIcon(root.Q<VisualElement>("tab-" + TabNames[i].ToLowerInvariant() + "-icon"), TabIconKeys[i]);
-            }
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -2836,20 +2709,12 @@ namespace IdleFactory.Unity.UI
 
         private void BindCallbacks()
         {
-            for (var i = 0; i < Tabs.Length; i++)
-            {
-                var tab = Tabs[i];
-                tabButtons[i].clicked += () => OnTabClicked(tab);
-            }
-
-            tabButtons[(int)ShellTab.Contracts].RegisterCallback<GeometryChangedEvent>(evt => ApplyContractsBadge());
-            tabBar.RegisterCallback<KeyDownEvent>(OnTabKeyDown);
-            tabBar.RegisterCallback<NavigationMoveEvent>(OnTabNavigationMove);
             CloseButton.clicked += () => CloseSheetOrDetails();
             CloseButton.tooltip = "Close";
             ZoomInButton.clicked += () => OnZoomClicked(1);
             ZoomOutButton.clicked += () => OnZoomClicked(-1);
             OverdriveButton.clicked += OnOverdriveClicked;
+            layer.AttentionButton.clicked += OnProductionAttentionClicked;
             SettingsButton.clicked += ToggleSettings;
             SettingsButton.tooltip = SettingsName;
             DialogCancelButton.clicked += () => CloseDialog(ConfirmationCloseReason.Cancelled);
@@ -2862,7 +2727,6 @@ namespace IdleFactory.Unity.UI
             root.RegisterCallback<FocusOutEvent>(OnFocusOut);
             root.RegisterCallback<PointerDownEvent>(OnRootPointerDown, TrickleDown.TrickleDown);
             AttachExactValue(CashButton, () => "Cash: " + QuantityFormatter.FormatExact(cash));
-            AttachExactValue(RpButton, () => "Research points: " + QuantityFormatter.FormatExact(rp));
             AttachExactValue(StoreButton, () => storeCapacity > 0
                 ? "Store: " + QuantityFormatter.FormatExact(storeUsed) + " of " + QuantityFormatter.FormatExact(storeCapacity) +
                   " units (" + StorePercent(storeUsed, storeCapacity) + "%)"
@@ -2913,6 +2777,48 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
+            rawZoomInVisible = zoomInVisible;
+            rawZoomInAtLimit = zoomInAtLimit;
+            rawZoomOutVisible = zoomOutVisible;
+            rawZoomOutAtLimit = zoomOutAtLimit;
+            ApplyZoomState();
+        }
+
+        /// <summary>
+        /// The "Show zoom buttons" display preference (FR-008a, T538). On a touch profile the buttons stay hidden until it is on (pinch is the default);
+        /// on a pointer profile they show either way. The bootstrap writes it from the display-preferences store.
+        /// </summary>
+        public bool ShowZoomButtonsPreference
+        {
+            get => showZoomButtonsPreference;
+            set
+            {
+                if (value == showZoomButtonsPreference)
+                {
+                    return;
+                }
+
+                showZoomButtonsPreference = value;
+                ApplyZoomState();
+            }
+        }
+
+        /// <summary>True when the zoom buttons may show for the device profile and the preference (pointer profile, or touch with the preference on).</summary>
+        public bool ZoomButtonsAllowed => PersistentLayer.ZoomButtonsAllowed(deviceProfile, showZoomButtonsPreference);
+
+        private void ApplyZoomState()
+        {
+            if (!IsReady)
+            {
+                return;
+            }
+
+            var allowed = ZoomButtonsAllowed;
+            var zoomInVisible = rawZoomInVisible && allowed;
+            var zoomOutVisible = rawZoomOutVisible && allowed;
+            var zoomInAtLimit = rawZoomInAtLimit;
+            var zoomOutAtLimit = rawZoomOutAtLimit;
+            zoomColumn.style.display = zoomInVisible || zoomOutVisible ? StyleKeyword.Null : (StyleEnum<DisplayStyle>)DisplayStyle.None;
             if (zoomStateKnown && this.zoomInAtLimit == (zoomInVisible && zoomInAtLimit) && this.zoomOutAtLimit == (zoomOutVisible && zoomOutAtLimit) &&
                 zoomInShown == zoomInVisible && zoomOutShown == zoomOutVisible)
             {
@@ -3015,6 +2921,16 @@ namespace IdleFactory.Unity.UI
             ShowPanel(activePanelId, panelTitle.text, selectedSlot);
         }
 
+        private void OnProductionAttentionClicked()
+        {
+            // A tap on the production attention indicator selects the first affected location, as a tap on the world does.
+            var slot = layer.AttentionSlot;
+            if (slot >= 0)
+            {
+                LocationActivated?.Invoke(slot);
+            }
+        }
+
         private void OnOverdriveClicked()
         {
             if (IsSoftDisabled(OverdriveButton))
@@ -3024,55 +2940,6 @@ namespace IdleFactory.Unity.UI
             }
 
             OverdriveRequested?.Invoke();
-        }
-
-        private void OnTabKeyDown(KeyDownEvent evt)
-        {
-            if (evt.keyCode == KeyCode.LeftArrow)
-            {
-                MoveTabFocus(-1);
-                evt.StopPropagation();
-            }
-            else if (evt.keyCode == KeyCode.RightArrow)
-            {
-                MoveTabFocus(1);
-                evt.StopPropagation();
-            }
-        }
-
-        private void OnTabNavigationMove(NavigationMoveEvent evt)
-        {
-            if (evt.direction == NavigationMoveEvent.Direction.Left)
-            {
-                MoveTabFocus(-1);
-                evt.StopPropagation();
-            }
-            else if (evt.direction == NavigationMoveEvent.Direction.Right)
-            {
-                MoveTabFocus(1);
-                evt.StopPropagation();
-            }
-        }
-
-        private void MoveTabFocus(int direction)
-        {
-            // The input system raises a key event and a navigation event for one arrow press: act on the first only.
-            if (lastMoveFrame == Time.frameCount && lastMoveDirection == direction && Application.isPlaying)
-            {
-                return;
-            }
-
-            lastMoveFrame = Time.frameCount;
-            lastMoveDirection = direction;
-            var focused = root.panel?.focusController?.focusedElement as VisualElement;
-            var index = Array.IndexOf(tabButtons, focused as Button);
-            if (index < 0)
-            {
-                return;
-            }
-
-            var next = Mathf.Clamp(index + direction, 0, tabButtons.Length - 1);
-            tabButtons[next].Focus();
         }
 
         private void Update()
@@ -3177,7 +3044,7 @@ namespace IdleFactory.Unity.UI
                 if (focused != null && oreVein.Root.Contains(focused))
                 {
                     oreVein.Root.Blur();
-                    FocusWhenReady(TabButton(activeTab));
+                    FocusWhenReady(SheetFocusFallback);
                 }
             }
         }

@@ -117,6 +117,11 @@ namespace IdleFactory.Tests.PlayMode
             // On the side-panel classes Overdrive sits in the panel header (after the world); T537 rebuilds the persistent layer.
             foreach (var persistent in new VisualElement[] { h.Shell.CashButton, h.Shell.StoreButton, h.Shell.SettingsButton })
             {
+                if (!RunShellLayoutAssertions.IsDisplayed(persistent))
+                {
+                    continue; // T537: a phone in landscape hides the persistent columns while the card is open.
+                }
+
                 Assert.That(IndexOf(persistent), Is.LessThan(stop), $"{screen}: '{persistent.name}' of the persistent layer comes before the locations");
             }
 

@@ -143,14 +143,27 @@ namespace IdleFactory.Unity.UI.Panels
             return label;
         }
 
-        /// <summary>A number the player can focus or tap to read exactly: a 44 pt control that shows a compact value.</summary>
-        public static Button NewValueButton(string name, string cssClass)
+        /// <summary>A number the player can focus or tap to read exactly: a control (48 pt, T536) that shows a compact value.</summary>
+        /// <summary>
+        /// A focusable value the player can read exactly (hover, focus, tap). With <paramref name="readOnly"/> it takes the scaffold's read-only value look
+        /// (T555, U-B8): no border box and no fill, so it never reads as a pressable button; it keeps its 44 pt target and focus ring.
+        /// </summary>
+        public static Button NewValueButton(string name, string cssClass, bool readOnly = true)
         {
             var button = new Button { name = name, focusable = true };
             button.AddToClassList("run-control");
             button.AddToClassList(cssClass);
+            button.AddToClassList(RunShellDocument.ScaffoldButtonClass);
+            if (readOnly)
+            {
+                button.AddToClassList(ReadOnlyValueClass);
+            }
+
             return button;
         }
+
+        /// <summary>The class of a read-only value (T555, U-B8): see <see cref="NewValueButton"/>.</summary>
+        public const string ReadOnlyValueClass = "scaffold-value";
 
         public static void SetIcon(VisualElement element, Func<string, Sprite> icons, string key)
         {

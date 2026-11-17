@@ -20,10 +20,18 @@ namespace IdleFactory.Editor.Art
     /// A key has no fallback frame (T476, owner decision 2026-11-05): the Feature 003 placeholder sprites are deleted. Batch entry:
     /// <c>-executeMethod IdleFactory.Editor.Art.F004ArtIntegration.RunFromCommandLine -f004Families machines,slots</c>
     /// (optional <c>-f004Steps import,atlas,catalog</c>, default all three).
-    /// T471 adds the floor family (one 70 x 54 tile, the T456 floor period, Art Bible 3.5) and hardens the run: it fails before any write on a
+    /// T471 added the floor family (one 70 x 54 tile, the T456 floor period, Art Bible 3.5); T527 (A-13) removed it again, because the F006 deck
+    /// Tilemap replaces the F004 floor pool, so the floor family, its atlas and its catalog key are no longer imported (the sources stay in
+    /// <c>art-source/f004/floor</c>). T471 also hardened the run: it fails before any write on a
     /// duplicate destination path, catalog key or asset id and on an orphan PNG in a family folder (<c>-f004RemoveOrphans</c> removes the orphans
     /// instead), verifies the SHA-256 of every destination file after the copy, and guards the scene switch of the catalog step for interactive use.
     /// </summary>
+    /// <remarks>
+    /// <b>A full F004 re-import reverts the K4 badge tails (P2-F5, Art Bible 21.9 item 7).</b> The shipped F004 cue sprites are the approved F006 K4
+    /// tail sprites (<c>art-source/f006/cue</c>, swapped in by <c>F006ArtIntegration.SwapCueTails</c>), not the <c>art-source/f004/cues</c> originals this
+    /// importer copies. After any run of the <c>cues</c> family here, run <c>F006ArtIntegration</c> with <c>-f006Steps cues</c> again;
+    /// <c>F004AssetContractTests</c> guards the hashes and fails otherwise.
+    /// </remarks>
     public static class F004ArtIntegration
     {
         public const string SourceRoot = "art-source/f004";
@@ -32,11 +40,11 @@ namespace IdleFactory.Editor.Art
         /// <summary>Families that T440 imports, with their source manifests (merged in this order), in import order.</summary>
         public static readonly string[] FamilyNames =
         {
-            "machines", "slots", "cues", "markers", "items", "resources", "ui-icons", "floor",
+            "machines", "slots", "cues", "markers", "items", "resources", "ui-icons",
         };
 
         /// <summary>Families whose sprites are drawn in the world and therefore packed into a Sprite Atlas v2 (Art Bible budget 7).</summary>
-        public static readonly string[] AtlasFamilies = { "machines", "slots", "cues", "markers", "floor" };
+        public static readonly string[] AtlasFamilies = { "machines", "slots", "cues", "markers" };
 
         private static readonly Dictionary<string, string[]> SourceManifests = new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
@@ -47,7 +55,6 @@ namespace IdleFactory.Editor.Art
             { "items", new[] { "manifest.json", "manifest-t464.json" } },
             { "resources", new[] { "manifest.json" } },
             { "ui-icons", new[] { "manifest.json" } },
-            { "floor", new[] { "manifest.json" } },
         };
 
         [Serializable]

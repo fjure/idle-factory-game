@@ -46,6 +46,8 @@ namespace IdleFactory.Unity.UI.Panels
         {
             root = new VisualElement { name = name };
             root.AddToClassList("status-surface");
+            // T536 (FR-023, SC-009): the surface is a scaffold surface (its buttons take the 48 pt floor and the one disabled look).
+            root.AddToClassList(RunShellDocument.ScaffoldScopeClass);
             root.style.display = DisplayStyle.None;
             if (styles != null)
             {

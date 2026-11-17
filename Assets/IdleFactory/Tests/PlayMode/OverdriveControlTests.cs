@@ -67,7 +67,12 @@ namespace IdleFactory.Tests.PlayMode
             control.Notice += (text, kind) => notices.Add(text);
             // The control sits in the open sheet's header, where the tablet and desktop layouts put the Overdrive control (UX-1).
             rig.Shell.Panels.Register(new TestShellPanel(ShellPanelIds.Market, "Market", 2, false, true));
-            rig.Shell.SelectTab(ShellTab.Market);
+            if (rig.Shell.IsSidePanelLayout)
+            {
+                // T537: on a phone the control sits in the action bar, which a phone in landscape hides while a sheet is open; only the side-panel header needs the sheet.
+                rig.Shell.SelectTab(ShellTab.Market);
+            }
+
             MountControl();
             rig.Shell.OverdriveButton.style.display = DisplayStyle.None;
             yield return ShellRig.Settle();
@@ -90,15 +95,11 @@ namespace IdleFactory.Tests.PlayMode
         private void MountControl()
         {
             control.MountInto(HostFor(rig));
-            if (!rig.Shell.IsSidePanelLayout && rig.Shell.SettingsButton != null)
-            {
-                control.Button.PlaceBehind(rig.Shell.SettingsButton);
-            }
         }
 
-        /// <summary>The side-panel header on tablet and desktop, the top strip on a phone (UX-1): the header slot is not shown on a phone.</summary>
+        /// <summary>The side-panel header on tablet and desktop, the action bar on a phone (T537): the header slot is not shown on a phone.</summary>
         private static VisualElement HostFor(ShellRig forRig) =>
-            forRig.Shell.IsSidePanelLayout ? forRig.Shell.Root.Q<VisualElement>("panel-header-slot") : forRig.Shell.TopStrip;
+            forRig.Shell.IsSidePanelLayout ? forRig.Shell.Root.Q<VisualElement>("panel-header-slot") : forRig.Shell.ActionBar;
 
         // Content values come from the shipped catalog (T344), never from a typed revision.
         private static long BoostMs => RunShellFixtures.OverdriveDurationMs;
@@ -352,7 +353,7 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(IsDisplayed(button), Is.True);
                 var safe = rig.SafeRect();
                 AssertWithin(safe, button.worldBound, $"{screen} @{percent}%: the {stage} control stays in the safe area");
-                AssertWithin((rig.Shell.IsSidePanelLayout ? rig.Shell.PanelHost : rig.Shell.TopStrip).worldBound, button.worldBound, $"{screen} @{percent}%: the {stage} control stays in its host");
+                AssertWithin((rig.Shell.IsSidePanelLayout ? rig.Shell.PanelHost : rig.Shell.ActionBar).worldBound, button.worldBound, $"{screen} @{percent}%: the {stage} control stays in its host");
                 Assert.That(button.worldBound.width, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance));
                 Assert.That(button.worldBound.height, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance));
                 button.Focus();

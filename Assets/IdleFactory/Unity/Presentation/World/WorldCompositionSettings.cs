@@ -66,22 +66,59 @@ namespace IdleFactory.Unity.Presentation
     /// </summary>
     public readonly struct LayoutComposition
     {
-        public LayoutComposition(float marginCells, int deckBandCells, MarginCellRule depotRule, MarginCellRule depositRule)
+        public LayoutComposition(float marginWorldUnits, int deckBandCells, MarginCellRule depotRule, MarginCellRule depositRule)
         {
-            MarginCells = marginCells;
+            MarginWorldUnits = marginWorldUnits;
             DeckBandCells = deckBandCells;
             DepotRule = depotRule;
             DepositRule = depositRule;
         }
 
         /// <summary>The fit margin the camera model adds around <see cref="FactoryWorldLayout.Bounds"/>, in world units (cells of 24 art px).</summary>
-        public float MarginCells { get; }
+        public float MarginWorldUnits { get; }
 
         /// <summary>The width of the deck margin band around the lattice, in lattice cells (70 x 54 art px).</summary>
         public int DeckBandCells { get; }
 
         public MarginCellRule DepotRule { get; }
         public MarginCellRule DepositRule { get; }
+
+        /// <summary>
+        /// A short stable identity of the composition values that decide the geometry (P1-F1): empty for the F004-reproducing defaults, so the
+        /// F004 layout id is unchanged, and <c>+c</c> plus eight hex digits for any other composition. The camera model keys its refit on the
+        /// layout id, so an edited composition refits instead of keeping a stale framing.
+        /// </summary>
+        public string IdentitySuffix
+        {
+            get
+            {
+                if (Equals(WorldCompositionSettings.DefaultComposition(WorldOrientation.Portrait)))
+                {
+                    return string.Empty;
+                }
+
+                unchecked
+                {
+                    var hash = 17;
+                    hash = hash * 31 + MarginWorldUnits.GetHashCode();
+                    hash = hash * 31 + DeckBandCells;
+                    hash = hash * 31 + (int)DepotRule.side;
+                    hash = hash * 31 + DepotRule.along;
+                    hash = hash * 31 + (int)DepositRule.side;
+                    hash = hash * 31 + DepositRule.along;
+                    return "+c" + ((uint)hash).ToString("x8", System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+        }
+
+        public bool Equals(LayoutComposition other) =>
+            MarginWorldUnits.Equals(other.MarginWorldUnits) && DeckBandCells == other.DeckBandCells &&
+            DepotRule.side == other.DepotRule.side && DepotRule.along == other.DepotRule.along &&
+            DepositRule.side == other.DepositRule.side && DepositRule.along == other.DepositRule.along;
+
+        public override bool Equals(object obj) => obj is LayoutComposition other && Equals(other);
+
+        public override int GetHashCode() => MarginWorldUnits.GetHashCode() ^ (DeckBandCells << 8) ^ ((int)DepotRule.side << 10) ^ ((int)DepositRule.side << 14);
     }
 
     /// <summary>
@@ -96,14 +133,15 @@ namespace IdleFactory.Unity.Presentation
         public const string AssetPath = "Assets/IdleFactory/Art/F006/WorldCompositionSettings.asset";
 
         public const int StageCount = 3;
-        public const float DefaultMarginCells = SlotGridLayout.HalfCellMargin;
+        public const float DefaultMarginWorldUnits = SlotGridLayout.HalfCellMargin;
         public const int DefaultDeckBandCells = 1;
         public const int MaxPropHeightLimitArtPx = 24;
-        public const float MaxMarginCells = 4f;
+        public const float MaxMarginWorldUnits = 4f;
         public const int MaxDeckBandCells = 4;
 
-        [Tooltip("Fit margin in world units (cells of 24 art px) that the camera model adds around the layout bounds. 0.5 reproduces F004.")]
-        public float marginCells = DefaultMarginCells;
+        [Tooltip("Fit margin in world units (cells of 24 art px, not lattice cells) that the camera model adds around the layout bounds. 0.5 reproduces F004.")]
+        [UnityEngine.Serialization.FormerlySerializedAs("marginCells")]
+        public float marginWorldUnits = DefaultMarginWorldUnits;
 
         [Tooltip("Width of the deck margin band around the lattice in lattice cells (70 x 54 art px). The depot and the deposit sit in this band.")]
         public int deckBandCells = DefaultDeckBandCells;
@@ -155,22 +193,38 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The F004-reproducing default values, without creating an asset (safe in field initializers and constructors).</summary>
         public static LayoutComposition DefaultComposition(WorldOrientation orientation) => new LayoutComposition(
-            DefaultMarginCells, DefaultDeckBandCells, new MarginCellRule(MarginSide.Right, 0), new MarginCellRule(MarginSide.Left, -1));
+            DefaultMarginWorldUnits, DefaultDeckBandCells, new MarginCellRule(MarginSide.Right, 0), new MarginCellRule(MarginSide.Left, -1));
 
         /// <summary>The layout values for an orientation.</summary>
         public LayoutComposition ComposeFor(WorldOrientation orientation) => new LayoutComposition(
-            marginCells,
+            marginWorldUnits,
             deckBandCells,
             orientation == WorldOrientation.Landscape ? depotRuleLandscape : depotRulePortrait,
             depositRule);
+
+        /// <summary>The deck-edge dressing of a stage (0 Open deck, 1 Walled yard, 2 Gantry line); the stage is clamped.</summary>
+        public EdgeRule EdgeRuleOf(int stage) =>
+            edgeRulePerStage != null && edgeRulePerStage.Length == StageCount ? edgeRulePerStage[ClampStage(stage)] : (EdgeRule)ClampStage(stage);
+
+        /// <summary>The share of eligible prop cells that carry a prop at a stage, in [0, 1]; 0 when the settings carry no value.</summary>
+        public float PropDensityOf(int stage) =>
+            propDensityPerStage != null && propDensityPerStage.Length == StageCount ? Mathf.Clamp01(propDensityPerStage[ClampStage(stage)]) : 0f;
+
+        /// <summary>The prop-kind weights of a stage; empty when the settings carry none.</summary>
+        public IReadOnlyList<PropWeight> PropWeightsOf(int stage) =>
+            propWeightsPerStage != null && propWeightsPerStage.Length == StageCount && propWeightsPerStage[ClampStage(stage)]?.weights != null
+                ? propWeightsPerStage[ClampStage(stage)].weights
+                : Array.Empty<PropWeight>();
+
+        private static int ClampStage(int stage) => Mathf.Clamp(stage, 0, StageCount - 1);
 
         /// <summary>The violations of the value rules; empty when the settings are valid.</summary>
         public IReadOnlyList<string> Validate()
         {
             var problems = new List<string>();
-            if (float.IsNaN(marginCells) || marginCells < 0f || marginCells > MaxMarginCells)
+            if (float.IsNaN(marginWorldUnits) || marginWorldUnits < 0f || marginWorldUnits > MaxMarginWorldUnits)
             {
-                problems.Add("marginCells must be within [0, " + MaxMarginCells + "].");
+                problems.Add("marginWorldUnits must be within [0, " + MaxMarginWorldUnits + "].");
             }
 
             if (deckBandCells < 1 || deckBandCells > MaxDeckBandCells)

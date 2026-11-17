@@ -218,8 +218,9 @@ namespace IdleFactory.Unity.UI.Panels
                 Card.Add(Effect);
                 Card.Add(Tag);
                 Card.Add(Cost);
-                Card.Add(Reason);
+                // T555 (U-B8): the reason sits directly below the control, as in every other view.
                 Card.Add(Buy);
+                Card.Add(Reason);
                 Card.Add(Feedback);
                 SetDisplayed(Tag, upgrade.AppliesNextRun);
                 SetDisplayed(Reason, false);

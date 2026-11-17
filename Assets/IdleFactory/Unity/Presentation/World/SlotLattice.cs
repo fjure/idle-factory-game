@@ -127,10 +127,10 @@ namespace IdleFactory.Unity.Presentation
         }
 
         // ---------------------------------------------------------------------------------------------------------------------
-        // The floor field (T472, Art Bible v1.0.3 section 3.5): one 70 x 54 tile per lattice cell, extended over the whole field.
-        // The cell (column, row) has its tile pivot on the footprint centre (35 + 70 * column, 15 + 54 * row) art px, the row counted
-        // from the bottom row of the lattice (row 0 is the front row); the columns and rows outside the 12 slots continue the same lattice, so
-        // every slot and every tile sees the same floor phase and a whole-art-pixel position (P3).
+        // The deck cell (T472, Art Bible v1.0.3 section 3.5; T527): one 70 x 54 cell per lattice cell. The F004 floor pool that tiled the
+        // visible field is gone: the deck Tilemap (FactoryDeckView, contracts/world-presentation.md section 1) covers the deck cells instead.
+        // The cell (column, row) has its tile pivot on the footprint centre (35 + 70 * column, 15 + 54 * row) art px, the row counted from the
+        // bottom row of the lattice (row 0 is the front row), so every slot and every tile sees the same phase and a whole-art-pixel position (P3).
         // ---------------------------------------------------------------------------------------------------------------------
 
         public const int FloorTileWidthPixels = PitchXPixels;
@@ -138,50 +138,5 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The tile pivot is the tile centre; the tile spans 27 art px below and above its footprint centre.</summary>
         public const int FloorTilePivotYPixels = FloorTileHeightPixels / 2;
-
-        /// <summary>The art pixels the floor extends past the visible rectangle on each side, so a one-frame camera lag shows no bare edge.</summary>
-        public const int FloorMarginPixels = 2;
-
-        /// <summary>The most tiles the floor ever draws; a larger visible area (an absurd camera) draws no floor instead of an unbounded pool.</summary>
-        public const int FloorMaxTiles = 2048;
-
-        /// <summary>The footprint centre of the floor cell (<paramref name="column"/>, <paramref name="row"/>) in world units; the same pivot a slot has.</summary>
-        public static Vector2 FloorPivotOf(int column, int row) =>
-            new Vector2((PlateWidthPixels / 2 + column * PitchXPixels) / (float)Density, (PivotAbovePlateBottomPixels + row * PitchYPixels) / (float)Density);
-
-        /// <summary>
-        /// The block of floor cells that covers a visible world rectangle (plus <see cref="FloorMarginPixels"/>): every cell whose tile touches
-        /// the rectangle. Pure and allocation-free. A rectangle that is empty, not finite or needs more than <see cref="FloorMaxTiles"/> tiles
-        /// gives <see cref="FloorRange.Empty"/>.
-        /// </summary>
-        public static FloorRange FloorCellsFor(float minX, float minY, float maxX, float maxY)
-        {
-            if (float.IsNaN(minX) || float.IsNaN(minY) || float.IsNaN(maxX) || float.IsNaN(maxY) ||
-                float.IsInfinity(minX) || float.IsInfinity(minY) || float.IsInfinity(maxX) || float.IsInfinity(maxY) || maxX <= minX || maxY <= minY)
-            {
-                return FloorRange.Empty;
-            }
-
-            double x0 = minX * (double)Density - FloorMarginPixels;
-            double x1 = maxX * (double)Density + FloorMarginPixels;
-            double y0 = minY * (double)Density - FloorMarginPixels;
-            double y1 = maxY * (double)Density + FloorMarginPixels;
-
-            // Column c covers [70 c, 70 c + 70); row r covers [54 r - 12, 54 r + 42): the footprint centre is 15 px above the cell's lattice
-            // origin and the tile reaches 27 px either side of it.
-            var rowOrigin = PivotAbovePlateBottomPixels - FloorTilePivotYPixels;
-            var minColumn = (long)Math.Floor(x0 / PitchXPixels);
-            var maxColumn = (long)Math.Ceiling(x1 / PitchXPixels) - 1;
-            var minRow = (long)Math.Floor((y0 - rowOrigin) / PitchYPixels);
-            var maxRow = (long)Math.Ceiling((y1 - rowOrigin) / PitchYPixels) - 1;
-            var columnCount = maxColumn - minColumn + 1;
-            var rowCount = maxRow - minRow + 1;
-            if (columnCount <= 0 || rowCount <= 0 || columnCount * rowCount > FloorMaxTiles)
-            {
-                return FloorRange.Empty;
-            }
-
-            return new FloorRange((int)minColumn, (int)maxColumn, (int)minRow, (int)maxRow);
-        }
     }
 }

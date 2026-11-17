@@ -1,7 +1,9 @@
 {
     "name": "IdleFactory.Editor",
     "rootNamespace": "IdleFactory.Editor",
-    "references": [],
+    "references": [
+        "IdleFactory.Unity"
+    ],
     "includePlatforms": [
         "Editor"
     ],

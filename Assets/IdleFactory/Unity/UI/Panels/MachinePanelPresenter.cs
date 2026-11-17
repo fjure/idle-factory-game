@@ -212,6 +212,8 @@ namespace IdleFactory.Unity.UI
                 scrollVisibility = scroll.verticalScrollerVisibility;
                 scrolled = scroll;
                 scroll.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
+                // T536 (A-6): the shared sheet scroll keeps the offset of the view shown before; Details always opens at its top.
+                scroll.scrollOffset = Vector2.zero;
             }
 
             ClearFeedback();
@@ -505,7 +507,7 @@ namespace IdleFactory.Unity.UI
             var close = shell.CloseButton;
             shell.FocusWhenReady(close != null && close.resolvedStyle.display != DisplayStyle.None && close.style.display != DisplayStyle.None
                 ? close
-                : shell.TabButton(ShellTab.Factory));
+                : shell.HubEntryButton);
         }
 
         /// <summary>

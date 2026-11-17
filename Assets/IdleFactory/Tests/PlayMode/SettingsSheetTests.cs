@@ -97,16 +97,17 @@ namespace IdleFactory.Tests.PlayMode
                 {
                     yield return Open(screen, percent);
                     var gear = rig.Shell.SettingsButton;
-                    var strip = rig.Shell.TopStrip;
+                    // T537: on a phone in landscape the gear is the last element of the action bar (the right column); everywhere else of the strip.
+                    var strip = screen.Expected == IdleFactory.Unity.Presentation.FactoryHudLayout.CompactLandscape ? rig.Shell.ActionBar : rig.Shell.TopStrip;
                     var context = screen + " @" + percent;
                     Assert.That(gear, Is.Not.Null, context);
-                    Assert.That(strip.Children().Last(), Is.SameAs(gear), context + ": last element of the top strip");
+                    Assert.That(strip.Children().Last(), Is.SameAs(gear), context + ": last element of its home (the strip; the action bar on a phone in landscape)");
                     Assert.That(gear.tooltip, Is.EqualTo("Settings"), context + ": accessible name and tooltip");
                     Assert.That(gear.worldBound.width, Is.EqualTo(44f).Within(0.5f), context);
                     Assert.That(gear.worldBound.height, Is.EqualTo(44f).Within(0.5f), context);
                     AssertWithin(rig.SafeRect(), gear.worldBound, context + ": gear inside the safe area");
                     AssertWithin(strip.worldBound, gear.worldBound, context + ": gear inside the strip");
-                    foreach (var other in new VisualElement[] { rig.Shell.CashButton, rig.Shell.RpButton, rig.Shell.StoreButton })
+                    foreach (var other in new VisualElement[] { rig.Shell.CashButton, rig.Shell.StoreButton })
                     {
                         Assert.That(Intersects(gear.worldBound, other.worldBound), Is.False, context + ": gear overlaps " + other.name);
                     }
@@ -131,7 +132,7 @@ namespace IdleFactory.Tests.PlayMode
             var order = rig.Shell.GetFocusOrder().ToList();
             var gear = order.IndexOf(rig.Shell.SettingsButton);
             Assert.That(gear, Is.GreaterThanOrEqualTo(0));
-            Assert.That(order.IndexOf(rig.Shell.OverdriveButton), Is.LessThan(gear), "after Overdrive");
+            Assert.That(order.IndexOf(rig.Shell.CashButton), Is.LessThan(gear), "after Cash");
             Assert.That(order.IndexOf(rig.Shell.StoreButton), Is.LessThan(gear));
             Assert.That(order.Where(control => rig.Shell.TopStrip.Contains(control)).Last(), Is.SameAs(rig.Shell.SettingsButton));
         }

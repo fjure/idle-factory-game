@@ -12,9 +12,14 @@ namespace IdleFactory.Tests.PlayMode
     {
         public const string Root = "Assets/IdleFactory/Art/F004/ui-icons/";
 
+        /// <summary>The F006 UI glyph folder (T527, B-17): the hub entry glyph <c>F006-UI-OFFICE</c>.</summary>
+        public const string F006Root = "Assets/IdleFactory/Art/F006/ui/";
+
+        private static string RootOf(string key) => key != null && key.StartsWith("F006-", System.StringComparison.Ordinal) ? F006Root : Root;
+
         /// <summary>The first frame of the key (<c>F003-UI-ICON-CASH</c> is <c>f003-ui-icon-cash_00.png</c>), or null for an unknown key.</summary>
         public static Sprite Load(string key) =>
-            key == null ? null : AssetDatabase.LoadAssetAtPath<Sprite>(Root + key.ToLowerInvariant() + "_00.png");
+            key == null ? null : AssetDatabase.LoadAssetAtPath<Sprite>(RootOf(key) + key.ToLowerInvariant() + "_00.png");
 
         /// <summary>The presentation key of a sprite loaded by <see cref="Load"/>, or null when the sprite is not a restyled UI icon.</summary>
         public static string KeyOf(Sprite sprite)
@@ -25,7 +30,7 @@ namespace IdleFactory.Tests.PlayMode
             }
 
             var path = AssetDatabase.GetAssetPath(sprite);
-            if (path == null || !path.StartsWith(Root, System.StringComparison.Ordinal))
+            if (path == null || (!path.StartsWith(Root, System.StringComparison.Ordinal) && !path.StartsWith(F006Root, System.StringComparison.Ordinal)))
             {
                 return null;
             }

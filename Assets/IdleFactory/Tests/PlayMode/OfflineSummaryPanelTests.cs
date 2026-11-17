@@ -280,7 +280,7 @@ namespace IdleFactory.Tests.PlayMode
             panel.ShowSummary(NormalReturn());
             yield return Frames();
 
-            rig.Shell.TabButton(ShellTab.Market).Focus();
+            rig.Shell.StoreButton.Focus();
             yield return Frames(4);
 
             Assert.That(Focused(rig.Root), Is.SameAs(panel.ContinueButton), "focus that lands behind the surface goes back into it");
@@ -346,7 +346,7 @@ namespace IdleFactory.Tests.PlayMode
             var persistence = NewPersistence(clock).Start();
             persistence.BuildMiner();
             yield return OpenShell(ShellScreens.All().First(), retry: persistence.Persistence.RetryReturn, withCatalog: persistence.Catalog);
-            rig.Shell.TabButton(ShellTab.Market).Focus();
+            rig.Shell.StoreButton.Focus();
             yield return Frames();
             var focusBefore = Focused(rig.Root);
             Assert.That(focusBefore, Is.Not.Null);

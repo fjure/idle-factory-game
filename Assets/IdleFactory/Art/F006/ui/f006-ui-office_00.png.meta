@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: a2aea2ee8b4c82f439e03acdba50b933
+guid: 9f0e1cbb9819e0f44b5356840d0424cb
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7947745522217619581
-    second: f004-floor-tile_00_0
+      213: 1504112511827055625
+    second: f006-ui-office_00_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -141,13 +141,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: f004-floor-tile_00_0
+      name: f006-ui-office_00_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 70
-        height: 54
+        width: 24
+        height: 24
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -156,8 +156,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d709bf881701c4e60800000000000000
-      internalID: 7947745522217619581
+      spriteID: 9041ca14c5eafd410800000000000000
+      internalID: 1504112511827055625
       vertices: []
       indices: 
       edges: []

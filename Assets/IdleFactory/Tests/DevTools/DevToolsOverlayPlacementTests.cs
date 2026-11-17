@@ -87,7 +87,7 @@ namespace IdleFactory.Tests.DevTools
             };
             if (!rig.Shell.IsSidePanelLayout)
             {
-                controls.Add(("tab bar", rig.Shell.TabBar));
+                controls.Add(("action bar", rig.Shell.ActionBar));
             }
 
             if (IsDisplayed(rig.Shell.PanelHost))

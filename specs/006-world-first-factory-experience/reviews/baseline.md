@@ -126,3 +126,20 @@ What the baseline says about the problem journeys:
 - **Captures** (`reviews/baseline/device/`): `emulator-{portrait,landscape}-{no-panel,build-sheet,contracts}-100.png`, `adb exec-out screencap`, text scale 100 % (system font scale unchanged). Machine sheet, 200 % text and the offline summary were not captured on the device: a fresh run has no machine, the system font scale was not changed, and a "Welcome back" summary needs a long absence. Those states come from the rig.
 - **What the device shows that the rig does not**: the guidance bar ("Build a Miner: tap an empty slot.") and a stacked lock notice are two more persistent elements on a fresh run (portrait: up to two bars of 49 pt each below the strip); in landscape the build sheet is a side panel (about half the width) with the world kept on the left; the "Development Build" watermark sits at the bottom-right in every capture. The notice and hint bars are counted by the probe when displayed (`detail-line`, `notice`, `world-hint`), but the rig run does not raise them because its run already has machines.
 - **Cleanup**: `adb -s emulator-5554 emu kill` and `adb kill-server` were run; rotation was restored to auto-rotate (`accelerometer_rotation 1`, `user_rotation 0`).
+
+## T537 (#710): after the persistent layer change
+
+Re-run of the T502 probe (`BaselineMatrixTests`, probe mode, no panel open) on the T537 fix-round commit. The rig keeps the zoom buttons on (worst case, as before) and composes the hub. Before = the `baseline/` JSON of c568d24, after = this run; the JSON files were not rewritten. Persistent labels fall from 13 to 10 (77 % of the baseline; the SC-010 guidance of 50 % is not met: the six tab labels are gone, the hub word stays, Overdrive keeps its name). Phone landscape (fix round, OD-9b C1): the zoom column folds into the right column and the Store cell stacks, so the left column is narrow; the whole lattice fits the world band at fit-all at 640x360 and 844x390, 100/150/200 %, with the zoom preference on and off (`PersistentLayerTests.TheWholeFactoryFitsTheWorldBandOnAPhoneInLandscapeWithAndWithoutTheZoomButtons`, `CardCameraTests.TheContentIsAlwaysInView...` unrelaxed). Chrome is the union of the two full-height columns. Guidance only, not gates.
+
+| Class | World 100 % before / after | Chrome 100 % before / after | Labels 100 % before / after | World 200 % before / after | Chrome 200 % before / after | Labels 200 % before / after |
+|---|---|---|---|---|---|---|
+| desktop-1280x720 | 57.2 % / 56.9 % | 8.5 % / 6.7 % | 13 / 10 | 51.1 % / 51.0 % | 12.4 % / 8.2 % | 13 / 10 |
+| desktop-1920x1080 | 70.6 % / 70.3 % | 5.3 % / 4.6 % | 13 / 10 | 66.3 % / 66.2 % | 7.1 % / 5.3 % | 13 / 10 |
+| emulator-landscape-2400x1080 | 62.8 % / 70.5 % | 28.3 % / 20.9 % | 13 / 10 | 49.8 % / 56.2 % | 38.4 % / 33.0 % | 13 / 10 |
+| emulator-portrait-1080x2400 | 71.7 % / 72.1 % | 14.1 % / 13.6 % | 13 / 10 | 50.7 % / 55.0 % | 27.4 % / 21.8 % | 13 / 10 |
+| phone-landscape-640x360 | 51.6 % / 54.6 % | 35.7 % / 35.3 % | 13 / 10 | 27.7 % / 36.0 % | 62.0 % / 55.8 % | 13 / 10 |
+| phone-landscape-844x390 | 58.0 % / 63.9 % | 32.1 % / 25.8 % | 13 / 10 | 43.6 % / 46.7 % | 43.8 % / 40.8 % | 13 / 10 |
+| phone-portrait-360x640 | 61.8 % / 62.4 % | 22.0 % / 21.3 % | 13 / 10 | 35.6 % / 41.9 % | 42.8 % / 34.1 % | 13 / 10 |
+| phone-portrait-390x844 | 67.9 % / 68.4 % | 17.0 % / 16.5 % | 13 / 10 | 44.9 % / 50.0 % | 33.2 % / 26.4 % | 13 / 10 |
+| tablet-landscape-1024x768 | 50.6 % / 50.3 % | 8.9 % / 6.5 % | 13 / 10 | 44.1 % / 44.0 % | 13.7 % / 8.3 % | 13 / 10 |
+| tablet-portrait-768x1024 | 41.4 % / 41.2 % | 7.1 % / 4.6 % | 13 / 10 | 34.5 % / 32.5 % | 11.7 % / 8.9 % | 13 / 10 |

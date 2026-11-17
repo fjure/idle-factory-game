@@ -1,3 +1,5 @@
+@import url("../PanelScaffold.uss");
+
 /* Offline summary surface (T118, FR-025, FR-028, FR-032). A full-screen modal card, mounted into the run shell root (it inherits the shell's
    colour and font-size variables) or, outside the shell, carrying .status-standalone, which defines the same variables. Font sizes come only
    from the --run-fs-* variables so the card follows the text scale (contracts/ui-surfaces.md, panel rule). Nothing here sets a fixed height
@@ -224,8 +226,8 @@
 
 /* The controls the shell styles with FactoryRun.uss, repeated so a surface mounted before the shell exists looks the same. */
 .status-surface .run-control {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 48px;
+    min-height: 48px;
     color: var(--text-primary);
     background-color: var(--surface-raised);
     border-left-width: 1.5px;

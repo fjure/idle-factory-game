@@ -66,7 +66,7 @@ namespace IdleFactory.Unity.UI.Panels
             next = MarketPanelParts.NewLabel(NextName, "goals-next");
             WrappedLabelFit.Attach(next);
             root.Add(next);
-            exactButton = MarketPanelParts.NewValueButton(ExactName, "goals-exact");
+            exactButton = MarketPanelParts.NewValueButton(ExactName, "goals-exact", false);
             exactButton.text = "Exact value";
             root.Add(exactButton);
             allReached = MarketPanelParts.NewLabel(AllReachedName, "goals-caption", AllReachedText);

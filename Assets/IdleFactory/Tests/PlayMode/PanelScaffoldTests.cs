@@ -321,7 +321,8 @@ namespace IdleFactory.Tests.PlayMode
             foreach (var notice in notices)
             {
                 AssertWithin(host, notice.worldBound, context + ": notice stays in the stage");
-                Assert.That(Intersects(notice.worldBound, scaffold.BodyScroll.worldBound), Is.True, context + ": the notice overlaps the body");
+                // T536 (P2-F19, re-baselined): the layer takes its own room below the body, so a notice never covers a body control.
+                Assert.That(Intersects(notice.worldBound, scaffold.BodyScroll.worldBound), Is.False, context + ": the notice leaves the body uncovered");
                 var dismiss = notice.Q<Button>("scaffold-notice-dismiss");
                 AssertTarget(dismiss, context);
                 // A notice wins hit testing over the body beneath it.

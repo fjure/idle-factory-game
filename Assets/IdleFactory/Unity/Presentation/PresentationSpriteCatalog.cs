@@ -226,12 +226,6 @@ namespace IdleFactory.Unity.Presentation
         public const string SettingsIconKey = "F004-UI-ICON-SETTINGS";
 
         /// <summary>
-        /// The floor tile (T471): one 70 x 54 art-pixel tile at PPU 24 (2.9167 x 2.25 cells, the lattice pitch of Art Bible 3.5), pivot (35, 27) on the
-        /// slot footprint centre. It is not a canvas layer: a view places it on the slot pivot, one tile per lattice cell.
-        /// </summary>
-        public const string FloorTileKey = "F004-FLOOR-TILE";
-
-        /// <summary>
         /// The running badge key. Its F004 cue is intentionally empty (owner decision R8): the shipped scene catalog has no entry for it and the
         /// view never draws it, so its registry row is the one F003 row that is not required (T476). Development catalogs may still carry it.
         /// </summary>
@@ -244,6 +238,17 @@ namespace IdleFactory.Unity.Presentation
         private const float Tolerance = 0.001f;
         private const int MaxAnimatedFrames = 16;
 
+        /// <summary>The F006 keys that the deck view places (T527): the three ground tiles, the four props and the eleven edge pieces. Their rows are required.</summary>
+        public static readonly string[] PlacedF006Keys =
+        {
+            "F006-GROUND-BASE", "F006-GROUND-DECK", "F006-GROUND-HATCH",
+            "F006-PROP-CRATE-SMALL", "F006-PROP-CRATE-STACK", "F006-PROP-LAMP-POST", "F006-PROP-PALLET",
+            "F006-EDGE-RAILING-FL", "F006-EDGE-RAILING-FR", "F006-EDGE-RAILING-CORNER", "F006-EDGE-RAILING-QUIET-FL", "F006-EDGE-RAILING-QUIET-FR",
+            "F006-EDGE-WALL-FL", "F006-EDGE-WALL-FR", "F006-EDGE-WALL-CORNER",
+            "F006-EDGE-GANTRY-FL", "F006-EDGE-GANTRY-FR", "F006-EDGE-GANTRY-CORNER",
+        };
+
+        // Declared before Registry: the registry initializer reads it.
         // T428 requirement registry. Architect decision (2026-10-30, confirming the 2026-10-27 re-validation), amended by T476
         // (owner decision 2026-11-05, option D: the Feature 003 placeholder sprites are deleted):
         //  * Every row validates world size (pixels / PPU; one cell is one unit), normalized pivot and frame count and
@@ -706,15 +711,15 @@ namespace IdleFactory.Unity.Presentation
                 map[key] = new PresentationSpriteRequirement(key, Width, Height, PivotX, PivotY, 1, 1, true, true);
             }
 
-            // T471: the floor tile, 70 x 54 art px at PPU 24, pivot (35, 27) (centre). Not a canvas layer.
-            map[FloorTileKey] = new PresentationSpriteRequirement(FloorTileKey, 70f / 24f, 54f / 24f, 0.5f, 0.5f, 1, 1, true, false);
+            // T527 (Feature 006): the F004 floor tile and its pool are gone; the deck Tilemap (FactoryDeckView) replaces them.
         }
 
-        // T526 (Feature 006): the imported world art. One row per shipped F006 key (40 static world frames plus the 8 FX entries, Art Bible
-        // 21.4), derived from the approved source manifests: world size is canvas px / 24 (PPU = D = 24), the pivot is a whole art pixel
-        // (rule P1), and the frame count is the sprite's frame count. None of these is a canvas layer (each is placed on its own anchor)
-        // and none is required: the shipped scene catalog does not carry F006 keys until T527 wires the placement, and a required row would
-        // fail the scene closed. T527 flips the rows it places to required.
+        // T526 (Feature 006): the imported world art. One row per shipped F006 key (40 static world frames plus the 8 FX entries and the hub
+        // glyph, Art Bible 21.4), derived from the approved source manifests: world size is canvas px / 24 (PPU = D = 24), the pivot is a whole
+        // art pixel (rule P1), and the frame count is the sprite's frame count. None of these is a canvas layer (each is placed on its own
+        // anchor). T527 flips the rows it places to required (ground, props, edges and the Office glyph; see PlacedF006Keys): the shipped scene
+        // catalog (RequireRegistryRows) fails closed without them. The depot, deposit, link, foundation and FX rows stay optional until the
+        // tasks that place them (T528, T529) flip them.
         private static void AddF006Rows(Dictionary<string, PresentationSpriteRequirement> map)
         {
             // key, canvas width px, canvas height px, pivot x px, pivot y px, frames
@@ -768,13 +773,24 @@ namespace IdleFactory.Unity.Presentation
             ("F006-PROP-CRATE-STACK", 30, 24, 15, 6, 1),
             ("F006-PROP-LAMP-POST", 14, 24, 7, 2, 1),
             ("F006-PROP-PALLET", 30, 16, 15, 6, 1),
+            (OfficeIconKey, 24, 24, 12, 12, 1),
             };
             foreach (var row in rows)
             {
                 map[row.Key] = new PresentationSpriteRequirement(
                     row.Key, row.Width / 24f, row.Height / 24f, row.PivotX / (float)row.Width, row.PivotY / (float)row.Height,
-                    row.Frames, row.Frames, false, false);
+                    row.Frames, row.Frames, Array.IndexOf(PlacedF006Keys, row.Key) >= 0 || row.Key == OfficeIconKey, false);
             }
         }
+
+        /// <summary>The hub entry glyph (T554 art, T527 import; B-17): a 24 x 24 <c>ui_text</c> glyph, distinct from the Contracts glyph.</summary>
+        public const string OfficeIconKey = "F006-UI-OFFICE";
+
+        /// <summary>
+        /// The registry row of a key (world size in cells, normalized pivot, frame range, required), or false when the key has no row. The deck
+        /// planner reads sprite sizes and pivots from here instead of repeating a table.
+        /// </summary>
+        public static bool TryGetRegistryRequirement(string key, out PresentationSpriteRequirement requirement) =>
+            Registry.TryGetValue(key, out requirement);
     }
 }

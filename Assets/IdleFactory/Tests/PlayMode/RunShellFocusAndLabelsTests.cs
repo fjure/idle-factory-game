@@ -272,7 +272,6 @@ namespace IdleFactory.Tests.PlayMode
             var shell = rig.Shell;
             var where = $"{screen} @{percent}%";
             shell.SetCash(1234);
-            shell.SetRp(56, true);
             shell.SetStore(120, 500);
             shell.SetOverdrive(RunShellFixtures.OverdriveStatusIn(OverdriveStage.Ready));
             yield return ShellRig.Settle();
@@ -334,16 +333,17 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(screen, 100);
             var shell = rig.Shell;
             shell.SetCash(9_000_000_000_000_000_000L);
-            shell.SetRp(9_000_000_000_000_000_000L, true);
             shell.SetStore(9_000_000_000_000_000_000L, 9_000_000_000_000_000_000L);
             shell.SetOverdrive(RunShellFixtures.OverdriveStatusIn(OverdriveStage.CoolingDown));
             yield return ShellRig.Settle();
 
-            Assert.That(shell.TopStrip.worldBound.height, Is.LessThanOrEqualTo(56f), $"{screen}: the captions stack over the values, so the strip stays one row");
-            foreach (var cell in new VisualElement[] { shell.CashButton, shell.StoreButton, shell.OverdriveButton })
+            Assert.That(shell.TopStrip.worldBound.height, Is.LessThanOrEqualTo(shell.TopStrip.worldBound.width > shell.TopStrip.worldBound.height ? 56f : float.MaxValue), $"{screen}: the captions stack over the values, so a top strip stays one row (a landscape column is exempt)");
+            foreach (var cell in new VisualElement[] { shell.CashButton, shell.StoreButton })
             {
                 AssertWithin(shell.TopStrip.worldBound, cell.worldBound, $"{screen}: {cell.name} stays in the top strip");
             }
+
+            AssertWithin(shell.ActionBar.worldBound, shell.OverdriveButton.worldBound, $"{screen}: Overdrive stays in the action bar");
 
             AssertShellLayout(rig, "worst-case captioned top strip");
         }

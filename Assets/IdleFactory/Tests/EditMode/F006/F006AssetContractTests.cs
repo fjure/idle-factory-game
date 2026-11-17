@@ -25,6 +25,7 @@ namespace IdleFactory.Tests.EditMode.F006
     {
         private const int WorldFrames = 40;
         private const int FxFrames = 43;
+        private const int UiFrames = 1;
         private const int Density = 24;
         private const int PaddingPerSide = 2;
         private const string DepositRestS3 = "f006-deposit-rest-s3";
@@ -113,7 +114,7 @@ namespace IdleFactory.Tests.EditMode.F006
         {
             var shipped = ReadShipped();
             Assert.That(shipped.schemaVersion, Is.EqualTo(F004ImportRules.SupportedSchemaVersion));
-            Assert.That(shipped.entries.Length, Is.EqualTo(48), "40 world assets and 8 FX assets");
+            Assert.That(shipped.entries.Length, Is.EqualTo(49), "40 world assets, 8 FX assets and the hub glyph (T527, B-17)");
             var byAsset = shipped.entries.ToDictionary(entry => entry.assetId, StringComparer.Ordinal);
             Assert.That(byAsset.Count, Is.EqualTo(shipped.entries.Length), "asset ids are unique");
             Assert.That(shipped.entries.Select(entry => entry.key).Distinct().Count(), Is.EqualTo(shipped.entries.Length), "keys are unique");
@@ -157,7 +158,7 @@ namespace IdleFactory.Tests.EditMode.F006
                 }
             }
 
-            Assert.That(checkedFrames, Is.EqualTo(WorldFrames + FxFrames));
+            Assert.That(checkedFrames, Is.EqualTo(WorldFrames + FxFrames + UiFrames));
         }
 
         [Test]
@@ -216,7 +217,7 @@ namespace IdleFactory.Tests.EditMode.F006
                 }
             }
 
-            Assert.That(checkedFrames, Is.EqualTo(WorldFrames + FxFrames));
+            Assert.That(checkedFrames, Is.EqualTo(WorldFrames + FxFrames + UiFrames));
         }
 
         // ---- texture arithmetic and atlases ----------------------------------------------------------------------------
@@ -297,6 +298,13 @@ namespace IdleFactory.Tests.EditMode.F006
                 foreach (var frame in entry.frames)
                 {
                     var sprite = LoadSprite(frame);
+                    if (entry.family == "ui")
+                    {
+                        // T527 (B-17): the hub glyph is a UI Toolkit icon and is packed in neither world atlas.
+                        Assert.That(world.CanBindTo(sprite) || fx.CanBindTo(sprite), Is.False, frame.file + " is in no world atlas");
+                        continue;
+                    }
+
                     Assert.That(own.CanBindTo(sprite), Is.True, frame.file + " is packed in its own atlas");
                     Assert.That(other.CanBindTo(sprite), Is.False, frame.file + " is not in the other atlas");
                 }
@@ -362,7 +370,7 @@ namespace IdleFactory.Tests.EditMode.F006
             catalog.Configure(catalogEntries);
             Assert.That(catalog.IsValid, Is.True, catalog.Error);
             Assert.That(catalog.Diagnostics, Is.Empty);
-            Assert.That(catalog.Count, Is.EqualTo(48));
+            Assert.That(catalog.Count, Is.EqualTo(49));
             foreach (var entry in ReadShipped().entries)
             {
                 Assert.That(catalog.TryGetEntry(entry.key, out var registered), Is.True, entry.key);

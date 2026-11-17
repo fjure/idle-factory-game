@@ -550,125 +550,52 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         // ---------------------------------------------------------------------------------------------------
-        // Contracts tab badge
+        // Deliverable contracts on the hub entry (T535 moved the badge to the hub; T537 removed the tab bar)
         // ---------------------------------------------------------------------------------------------------
 
-        /// <summary>The tab text the form implies: the label carries "(n)" or "!", the dot is its own overlay element.</summary>
-        private static string ExpectedTabText(RunShellDocument shell, int count)
-        {
-            switch (shell.ContractsBadgeForm)
-            {
-                case RunShellDocument.ContractsBadgeMode.Count: return "Contracts (" + (count > 9 ? "9+" : count.ToString()) + ")";
-                case RunShellDocument.ContractsBadgeMode.Bang: return "Contracts !";
-                default: return "Contracts";
-            }
-        }
-
         [UnityTest]
-        public IEnumerator TheBadgeCountsDeliverableContractsNamesThemAndClearsAfterASale([ValueSource(nameof(Representative))] ShellScreen screen)
+        public IEnumerator TheHubEntryCountsDeliverableContractsNamesThemAndClearsAfterASale([ValueSource(nameof(Representative))] ShellScreen screen)
         {
             yield return Open(screen, 100, 1, Plate, Gear);
             var shell = rig.Shell;
-            var badge = shell.ContractsBadge;
-            Assert.That(badge.name, Is.EqualTo("tab-contracts-badge"));
-            Assert.That(shell.ContractsBadgeForm, Is.EqualTo(RunShellDocument.ContractsBadgeMode.None));
-            Assert.That(Shown(badge), Is.False, "nothing is deliverable");
-            Assert.That(shell.ContractsTabText, Is.EqualTo("Contracts"));
-            Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts"));
+            Assert.That(shell.Attention.ContractsDeliverable, Is.Zero, "nothing is deliverable");
+            Assert.That(shell.IsHubDotShown, Is.False);
+            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office"));
 
             AddStock(session, PlateResource, PlateRequired);
             yield return Sync();
-            Assert.That(shell.ContractsDeliverable, Is.EqualTo(1));
-            Assert.That(shell.ContractsBadgeForm, Is.Not.EqualTo(RunShellDocument.ContractsBadgeMode.None));
-            Assert.That(shell.ContractsTabText, Is.EqualTo(ExpectedTabText(shell, 1)));
-            Assert.That(Shown(badge), Is.EqualTo(shell.ContractsBadgeForm == RunShellDocument.ContractsBadgeMode.Dot), "only the compact dot is an overlay");
-            Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts, 1 deliverable"), "the accessible name carries the number");
+            Assert.That(shell.Attention.ContractsDeliverable, Is.EqualTo(1));
+            Assert.That(shell.IsHubDotShown, Is.True, "the hub entry dot shows the system flag");
+            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office, 1 system needs attention"), "the accessible name carries the count of systems");
 
             AddStock(session, GearResource, GearRequired);
             yield return Sync();
-            Assert.That(shell.ContractsDeliverable, Is.EqualTo(2));
-            Assert.That(shell.ContractsTabText, Is.EqualTo(ExpectedTabText(shell, 2)));
-            Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts, 2 deliverable"));
+            Assert.That(shell.Attention.ContractsDeliverable, Is.EqualTo(2));
+            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office, 1 system needs attention"), "two contracts are still one system (Contracts)");
 
             Assert.That(commands.Sell(PlateResource, PlateRequired).IsSuccess, Is.True);
             Assert.That(commands.Sell(GearResource, GearRequired).IsSuccess, Is.True);
             yield return Sync();
-            Assert.That(shell.ContractsDeliverable, Is.Zero, "cleared after a sale lowered the stock");
-            Assert.That(Shown(badge), Is.False);
-            Assert.That(badge.text, Is.Empty);
-            Assert.That(shell.ContractsTabText, Is.EqualTo("Contracts"));
-            Assert.That(shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts"));
+            Assert.That(shell.Attention.ContractsDeliverable, Is.Zero, "cleared after a sale lowered the stock");
+            Assert.That(shell.IsHubDotShown, Is.False);
+            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office"));
         }
 
         [UnityTest]
-        public IEnumerator TheBadgeFollowsTheActiveContractUntilItIsDelivered()
+        public IEnumerator TheHubFlagFollowsTheActiveContractUntilItIsDelivered()
         {
             yield return Open(ShellScreens.All().First(), 100, 1, Plate);
             Submit(panel.AcceptButton(Plate));
             yield return Sync();
-            Assert.That(rig.Shell.ContractsDeliverable, Is.Zero, "accepted, but the stock is short");
+            Assert.That(rig.Shell.Attention.ContractsDeliverable, Is.Zero, "accepted, but the stock is short");
 
             AddStock(session, PlateResource, PlateRequired);
             yield return Sync();
-            Assert.That(rig.Shell.ContractsDeliverable, Is.EqualTo(1), "the active contract can be delivered");
+            Assert.That(rig.Shell.Attention.ContractsDeliverable, Is.EqualTo(1), "the active contract can be delivered");
 
             Submit(panel.DeliverButton);
             yield return Sync();
-            Assert.That(rig.Shell.ContractsDeliverable, Is.Zero, "delivered, nothing left to deliver");
-        }
-
-        [UnityTest]
-        public IEnumerator TheBadgeNeverChangesTheTabSizeAndStaysInsideTheTab([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
-        {
-            rig = ShellRig.Create(screen, null, percent);
-            rigs.Add(rig);
-            yield return rig.Layout();
-            var shell = rig.Shell;
-            var tab = shell.TabButton(ShellTab.Contracts);
-            yield return ShellRig.Settle();
-            var before = tab.worldBound;
-            AssertShellLayout(rig, "badge cleared");
-
-            foreach (var count in new[] { 1, 7, 12 })
-            {
-                shell.SetContractsBadge(count);
-                yield return ShellRig.Settle();
-                var state = $"badge {count}, form {shell.ContractsBadgeForm}";
-                Assert.That(shell.ContractsBadgeForm, Is.Not.EqualTo(RunShellDocument.ContractsBadgeMode.None), state);
-                Assert.That(shell.ContractsTabText, Is.EqualTo(ExpectedTabText(shell, count)), state);
-                Assert.That(tab.worldBound.width, Is.EqualTo(before.width).Within(0.5f), $"{screen} @{percent}%: {state}: the tab keeps its width");
-                Assert.That(tab.worldBound.height, Is.EqualTo(before.height).Within(0.5f), $"{screen} @{percent}%: {state}: the tab keeps its height");
-                if (shell.ContractsBadgeForm == RunShellDocument.ContractsBadgeMode.Dot)
-                {
-                    AssertWithin(tab.worldBound, shell.ContractsBadge.worldBound, $"{screen} @{percent}%: {state}: the dot stays inside its tab");
-                }
-                Assert.That(shell.ContractsBadge.focusable, Is.False, "the badge is no focus stop");
-                AssertShellLayout(rig, $"{screen} @{percent}% {state}");
-            }
-
-            // A focused tab draws a thicker border (existing shell behaviour), so focus is checked after the size checks.
-            tab.Focus();
-            yield return ShellRig.Settle();
-            Assert.That(Focused(tab), Is.SameAs(tab), "the tab stays focusable with a badge");
-
-            shell.SetContractsBadge(0);
-            yield return ShellRig.Settle();
-            Assert.That(Shown(shell.ContractsBadge), Is.False);
-            Assert.That(shell.ContractsTabText, Is.EqualTo("Contracts"));
-        }
-
-        [UnityTest]
-        public IEnumerator TheBadgeFallsBackToTheDotWhereTheLabelDoesNotFit()
-        {
-            var phone = ShellScreens.All().First(screen => screen.Name.StartsWith("phone-portrait 360", System.StringComparison.Ordinal));
-            rig = ShellRig.Create(phone, null, 200);
-            rigs.Add(rig);
-            yield return rig.Layout();
-            rig.Shell.SetContractsBadge(3);
-            yield return ShellRig.Settle();
-            Assert.That(rig.Shell.ContractsBadgeForm, Is.EqualTo(RunShellDocument.ContractsBadgeMode.Dot), "a 360 pt phone at 200 percent text has no room for a count");
-            Assert.That(rig.Shell.ContractsBadge.text, Is.EqualTo(RunShellDocument.DotGlyph));
-            Assert.That(rig.Shell.TabButton(ShellTab.Contracts).tooltip, Is.EqualTo("Contracts, 3 deliverable"), "the name still carries the number");
+            Assert.That(rig.Shell.Attention.ContractsDeliverable, Is.Zero, "delivered, nothing left to deliver");
         }
 
         // ---------------------------------------------------------------------------------------------------

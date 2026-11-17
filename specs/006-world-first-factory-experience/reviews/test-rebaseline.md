@@ -213,3 +213,81 @@ The entry always shows the icon and the word "Office" (tested on every class at 
 | A-4 | Done: the shortfall shows once, inside the Upgrade button (FR-016); the inline line is only the rejection a press answers with. |
 
 **New tests.** `HubPanelTests`, `BackOrderTests`, `HubPlayerTests` (`StandalonePlayer`), `HubTestSupport` (harness), and the cases named above.
+
+## T536 (#708): panel consistency pass
+
+**Re-baselined tests (old to new).**
+
+| File | Test / line | Old | New | Reason | Expectation changed? | Issue |
+|---|---|---|---|---|---|---|
+| `Tests/PlayMode/PanelScaffoldTests.cs` | `NoticesLayerAboveTheBodyAndHoldAtEveryClassAndScale` | the notice layer overlapped the body (`Intersects(notice, body)` was true) | the layer takes its own room below the body, so a notice never covers a body control (`Intersects` is false); it is still the last sibling and still wins hit testing | P2-F19: up to three notices at 640x360 and 200 % must leave the primary action and Back usable | yes | #708 |
+
+No other existing assertion changed. In particular the layout suites of every panel (`ContractsPanelTests`, `ContractsAutoDeliverPanelTests`, `ItemsPanelTests`, `ResearchPanelTests`, `IndustryPanelTests`, `PrestigePanelTests`, `SettingsSheetTests`, the Market suites, `OfflineSummaryPanelTests`, `StartupStatusPanelTests`, `TextScaleLayoutTests`, `RunTextScaleTests`, `MachineCardTests`, `HubPanelTests`) pass unchanged with the scaffold scope in place. One first run failed `ContractsAutoDeliverPanelTests.ABonusWindowCountsDownAndEndsWithoutAJumpInTheLayout` (the card shrank by 1.5 px when Deliver turned disabled, because the scaffold's disabled look carries 1 px top and bottom borders against the control's 1.5 px). That was a production defect of the new disabled look, fixed in `PanelScaffold.uss` (a hosted control keeps its top, bottom and right border widths and only the left bar grows); the test is unchanged.
+
+**Decisions.**
+- **One scope class, no per-panel edits of the look.** The shell adds `scaffold-scope` to every panel root it mounts (`RunShellDocument.MarkScaffoldScope`), to the confirmation dialog card and to the notice line; the two status surfaces carry it from construction. `FactoryRun.uss` imports `PanelScaffold.uss` (`@import`), so the scaffold rules reach every shell descendant and no bootstrap change or scene field is needed (the status surfaces import it from their own sheets because they can be mounted before the shell exists). A hosted button keeps its `run-button` look and spacing (destructive and primary fills included) and takes only the scaffold's 48 pt floor (`.scaffold-scope .scaffold-button`) and the one disabled look (`scaffold-button--disabled`, kept in step by `RunShellDocument.SetSoftDisabled`).
+- **48 pt floor.** The value buttons of the Market inventory (`MarketPanelParts.NewValueButton`) and the status surfaces' controls are raised from 44 to 48 pt.
+- **Empty templates.** Items and Contracts show the scaffold's empty template (`scaffold__state--empty`: marker, title "Nothing here yet", their own message) through `ScaffoldEmpty`; the hub and `PanelScaffold` already use it.
+- **P2-F18.** The loading mark is three separate blocks, not a bar filled to 33 %; it is static in every motion mode (UI/UX C5), so reduced motion needs no other form.
+- **P2-F19.** The scaffold notice layer is in flow below the body (at most 70 % of the stage), not an overlay. `SurfaceConsistencyTests.ThreeNoticesLeaveBackAndThePrimaryActionUsable` proves it on three screen classes at 100 and 200 % (640x360 at 200 % included). The shell's own notice line is one bar at a time (unchanged).
+- **#555.** `StartupStatusPanel` watches the reduced-motion state it was given (every 250 ms, a read of the bootstrap's cached value) and calls `ApplyReducedMotion` on a change, so the spinner stops and resumes while the surface is open. `ReducedMotionTests.TheStartupSpinnerFollowsTheReducedMotionStateWhileTheSurfaceIsOpen` covers both directions.
+- **HubAttentionFeed (T535 Architect F3).** The per-frame path is a revision compare; the Research and Overdrive reads walk the catalog and the state directly (no snapshot is built). Only the Prestige preview still allocates (the domain call returns a new object; a domain change is out of scope) and it is re-read at most once per timeline second.
+- **Locked reasons (T535 Product Owner note).** The Overdrive card reads "Overdrive unlocks after <condition>." in the shared `UnlockCopy` wording, and the Prestige card reads "Not ready yet: needs Factory Value <threshold>".
+- **A-6 (panel part).** Details opens at the top of the sheet scroll (`MachinePanelPresenter.OnShown`).
+
+**New tests.** `Tests/PlayMode/F006/SurfaceConsistencyTests.cs` (scaffold scope, classes, 48 pt floor and disabled look on Market with inventory, priorities and expansion, Contracts, Items, Research, Industry, Prestige and Settings; the empty templates; the hub's scope and error state; the dialog and the notice line; the Offline summary and the start-up status; three notices at the worst case) and the #555 case in `ReducedMotionTests`.
+
+## T537 (#710): persistent layer
+
+The six-tab bar, the RP cell and the Contracts and Research tab badges are gone; the hub entry and Overdrive moved to an action bar (bottom row in phone portrait, right column in phone landscape; the strip is the left column there); zoom buttons show on pointer profiles or with the preference. `ShellRig` turns the preference on so layout tests keep the worst case; `PersistentLayerTests` sets it explicitly.
+
+| File | Change | Reason | Expectation changed? |
+|---|---|---|---|
+| `RunHudLayoutTests` | strip test now `ThePersistentControlsKeepTheirHomesAtTheirWorstCase`; phone density test asserts strip plus action bar; tab-bar assertions removed; sheet sits above the action bar; side panel keeps hub entry in the strip | tab bar gone | yes |
+| `RunKeyboardFocusTests` | tab arrow-key and tab-selected tests replaced by hub entry Enter/Space and dot test; invokers are persistent controls; focus ring test runs idle and with a sheet | tabs gone; landscape columns hide while a sheet is open | yes |
+| `RunTextScaleTests` | label font test on the hub label; tab wrap test replaced by action bar test; focus loop skips hidden controls | tabs gone | yes |
+| `RunDeviceProfileTests`, `NavigationInputTests`, `PixelCrispnessTests` | target list uses the hub entry (RunDeviceProfileTests); the other two needed no change | tab button removed | no |
+| `DevToolsOverlayPlacementTests` | action bar instead of tab bar; `DevToolsOverlay` places itself between the columns on phone landscape | strip is a column there | yes |
+| `RunShellLayoutAssertions`, `ShellGeometryProbe(Tests)`, `BaselineRig`, `InteractionCountJourney` | regions, probe names (`action-bar`), hub registered, journey = Office + card, return = Close or Back | tabs gone | yes |
+| `ContractsAutoDeliverPanelTests`, `UiReviewFixesTests` | tab badge tests replaced by hub attention tests; Research dot test removed (hub Research flag covers unspent IP) | badges gone | yes |
+| `HubPanelTests` | overlay assertions replaced by "outside the world column" | final placement | yes |
+| `DisplayPreferencesStoreTests`, `DisplayPreferencesV2Tests` | absent file reads defaults with no diagnostic | A-8 | yes |
+| `ItemsPanelTests` | empty message "Earn them from contracts." | copy | yes |
+| others (`OreVeinPanelTests`, `MachineCardTests`, `OfflineSummaryPanelTests`, `SettingsSheetTests`, `RunPanelCompositionTests`) | tab references replaced by hub entry, store button, action bar or hub path | tabs gone | no (intent kept) |
+
+**New.** `PersistentLayerTests` (every class at 100/150/200 %, 640x360 at 200 % included, and the zoom matrix), `RunSnapshotPredicateParityTests`, `core-public-api.txt` (+4 public predicates).
+
+**Render baselines (T537).** The PNGs under `Tests/PlayMode/Fixtures/Screenshots/F004-B2/` (`w003s-*` shell and world, `w004v-*` world) were regenerated, not edited: `IDLEFACTORY_RENDER_BASELINE_WRITE=1 scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/PlayMode/RenderParityTests.cs` (the harness write mode of `RenderCaptureHarness`), once after the main change and once after the fix round (phone landscape 640x360 and 844x390 and the 640x480 scene changed again when the zoom column moved into the right column). The shell layout changed on purpose, so the frames differ; the unset run compares against the committed frames. Fix round also: `CardCameraTests` content-in-view restored for every class (OD-9b C1), zoom hint opens left of the right column in landscape (`RunHudLayoutTests`), `RunShellLayoutAssertions` excludes the zoom column from the world-column checks on a phone in landscape.
+
+## T555 (#760): gate-B fixes (U-B1, U-B3, U-B5, U-B6, U-B8)
+
+On a phone in landscape the strip and Overdrive now stay on screen while the card, Details or a sheet is open (a one-row band at the top of the world column), so the "columns step aside" expectation changed on purpose.
+
+| File | Change | Reason | Expectation changed? |
+|---|---|---|---|
+| `PersistentLayerTests` | `ThePhoneLandscapeColumnsStepAsideWhileASheetIsOpenAndComeBack` replaced by `CashTheStoreFillAndOverdriveStayOnScreenWhileTheCardDetailsOrASheetIsOpenOnAPhoneInLandscape` (card, Details, sheet and hub; 640x360 and 844x390 at 100 and 200 %: present, at least 44 pt, outside the camera rectangle, fit-all holds, columns return on close), `OverdriveInTheBandShowsEveryStateDistinctlyAndTapsOnlyWhenReady`, `DetailsOpensAtItsTopWithTheMachineNameAndStatusInView` | owner decision 2026-11-17 | yes |
+| `RunShellLayoutAssertions` | with the band shown the strip is a world-column item (not a child of the body); the action bar check stays for every phone class | the band | yes |
+| `HubPanelTests` | `TheContractsRowShowsTheLockWhileContractsAreLockedAndNothingToDeliverOnceTheyAreNot` | U-B3 | new |
+| `ResearchPanelTests` | `TheGraphShowsAnEdgeCueTowardsTheColumnsThatAreClippedAtPhoneWidth` | U-B5 | new |
+| `SurfaceConsistencyTests` | `EverySystemViewOpensScrolledToItsTopWithItsHeadingInView`, `AReadOnlyValueTakesTheValueClassAndAControlLikeValueDoesNot`, `MarketValuesAndIndustryCardsLoseTheirButtonChromeWhileRealControlsKeepIt` | U-B6, U-B8 | new |
+
+## T527 (#700): the factory deck replaces the F004 floor pool
+
+The F004 floor pool, its family folder, its atlas and its catalog key are gone; the deck Tilemap (`FactoryDeckView`) draws the base and deck under the slots. The F006 catalog rows are registered in the scene, the placed rows are required, and the hub glyph `F006-UI-OFFICE` is imported.
+
+| File | Change | Reason | Expectation changed? |
+|---|---|---|---|
+| `SlotGridTests` | the floor-layer tests (about 12: cell block, seams, pool growth, camera follow, missing key) removed | the floor pool is gone; `DeckLayoutTests`, `DeckRenderTests` and `ReducedMotionWorldTests` cover the deck | yes (removed with the code) |
+| `PresentationAllocationTests` | `TheFloorAllocatesNothingOnceWarm...` removed, the floor key dropped from the synthetic catalog | the floor pool is gone | yes |
+| `F004AssetContractTests` | the floor import and floor registration tests replaced by `TheF004FloorFamilyAndItsAtlasAreRemoved...`; F004-only keys 10 to 9 and shipped keys 87 to 86; the C8 ring test composites the periodic F006 `f006-ground-base` tile (floor_0 only) instead of the F004 floor tile | A-13 | yes |
+| `F006AssetContractTests` | 48 to 49 entries and 83 to 84 frames (the hub glyph), the hub glyph is in no world atlas | B-17 | yes |
+| `WorldLayoutValidationTests` | `marginCells` to `marginWorldUnits` (P1-F6); the authored asset equals the defaults except the stage prop tuning; deposit Right is now reported (P1-F4) | P1-F4, P1-F6, authored tuning | yes |
+| `JsonContentAuthorityTests` | the bootstrap's `worldComposition` is exempt as presentation tuning | P1-F1 wiring | yes |
+| `HubPanelTests`, `UiIconIntegrationTests` | no change to the tests; the entry icon key is now `F006-UI-OFFICE` | B-17 | no |
+| `UiIconSprites` (test support) | loads and maps `F006-` keys from `Art/F006/ui/` as well as the F004 icon folder | the hub glyph lives under F006 | yes |
+
+**New.** `DeckLayoutTests`, `DeckCompositeProofTests`, `DeckWiringTests` (Edit Mode), `DeckRenderTests`, `ReducedMotionWorldTests`, `TilemapSmokeTests` (Play Mode; the last two carry `[Category("StandalonePlayer")]`).
+
+**Render baselines (T527).** The nine `w003s-*-shell.png` baselines under `Tests/PlayMode/Fixtures/Screenshots/F004-B2/` were regenerated, not edited: `IDLEFACTORY_RENDER_BASELINE_WRITE=1 scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/PlayMode/RenderParityTests.cs` (the harness write mode). Only the hub entry glyph changed (the Contracts glyph became the Office glyph: 125 to 165 pixels per frame, max channel delta 162). No `w004v-*` world frame changed.
+
+**Settings.** No `ProjectSettings` change is committed. `ProjectSettings/ProjectSettings.asset` run noise was restored after every Unity run.
