@@ -3,7 +3,7 @@
   "assetId": "f006-link-junction",
   "briefVersion": "F006-LINK-FX-AB v1.0 (specs/006-world-first-factory-experience, task T522; Art Bible 21.2 and 21.4)",
   "candidateSelection": "none: a single deterministic render, no candidates, no seed",
-  "checkReportHash": "d76952df6096a6a23530afe16c11d89ee2daf07db25a37c813218a1bf66bc788",
+  "checkReportHash": "e435c6350119da9a5b4c5d36c8e090cae7446fdc61981dba0798f22fd1c3dd22",
   "license": "authored: project-owned scripted drawing, no third-party material",
   "outputs": [
     {
@@ -39,7 +39,7 @@
   "pixelPass": {
     "paletteId": "f004-palette",
     "paletteVersion": "1.0.0",
-    "scriptSha256": "4a5bc97dd035841262b345a38e3ee6dfbd9a8a04045f134bbd48500f2d0f7bc3",
+    "scriptSha256": "1f8b0b74b31b2b053e334389da0c2f7684bb689fb3083ce8b3b275c9c7a587d7",
     "steps": [
       "exact-pixel drawing from palette ids (no antialiasing, alpha 0/255)",
       "1 px ink_0 outline where the sprite has one",
@@ -62,7 +62,7 @@
     },
     {
       "path": "tools/art-pipeline/art_pipeline/f006/link_fx.py",
-      "sha256": "42ed6d2e43a3664ac1b396abd4ff19c9931f98437f5105c4221f48c6d605a85b"
+      "sha256": "56c272a69dc6ff6d3cbbb5923a3b16651ec6485d764b70cdb493b30bcaa41c2c"
     },
     {
       "path": "tools/art-pipeline/art_pipeline/pixel_pass.py",

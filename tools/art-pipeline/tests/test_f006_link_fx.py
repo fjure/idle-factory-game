@@ -141,3 +141,34 @@ def test_manifest_provenance_and_stage_cost(built):
     assert still["f006-fx-completion-pop"] == 3
     for e in Image.open(OUT / "fx" / "sheets" / "contact_x4.png"), Image.open(OUT / "link" / "sheets" / "contact_x3.png"):
         assert e.size[0] > 0
+
+
+def _global(built, name):
+    return next(c for c in built["report_link"]["global"] if c["name"] == name)
+
+
+def test_cue_over_lane_luminance_contrast_t556(built):
+    """T556: every cue fill and the ink_0 outline over every lane tone (copper_1 and copper_2 included), rule C1 (max of fill and outline >= 3)."""
+    c = _global(built, "cue_over_lane_contrast")
+    d = c["details"]
+    assert c["passed"] and d["pairsWithoutCarrier"] == [] and d["nonTextContrast"] == 3.0
+    assert set(d["fillRatios"]) == set(L.CUE_FILLS) and all(set(r) == set(L.LANE_TONES) for r in d["fillRatios"].values())
+    # values measured in reviews/t527-composite-proofs.md section 4
+    assert d["fillRatios"]["cue_alert"] == {"dim_0": 3.52, "ink_1": 4.16, "ink_0": 5.17, "copper_1": 1.49, "copper_2": 1.27}
+    assert d["fillRatios"]["cue_neutral"]["copper_1"] == 3.93 and d["fillRatios"]["cue_neutral"]["ink_0"] == 13.62
+    assert d["outlineRatios"] == {"copper_1": 3.47, "copper_2": 6.57, "dim_0": 1.47, "ink_0": 1.0, "ink_1": 1.24}
+    # the fill carries dim_0, ink_1 and ink_0; the outline alone carries copper_1 and copper_2, inside an explicit pixel-area limit
+    assert set(d["outlineOnlyFills"]) == {"copper_1", "copper_2"} and "cue_alert" in d["outlineOnlyFills"]["copper_1"]
+    area = d["outlineOnlyAreaLimit"]
+    assert area["copper_1"]["passed"] and area["copper_1"]["worstMaskPxPerBadge"] == 11.0 and area["copper_1"]["worstRingPxPerBadge"] == 1.0
+    assert area["copper_2"]["passed"] and area["copper_2"]["worstMaskPxPerBadge"] == 0.0
+
+
+def test_cue_over_lane_gate_fails_over_the_area_limit(built, palette):
+    ring = _global(built, "c8_ring_link_layer")
+    ring = ck.CheckResult(ring["name"], ring["passed"], json.loads(json.dumps(ring["details"])))
+    ring.details["rows"][0]["laneUnderBadgeTones"]["copper_1"] = 13 * ring.details["rows"][0]["slots"]
+    assert not L.cue_over_lane_contrast(palette, ring).passed
+    ring.details["rows"][0]["laneUnderBadgeTones"]["copper_1"] = 0
+    ring.details["rows"][0]["laneUnderBadgeTones"]["copper_2"] = 1
+    assert not L.cue_over_lane_contrast(palette, ring).passed
