@@ -523,6 +523,79 @@ namespace IdleFactory.Tests.EditMode.F006
         }
 
         [Test]
+        public void TheFeedAllocatesNothingWhileTheSessionCompletesCyclesInsideTheMeasuredWindow()
+        {
+            var rig = RunCommandFixtures.NewRig(cash: 1_000_000_000_000);
+            for (var slot = 0; slot < 6; slot++)
+            {
+                var built = rig.Commands.Build(slot, RunCommandFixtures.Miner);
+                if (!built.IsSuccess)
+                {
+                    rig.Commands.UpgradeFactory();
+                    built = rig.Commands.Build(slot, RunCommandFixtures.Miner);
+                }
+
+                Assert.That(built.IsSuccess, Is.True, "slot " + slot + ": " + built.ReasonCode);
+            }
+
+            var pool = NewPool();
+            var feed = new WorldEffectsFeed(rig.Session, pool);
+            for (var frame = 0; frame < 5; frame++)
+            {
+                feed.Update(Layout, frame * 16L, false);
+            }
+
+            long now = 1_000;
+            long allocations = 0;
+            Action update = () => feed.Update(Layout, now, false);
+            for (var frame = 0; frame < 400; frame++)
+            {
+                now += 100;
+                rig.Advance(Second / 10); // the session itself may allocate: only the feed is measured
+                allocations += GcAllocationCounter.Count(update);
+            }
+
+            Assert.That(allocations, Is.Zero, "completions arrive through the row deltas, not through a snapshot rebuild");
+            Assert.That(pool.SpawnedTotal, Is.GreaterThan(0), "cycles completed inside the window and spawned pops");
+        }
+
+        [Test]
+        public void ApplyCompletionsYieldsTheSameDeltasAsARefreshForTheSameStateChanges()
+        {
+            var viaRefresh = new MachinePresentationModel();
+            var viaApply = new MachinePresentationModel();
+            var counters = new long[] { 0, 0, 0 };
+            var build = PresentationModelSynth.Build(1, 1, counters.Select((c, i) => Machine(i, c)).ToList());
+            viaRefresh.Refresh(Layout, build.Factory, build.Views, build.Views.Length);
+            viaApply.Refresh(Layout, build.Factory, build.Views, build.Views.Length);
+            var random = new System.Random(7);
+            for (var step = 0; step < 200; step++)
+            {
+                for (var i = 0; i < counters.Length; i++)
+                {
+                    counters[i] += random.Next(0, 6) == 0 ? random.Next(1, 7) : 0;
+                }
+
+                var next = PresentationModelSynth.Build(1, 2 + step, counters.Select((c, i) => Machine(i, c)).ToList());
+                viaRefresh.Refresh(Layout, next.Factory, next.Views, next.Views.Length);
+                var any = viaApply.ApplyCompletions(next.Views, next.Views.Length);
+                var generation = viaApply.Generation;
+                var expectAny = false;
+                for (var i = 0; i < counters.Length; i++)
+                {
+                    Assert.That(viaApply[i].CompletionsDelta, Is.EqualTo(viaRefresh[i].CompletionsDelta), "step " + step + " location " + i);
+                    expectAny |= viaRefresh[i].CompletionsDelta > 0;
+                }
+
+                Assert.That(any, Is.EqualTo(expectAny));
+                // The cheap path in the next frame clears the delta the way a skipped Refresh does, and a repeat call counts nothing twice.
+                Assert.That(viaApply.ApplyCompletions(next.Views, next.Views.Length), Is.False);
+                Assert.That(viaApply.Generation, Is.EqualTo(generation));
+                viaApply.Refresh(Layout, next.Factory, next.Views, next.Views.Length, null, false, true);
+            }
+        }
+
+        [Test]
         public void EveryEffectKindHasItsRegistryRowWithSixFrames()
         {
             for (var kind = 0; kind < EffectPool.KindCount; kind++)

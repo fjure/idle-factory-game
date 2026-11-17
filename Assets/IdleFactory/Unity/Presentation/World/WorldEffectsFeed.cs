@@ -9,10 +9,12 @@ namespace IdleFactory.Unity.Presentation
     /// refreshes it in every frame (P2-F10), and hands its completion deltas to the <see cref="EffectPool"/>. It reads the session and changes
     /// nothing in it.
     /// <para>
-    /// The per-frame path reads the allocation-free machine rows (<see cref="RunSession.CopyMachineStates(MachineStateView[])"/>) and refreshes the
-    /// model from a cached factory snapshot. A new snapshot, which allocates, is built only when the structure revision, the layout or the sum of the
-    /// completed-cycle counters moved, and at most every <see cref="MinRebuildMilliseconds"/> for the counters; deltas add up in the model's baseline,
-    /// so a throttled frame loses no completion (the display value is capped anyway).
+    /// The per-frame path allocates nothing: it reads the machine rows (<see cref="RunSession.CopyMachineStates(MachineStateView[])"/>), refreshes the
+    /// model from a cached factory snapshot, and takes the new completions straight from the rows with
+    /// <see cref="MachinePresentationModel.ApplyCompletions"/>. A new snapshot, which allocates (about 100 objects, 5 to 12 KB), is built only on a
+    /// structure revision change (machines, levels, unlocks, effects, Overdrive: everything that can change a cycle time), a layout change, an offline
+    /// return or a session replace. There is no periodic rebuild: the loop rate applies from the next frame 0 anyway (R12), and every change of a
+    /// cycle time is a structure revision change.
     /// </para>
     /// <para>
     /// Session replace (P2-F12): a new run id (prestige, a new run, a restore of another run) resets the model's baseline and the pool and raises
@@ -22,16 +24,11 @@ namespace IdleFactory.Unity.Presentation
     /// </summary>
     public sealed class WorldEffectsFeed
     {
-        /// <summary>The most often a snapshot is rebuilt for a moved completed-cycles counter, in presentation milliseconds.</summary>
-        public const long MinRebuildMilliseconds = 100;
-
         private readonly RunSession session;
         private readonly EffectPool pool;
         private readonly MachinePresentationModel model;
         private MachineStateView[] states = new MachineStateView[16];
         private RunFactorySnapshot factory;
-        private long lastBuildMs = long.MinValue / 2;
-        private long lastCompleted = -1;
         private int lastLocationCount = -1;
         private Guid runId;
         private bool hasRun;
@@ -47,6 +44,9 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The world's model (the card owns another one for its own location).</summary>
         public MachinePresentationModel Model => model;
 
+        /// <summary>The number of full snapshot rebuilds so far (the allocating path), for tests and the profile.</summary>
+        public int Rebuilds { get; private set; }
+
         public EffectPool Pool => pool;
 
         /// <summary>Raised once when the run id changed (prestige, a new run, a restore): owners of other derived models invalidate them.</summary>
@@ -61,7 +61,6 @@ namespace IdleFactory.Unity.Presentation
             model.ResetBaseline();
             pool.Reset();
             factory = offlineReturn ? factory : null;
-            lastCompleted = -1;
             suppressNext = offlineReturn;
         }
 
@@ -77,6 +76,7 @@ namespace IdleFactory.Unity.Presentation
             pool.EnsureLocations(layout.LocationCount);
             pool.Advance(presentationMilliseconds);
 
+            // An offline return reaches ResetModels(true) and a new run id reaches it too; both are cheap and idempotent, so the overlap is harmless.
             var current = session.State.RunId;
             if (hasRun && current != runId)
             {
@@ -88,49 +88,31 @@ namespace IdleFactory.Unity.Presentation
             runId = current;
             hasRun = true;
 
-            var completed = ReadStates(out var count);
+            var count = ReadStates();
             var rebuild = factory == null || suppressNext || session.StructureRevision != factory.StructureRevision || layout.LocationCount != lastLocationCount;
-            if (!rebuild && completed != lastCompleted && presentationMilliseconds - lastBuildMs >= MinRebuildMilliseconds)
-            {
-                rebuild = true;
-            }
-
             if (rebuild)
             {
                 factory = RunSnapshots.Factory(session);
-                count = session.CopyMachineStates(states);
-                if (count > states.Length)
-                {
-                    states = new MachineStateView[count];
-                    count = session.CopyMachineStates(states);
-                }
-
-                lastBuildMs = presentationMilliseconds;
-                lastCompleted = completed;
+                Rebuilds++;
                 lastLocationCount = layout.LocationCount;
             }
 
             model.Refresh(layout, factory, states, count, null, suppressNext, rebuild);
             suppressNext = false;
+            model.ApplyCompletions(states, count);
             pool.ConsumeCompletions(model);
         }
 
-        private long ReadStates(out int count)
+        private int ReadStates()
         {
-            count = session.CopyMachineStates(states);
+            var count = session.CopyMachineStates(states);
             if (count > states.Length)
             {
                 states = new MachineStateView[count];
                 count = session.CopyMachineStates(states);
             }
 
-            long total = 0;
-            for (var i = 0; i < count; i++)
-            {
-                total += states[i].CompletedCycles;
-            }
-
-            return total;
+            return count;
         }
     }
 }

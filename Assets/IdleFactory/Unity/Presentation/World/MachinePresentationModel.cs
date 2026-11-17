@@ -327,6 +327,53 @@ namespace IdleFactory.Unity.Presentation
             return true;
         }
 
+        /// <summary>
+        /// The allocation-free completion path (T529 fix round): computes the delta of every occupied location from <c>views[m].CompletedCycles</c>
+        /// against the baseline, with the logic and the display cap of <see cref="Refresh"/>, and writes a delta above 0 into the buffer. It needs no
+        /// snapshot, so a caller runs it every frame; it requires the buffer of a rebuild (the machines of the last <see cref="Refresh"/>) and a row
+        /// whose <c>SlotIndex</c> is an occupied location of it. A rebuild's own deltas are kept (the baseline already advanced, so nothing is
+        /// counted twice). <see cref="Generation"/> moves only when a delta above 0 was written, so a consumer sees it once.
+        /// </summary>
+        /// <returns>True when at least one location got a delta.</returns>
+        public bool ApplyCompletions(MachineStateView[] views, int viewCount)
+        {
+            if (views == null) throw new ArgumentNullException(nameof(views));
+            if (!hasRevision)
+            {
+                return false;
+            }
+
+            var any = false;
+            var rows = viewCount < views.Length ? viewCount : views.Length;
+            for (var m = 0; m < rows; m++)
+            {
+                var location = views[m].SlotIndex;
+                if (location < 0 || location >= locationCount || !buffer[location].IsOccupied)
+                {
+                    continue;
+                }
+
+                var value = buffer[location];
+                var delta = Advance(location, value.InstanceId, views[m].CompletedCycles, false);
+                if (delta <= 0)
+                {
+                    continue;
+                }
+
+                buffer[location] = new MachinePresentation(
+                    value.Location, value.InstanceId, value.MachineId, value.MachineTypeIndex, value.Level, value.VisualState, value.UpgradeAvailable,
+                    value.Pace, value.ActivityFps, delta, value.LimitingResourceId);
+                any = true;
+            }
+
+            if (any)
+            {
+                generation++;
+            }
+
+            return any;
+        }
+
         private int Advance(int location, Guid instance, long counter, bool suppress)
         {
             var delta = 0;

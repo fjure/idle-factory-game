@@ -130,6 +130,11 @@ namespace IdleFactory.Unity.Presentation
             }
 
             var layerId = SortingLayer.NameToID(EffectsSortingLayer);
+            if (layerId == 0)
+            {
+                Debug.LogWarning("The \"" + EffectsSortingLayer + "\" sorting layer is missing: the world effects would draw on the wrong layer.");
+            }
+
             for (var i = 0; i < renderers.Length; i++)
             {
                 var child = new GameObject("Effect " + i);

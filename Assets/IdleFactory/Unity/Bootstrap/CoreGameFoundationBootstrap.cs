@@ -1508,6 +1508,11 @@ namespace IdleFactory.Unity.Bootstrap
                 LatticeLayoutBuilder.TryUseSettings(null, out _);
             }
 
+            if (worldEffects != null)
+            {
+                worldEffects.SessionReplaced -= HandleWorldSessionReplaced;
+            }
+
             if (displayPreferences != null)
             {
                 displayPreferences.Changed -= OnDisplayPreferenceChanged;

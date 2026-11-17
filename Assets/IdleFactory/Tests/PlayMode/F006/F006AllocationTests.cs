@@ -1,5 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using IdleFactory.Run.Application;
+using IdleFactory.Run.Domain;
+using IdleFactory.Run.Simulation;
 using IdleFactory.Unity.Presentation;
 using NUnit.Framework;
 using UnityEngine.TestTools;
@@ -107,6 +111,83 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(pool.CoalescedTotal, Is.GreaterThan(0), "the run coalesced repeats");
             Assert.That(pool.ActiveCount, Is.LessThanOrEqualTo(EffectPool.ActiveLimit));
             Assert.That(pool.DrainingCount, Is.LessThanOrEqualTo(EffectPool.DrainingLimit));
+        }
+
+        [UnityTest]
+        public IEnumerator TheWorldEffectsFeedAllocatesNothingWhileEightMachinesCompleteRealCycles()
+        {
+            // A real session over the packaged Iron content (no editor API): 8 miners complete cycles for 600 frames while the feed and the view run.
+            var catalog = RunPlayerFixtures.IronCatalog();
+            var permanent = new PermanentState(catalog);
+            var start = NextRunStart.Compute(catalog, permanent);
+            var state = new RunState(catalog, System.Guid.NewGuid(), 1, null, 1_000_000_000_000L, 0, start.StorageLevel, 1, catalog.RunStart.InitialUnlocks);
+            Assert.That(new RunSimulator(catalog).Advance(state, permanent, 0, RunPlayerFixtures.StartUtcMs, null), Is.EqualTo(RunAdvanceResult.Ok));
+            var session = new RunSession(catalog, state, permanent, RunPlayerFixtures.StartUtcMs, null);
+            var commands = new RunCommands(session);
+            var built = 0;
+            for (var slot = 0; slot < 8; slot++)
+            {
+                var result = commands.Build(slot, "machine.miner");
+                if (!result.IsSuccess)
+                {
+                    commands.UpgradeFactory();
+                    result = commands.Build(slot, "machine.miner");
+                }
+
+                Assert.That(result.IsSuccess, Is.True, "slot " + slot + ": " + result.ReasonCode);
+                built++;
+            }
+
+            Assert.That(built, Is.EqualTo(8), "8 machines are running");
+
+            var grid = World(out _, out _);
+            var pool = new EffectPool();
+            var host = new UnityEngine.GameObject("effect-pool-view-real");
+            rig.Owned.Add(host);
+            var view = host.AddComponent<EffectPoolView>();
+            view.Configure(rig.Catalog(), pool);
+            view.Bind(grid);
+            var feed = new WorldEffectsFeed(session, pool);
+            var layout = grid.Layout;
+            long now = 0;
+            for (var i = 0; i < 30; i++)
+            {
+                now += 16;
+                feed.Update(layout, now, false);
+                view.Present();
+            }
+
+            yield return null;
+            long allocations = 0;
+            var steadyFrames = 0;
+            var structuralFrames = 0;
+            System.Action frameWork = () =>
+            {
+                feed.Update(layout, now, false);
+                view.Present();
+            };
+            var spawnedBefore = pool.SpawnedTotal;
+            for (var frame = 0; frame < Frames; frame++)
+            {
+                now += 100;
+                Assert.That(session.Advance(1_000_000).IsSuccess, Is.True); // 100 ms of run time per frame: the session itself is not measured
+                var rebuildsBefore = feed.Rebuilds;
+                var counted = GcAllocationCounter.Count(frameWork);
+                if (feed.Rebuilds != rebuildsBefore)
+                {
+                    // A structure revision change (a contract offer, an unlock) builds one full snapshot: the rare, allocating path, not the steady state.
+                    structuralFrames++;
+                    continue;
+                }
+
+                steadyFrames++;
+                allocations += counted;
+            }
+
+            Assert.That(pool.SpawnedTotal, Is.GreaterThan(spawnedBefore), "completions happened inside the measured window");
+            Assert.That(structuralFrames, Is.LessThanOrEqualTo(5), "structure changes are rare events, not the steady state");
+            Assert.That(steadyFrames, Is.GreaterThanOrEqualTo(Frames - 5));
+            Assert.That(allocations, Is.Zero, "SC-008: every steady frame of the world effects allocates nothing while cycles complete");
         }
 
         [UnityTest]
