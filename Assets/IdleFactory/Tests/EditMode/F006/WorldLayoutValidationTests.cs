@@ -316,6 +316,13 @@ namespace IdleFactory.Tests.EditMode.F006
             Assert.That(settings.Validate(), Is.Empty);
             foreach (var name in TestLayouts.Names)
             {
+                if (side == MarginSide.Right)
+                {
+                    // P1-F4 (T527): the depot is Right, so a deposit Right shares the collector column and is reported.
+                    Assert.That(TestLayouts.ByName(name, settings).Validate(), Has.Some.Contain("collector column"), name);
+                    continue;
+                }
+
                 AssertValid(TestLayouts.ByName(name, settings), name + " deposit " + side);
             }
 
@@ -374,7 +381,7 @@ namespace IdleFactory.Tests.EditMode.F006
         {
             var settings = NewSettings();
             Assert.That(settings.Validate(), Is.Empty);
-            Assert.That(settings.marginCells, Is.EqualTo(SlotGridLayout.HalfCellMargin));
+            Assert.That(settings.marginWorldUnits, Is.EqualTo(SlotGridLayout.HalfCellMargin));
             Assert.That(settings.maxPropHeightArtPx, Is.EqualTo(24));
             Assert.That(settings.propDensityPerStage, Is.EqualTo(new float[3]), "F004 has no props");
             Assert.That(settings.edgeRulePerStage, Is.EqualTo(new[] { EdgeRule.Railing, EdgeRule.Wall, EdgeRule.Gantry }));
@@ -394,8 +401,12 @@ namespace IdleFactory.Tests.EditMode.F006
             Assert.That(asset, Is.Not.Null, WorldCompositionSettings.AssetPath + " exists");
             Assert.That(asset.Validate(), Is.Empty);
             var defaults = NewSettings();
-            Assert.That(JsonUtility.ToJson(asset), Is.EqualTo(JsonUtility.ToJson(defaults)), "the asset's defaults reproduce F004 until the World Designer edits them");
-            Assert.That(asset.ComposeFor(WorldOrientation.Portrait).MarginCells, Is.EqualTo(SlotGridLayout.HalfCellMargin));
+            // T527 authored the stage prop tuning (weights and densities, the World Designer's to confirm); every composition value, rule and limit still reproduces F004.
+            defaults.propWeightsPerStage = asset.propWeightsPerStage;
+            defaults.propDensityPerStage = asset.propDensityPerStage;
+            Assert.That(JsonUtility.ToJson(asset), Is.EqualTo(JsonUtility.ToJson(defaults)), "the asset's composition values reproduce F004; only the stage prop tuning is authored");
+            Assert.That(asset.propDensityPerStage.All(d => d >= 0f && d <= 0.5f), Is.True, "at most 0.5 props per eligible cell (Art Bible 21.3)");
+            Assert.That(asset.ComposeFor(WorldOrientation.Portrait).MarginWorldUnits, Is.EqualTo(SlotGridLayout.HalfCellMargin));
             var layout = new LatticeLayoutBuilder(LatticeLayoutBuilder.ShippedLocationCount, WorldOrientation.Portrait, asset).Build();
             Assert.That(layout.Bounds, Is.EqualTo(SlotGridLayout.Extent(3)));
             AssertValid(layout, "asset lattice");
@@ -404,9 +415,9 @@ namespace IdleFactory.Tests.EditMode.F006
         [Test]
         public void OutOfRangeSettingsAreReported()
         {
-            Assert.That(NewSettings(s => s.marginCells = -1f).Validate(), Is.Not.Empty);
-            Assert.That(NewSettings(s => s.marginCells = float.NaN).Validate(), Is.Not.Empty);
-            Assert.That(NewSettings(s => s.marginCells = 99f).Validate(), Is.Not.Empty);
+            Assert.That(NewSettings(s => s.marginWorldUnits = -1f).Validate(), Is.Not.Empty);
+            Assert.That(NewSettings(s => s.marginWorldUnits = float.NaN).Validate(), Is.Not.Empty);
+            Assert.That(NewSettings(s => s.marginWorldUnits = 99f).Validate(), Is.Not.Empty);
             Assert.That(NewSettings(s => s.deckBandCells = 0).Validate(), Is.Not.Empty);
             Assert.That(NewSettings(s => s.maxPropHeightArtPx = 25).Validate(), Is.Not.Empty);
             Assert.That(NewSettings(s => s.maxPropHeightArtPx = 0).Validate(), Is.Not.Empty);
@@ -422,7 +433,7 @@ namespace IdleFactory.Tests.EditMode.F006
         [Test]
         public void ALargerMarginChangesOnlyTheMarginNeverTheBounds()
         {
-            var settings = NewSettings(s => s.marginCells = 1.25f);
+            var settings = NewSettings(s => s.marginWorldUnits = 1.25f);
             var layout = new LatticeLayoutBuilder(LatticeLayoutBuilder.ShippedLocationCount, WorldOrientation.Portrait, settings).Build();
             Assert.That(layout.Margin, Is.EqualTo(1.25f));
             Assert.That(layout.Bounds, Is.EqualTo(SlotGridLayout.Extent(3)), "Bounds excludes the margin");

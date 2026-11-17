@@ -36,6 +36,10 @@ namespace IdleFactory.Unity.Bootstrap
         [SerializeField] private StyleSheet styleSheet;
         [SerializeField] private PresentationSpriteCatalog spriteCatalog = new PresentationSpriteCatalog();
 
+        [Header("World (Feature 006)")]
+        [Tooltip("The authored world composition values (WorldCompositionSettings, presentation tuning, not gameplay content). Validated at start-up; an invalid or missing asset keeps the F004-reproducing defaults.")]
+        [SerializeField] private WorldCompositionSettings worldComposition;
+
         [Header("Run shell (Feature 003)")]
         [SerializeField] private VisualTreeAsset runShellTree;
         [SerializeField] private StyleSheet runShellStyles;
@@ -200,6 +204,11 @@ namespace IdleFactory.Unity.Bootstrap
         /// <summary>The 12-slot world grid (T112), or null before a run is live.</summary>
         public SlotGridView SlotGrid => slotGrid;
 
+        /// <summary>The deck under the slots (T527), or null before a run is live.</summary>
+        public FactoryDeckView DeckView => deckView;
+
+        private FactoryDeckView deckView;
+
         /// <summary>The presenter that binds the run session to the shell and the grid, or null before a run is live.</summary>
         public RunShellPresenter ShellPresenter => shellPresenter;
 
@@ -258,7 +267,25 @@ namespace IdleFactory.Unity.Bootstrap
         private void Awake()
         {
             ApplyFrameRateTarget();
+            ApplyWorldComposition();
             Initialize();
+        }
+
+        private bool worldCompositionApplied;
+
+        // P1-F1 (T527): the authored composition feeds the one builder every caller asks (the world, the camera and the shell fallback).
+        private void ApplyWorldComposition()
+        {
+            if (worldComposition == null)
+            {
+                return;
+            }
+
+            worldCompositionApplied = LatticeLayoutBuilder.TryUseSettings(worldComposition, out var problems);
+            if (!worldCompositionApplied)
+            {
+                Debug.LogWarning("world.composition.invalid: " + string.Join(" ", problems));
+            }
         }
 
         /// <summary>
@@ -535,6 +562,12 @@ namespace IdleFactory.Unity.Bootstrap
                 gridObject.transform.SetParent(transform, false);
                 var grid = gridObject.AddComponent<SlotGridView>();
                 grid.Configure(spriteCatalog);
+                // T527: the deck Tilemap under the slots replaces the F004 floor pool; it follows the grid's layout and each location's condition.
+                var deckObject = new GameObject("Factory Deck View");
+                deckObject.transform.SetParent(transform, false);
+                deckView = deckObject.AddComponent<FactoryDeckView>();
+                deckView.Configure(spriteCatalog, worldCompositionApplied ? worldComposition : null);
+                deckView.Bind(grid);
                 runShell = shell;
                 slotGrid = grid;
                 RefreshReducedMotion();
@@ -1429,6 +1462,12 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnDestroy()
         {
+            if (worldCompositionApplied)
+            {
+                worldCompositionApplied = false;
+                LatticeLayoutBuilder.TryUseSettings(null, out _);
+            }
+
             if (displayPreferences != null)
             {
                 displayPreferences.Changed -= OnDisplayPreferenceChanged;

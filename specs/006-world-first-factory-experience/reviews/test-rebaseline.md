@@ -270,3 +270,24 @@ On a phone in landscape the strip and Overdrive now stay on screen while the car
 | `HubPanelTests` | `TheContractsRowShowsTheLockWhileContractsAreLockedAndNothingToDeliverOnceTheyAreNot` | U-B3 | new |
 | `ResearchPanelTests` | `TheGraphShowsAnEdgeCueTowardsTheColumnsThatAreClippedAtPhoneWidth` | U-B5 | new |
 | `SurfaceConsistencyTests` | `EverySystemViewOpensScrolledToItsTopWithItsHeadingInView`, `AReadOnlyValueTakesTheValueClassAndAControlLikeValueDoesNot`, `MarketValuesAndIndustryCardsLoseTheirButtonChromeWhileRealControlsKeepIt` | U-B6, U-B8 | new |
+
+## T527 (#700): the factory deck replaces the F004 floor pool
+
+The F004 floor pool, its family folder, its atlas and its catalog key are gone; the deck Tilemap (`FactoryDeckView`) draws the base and deck under the slots. The F006 catalog rows are registered in the scene, the placed rows are required, and the hub glyph `F006-UI-OFFICE` is imported.
+
+| File | Change | Reason | Expectation changed? |
+|---|---|---|---|
+| `SlotGridTests` | the floor-layer tests (about 12: cell block, seams, pool growth, camera follow, missing key) removed | the floor pool is gone; `DeckLayoutTests`, `DeckRenderTests` and `ReducedMotionWorldTests` cover the deck | yes (removed with the code) |
+| `PresentationAllocationTests` | `TheFloorAllocatesNothingOnceWarm...` removed, the floor key dropped from the synthetic catalog | the floor pool is gone | yes |
+| `F004AssetContractTests` | the floor import and floor registration tests replaced by `TheF004FloorFamilyAndItsAtlasAreRemoved...`; F004-only keys 10 to 9 and shipped keys 87 to 86; the C8 ring test composites the periodic F006 `f006-ground-base` tile (floor_0 only) instead of the F004 floor tile | A-13 | yes |
+| `F006AssetContractTests` | 48 to 49 entries and 83 to 84 frames (the hub glyph), the hub glyph is in no world atlas | B-17 | yes |
+| `WorldLayoutValidationTests` | `marginCells` to `marginWorldUnits` (P1-F6); the authored asset equals the defaults except the stage prop tuning; deposit Right is now reported (P1-F4) | P1-F4, P1-F6, authored tuning | yes |
+| `JsonContentAuthorityTests` | the bootstrap's `worldComposition` is exempt as presentation tuning | P1-F1 wiring | yes |
+| `HubPanelTests`, `UiIconIntegrationTests` | no change to the tests; the entry icon key is now `F006-UI-OFFICE` | B-17 | no |
+| `UiIconSprites` (test support) | loads and maps `F006-` keys from `Art/F006/ui/` as well as the F004 icon folder | the hub glyph lives under F006 | yes |
+
+**New.** `DeckLayoutTests`, `DeckCompositeProofTests`, `DeckWiringTests` (Edit Mode), `DeckRenderTests`, `ReducedMotionWorldTests`, `TilemapSmokeTests` (Play Mode; the last two carry `[Category("StandalonePlayer")]`).
+
+**Render baselines (T527).** The nine `w003s-*-shell.png` baselines under `Tests/PlayMode/Fixtures/Screenshots/F004-B2/` were regenerated, not edited: `IDLEFACTORY_RENDER_BASELINE_WRITE=1 scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/PlayMode/RenderParityTests.cs` (the harness write mode). Only the hub entry glyph changed (the Contracts glyph became the Office glyph: 125 to 165 pixels per frame, max channel delta 162). No `w004v-*` world frame changed.
+
+**Settings.** No `ProjectSettings` change is committed. `ProjectSettings/ProjectSettings.asset` run noise was restored after every Unity run.

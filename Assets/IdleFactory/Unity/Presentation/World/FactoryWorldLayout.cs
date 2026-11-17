@@ -172,9 +172,10 @@ namespace IdleFactory.Unity.Presentation
                 throw new ArgumentException("A layout needs at least one location.", nameof(cells));
             }
 
-            LayoutId = layoutId;
+            // P1-F1: a composition that differs from the F004 defaults carries its own identity, so the camera model refits on a settings change.
+            LayoutId = layoutId + composition.IdentitySuffix;
             Orientation = orientation;
-            Margin = composition.MarginCells;
+            Margin = composition.MarginWorldUnits;
             DeckBandCells = Math.Max(1, composition.DeckBandCells);
 
             var minColumn = int.MaxValue;
@@ -550,6 +551,13 @@ namespace IdleFactory.Unity.Presentation
             if (DepotCell == DepositCell)
             {
                 problems.Add("The depot and the deposit share a cell.");
+            }
+
+            // P1-F4: every trunk runs along its row to the depot's anchor and then along the collector column to it, so the deposit must not
+            // sit in the depot's collector column (for example deposit Right while the depot is Right).
+            if (DepositCell.x == DepotCell.x)
+            {
+                problems.Add("The deposit shares the depot's collector column (x = " + DepotCell.x + "): move it to the other side or to the bottom.");
             }
 
             return problems;

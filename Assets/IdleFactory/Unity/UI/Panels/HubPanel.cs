@@ -30,12 +30,11 @@ namespace IdleFactory.Unity.UI.Panels
         public const string HubLabel = "Office";
 
         /// <summary>
-        /// The icon key of the hub entry: ONE swappable reference (P2-F9, P2-F22). The Art Director approved a new "Office" glyph (T554,
-        /// <c>art-source/f006/ui/f006-ui-office</c>) that is not yet imported into the runtime sprite catalog (the scene catalog registration of the F006
-        /// rows is T527/A-13), so the contracts glyph stands in. To switch, change this one constant to the imported key; nothing else changes. The hub
-        /// icon must stay distinguishable from the Contracts card icon once the new glyph lands: <see cref="IconKeyOf"/> keeps the contracts glyph for the card.
+        /// The icon key of the hub entry: ONE swappable reference (P2-F9, P2-F22). It is the imported "Office" glyph (T554,
+        /// <c>art-source/f006/ui/f006-ui-office</c>; imported and registered in the scene catalog by T527, B-17), a desk in-tray with a stack of cards.
+        /// It stays distinct from the Contracts card icon (<see cref="IconKeyOf"/> keeps the contracts glyph for the card).
         /// </summary>
-        public const string EntryIconKey = "F003-UI-ICON-TAB-CONTRACTS";
+        public const string EntryIconKey = "F006-UI-OFFICE";
 
         public static string TitleOf(HubCard card) => card.ToString();
 

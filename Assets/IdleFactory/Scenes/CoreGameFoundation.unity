@@ -1184,14 +1184,386 @@ MonoBehaviour:
       hasFramesPerSecond: 0
       framesPerSecond: 0
       placement: 0
-    - key: F004-FLOOR-TILE
+    - key: F006-GROUND-BASE
       sprite: {fileID: 0}
       frames:
-      - {fileID: 21300000, guid: a2aea2ee8b4c82f439e03acdba50b933, type: 3}
+      - {fileID: 21300000, guid: e5f632a1aa59ceb46817645bca30e015, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-GROUND-DECK
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: b784c604ce794b24b9d847ace7c8443a, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-GROUND-HATCH
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: c7e96cb79c53abe4d8fdd96c105b50ed, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-FOUNDATION-FLAT
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: aef6b961a3df9a841bd7dc594b9b3b90, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-FOUNDATION-OUTLINE
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 67a15ee3ed0ab5c4dbbc9ab4605d6a17, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-GANTRY-CORNER
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 80e5d805b1536c243bd4dc5152116f23, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-GANTRY-FL
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: c4e6671e68e0a1b45a6b91a89ef51242, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-GANTRY-FR
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: a2f1b0ddbc0a4d14aa9d8c42fc05070b, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-RAILING-CORNER
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 01c8e5df0b715034196ca65d98b839e5, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-RAILING-FL
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: d48105078a6e7214ab7a05309082f608, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-RAILING-FR
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 9da6a865109e7dd46960cc99b2116075, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-RAILING-QUIET-FL
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: aeda1f514d71f5248add3719e46258d8, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-RAILING-QUIET-FR
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 612bb5e18f70a284789d23c15a474b3a, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-WALL-CORNER
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 395138554dd33574da9a87496bd90183, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-WALL-FL
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: c3ff08e70312f6443ad590b0a5fd9126, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-EDGE-WALL-FR
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: d265ac26368a05741916fee01b5a9c73, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S1-EMPTY
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 177570b4ebcdafa4fafaa1cf6cf5393c, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S1-FULL
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: dac272b082056664baaaa7382c231858, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S1-HIGH
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: bfc476ffb9ee9174ea23a610d8e9da70, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S1-LOW
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 0ac9bdcb7d1c8124bb94b7206f585e41, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S2-EMPTY
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 8d8af99635179164dabbcb32d5b67491, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S2-FULL
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 2df28c3e3cd6b584e86baa32c6e4ef3c, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S2-HIGH
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 360ab07fbbf2d2f49aff8af953deb6ec, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S2-LOW
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: ca1bceb6332fb644b97247bfcbc82495, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S3-EMPTY
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 722362c0641122242a0d986600a16888, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S3-FULL
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: ca08d49c9cde8b6488302aca9ef9f197, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S3-HIGH
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 301e0545a87079a41859c62fb896c928, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOT-S3-LOW
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: ee870ac0449c3434d8a2cec844b870e9, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-LINK-BRANCH
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: fe9836fd04418544d90c795b225f73c0, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-LINK-BRANCH-ACTIVE
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: d4a69f0dfef19914087c35420b1ef863, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-LINK-JUNCTION
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 4416338a71a8b71468a6e7f91fafb9fd, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-LINK-TRUNK
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 982c84851c6e8a844951a500a8a5c029, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-PROP-CRATE-SMALL
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 8ab989b6efa4d6d43aa1ec0b0a298704, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-PROP-CRATE-STACK
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: f8db7d5b009f1d141bbe7e3bd955258b, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-PROP-LAMP-POST
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 744f5ef6d0cf6654cbeb0cb1356a7c25, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-PROP-PALLET
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 2eb5c968ae33e964594931cfacb73296, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOSIT-HIGHLIGHT
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 9e60ca051ffab374f80d6f7394c6e6d2, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOSIT-REST-S1
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 72271fe9a55a7f645ab4efd5ab010b5b, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOSIT-REST-S2
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 6db2413789648614fb8ead0a2dd003f2, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-DEPOSIT-REST-S3
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 82fe0f8dfb5f57b47b01192fb782e8ee, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-FX-BRANCH-PIP
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 006bd61b21896bd43a4155e89ad4cfcf, type: 3}
+      - {fileID: 21300000, guid: b8a26249b1a1b8e4698e8541175eefea, type: 3}
+      - {fileID: 21300000, guid: 11c9abc38b8969b49823a6d18c44621b, type: 3}
+      - {fileID: 21300000, guid: 230705f2cd20bdc4e89977c71244abb6, type: 3}
+      - {fileID: 21300000, guid: e241ab30af728c14f839e216f2e3c89c, type: 3}
+      - {fileID: 21300000, guid: c8716ed4ca2576e4db350be2d653a91a, type: 3}
+      hasFramesPerSecond: 1
+      framesPerSecond: 12
+      placement: 0
+    - key: F006-FX-BUILD-DUST
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 85c9e071865888b4a83460e4f41729e7, type: 3}
+      - {fileID: 21300000, guid: 9f0d7c48ac858594bba06e112b7414a2, type: 3}
+      - {fileID: 21300000, guid: 9d3e884c82b4089488abee1bed86f24f, type: 3}
+      - {fileID: 21300000, guid: 72584cddbf8bc284bbacbf5a519605e2, type: 3}
+      - {fileID: 21300000, guid: 0fb42a212a4c5334caaf9a84eaa82e17, type: 3}
+      - {fileID: 21300000, guid: 87def15a1955e0b4e87d5aa29a94d57c, type: 3}
+      hasFramesPerSecond: 1
+      framesPerSecond: 12
+      placement: 0
+    - key: F006-FX-COMPLETION-HIGHLIGHT
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 140f263dfbe8cd74eb7fde268a0891e1, type: 3}
+      hasFramesPerSecond: 0
+      framesPerSecond: 0
+      placement: 0
+    - key: F006-FX-COMPLETION-POP
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: b97e165a601a69044b51240317cca2f8, type: 3}
+      - {fileID: 21300000, guid: d9c529cdbe3a6e840948f0d759c97827, type: 3}
+      - {fileID: 21300000, guid: 306a41ce06f9b28469c5da588ab4703e, type: 3}
+      - {fileID: 21300000, guid: 54ee427d88280a243800581768c48f5b, type: 3}
+      - {fileID: 21300000, guid: f2527300236d7ba4aabe2b3c9bcbaf0a, type: 3}
+      - {fileID: 21300000, guid: aceff44228fc34e48a326ae8621319f0, type: 3}
+      hasFramesPerSecond: 1
+      framesPerSecond: 12
+      placement: 0
+    - key: F006-FX-SPARK
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 464d376e57184c54c8433c68576cd5e9, type: 3}
+      - {fileID: 21300000, guid: e2d66b42b2113dc449da4a161739e2f9, type: 3}
+      - {fileID: 21300000, guid: f7d611bff62e363418810176efc01783, type: 3}
+      - {fileID: 21300000, guid: aff413e617365c1458cbdb067b64a624, type: 3}
+      - {fileID: 21300000, guid: 4e78ebb6d6e7a26469eb45e426e611e9, type: 3}
+      - {fileID: 21300000, guid: 67e68de35c205ec44aa38044090ee3d9, type: 3}
+      hasFramesPerSecond: 1
+      framesPerSecond: 8
+      placement: 0
+    - key: F006-FX-STEAM
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 5584711445bf1a04186f6a3d2d92e349, type: 3}
+      - {fileID: 21300000, guid: bed29b7839cd312418398ed42b939ea6, type: 3}
+      - {fileID: 21300000, guid: 462cf9384193542458d8e9212760c440, type: 3}
+      - {fileID: 21300000, guid: f5d88e2aed2811a45bdd6f3af0860f48, type: 3}
+      - {fileID: 21300000, guid: 88459a82d07b239408fb63a08791db3b, type: 3}
+      - {fileID: 21300000, guid: cbda0f0e0aafb1549b96fb2d8a385835, type: 3}
+      hasFramesPerSecond: 1
+      framesPerSecond: 8
+      placement: 0
+    - key: F006-FX-UPGRADE-GLINT
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: cd22687b71d33e941b5a54d616a07119, type: 3}
+      - {fileID: 21300000, guid: f055dac4d0d687b428db90cfc183c01d, type: 3}
+      - {fileID: 21300000, guid: 3df31edb24ceb5d4a8b3b10b66bbc03d, type: 3}
+      - {fileID: 21300000, guid: b7acce976221eb34e8208f7cfd9f130c, type: 3}
+      - {fileID: 21300000, guid: 010330a6bc6677949b098eaa4e044eea, type: 3}
+      - {fileID: 21300000, guid: 2dcebac54f81a60488d12359a3b4717c, type: 3}
+      hasFramesPerSecond: 1
+      framesPerSecond: 12
+      placement: 0
+    - key: F006-FX-VEIN-CHIP
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 2f60854e0a2501a4da4ca1be4f3d95db, type: 3}
+      - {fileID: 21300000, guid: 42fff773aee462b4cb4b198185b02592, type: 3}
+      - {fileID: 21300000, guid: a7bb1be271f9a8b41a758f38f4f1d5de, type: 3}
+      - {fileID: 21300000, guid: c0b9ee885e40557408a5f2b9865a7717, type: 3}
+      - {fileID: 21300000, guid: 16e22d1369b02444a9c81ecacd7673dc, type: 3}
+      - {fileID: 21300000, guid: 9b5fb1302bef30844b21eb34bef180d9, type: 3}
+      hasFramesPerSecond: 1
+      framesPerSecond: 8
+      placement: 0
+    - key: F006-UI-OFFICE
+      sprite: {fileID: 0}
+      frames:
+      - {fileID: 21300000, guid: 9f0e1cbb9819e0f44b5356840d0424cb, type: 3}
       hasFramesPerSecond: 0
       framesPerSecond: 0
       placement: 0
     requireRegistryRows: 1
+  worldComposition: {fileID: 11400000, guid: c70216016266fbe40b02272f321a860b, type: 2}
   runShellTree: {fileID: 9197481963319205126, guid: 83cbf95f57853aa43b4feb0b73683728, type: 3}
   runShellStyles: {fileID: 7433441132597879392, guid: 8686205c67cd0e646ae0642f57a84642, type: 3}
   zoomSettings:
