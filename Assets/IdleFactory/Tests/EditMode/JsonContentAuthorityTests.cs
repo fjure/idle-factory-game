@@ -105,9 +105,10 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(textAssets.Select(field => field.Name), Is.EqualTo(new[] { "gameplayContent", "legacyImportContent" }));
 
             var gameplayInputs = serialized
-                .Where(field => IsScriptableObjectOrCatalog(field.FieldType))
+                .Where(field => IsScriptableObjectOrCatalog(field.FieldType) && !PresentationTuningAssets.Contains(field.FieldType))
                 .Select(field => field.Name)
                 .ToArray();
+            // T527: the bootstrap also carries the authored world composition (presentation tuning, FR-001 holds), which is the one listed exemption.
             Assert.That(gameplayInputs, Is.Empty);
         }
 

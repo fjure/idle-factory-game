@@ -755,6 +755,21 @@
         { "file": "fx/f006-fx-vein-chip_04.png", "sha256": "320af2919f33b0d8427f2526697d63f7201a553da20f68d0bba0deb263955b26" },
         { "file": "fx/f006-fx-vein-chip_05.png", "sha256": "a8324e3cb416ce01a1afcff42ae04c482c6b3b648997aa6dfc03e7b156c52ad2" }
       ]
+    },
+    {
+      "assetId": "f006-ui-office",
+      "key": "F006-UI-OFFICE",
+      "family": "ui",
+      "source": "art-source/f006/ui/manifest.json",
+      "route": "scripted",
+      "ppu": 24,
+      "fps": 0,
+      "canvas": [24, 24],
+      "footprintPx": [24, 24],
+      "pivot": [0.5, 0.5],
+      "frames": [
+        { "file": "ui/f006-ui-office_00.png", "sha256": "97f3bdd84f7e25bb5fb4a1f11a80c77ba8ee9d93e00a1cb468f8a61b1953b268" }
+      ]
     }
   ]
 }

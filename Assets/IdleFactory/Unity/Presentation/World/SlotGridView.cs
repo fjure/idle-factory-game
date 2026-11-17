@@ -24,9 +24,6 @@ namespace IdleFactory.Unity.Presentation
         public const int MachineOrder = 100;
         public const int AccentOrder = 110;
 
-        /// <summary>The floor draws below every slot: a slot's Sorting Group has an order of at least 0 (its row), the floor tiles -100 on the same layer.</summary>
-        public const int FloorOrder = -100;
-
         // Overlay orders on the overlay layer: a base plus the slot row, so a front row draws after the row behind it and every cue
         // draws after every selection frame.
         public const int FrameOrder = 150;
@@ -46,15 +43,6 @@ namespace IdleFactory.Unity.Presentation
         private float pixelsPerCell = 64f;
         private long clockMilliseconds;
         private bool clockFrozen;
-
-        // The floor (T472): a pool of tile renderers that grows with the visible area and is re-placed only when the covered cell block changes.
-        private readonly List<SpriteRenderer> floorTiles = new List<SpriteRenderer>();
-        private Transform floorRoot;
-        private Sprite floorSprite;
-        private Camera floorCamera;
-        private FloorRange floorRange = FloorRange.Empty;
-        private bool floorApplied;
-        private int floorEnabled;
 
         /// <summary>The world layout that places every slot, its hit test and its sorting rows (the F004 portrait lattice until <see cref="SetLayout"/>).</summary>
         public FactoryWorldLayout Layout => layout;
@@ -125,7 +113,6 @@ namespace IdleFactory.Unity.Presentation
             cueSet = stateCues ?? StateCueSet.Default;
             BuildSlots(slotCount < 0 ? layout.LocationCount : slotCount);
             Reposition();
-            ConfigureFloor();
         }
 
         private void BuildSlots(int slotCount)
@@ -146,136 +133,6 @@ namespace IdleFactory.Unity.Presentation
             }
         }
 
-        /// <summary>True when the catalog resolved <see cref="PresentationSpriteCatalog.FloorTileKey"/> to a sprite; otherwise the view draws no floor.</summary>
-        public bool HasFloor => floorSprite != null;
-
-        /// <summary>
-        /// The camera whose view the floor covers. Unset, the view follows the scene's main camera (the factory camera carries the
-        /// <c>MainCamera</c> tag); a test or a capture rig sets its own.
-        /// </summary>
-        public Camera FloorCamera
-        {
-            get => floorCamera;
-            set
-            {
-                floorCamera = value;
-                floorApplied = false;
-            }
-        }
-
-        /// <summary>The floor tiles that are drawn now (the pool may hold more, disabled).</summary>
-        public int FloorTileCount => floorEnabled;
-
-        /// <summary>The floor renderers of the pool; the first <see cref="FloorTileCount"/> are drawn, the rest are pooled and disabled.</summary>
-        public IReadOnlyList<SpriteRenderer> FloorTiles => floorTiles;
-
-        /// <summary>The cell block the floor covers now.</summary>
-        public FloorRange FloorCells => floorEnabled == 0 ? FloorRange.Empty : floorRange;
-
-        private void LateUpdate()
-        {
-            UpdateFloor();
-        }
-
-        /// <summary>
-        /// Fits the floor to the floor camera (or the main camera) once per call. Allocation-free while the covered cell block is unchanged;
-        /// the pool grows only when a zoom level or viewport needs more tiles than it holds.
-        /// </summary>
-        public void UpdateFloor()
-        {
-            if (floorSprite == null)
-            {
-                return;
-            }
-
-            var camera = floorCamera != null ? floorCamera : Camera.main;
-            if (camera == null || !camera.orthographic)
-            {
-                ApplyFloor(FloorRange.Empty);
-                return;
-            }
-
-            var centre = transform.InverseTransformPoint(camera.transform.position);
-            var halfHeight = camera.orthographicSize;
-            var halfWidth = halfHeight * camera.aspect;
-            UpdateFloor(centre.x - halfWidth, centre.y - halfHeight, centre.x + halfWidth, centre.y + halfHeight);
-        }
-
-        /// <summary>Fits the floor to a visible rectangle in the view's local world units (the camera path of <see cref="UpdateFloor()"/>).</summary>
-        public void UpdateFloor(float minX, float minY, float maxX, float maxY)
-        {
-            if (floorSprite == null)
-            {
-                return;
-            }
-
-            ApplyFloor(SlotGridLayout.FloorCellsFor(minX, minY, maxX, maxY));
-        }
-
-        private void ConfigureFloor()
-        {
-            if (floorRoot != null)
-            {
-                Destroy(floorRoot.gameObject);
-            }
-
-            floorRoot = null;
-            floorTiles.Clear();
-            floorEnabled = 0;
-            floorApplied = false;
-            floorRange = FloorRange.Empty;
-            // A missing key is the supported fallback (no floor, no error): the camera background stays.
-            floorSprite = sprites != null && sprites.TryGetEntry(PresentationSpriteCatalog.FloorTileKey, out var entry) ? entry.Sprite : null;
-        }
-
-        private void ApplyFloor(FloorRange range)
-        {
-            if (floorApplied && range.Equals(floorRange))
-            {
-                return;
-            }
-
-            floorApplied = true;
-            floorRange = range;
-            var needed = range.Count;
-            if (needed > 0 && floorRoot == null)
-            {
-                var rootObject = new GameObject("Floor");
-                rootObject.transform.SetParent(transform, false);
-                floorRoot = rootObject.transform;
-            }
-
-            while (floorTiles.Count < needed)
-            {
-                var tileObject = new GameObject("Floor Tile");
-                tileObject.transform.SetParent(floorRoot, false);
-                var renderer = tileObject.AddComponent<SpriteRenderer>();
-                renderer.sortingOrder = FloorOrder;
-                renderer.sprite = floorSprite;
-                renderer.enabled = false;
-                floorTiles.Add(renderer);
-            }
-
-            var index = 0;
-            for (var row = range.MinRow; row <= range.MaxRow; row++)
-            {
-                for (var column = range.MinColumn; column <= range.MaxColumn; column++)
-                {
-                    var tile = floorTiles[index++];
-                    var pivot = SlotGridLayout.FloorPivotOf(column, row);
-                    tile.transform.localPosition = new Vector3(pivot.x, pivot.y, 0f);
-                    tile.enabled = true;
-                }
-            }
-
-            for (var i = needed; i < floorEnabled; i++)
-            {
-                floorTiles[i].enabled = false;
-            }
-
-            floorEnabled = needed;
-        }
-
         /// <summary>
         /// Sets the world layout and moves every slot. A layout with a different number of locations rebuilds the slot renderers (the next
         /// <see cref="Render"/> shows them); the same count only repositions.
@@ -289,7 +146,14 @@ namespace IdleFactory.Unity.Presentation
             }
 
             Reposition();
+            LayoutChanged?.Invoke(layout);
         }
+
+        /// <summary>Raised after <see cref="SetLayout"/> (the deck view re-plans on it, T527).</summary>
+        public event Action<FactoryWorldLayout> LayoutChanged;
+
+        /// <summary>Raised at the end of <see cref="Render"/> with the live visual buffer (the deck view reads each slot's condition, T527).</summary>
+        public event Action<IReadOnlyList<SlotVisual>> VisualsRendered;
 
         /// <summary>
         /// Scales the placeholder badges and markers for the projected size (Art Bible section 8.2): a tight badge is at least 27
@@ -416,6 +280,7 @@ namespace IdleFactory.Unity.Presentation
 
             ApplyOverlayScale();
             AdvanceFrames(clockMilliseconds, clockFrozen);
+            VisualsRendered?.Invoke(visuals);
         }
 
         private void Reposition()

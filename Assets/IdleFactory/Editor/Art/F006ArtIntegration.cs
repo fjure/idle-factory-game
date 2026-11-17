@@ -18,7 +18,8 @@ namespace IdleFactory.Editor.Art
     /// production K4 badge tails (<c>art-source/f006/cue</c>) into the imported F004 cue sprites and updates their hashes in the F004
     /// manifest (P2-F5), and (3) creates the two Sprite Atlas v2 assets: <c>world</c> (the seven static families) and <c>fx</c>.
     /// The vein-chip loop is authored in the deposit source folder but is an FX asset: it is imported into <c>fx/</c> and packed in the FX atlas.
-    /// Catalog rows for the keys are in <c>PresentationSpriteCatalog</c> (T527 wires the placement and the scene catalog).
+    /// Catalog rows for the keys are in <c>PresentationSpriteCatalog</c>; <c>F006SceneWiring</c> (T527) registers them in the scene catalog.
+    /// The <c>ui</c> family (T527, B-17) holds the hub entry glyph <c>f006-ui-office</c> (T554); it is a UI Toolkit icon, not packed in an atlas.
     /// Batch entry: <c>-executeMethod IdleFactory.Editor.Art.F006ArtIntegration.RunFromCommandLine</c> (optional
     /// <c>-f006Steps import,cues,atlas</c>, default all three).
     /// </summary>
@@ -37,8 +38,8 @@ namespace IdleFactory.Editor.Art
         /// <summary>The static families of the world atlas (Art Bible 21.4), in import order.</summary>
         public static readonly string[] WorldFamilies = { "ground", "foundation", "edge", "depot", "link", "prop", "deposit" };
 
-        /// <summary>Every imported family, in manifest order; <c>fx</c> is the FX atlas. Each also names its source folder under <c>art-source/f006</c>.</summary>
-        public static readonly string[] FamilyNames = { "ground", "foundation", "edge", "depot", "link", "prop", "deposit", "fx" };
+        /// <summary>Every imported family, in manifest order; <c>fx</c> is the FX atlas and <c>ui</c> holds the unpacked hub glyph. Each also names its source folder under <c>art-source/f006</c>.</summary>
+        public static readonly string[] FamilyNames = { "ground", "foundation", "edge", "depot", "link", "prop", "deposit", "fx", "ui" };
 
         [Serializable]
         private sealed class SourceFrame
