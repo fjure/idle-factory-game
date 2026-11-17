@@ -420,7 +420,7 @@ namespace IdleFactory.Run.Application
                 bool atMax = level >= def.MaxLevel;
                 long cost = ResearchCost(def, level);
                 string reason = !met ? RunReasons.ResearchPrerequisite : atMax ? RunReasons.LevelMax : state.Rp < cost ? RunReasons.RpInsufficient : null;
-                nodes.Add(new ResearchNodeSnapshot(def, level, cost, prerequisites, Depth(catalog, def, 0), reason == null, reason));
+                nodes.Add(new ResearchNodeSnapshot(def, level, cost, prerequisites, Depth(catalog, def, 0), CanPurchaseResearch(state, def), reason));
             }
             nodes.Sort((a, b) => a.Depth != b.Depth ? a.Depth.CompareTo(b.Depth) : contentIndex[a.ResearchId].CompareTo(contentIndex[b.ResearchId]));
             return new ResearchSnapshot(session.StructureRevision, session.QuantityRevision, session.TimelineUtcMs, state.Rp, nodes.ToArray());
@@ -431,8 +431,10 @@ namespace IdleFactory.Run.Application
 
         /// <summary>
         /// The single rule of "this Research can be bought now": not at its maximum level, every prerequisite met and the RP covering the next
-        /// cost. <see cref="Research"/> (its CanPurchase) and <see cref="AnyResearchAffordable"/> (the hub attention feed) both use it, so the
-        /// two cannot drift (T537, T536 Architect). It allocates nothing.
+        /// cost. <see cref="Research"/> (its CanPurchase) and <see cref="AnyResearchAffordable"/> (the hub attention feed) both call it, so the two
+        /// cannot drift (T537, T536 Architect). It allocates nothing. <c>RunCommands.PurchaseResearch</c> checks the same conditions one by one to
+        /// return the first rejection code in its contract order, so it keeps its own sequence; <c>RunSnapshotPredicateParityTests</c> pins the
+        /// command and the predicate together.
         /// </summary>
         public static bool CanPurchaseResearch(RunState state, ResearchDef def)
         {

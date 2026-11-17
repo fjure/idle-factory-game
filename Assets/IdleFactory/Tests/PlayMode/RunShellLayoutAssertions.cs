@@ -109,7 +109,8 @@ namespace IdleFactory.Tests.PlayMode
             foreach (var name in new[] { "detail-line", "notice", "world-hint", "zoom-column" })
             {
                 var element = shell.Root.Q<VisualElement>(name);
-                if (IsDisplayed(element))
+                // T537: on a phone in landscape the zoom column is in the right column, not in the world column.
+                if (IsDisplayed(element) && (name != "zoom-column" || shell.WorldColumn.Contains(element)))
                 {
                     worldItems.Add((name, element));
                 }

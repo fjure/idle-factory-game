@@ -193,7 +193,14 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(shell.WorldColumn.worldBound.xMax, Is.LessThanOrEqualTo(shell.ActionBar.worldBound.xMin + Tolerance), $"{screen}: the world is left of the right column");
             }
 
-            Assert.That(shell.ZoomInButton.parent.parent, Is.SameAs(shell.WorldColumn), $"{screen}: the zoom column belongs to the world");
+            if (screen.Expected == FactoryHudLayout.CompactLandscape)
+            {
+                Assert.That(shell.ActionBar.Contains(shell.ZoomInButton), Is.True, $"{screen}: the zoom column is in the right column on a phone in landscape");
+            }
+            else
+            {
+                Assert.That(shell.ZoomInButton.parent.parent, Is.SameAs(shell.WorldColumn), $"{screen}: the zoom column belongs to the world");
+            }
             Assert.That(IsDisplayed(shell.PanelHost), Is.False, $"{screen}: no sheet is open until a hub card or slot opens one");
         }
 
@@ -907,7 +914,14 @@ namespace IdleFactory.Tests.PlayMode
             var hint = shell.ZoomHint.worldBound;
             var safe = rig.Root.panel.visualTree.worldBound;
             AssertWithin(safe, hint, context + ": the hint stays on screen");
-            Assert.That(hint.xMin, Is.GreaterThanOrEqualTo(shell.ZoomInButton.worldBound.xMax - 0.5f), context + ": the hint sits beside the column, not over a button");
+            if (shell.ActionBar.Contains(shell.ZoomInButton))
+            {
+                Assert.That(hint.xMax, Is.LessThanOrEqualTo(shell.ZoomOutButton.worldBound.xMin + 0.5f).Or.LessThanOrEqualTo(shell.ZoomInButton.worldBound.xMin + 0.5f), context + ": the hint opens to the left of the right column");
+            }
+            else
+            {
+                Assert.That(hint.xMin, Is.GreaterThanOrEqualTo(shell.ZoomInButton.worldBound.xMax - 0.5f), context + ": the hint sits beside the column, not over a button");
+            }
             Assert.That(shell.ZoomInButton.parent.worldBound, Is.EqualTo(columnBefore), context + ": the hint does not change the zoom column");
             Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var after), Is.EqualTo(rectBefore));
             Assert.That(after, Is.EqualTo(before), context + ": the camera rectangle does not move");

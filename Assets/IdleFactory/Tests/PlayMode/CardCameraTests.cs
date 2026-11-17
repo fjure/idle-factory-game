@@ -257,12 +257,8 @@ namespace IdleFactory.Tests.PlayMode
             controller.Fit(RunCameraFraming.Layout(camera, layout, h.Rig.PixelsPerPoint, area));
 
             var content = ScreenRectOf(camera, layout.Bounds);
-            // T537: on a phone in landscape at 200 % the two persistent columns and the zoom column leave a world band narrower than the lattice at the
-            // readable minimum scale, so the whole content is not in view there (the player pans; the selected machine is covered by CardCameraTests above).
-            if (!(screen.Expected == FactoryHudLayout.CompactLandscape && percent >= 200))
-            {
-                AssertInside(area, content, $"{screen} @{percent}%: the factory content is fully in view at fit-all");
-            }
+            // OD-9b C1: never clip a machine column, on every class and text scale (T537 folds the zoom column into the right column on a phone in landscape).
+            AssertInside(area, content, $"{screen} @{percent}%: the factory content is fully in view at fit-all");
             var depot = Visibility(area, ScreenRectOf(camera, layout.DepotRect));
             var vein = Visibility(area, ScreenRectOf(camera, layout.DepositRect));
             var viewScale = CameraScaleModel.LargestFittingScale(area, layout.ViewBounds, 24, layout.Margin);

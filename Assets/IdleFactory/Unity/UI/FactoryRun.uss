@@ -1464,6 +1464,39 @@
     align-items: center;
 }
 
+/* Phone landscape (OD-9b C1): the Store cell stacks its icon, name and bar over its value, so the left column stays narrow enough that the world band holds the
+   whole lattice at 200 % text. */
+.run-shell.factory-hud--compact-landscape .run-strip .run-stat--store {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.run-shell.factory-hud--compact-landscape .run-strip .run-stat--store > .run-icon {
+    align-self: flex-start;
+}
+
+.run-shell.factory-hud--compact-landscape .run-strip .run-stat--store > .run-stat__value {
+    align-self: flex-start;
+    margin: 0;
+}
+
+/* Phone landscape: the zoom column lives in the right column, two buttons side by side; its limit hint opens to the left, over the world. */
+.run-shell.factory-hud--compact-landscape .run-actions .run-zoom {
+    flex-direction: row;
+    align-self: flex-start;
+    margin: 0 0 2px 0;
+}
+
+.run-shell.factory-hud--compact-landscape .run-actions .run-zoom__button {
+    margin: 0 2px 0 0;
+}
+
+.run-shell.factory-hud--compact-landscape .run-actions .run-zoom__hint {
+    left: auto;
+    right: 100%;
+    margin: 0 6px 0 0;
+}
+
 /* A sheet or the machine card takes the screen on a phone in landscape: the columns step aside while it is open (the sheet has its own Close and Back). */
 .run-shell.factory-hud--compact-landscape.run-shell--sheet-open .run-strip,
 .run-shell.factory-hud--compact-landscape.run-shell--sheet-open .run-actions,

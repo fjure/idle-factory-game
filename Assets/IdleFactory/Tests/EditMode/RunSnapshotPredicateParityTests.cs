@@ -75,6 +75,7 @@ namespace IdleFactory.Tests.EditMode
             var deep = rig.Session.Catalog.Research[Deep];
             Assert.That(RunSnapshots.CanPurchaseResearch(rig.Session.State, deep), Is.False, "Deep needs Speed level 2 first");
             AssertResearchParity(rig, "prerequisite open");
+            Assert.That(rig.Commands.PurchaseResearch(Deep).IsSuccess, Is.False, "the command rejects what the predicate rejects");
         }
 
         [Test]

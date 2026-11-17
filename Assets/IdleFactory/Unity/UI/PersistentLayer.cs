@@ -25,6 +25,8 @@ namespace IdleFactory.Unity.UI
         private readonly Button overdrive;
         private readonly Button gear;
         private readonly Button attention;
+        private readonly VisualElement zoomColumn;
+        private readonly VisualElement oreVeinRoot;
         private readonly VisualElement attentionIcon;
         private readonly Label attentionCount;
         private readonly Label attentionMore;
@@ -38,6 +40,8 @@ namespace IdleFactory.Unity.UI
             overdrive = root.Q<Button>("overdrive");
             gear = root.Q<Button>("settings");
             attention = root.Q<Button>("attention");
+            zoomColumn = root.Q<VisualElement>("zoom-column");
+            oreVeinRoot = root.Q<VisualElement>("factory-ore-vein");
             attentionIcon = root.Q<VisualElement>("attention-icon");
             attentionCount = root.Q<Label>("attention-count");
             attentionMore = root.Q<Label>("attention-more");
@@ -89,6 +93,20 @@ namespace IdleFactory.Unity.UI
             else if (hubEntry.parent != actionBar)
             {
                 actionBar.Insert(0, hubEntry);
+            }
+
+            // T537 fix round (OD-9b C1): on a phone in landscape the zoom column folds into the right column (it would otherwise cut the world band beside the
+            // strip column); everywhere else it is the bottom-left control of the world column.
+            if (layout == FactoryHudLayout.CompactLandscape)
+            {
+                if (zoomColumn.parent != actionBar)
+                {
+                    actionBar.Insert(actionBar.IndexOf(gear), zoomColumn);
+                }
+            }
+            else if (zoomColumn.parent != worldColumn)
+            {
+                worldColumn.Insert(oreVeinRoot != null && oreVeinRoot.parent == worldColumn ? worldColumn.IndexOf(oreVeinRoot) : worldColumn.childCount, zoomColumn);
             }
 
             var overdriveParent = side ? panelHeaderSlot : actionBar;

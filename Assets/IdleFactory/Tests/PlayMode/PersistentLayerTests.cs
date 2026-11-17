@@ -254,6 +254,48 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         // ---------------------------------------------------------------------------------------------------
+        // OD-9b C1 on a phone in landscape with the real default touch player (zoom preference off) and with it on
+        // ---------------------------------------------------------------------------------------------------
+
+        public static IEnumerable<ShellScreen> LandscapePhones() => ShellScreens.All().Where(item => item.Expected == FactoryHudLayout.CompactLandscape);
+
+        [UnityTest]
+        public IEnumerator TheWholeFactoryFitsTheWorldBandOnAPhoneInLandscapeWithAndWithoutTheZoomButtons(
+            [ValueSource(nameof(LandscapePhones))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent, [Values(false, true)] bool zoomPreference)
+        {
+            yield return Open(screen, percent, ShellDeviceProfile.Touch(screen.Width, screen.Height, 0f));
+            var shell = rig.Shell;
+            shell.ShowZoomButtonsPreference = zoomPreference;
+            shell.SetZoomButtonStates(true, false, true, false);
+            yield return FillWorstCase(shell);
+            var context = $"{screen} @{percent}% zoom preference {(zoomPreference ? "on" : "off")}";
+            Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True, context);
+            var host = new GameObject("persistent-layer-camera");
+            try
+            {
+                var camera = host.AddComponent<Camera>();
+                camera.orthographic = true;
+                camera.targetTexture = rig.Texture;
+                camera.enabled = false;
+                var controller = host.AddComponent<FactoryCameraController>();
+                controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
+                var layout = LatticeLayoutBuilder.Shipped(LatticeLayoutBuilder.OrientationFor(screen.Width, screen.Height));
+                controller.Fit(RunCameraFraming.Layout(camera, layout, rig.PixelsPerPoint, area));
+                var low = camera.WorldToScreenPoint(new Vector3(layout.Bounds.xMin, layout.Bounds.yMin, 0f));
+                var high = camera.WorldToScreenPoint(new Vector3(layout.Bounds.xMax, layout.Bounds.yMax, 0f));
+                Assert.That(Mathf.Min(low.x, high.x), Is.GreaterThanOrEqualTo(area.xMin - 1.5f), context + ": no machine column is clipped (left)");
+                Assert.That(Mathf.Max(low.x, high.x), Is.LessThanOrEqualTo(area.xMax + 1.5f), context + ": no machine column is clipped (right)");
+                Assert.That(Mathf.Min(low.y, high.y), Is.GreaterThanOrEqualTo(area.yMin - 1.5f), context + ": bottom");
+                Assert.That(Mathf.Max(low.y, high.y), Is.LessThanOrEqualTo(area.yMax + 1.5f), context + ": top");
+                TestContext.Out.WriteLine($"C1 | {context} | world band {area.width:0}x{area.height:0} px | lattice at fit-all {Mathf.Abs(high.x - low.x):0}x{Mathf.Abs(high.y - low.y):0} px");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------------------
         // Scaffold notices scroll (T536 UI/UX MAJOR, item 2)
         // ---------------------------------------------------------------------------------------------------
 

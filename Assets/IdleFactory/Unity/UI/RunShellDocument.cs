@@ -689,7 +689,8 @@ namespace IdleFactory.Unity.UI
                 }
             }
 
-            var leftPoint = zoom.width > 0f ? Mathf.Max(bounds.xMin, zoom.xMax) : bounds.xMin;
+            // The zoom column cuts the world only while it sits in the world column (on a phone in landscape it is in the right column).
+            var leftPoint = zoomColumn.parent == worldColumn && zoom.width > 0f ? Mathf.Max(bounds.xMin, zoom.xMax) : bounds.xMin;
             var bottomPoint = bounds.yMax;
             var available = Rect.MinMaxRect(leftPoint, topPoint, bounds.xMax, bottomPoint);
             if (oreVeinWanted && IsDisplayed(oreVein.Root))
