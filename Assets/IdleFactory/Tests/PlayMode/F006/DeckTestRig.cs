@@ -124,6 +124,24 @@ namespace IdleFactory.Tests.PlayMode.F006
                 requirements.Add(row);
             }
 
+            // T529: the F006 FX frames the effect pool draws (flat colour, the real registry size, pivot and frame count of each effect).
+            foreach (EffectKind kind in Enum.GetValues(typeof(EffectKind)))
+            {
+                var key = EffectPool.SpriteKeyOf(kind);
+                if (!PresentationSpriteCatalog.TryGetRegistryRequirement(key, out var row))
+                {
+                    throw new InvalidOperationException("No registry row for " + key);
+                }
+
+                var width = Mathf.RoundToInt(row.WorldWidth * D);
+                var height = Mathf.RoundToInt(row.WorldHeight * D);
+                var frames = Enumerable.Range(0, row.MinFrames)
+                    .Select(f => Solid(key + "-" + f, width, height, row.PivotX * width, row.PivotY * height, new Color32((byte)(90 + 25 * f), 230, 120, 255)))
+                    .ToArray();
+                entries.Add(new PresentationSpriteEntry(key, frames, 10f));
+                requirements.Add(row);
+            }
+
             var catalog = new PresentationSpriteCatalog();
             catalog.Configure(entries, requirements);
             if (!catalog.IsValid)

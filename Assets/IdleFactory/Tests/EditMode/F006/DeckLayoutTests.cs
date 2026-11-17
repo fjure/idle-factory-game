@@ -392,5 +392,20 @@ namespace IdleFactory.Tests.EditMode.F006
                 UnityEngine.Object.DestroyImmediate(settings);
             }
         }
+
+        [Test]
+        public void APropKindWiderOrTallerThanTheCellIsSkippedAndNoOffsetDividesByZero()
+        {
+            var cell = DeckPlanner.CellRect(new Vector2Int(0, 0));
+            Assert.That(DeckPlanner.FitsInCell(cell, new DeckSpriteSize(cell.Width, cell.Height, 0, 0)), Is.True, "an exact fit is allowed");
+            Assert.That(DeckPlanner.FitsInCell(cell, new DeckSpriteSize(cell.Width + 1, 10, 0, 0)), Is.False, "wider than the cell is skipped");
+            Assert.That(DeckPlanner.FitsInCell(cell, new DeckSpriteSize(10, cell.Height + 1, 0, 0)), Is.False, "taller than the cell is skipped");
+            for (var attempt = 0; attempt < 6; attempt++)
+            {
+                Assert.That(DeckPlanner.PropOffset(new Vector2Int(3, 2), attempt, 0xB100u, 0), Is.EqualTo(0), "span 0: no modulus by zero");
+                Assert.That(DeckPlanner.PropOffset(new Vector2Int(3, 2), attempt, 0xB100u, -5), Is.EqualTo(0), "a negative span never wraps");
+                Assert.That(DeckPlanner.PropOffset(new Vector2Int(3, 2), attempt, 0xB100u, 9), Is.InRange(0, 9));
+            }
+        }
     }
 }

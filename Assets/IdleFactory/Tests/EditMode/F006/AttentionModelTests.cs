@@ -113,6 +113,18 @@ namespace IdleFactory.Tests.EditMode.F006
         }
 
         [Test]
+        public void AMissingInputBlockerForAResourceTheRunHasNotUnlockedIsSkippedBesideARealShortage()
+        {
+            // N1 (P2-F15): the domain also emits MissingInput blockers for outputs the run may not produce yet. They name a resource that is locked, so it is
+            // not in the rates snapshot and is skipped; the real input of the same machine still counts, once.
+            var resources = PresentationModelSynth.Resources().Where(r => r.Id != Plate).ToList();
+            var model = Refresh(new[] { Blocked(0, Plate, Ore) }, resources);
+            Assert.That(model.ShortageCount, Is.EqualTo(1));
+            Assert.That(model.ShortageResourceId(0), Is.EqualTo(Ore));
+            Assert.That(model.ShortageAffectedCount(0), Is.EqualTo(1), "the locked output is not counted as a second shortage");
+        }
+
+        [Test]
         public void OnlyActiveMissingInputMachinesCount()
         {
             var inactive = new SynthMachine { Slot = 0, Active = false, Blocker = MachineBlocker.MissingInput, Missing = new[] { Ore } };
