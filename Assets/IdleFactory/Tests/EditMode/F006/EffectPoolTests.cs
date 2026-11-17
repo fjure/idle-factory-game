@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using IdleFactory.Run.Application;
+using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
 using IdleFactory.Tests.EditMode.Fixtures;
 using IdleFactory.Tests.EditMode.Fixtures.Run;
@@ -593,6 +594,71 @@ namespace IdleFactory.Tests.EditMode.F006
                 Assert.That(viaApply.Generation, Is.EqualTo(generation));
                 viaApply.Refresh(Layout, next.Factory, next.Views, next.Views.Length, null, false, true);
             }
+        }
+
+        // ---- Pace staleness: a structure change reaches the loop rate within one simulated second ------------------------------------------
+
+        private static RunCommandFixtures.Rig PaceRig()
+        {
+            var options = new RunCommandFixtures.Options
+            {
+                Durations = new long[] { 15_000_000, 20_000_000, 40_000_000, 50_000_000 }, // the miner: 1.5 s, the Normal pace (8 fps)
+                Milestones = new[] { new SpeedMilestone(2, 3_000_000) },
+                Items = new[] { new ItemDef("item.boost", 1, "Boost", "F003-ITEM-BOOST", 600_000, "factory", new string[0], new EffectDef("machineSpeed", "allMachines", null, 2_000_000)) },
+            };
+            return RunCommandFixtures.NewRig(options, cash: 1_000_000_000_000);
+        }
+
+        private static int FpsWithinOneSecond(RunCommandFixtures.Rig rig, WorldEffectsFeed feed, long startMs, int target)
+        {
+            // 100 ms frames; the change happened just before startMs. Returns the simulated milliseconds until the model shows the target rate, or -1.
+            for (var elapsed = 0; elapsed < 1_000; elapsed += 100)
+            {
+                rig.Advance(Second / 10);
+                feed.Update(Layout, startMs + elapsed + 100, false);
+                if (feed.Model[0].ActivityFps == target)
+                {
+                    return elapsed + 100;
+                }
+            }
+
+            return -1;
+        }
+
+        [TestCase("level")]
+        [TestCase("overdrive")]
+        [TestCase("effect")]
+        public void ALevelAnOverdriveOrAnEffectChangesTheActivityRateWithinOneSimulatedSecond(string change)
+        {
+            var rig = PaceRig();
+            var built = rig.Commands.Build(0, RunCommandFixtures.Miner);
+            Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
+            var feed = new WorldEffectsFeed(rig.Session, NewPool());
+            long now = 0;
+            for (var frame = 0; frame < 25; frame++)
+            {
+                now += 100;
+                rig.Advance(Second / 10);
+                feed.Update(Layout, now, false);
+            }
+
+            Assert.That(feed.Model[0].ActivityFps, Is.EqualTo(MachinePresentationModel.NormalFps), "the 1.5 s miner starts at the Normal pace");
+            if (change == "level")
+            {
+                Assert.That(rig.Commands.Upgrade(built.Value.InstanceId).IsSuccess, Is.True);
+            }
+            else if (change == "overdrive")
+            {
+                Assert.That(rig.Commands.ActivateOverdrive().IsSuccess, Is.True);
+            }
+            else
+            {
+                Assert.That(rig.Session.Permanent.TryAddItems("item.boost", 1), Is.EqualTo(RunStateResult.Ok));
+                Assert.That(rig.Commands.ActivateItem("item.boost", null).IsSuccess, Is.True);
+            }
+
+            var elapsed = FpsWithinOneSecond(rig, feed, now, MachinePresentationModel.FastFps);
+            Assert.That(elapsed, Is.InRange(1, 1_000), change + ": the rate reached 10 fps within one simulated second (took " + elapsed + " ms)");
         }
 
         [Test]

@@ -11,10 +11,17 @@ namespace IdleFactory.Unity.Presentation
     /// <para>
     /// The per-frame path allocates nothing: it reads the machine rows (<see cref="RunSession.CopyMachineStates(MachineStateView[])"/>), refreshes the
     /// model from a cached factory snapshot, and takes the new completions straight from the rows with
-    /// <see cref="MachinePresentationModel.ApplyCompletions"/>. A new snapshot, which allocates (about 100 objects, 5 to 12 KB), is built only on a
-    /// structure revision change (machines, levels, unlocks, effects, Overdrive: everything that can change a cycle time), a layout change, an offline
-    /// return or a session replace. There is no periodic rebuild: the loop rate applies from the next frame 0 anyway (R12), and every change of a
-    /// cycle time is a structure revision change.
+    /// <see cref="MachinePresentationModel.ApplyCompletions"/>.
+    /// </para>
+    /// <para>
+    /// Rebuild cadence. A full snapshot (<c>RunSnapshots.Factory</c>, about 100 objects and 5 to 12 KB, 174 allocations measured) is built
+    /// <b>immediately</b> only when the machines themselves change: the row count, a row's slot or machine type, or a completed-cycles sum that went
+    /// down (a removed or replaced machine); and on the first frame, a layout change, an offline return and a session replace. Any other
+    /// <see cref="RunSession.StructureRevision"/> change (a level, an unlock, an effect, Overdrive, and above all contract progress: the contract
+    /// board bumps its version on every produced unit, so the revision moves on most frames while a production contract is active) is picked up
+    /// <b>at most once per <see cref="MinStructureRebuildMilliseconds"/></b> with the latest revision. That is safe because the snapshot only feeds
+    /// the loop rate and the visual state, and a pace change applies from the next frame 0 anyway (R12). So a factory rebuilds at most once per second
+    /// in the steady state, however fast its contracts progress.
     /// </para>
     /// <para>
     /// Session replace (P2-F12): a new run id (prestige, a new run, a restore of another run) resets the model's baseline and the pool and raises
@@ -24,12 +31,18 @@ namespace IdleFactory.Unity.Presentation
     /// </summary>
     public sealed class WorldEffectsFeed
     {
+        /// <summary>The least time between two rebuilds that a structure revision change alone causes, in presentation milliseconds.</summary>
+        public const long MinStructureRebuildMilliseconds = 1000;
+
         private readonly RunSession session;
         private readonly EffectPool pool;
         private readonly MachinePresentationModel model;
         private MachineStateView[] states = new MachineStateView[16];
         private RunFactorySnapshot factory;
         private int lastLocationCount = -1;
+        private long lastRebuildMs = long.MinValue / 2;
+        private long identitySignature;
+        private long lastCompleted;
         private Guid runId;
         private bool hasRun;
         private bool suppressNext;
@@ -88,12 +101,18 @@ namespace IdleFactory.Unity.Presentation
             runId = current;
             hasRun = true;
 
-            var count = ReadStates();
-            var rebuild = factory == null || suppressNext || session.StructureRevision != factory.StructureRevision || layout.LocationCount != lastLocationCount;
+            var count = ReadStates(out var signature, out var completed);
+            var machinesChanged = signature != identitySignature || completed < lastCompleted;
+            identitySignature = signature;
+            lastCompleted = completed;
+            var structureChanged = factory != null && session.StructureRevision != factory.StructureRevision;
+            var rebuild = factory == null || suppressNext || machinesChanged || layout.LocationCount != lastLocationCount ||
+                (structureChanged && presentationMilliseconds - lastRebuildMs >= MinStructureRebuildMilliseconds);
             if (rebuild)
             {
                 factory = RunSnapshots.Factory(session);
                 Rebuilds++;
+                lastRebuildMs = presentationMilliseconds;
                 lastLocationCount = layout.LocationCount;
             }
 
@@ -103,7 +122,8 @@ namespace IdleFactory.Unity.Presentation
             pool.ConsumeCompletions(model);
         }
 
-        private int ReadStates()
+        // The machine identity of the rows: how many and, per row, its slot and machine type. A level or a counter is not identity.
+        private int ReadStates(out long signature, out long completed)
         {
             var count = session.CopyMachineStates(states);
             if (count > states.Length)
@@ -112,6 +132,20 @@ namespace IdleFactory.Unity.Presentation
                 count = session.CopyMachineStates(states);
             }
 
+            long hash = count;
+            long sum = 0;
+            for (var i = 0; i < count; i++)
+            {
+                unchecked
+                {
+                    hash = hash * 1_000_003L + states[i].SlotIndex * 131L + states[i].MachineTypeIndex + 1;
+                }
+
+                sum += states[i].CompletedCycles;
+            }
+
+            signature = hash;
+            completed = sum;
             return count;
         }
     }

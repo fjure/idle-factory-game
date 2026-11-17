@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using IdleFactory.Run.Application;
+using IdleFactory.Run.Content;
 using IdleFactory.Run.Domain;
 using IdleFactory.Run.Simulation;
 using IdleFactory.Unity.Presentation;
@@ -113,11 +114,19 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(pool.DrainingCount, Is.LessThanOrEqualTo(EffectPool.DrainingLimit));
         }
 
-        [UnityTest]
-        public IEnumerator TheWorldEffectsFeedAllocatesNothingWhileEightMachinesCompleteRealCycles()
+        private sealed class Measurement
         {
-            // A real session over the packaged Iron content (no editor API): 8 miners complete cycles for 600 frames while the feed and the view run.
-            var catalog = RunPlayerFixtures.IronCatalog();
+            public long Allocations;
+            public int SteadyFrames;
+            public int RebuildFrames;
+            public long SpawnedInWindow;
+            public long StructureMoves;
+            public int Rebuilds;
+        }
+
+        // A real session over a packaged catalog (no editor API): 8 miners complete cycles for 600 frames of 100 ms while the feed and the view run.
+        private IEnumerator MeasureEightMinersRunning(RunCatalog catalog, string offerToAccept, Measurement result)
+        {
             var permanent = new PermanentState(catalog);
             var start = NextRunStart.Compute(catalog, permanent);
             var state = new RunState(catalog, System.Guid.NewGuid(), 1, null, 1_000_000_000_000L, 0, start.StorageLevel, 1, catalog.RunStart.InitialUnlocks);
@@ -127,18 +136,25 @@ namespace IdleFactory.Tests.PlayMode.F006
             var built = 0;
             for (var slot = 0; slot < 8; slot++)
             {
-                var result = commands.Build(slot, "machine.miner");
-                if (!result.IsSuccess)
+                var built1 = commands.Build(slot, "machine.miner");
+                if (!built1.IsSuccess)
                 {
                     commands.UpgradeFactory();
-                    result = commands.Build(slot, "machine.miner");
+                    built1 = commands.Build(slot, "machine.miner");
                 }
 
-                Assert.That(result.IsSuccess, Is.True, "slot " + slot + ": " + result.ReasonCode);
+                Assert.That(built1.IsSuccess, Is.True, "slot " + slot + ": " + built1.ReasonCode);
                 built++;
+                Assert.That(session.Advance(2_300_000).IsSuccess, Is.True); // 230 ms apart: the machines complete on different frames
             }
 
             Assert.That(built, Is.EqualTo(8), "8 machines are running");
+            if (offerToAccept != null)
+            {
+                Assert.That(session.Advance(0).IsSuccess, Is.True);
+                var accepted = commands.AcceptContract(offerToAccept);
+                Assert.That(accepted.IsSuccess, Is.True, "the production contract is active: " + accepted.ReasonCode);
+            }
 
             var grid = World(out _, out _);
             var pool = new EffectPool();
@@ -167,6 +183,8 @@ namespace IdleFactory.Tests.PlayMode.F006
                 view.Present();
             };
             var spawnedBefore = pool.SpawnedTotal;
+            var structureBefore = session.StructureRevision;
+            var rebuildsAtStart = feed.Rebuilds;
             for (var frame = 0; frame < Frames; frame++)
             {
                 now += 100;
@@ -175,19 +193,40 @@ namespace IdleFactory.Tests.PlayMode.F006
                 var counted = GcAllocationCounter.Count(frameWork);
                 if (feed.Rebuilds != rebuildsBefore)
                 {
-                    // A structure revision change (a contract offer, an unlock) builds one full snapshot: the rare, allocating path, not the steady state.
-                    structuralFrames++;
+                    result.RebuildFrames++;
                     continue;
                 }
 
-                steadyFrames++;
-                allocations += counted;
+                result.SteadyFrames++;
+                result.Allocations += counted;
             }
 
-            Assert.That(pool.SpawnedTotal, Is.GreaterThan(spawnedBefore), "completions happened inside the measured window");
-            Assert.That(structuralFrames, Is.LessThanOrEqualTo(5), "structure changes are rare events, not the steady state");
-            Assert.That(steadyFrames, Is.GreaterThanOrEqualTo(Frames - 5));
-            Assert.That(allocations, Is.Zero, "SC-008: every steady frame of the world effects allocates nothing while cycles complete");
+            result.SpawnedInWindow = pool.SpawnedTotal - spawnedBefore;
+            result.StructureMoves = session.StructureRevision - structureBefore;
+            result.Rebuilds = feed.Rebuilds - rebuildsAtStart;
+        }
+
+        [UnityTest]
+        public IEnumerator TheWorldEffectsFeedAllocatesNothingWhileEightMachinesCompleteRealCycles()
+        {
+            var measured = new Measurement();
+            yield return MeasureEightMinersRunning(RunPlayerFixtures.IronCatalog(), null, measured);
+            Assert.That(measured.SpawnedInWindow, Is.GreaterThan(0), "completions happened inside the measured window");
+            Assert.That(measured.RebuildFrames, Is.LessThanOrEqualTo(5), "structure changes are rare events without a contract");
+            Assert.That(measured.Allocations, Is.Zero, "SC-008: every steady frame of the world effects allocates nothing while cycles complete");
+        }
+
+        [UnityTest]
+        public IEnumerator AnActiveProductionContractDoesNotTurnEveryFrameIntoARebuild()
+        {
+            // The contract board bumps its version, and so the structure revision, on every produced unit: the feed must not rebuild on each of those.
+            var measured = new Measurement();
+            yield return MeasureEightMinersRunning(W003PlayerFixtures.WithProductionContract("contract.produce-ore", 100_000), "contract.produce-ore", measured);
+            Assert.That(measured.StructureMoves, Is.GreaterThan(100), "the contract churned the structure revision: " + measured.StructureMoves);
+            Assert.That(measured.SpawnedInWindow, Is.GreaterThan(0), "completions happened inside the measured window");
+            Assert.That(measured.Rebuilds, Is.LessThanOrEqualTo(Frames / 10 + 3), "at most about one rebuild per simulated second (60 s window): " + measured.Rebuilds);
+            Assert.That(measured.SteadyFrames, Is.GreaterThanOrEqualTo(Frames - (Frames / 10 + 3)));
+            Assert.That(measured.Allocations, Is.Zero, "every frame that did not rebuild allocates nothing");
         }
 
         [UnityTest]
