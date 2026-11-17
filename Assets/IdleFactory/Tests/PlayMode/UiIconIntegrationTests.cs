@@ -87,8 +87,11 @@ namespace IdleFactory.Tests.PlayMode
                 context + ": no Feature 003 placeholder beside a restyled icon");
             var keys = new HashSet<string>(hits.Select(hit => hit.Key));
             // T537: a phone in landscape hides the persistent columns while a sheet is open, so the HUD keys are expected where the strip shows.
+            // T555: the strip stays as a band with Cash and the store (the gear and the hub entry step aside).
             foreach (var expected in rig.Rig.Shell.TopStrip.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.None
                          ? new string[0]
+                         : rig.Rig.Shell.IsStatusBandShown
+                         ? new[] { "F003-UI-ICON-CASH", "F003-UI-ICON-STORAGE" }
                          : new[] { "F003-UI-ICON-CASH", "F003-UI-ICON-STORAGE", "F004-UI-ICON-SETTINGS", IdleFactory.Unity.UI.Panels.HubCards.EntryIconKey })
             {
                 Assert.That(keys, Does.Contain(expected), context + ": the HUD and the hub entry carry " + expected);

@@ -361,6 +361,14 @@ namespace IdleFactory.Unity.UI
             layer = new PersistentLayer(root);
             panelContent = root.Q<VisualElement>("panel-content");
             panelScroll = root.Q<ScrollView>("panel-scroll");
+            if (panelScroll != null)
+            {
+                panelScroll.RegisterCallback<WheelEvent>(ReleasePanelHold, TrickleDown.TrickleDown);
+                panelScroll.RegisterCallback<PointerDownEvent>(ReleasePanelHold, TrickleDown.TrickleDown);
+                panelScroll.RegisterCallback<KeyDownEvent>(ReleasePanelHold, TrickleDown.TrickleDown);
+                panelScroll.RegisterCallback<NavigationMoveEvent>(ReleasePanelHold, TrickleDown.TrickleDown);
+            }
+
             panelTitle = root.Q<Label>("panel-title");
             detailLine = root.Q<Label>("detail-line");
             noticeBar = root.Q<VisualElement>("notice");
@@ -602,7 +610,7 @@ namespace IdleFactory.Unity.UI
             }
 
             // T537: the persistent controls move between the phone and side-panel homes (see PersistentLayer).
-            layer.Place(Layout, body, worldColumn, panelHeaderSlot);
+            PlacePersistentLayer();
 
             // The card docks in the side panel on tablet and desktop and as a band or column in the main row on phones; the camera waits for
             // the new band after a resize or rotation (the band is known before the reframe).
@@ -1472,6 +1480,11 @@ namespace IdleFactory.Unity.UI
             cardBandPending = false;
             cardPanel?.OnHidden();
             root?.EnableInClassList("run-shell--card-open", false);
+            if (layer != null && root != null)
+            {
+                PlacePersistentLayer();
+            }
+
             if (clearSelection)
             {
                 SetSelectedSlot(-1);
@@ -1792,6 +1805,7 @@ namespace IdleFactory.Unity.UI
 
             activePanelId = id;
             settingsOpen = id == ShellPanelIds.Settings;
+            HoldPanelAtTop();
             foreach (var child in panelContent.Children())
             {
                 if (child != placeholder)
@@ -1824,6 +1838,19 @@ namespace IdleFactory.Unity.UI
 
             ActivePanelChanged?.Invoke(id);
         }
+
+        // T555 (U-B6): every system view and Details opens scrolled to the top, with its heading, machine name and status in view, also when focus moves into
+        // the view as it opens (a programmatic focus must not scroll the sheet past its header). The hold ends with the player's first scroll or key input.
+        private bool panelTopHold;
+        private int programmaticFocus;
+
+        private void HoldPanelAtTop()
+        {
+            panelTopHold = true;
+            panelScroll.scrollOffset = Vector2.zero;
+        }
+
+        private void ReleasePanelHold(EventBase evt) => panelTopHold = false;
 
         private void RefreshPlaceholder()
         {
@@ -1873,10 +1900,25 @@ namespace IdleFactory.Unity.UI
             panelContent.Add(placeholder);
         }
 
+        /// <summary>
+        /// Places the persistent controls for the current class and the sheet state (T555): on a phone in landscape, while the card or a sheet is open,
+        /// Cash, the store fill and Overdrive stay on screen as a one-row band above the world (the camera rectangle starts below it).
+        /// </summary>
+        private void PlacePersistentLayer()
+        {
+            layer.SetSheetOpen(sheetOpen || cardOpen);
+            layer.Place(Layout, body, worldColumn, panelHeaderSlot);
+            root.EnableInClassList("run-shell--status-band", layer.IsStatusBand(Layout));
+        }
+
+        /// <summary>True while Cash, the store fill and Overdrive form the band above the world (phone landscape with the card or a sheet open).</summary>
+        public bool IsStatusBandShown => layer != null && layer.IsStatusBand(Layout);
+
         private void UpdateSheetState()
         {
             // On a phone the sheet is closed until a tab or slot opens it; the side panel of tablet and desktop is always there.
             root.EnableInClassList("run-shell--sheet-open", sheetOpen);
+            PlacePersistentLayer();
             UpdateEmptyHint();
             UpdateOreVeinVisibility();
         }
@@ -2415,7 +2457,7 @@ namespace IdleFactory.Unity.UI
             FocusRetryPending = false;
 
             var initial = element.focusController?.focusedElement;
-            element.Focus();
+            FocusProgrammatic(element);
             if (element.focusController?.focusedElement == element)
             {
                 return;
@@ -2442,7 +2484,7 @@ namespace IdleFactory.Unity.UI
                     return;
                 }
 
-                element.Focus();
+                FocusProgrammatic(element);
                 if (element.focusController?.focusedElement == element)
                 {
                     item.Pause();
@@ -2456,6 +2498,19 @@ namespace IdleFactory.Unity.UI
             focusRetry = item;
             focusRetryElement = element;
             FocusRetryPending = true;
+        }
+
+        private void FocusProgrammatic(VisualElement element)
+        {
+            programmaticFocus++;
+            try
+            {
+                element.Focus();
+            }
+            finally
+            {
+                programmaticFocus--;
+            }
         }
 
         private IVisualElementScheduledItem focusRetry;
@@ -2502,8 +2557,16 @@ namespace IdleFactory.Unity.UI
                 PositionFocusRing();
             }
 
-            // A clipped control scrolls into view when it receives focus (UI surfaces contract, Controls).
-            ScrollIntoView(target);
+            // A clipped control scrolls into view when it receives focus (UI surfaces contract, Controls). A view that has just opened stays at its
+            // top when the shell itself moves focus into it (T555, U-B6).
+            if (panelTopHold && programmaticFocus > 0 && panelScroll.contentContainer.Contains(target))
+            {
+                panelScroll.scrollOffset = Vector2.zero;
+            }
+            else
+            {
+                ScrollIntoView(target);
+            }
         }
 
         /// <summary>

@@ -196,6 +196,27 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(h.Shell.IsHubDotShown, Is.False);
         }
 
+        // T555 (U-B3, FR-020): while Contracts are locked the row states the lock and its condition, like the locked Overdrive row, and never the
+        // "Nothing ready to deliver" of an unlocked system.
+        [UnityTest]
+        public IEnumerator TheContractsRowShowsTheLockWhileContractsAreLockedAndNothingToDeliverOnceTheyAreNot([ValueSource(nameof(Screens))] ShellScreen screen)
+        {
+            yield return Make(screen, 100);
+            h.Shell.OpenHub();
+            yield return ShellRig.Settle();
+            var locked = h.Hub.StatusOf(HubCard.Contracts);
+            Assert.That(locked, Does.StartWith(HubPanel.LockedContractsPrefix + "unlocks after "), $"{screen}: the row says Contracts are locked and why");
+            Assert.That(locked, Does.Not.Contain("ready to deliver"), screen.ToString());
+            Assert.That(h.Hub.CardButton(HubCard.Contracts).tooltip, Does.Contain("Locked"), $"{screen}: the accessible name carries the lock");
+
+            h.Shell.CloseSheet();
+            yield return ShellRig.Settle();
+            ContractsPanelTestSupport.UnlockContracts(h.Session);
+            h.Shell.OpenHub();
+            yield return ShellRig.Settle();
+            Assert.That(h.Hub.StatusOf(HubCard.Contracts), Is.EqualTo("Nothing ready to deliver"), $"{screen}: unlocked and idle");
+        }
+
         [UnityTest]
         public IEnumerator TheContractsFeedWritesTheHubCardFlag()
         {

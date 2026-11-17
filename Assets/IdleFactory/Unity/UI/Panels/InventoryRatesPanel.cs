@@ -93,6 +93,7 @@ namespace IdleFactory.Unity.UI.Panels
             storeValue = MarketPanelParts.Ensure<Button>(storeSection, "inventory-store-value", "inv-value");
             storeValue.AddToClassList("run-control");
             storeValue.AddToClassList("inv-value");
+            storeValue.AddToClassList(MarketPanelParts.ReadOnlyValueClass);
             var bar = MarketPanelParts.Ensure<VisualElement>(storeSection, "inventory-store-bar", "inv-store__bar");
             storeFill = MarketPanelParts.Ensure<VisualElement>(bar, "inventory-store-fill", "inv-store__fill");
             storeFull = MarketPanelParts.Ensure<Label>(storeSection, "inventory-store-full", "inv-text");

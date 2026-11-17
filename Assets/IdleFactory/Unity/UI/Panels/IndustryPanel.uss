@@ -21,24 +21,16 @@
     margin-bottom: 4px;
 }
 
+/* T555 (U-B8): a read-only card carries no button chrome (no border box, no raised fill): a hairline under it separates it from the next one, so only
+   real controls look pressable. */
 .industry-card {
     flex-direction: column;
     flex-shrink: 0;
-    background-color: var(--surface);
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
+    background-color: initial;
     border-bottom-width: 1px;
-    border-left-color: var(--border);
-    border-right-color: var(--border);
-    border-top-color: var(--border);
     border-bottom-color: var(--border);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    padding: 8px;
-    margin-bottom: 8px;
+    padding: 8px 0;
+    margin-bottom: 4px;
 }
 
 .industry-value {
@@ -94,7 +86,8 @@
     border-bottom-right-radius: 10px;
 }
 
+/* T555 (U-B8): the control spans the card, like the Market and build controls, so every disabled control has the same width and its reason sits below it. */
 .industry-card .run-button {
-    align-self: flex-start;
+    align-self: stretch;
     margin-top: 8px;
 }

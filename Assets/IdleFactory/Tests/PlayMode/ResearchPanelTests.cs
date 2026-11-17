@@ -550,6 +550,25 @@ namespace IdleFactory.Tests.PlayMode
             }
         }
 
+        // T555 (U-B5): the clipped right-hand column is never unexplained: the hint sits above the graph and an edge cue marks the side that has more.
+        [UnityTest]
+        public IEnumerator TheGraphShowsAnEdgeCueTowardsTheColumnsThatAreClippedAtPhoneWidth([Values(100, 200)] int percent)
+        {
+            yield return Open(Phone360(), percent);
+            var graph = panel.GraphScroll.worldBound;
+            Assert.That(Shown(panel.PanHint), Is.True, "the hint shows while the graph overflows");
+            Assert.That(panel.PanHint.worldBound.yMax, Is.LessThanOrEqualTo(graph.yMin + 0.5f), "the hint sits above the graph, where the player looks");
+            Assert.That(Shown(panel.CueRight), Is.True, $"@{percent}%: more Research lies to the right, so the right edge carries a cue");
+            Assert.That(Shown(panel.CueLeft), Is.False, "nothing is hidden to the left at the start");
+            AssertWithin(graph, panel.CueRight.worldBound, "the cue stays inside the graph");
+            Assert.That(panel.CueRight.text, Is.Not.Empty, "the cue is a glyph, not colour alone");
+
+            panel.GraphScroll.scrollOffset = new Vector2(100000f, 0f);
+            yield return ShellRig.Settle();
+            Assert.That(Shown(panel.CueRight), Is.False, "panned to the end: nothing more to the right");
+            Assert.That(Shown(panel.CueLeft), Is.True, "and the left edge now says there is more behind");
+        }
+
         [UnityTest]
         public IEnumerator ArrowingAcrossTheGraphKeepsTheFocusedNodeInView()
         {

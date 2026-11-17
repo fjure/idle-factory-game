@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using IdleFactory.Run.Application;
+using IdleFactory.Run.Content;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -473,6 +474,9 @@ namespace IdleFactory.Unity.UI.Panels
             return (total / 60).ToString(CultureInfo.InvariantCulture) + ":" + (total % 60).ToString("00", CultureInfo.InvariantCulture);
         }
 
+        /// <summary>The start of the Contracts row status while no contract is unlocked (T555, U-B3).</summary>
+        public const string LockedContractsPrefix = "Locked: ";
+
         private sealed class Row
         {
             private readonly HubPanel owner;
@@ -533,6 +537,34 @@ namespace IdleFactory.Unity.UI.Panels
 
             public Label Reason { get; }
 
+            // T555 (U-B3): while no contract offer is unlocked (and none is active) the row says so, with the unlock condition in the shared wording, like the
+            // locked Overdrive row, instead of "Nothing ready to deliver".
+            private static string ContractsStatus(RunSession session, HubAttention attention)
+            {
+                if (attention.ContractsDeliverable > 0)
+                {
+                    return attention.ContractsDeliverable.ToString(CultureInfo.InvariantCulture) + " ready to deliver";
+                }
+
+                var data = RunSnapshots.Contracts(session);
+                var anyUnlocked = false;
+                var conditions = new List<UnlockCondition>();
+                for (var i = 0; i < data.Offers.Count; i++)
+                {
+                    anyUnlocked |= data.Offers[i].Unlocked;
+                    conditions.Add(data.Offers[i].Unlock);
+                }
+
+                if (anyUnlocked || data.Active != null)
+                {
+                    return "Nothing ready to deliver";
+                }
+
+                return conditions.Count == 0
+                    ? LockedContractsPrefix + "unlocks after you build more of the factory"
+                    : LockedContractsPrefix + "unlocks after " + UnlockCopy.AfterAny(session.Catalog, conditions);
+            }
+
             /// <summary>Redraws the card. Returns whether the card opens a registered system view (Overdrive has none and returns false).</summary>
             public bool Update(RunShellDocument shell, HubAttention attention)
             {
@@ -552,9 +584,7 @@ namespace IdleFactory.Unity.UI.Panels
                     }
 
                     case HubCard.Contracts:
-                        status = attention.ContractsDeliverable > 0
-                            ? attention.ContractsDeliverable.ToString(CultureInfo.InvariantCulture) + " ready to deliver"
-                            : "Nothing ready to deliver";
+                        status = ContractsStatus(session, attention);
                         break;
                     case HubCard.Items:
                         status = QuantityFormatter.Format(RunSnapshots.Items(session).TotalCount) + " owned";

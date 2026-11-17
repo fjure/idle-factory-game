@@ -1497,10 +1497,79 @@
     margin: 0 6px 0 0;
 }
 
-/* A sheet or the machine card takes the screen on a phone in landscape: the columns step aside while it is open (the sheet has its own Close and Back). */
-.run-shell.factory-hud--compact-landscape.run-shell--sheet-open .run-strip,
+/* A sheet or the machine card takes the screen on a phone in landscape: the action column (Office, zoom, gear) steps aside while it is open (the sheet has its
+   own Close and Back). T555 (owner decision 2026-11-17, "keep Cash and Overdrive visible"): Cash, the store fill and Overdrive stay. The strip leaves its
+   column and becomes a one-row band at the top of the world column (PersistentLayer moves it and the Overdrive control there, and the shell sets
+   run-shell--status-band); the camera rectangle starts below the band, as on tablet, so nothing covers the framed world (OD-9b C1). The attention
+   indicator and the gear step aside with the column. */
 .run-shell.factory-hud--compact-landscape.run-shell--sheet-open .run-actions,
-.run-shell.factory-hud--compact-landscape.run-shell--card-open .run-strip,
 .run-shell.factory-hud--compact-landscape.run-shell--card-open .run-actions {
     display: none;
+}
+
+.run-shell.run-shell--status-band .run-strip {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    flex-shrink: 0;
+    min-height: 48px;
+    padding: 2px 4px 2px 2px;
+    border-right-width: 0;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--border);
+}
+
+.run-shell.run-shell--status-band .run-strip .run-attention,
+.run-shell.run-shell--status-band .run-strip .run-gear {
+    display: none;
+}
+
+.run-shell.run-shell--status-band .run-strip .run-stat {
+    flex-direction: row;
+    flex-grow: 0;
+    flex-shrink: 0;
+    margin: 0 4px 0 0;
+}
+
+.run-shell.run-shell--status-band .run-strip .run-stat--store {
+    flex-grow: 1;
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    min-width: 96px;
+}
+
+.run-shell.run-shell--status-band .run-strip .run-stat--store > .run-icon {
+    align-self: center;
+}
+
+.run-shell.run-shell--status-band .run-strip .run-stat--store > .run-stat__value {
+    align-self: center;
+    margin: 0 0 0 4px;
+}
+
+.run-shell.run-shell--status-band .run-strip .run-stat__body,
+.run-shell.run-shell--status-band .run-strip .run-stat__body--store {
+    flex-direction: column;
+    align-items: stretch;
+    flex-grow: 0;
+}
+
+.run-shell.run-shell--status-band .run-strip .run-stat__body--store {
+    flex-grow: 1;
+    flex-shrink: 0;
+    min-width: 72px;
+}
+
+.run-shell.run-shell--status-band .run-strip .run-overdrive {
+    flex-direction: row;
+    flex-grow: 0;
+    margin: 0 0 0 auto;
+    padding: 0 6px;
+}
+
+.run-shell.run-shell--status-band .run-strip .run-overdrive__body {
+    flex-direction: column;
+    align-items: center;
 }

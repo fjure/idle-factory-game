@@ -258,3 +258,15 @@ The six-tab bar, the RP cell and the Contracts and Research tab badges are gone;
 **New.** `PersistentLayerTests` (every class at 100/150/200 %, 640x360 at 200 % included, and the zoom matrix), `RunSnapshotPredicateParityTests`, `core-public-api.txt` (+4 public predicates).
 
 **Render baselines (T537).** The PNGs under `Tests/PlayMode/Fixtures/Screenshots/F004-B2/` (`w003s-*` shell and world, `w004v-*` world) were regenerated, not edited: `IDLEFACTORY_RENDER_BASELINE_WRITE=1 scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/PlayMode/RenderParityTests.cs` (the harness write mode of `RenderCaptureHarness`), once after the main change and once after the fix round (phone landscape 640x360 and 844x390 and the 640x480 scene changed again when the zoom column moved into the right column). The shell layout changed on purpose, so the frames differ; the unset run compares against the committed frames. Fix round also: `CardCameraTests` content-in-view restored for every class (OD-9b C1), zoom hint opens left of the right column in landscape (`RunHudLayoutTests`), `RunShellLayoutAssertions` excludes the zoom column from the world-column checks on a phone in landscape.
+
+## T555 (#760): gate-B fixes (U-B1, U-B3, U-B5, U-B6, U-B8)
+
+On a phone in landscape the strip and Overdrive now stay on screen while the card, Details or a sheet is open (a one-row band at the top of the world column), so the "columns step aside" expectation changed on purpose.
+
+| File | Change | Reason | Expectation changed? |
+|---|---|---|---|
+| `PersistentLayerTests` | `ThePhoneLandscapeColumnsStepAsideWhileASheetIsOpenAndComeBack` replaced by `CashTheStoreFillAndOverdriveStayOnScreenWhileTheCardDetailsOrASheetIsOpenOnAPhoneInLandscape` (card, Details, sheet and hub; 640x360 and 844x390 at 100 and 200 %: present, at least 44 pt, outside the camera rectangle, fit-all holds, columns return on close), `OverdriveInTheBandShowsEveryStateDistinctlyAndTapsOnlyWhenReady`, `DetailsOpensAtItsTopWithTheMachineNameAndStatusInView` | owner decision 2026-11-17 | yes |
+| `RunShellLayoutAssertions` | with the band shown the strip is a world-column item (not a child of the body); the action bar check stays for every phone class | the band | yes |
+| `HubPanelTests` | `TheContractsRowShowsTheLockWhileContractsAreLockedAndNothingToDeliverOnceTheyAreNot` | U-B3 | new |
+| `ResearchPanelTests` | `TheGraphShowsAnEdgeCueTowardsTheColumnsThatAreClippedAtPhoneWidth` | U-B5 | new |
+| `SurfaceConsistencyTests` | `EverySystemViewOpensScrolledToItsTopWithItsHeadingInView`, `AReadOnlyValueTakesTheValueClassAndAControlLikeValueDoesNot`, `MarketValuesAndIndustryCardsLoseTheirButtonChromeWhileRealControlsKeepIt` | U-B6, U-B8 | new |

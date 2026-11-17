@@ -95,14 +95,19 @@ namespace IdleFactory.Tests.PlayMode
             // The world column keeps the strip, the notice, the detail line and the zoom controls apart and inside itself.
             var world = shell.WorldColumn.worldBound;
             var worldItems = new List<(string Name, VisualElement Element)>();
-            if (shell.IsSidePanelLayout)
+            if (shell.IsSidePanelLayout || shell.IsStatusBandShown)
             {
                 // On tablet and desktop the strip sits above the world beside the side panel; on a phone it lies outside the world column (above it, or a column beside it).
+                // T555: on a phone in landscape with the card or a sheet open it is the one-row band at the top of the world column.
                 worldItems.Add(("Top strip", shell.TopStrip));
             }
             else
             {
                 Assert.That(shell.TopStrip.parent.name, Is.EqualTo("run-body"), $"{context}: on a phone the strip is a child of the body");
+            }
+
+            if (!shell.IsSidePanelLayout)
+            {
                 Assert.That(shell.ActionBar.parent.name, Is.EqualTo("run-body"), $"{context}: on a phone the action bar is a child of the body");
             }
 

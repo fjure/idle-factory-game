@@ -394,6 +394,102 @@ namespace IdleFactory.Tests.PlayMode.F006
         // Notices leave the primary action and Back usable (P2-F19)
         // ---------------------------------------------------------------------------------------------------
 
+        // ---------------------------------------------------------------------------------------------------
+        // T555 (U-B6): a system view opens scrolled to its top
+        // ---------------------------------------------------------------------------------------------------
+
+        public static IEnumerable<string> ScrolledViews() => new[]
+        {
+            ShellPanelIds.Market, ShellPanelIds.Industry, ShellPanelIds.Prestige, ShellPanelIds.Contracts, ShellPanelIds.Research, ShellPanelIds.Items,
+        };
+
+        [UnityTest]
+        public IEnumerator EverySystemViewOpensScrolledToItsTopWithItsHeadingInView(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            ShellRig rig = null;
+            yield return OpenRig(screen, percent, built => rig = built);
+            var session = StockedSession(out var commands, true);
+            foreach (var id in ScrolledViews())
+            {
+                IShellPanel panel = null;
+                yield return OpenPanel(id, rig, session, commands, built => panel = built);
+                yield return ShellRig.Settle();
+                var context = Context(rig, id);
+                var scroll = rig.Shell.PanelScroll;
+                Assert.That(scroll.scrollOffset.y, Is.EqualTo(0f).Within(0.5f), context + ": opens scrolled to the top, whatever the view before left behind");
+                var viewport = scroll.contentViewport.worldBound;
+                var heading = panel.Root.Query<Label>().ToList().First(label => label.layout.height > 0f && !string.IsNullOrEmpty(label.text));
+                AssertWithin(viewport, heading.worldBound, $"{context}: the first line {heading.name} is in view");
+
+                // The next view must not inherit this one's offset.
+                scroll.scrollOffset = new Vector2(0f, 100000f);
+                yield return ShellRig.Settle();
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // T555 (U-B8): read-only values carry no button chrome; a disabled control's reason sits below it
+        // ---------------------------------------------------------------------------------------------------
+
+        [Test]
+        public void AReadOnlyValueTakesTheValueClassAndAControlLikeValueDoesNot()
+        {
+            var value = MarketPanelParts.NewValueButton("probe-value", "probe");
+            Assert.That(value.ClassListContains(MarketPanelParts.ReadOnlyValueClass), Is.True, "a read-only value");
+            var exact = MarketPanelParts.NewValueButton("probe-exact", "probe", false);
+            Assert.That(exact.ClassListContains(MarketPanelParts.ReadOnlyValueClass), Is.False, "a labelled control keeps its button look");
+        }
+
+        [UnityTest]
+        public IEnumerator MarketValuesAndIndustryCardsLoseTheirButtonChromeWhileRealControlsKeepIt(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            ShellRig rig = null;
+            yield return OpenRig(screen, percent, built => rig = built);
+            var session = StockedSession(out var commands, true);
+            IShellPanel panel = null;
+            yield return OpenPanel(ShellPanelIds.Market, rig, session, commands, built => panel = built);
+            var host = (MarketPanelHost)panel;
+            var values = host.Inventory.Root.Query<Button>(className: "inv-value").ToList();
+            Assert.That(values.Count, Is.GreaterThan(0), Context(rig, "Market has values"));
+            foreach (var value in values)
+            {
+                Assert.That(value.ClassListContains(MarketPanelParts.ReadOnlyValueClass), Is.True, Context(rig, value.name));
+                Assert.That(value.resolvedStyle.borderTopWidth, Is.EqualTo(0f), Context(rig, value.name + " has no border"));
+                Assert.That(value.resolvedStyle.borderLeftWidth, Is.EqualTo(0f), Context(rig, value.name + " has no border"));
+                Assert.That((Color32)value.resolvedStyle.backgroundColor, Is.EqualTo(new Color32(0x1F, 0x29, 0x37, 255)), Context(rig, value.name + " has the flat sheet colour, not the raised fill"));
+                Assert.That(value.resolvedStyle.minHeight.value, Is.GreaterThanOrEqualTo(44f), Context(rig, value.name + " keeps its 44 pt target"));
+            }
+
+            var sell = host.Inventory.Root.Query<Button>().ToList().FirstOrDefault(button => button.name.StartsWith("inventory-sell-", StringComparison.Ordinal) &&
+                !button.ClassListContains("inv-value") && button.resolvedStyle.display != DisplayStyle.None);
+            if (sell != null)
+            {
+                Assert.That(sell.resolvedStyle.borderTopWidth, Is.GreaterThan(0f), Context(rig, "a real control keeps its border"));
+            }
+
+            yield return OpenPanel(ShellPanelIds.Industry, rig, session, commands, built => panel = built);
+            var cards = panel.Root.Query<VisualElement>(className: "industry-card").ToList();
+            Assert.That(cards.Count, Is.GreaterThan(0), Context(rig, "Industry has cards"));
+            foreach (var card in cards)
+            {
+                Assert.That(card.resolvedStyle.borderTopWidth, Is.EqualTo(0f), Context(rig, card.name + " has no border box"));
+                Assert.That(card.resolvedStyle.borderLeftWidth, Is.EqualTo(0f), Context(rig, card.name + " has no border box"));
+                Assert.That(card.resolvedStyle.backgroundColor.a, Is.EqualTo(0f), Context(rig, card.name + " has no raised fill"));
+                var buy = card.Query<Button>().ToList().FirstOrDefault(button => button.name.StartsWith("industry-buy-", StringComparison.Ordinal));
+                var reason = card.Query<Label>().ToList().FirstOrDefault(label => label.name.StartsWith("industry-reason-", StringComparison.Ordinal));
+                if (buy == null)
+                {
+                    continue;
+                }
+
+                Assert.That(buy.resolvedStyle.borderTopWidth, Is.GreaterThan(0f), Context(rig, buy.name + " keeps its border"));
+                Assert.That(buy.worldBound.width, Is.GreaterThan(card.worldBound.width - 1f), Context(rig, buy.name + " spans the card, like the other views"));
+                Assert.That(card.IndexOf(reason), Is.GreaterThan(card.IndexOf(buy)), Context(rig, "the reason sits below the control"));
+            }
+        }
+
         [UnityTest]
         public IEnumerator ThreeNoticesLeaveBackAndThePrimaryActionUsable([ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
         {
