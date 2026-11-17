@@ -35,6 +35,8 @@ These rules apply to every surface:
 | Phone portrait | Top strip plus a bottom row |
 | Phone landscape | Left and right columns, no top bar |
 
+**As built (T537).** Phone portrait: the strip (Cash, store, production attention, gear) on top and a bottom action row (hub entry "Office" with its attention dot, Overdrive); manual mining stays the overlay at the bottom right of the world, right above the action row. Phone landscape: the strip is the left column, the action bar (hub entry, Overdrive, gear) the right column, and both step aside while a sheet or the machine card is open. Tablet and desktop: the strip above the world with the hub entry before the gear, Overdrive in the side panel header. None of these is inside the world column on a phone, so the layer never covers the framed world. The zoom buttons show on pointer profiles, and on touch only with "Show zoom buttons" (`RunShellDocument.ShowZoomButtonsPreference`). Overdrive's ready state has a thicker accent border and a bold state word. `ShellTab` stays an internal shim of `SelectTab` (the hub cards use it); the tab bar, the RP cell and the tab badges are gone.
+
 **Guidance (SC-001)**: chrome takes at most 15 % of the screen at 100 % text and at most 20 % at 200 %, measured with `ShellGeometryProbe`.
 
 **Tests**:

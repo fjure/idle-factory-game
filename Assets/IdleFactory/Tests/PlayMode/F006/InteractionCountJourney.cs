@@ -149,15 +149,27 @@ namespace IdleFactory.Tests.PlayMode.F006
             done(result);
         }
 
-        /// <summary>Open one system (a tab) and leave it again (SC-003: at most 2 to reach, 1 to return).</summary>
+        /// <summary>Open one system (a hub card) and leave it again (SC-003: at most 2 to reach, 1 to return).</summary>
         public IEnumerator OpenAndLeaveSystem(ShellTab tab, Action<JourneyResult> done)
         {
             var result = new JourneyResult { Name = "open " + tab + " and return to the factory" };
             yield return rig.ShowNoPanel();
-            yield return Tap(result, "press the " + tab + " tab", () => Press(Shell.TabButton(tab)));
+            // T537: the six-tab bar is gone. A system takes the Office entry and its card to reach; Close (Back on a permanent side panel) returns.
+            yield return Tap(result, "press the Office entry", () => Press(Shell.HubEntryButton));
+            yield return Tap(result, "press the " + tab + " card", () => Press(Shell.Root.Q<Button>("hub-card-" + tab.ToString().ToLowerInvariant())));
             var opened = Shell.IsSheetOpen && Shell.ActiveTab == tab && Shell.ActivePanelId == ShellPanelIds.ForTab(tab);
             var openSteps = result.Steps.Count;
-            yield return Tap(result, "press the Factory tab", () => Press(Shell.TabButton(ShellTab.Factory)));
+            yield return Tap(result, Shell.IsSidePanelLayout ? "press Back" : "press Close", () =>
+            {
+                if (Shell.IsSidePanelLayout)
+                {
+                    Shell.HandleBack();
+                }
+                else
+                {
+                    Press(Shell.CloseButton);
+                }
+            });
             result.GoalReached = opened && !Shell.IsSheetOpen && Shell.ActiveTab == ShellTab.Factory;
             result.Evidence = "to reach " + openSteps + ", to return " + (result.Steps.Count - openSteps);
             done(result);

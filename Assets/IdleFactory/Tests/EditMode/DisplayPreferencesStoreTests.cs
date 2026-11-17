@@ -85,21 +85,21 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void MissingFileIsFollowSystemWithTheDiagnosticOncePerSession()
+        public void MissingFileIsFollowSystemWithoutADiagnostic()
         {
+            // T537 (A-8): a first launch has no file. Absent is not invalid, so nothing is reported, however often it is read.
             var store = Store();
 
             Assert.That(store.Reload(), Is.EqualTo(ReducedMotionPreference.FollowSystem));
+            Assert.That(store.ShowZoomButtons, Is.False);
             Assert.That(File.Exists(store.FilePath), Is.False, "reading never creates the file");
-            Assert.That(diagnostics, Is.EqualTo(new[] { DisplayPreferencesStore.InvalidDiagnosticCode }));
-
             store.Reload();
             store.Reload();
-            Assert.That(diagnostics, Has.Count.EqualTo(1), "a re-read while the file stays missing does not repeat it");
+            Assert.That(diagnostics, Is.Empty, "a missing file is never reported as invalid");
 
             Assert.That(store.TrySave(ReducedMotionPreference.On), Is.True);
             Assert.That(store.Reload(), Is.EqualTo(ReducedMotionPreference.On), "a save makes the file valid");
-            Assert.That(diagnostics, Has.Count.EqualTo(1));
+            Assert.That(diagnostics, Is.Empty);
         }
 
         [TestCase("{\"version\":1,\"reducedMotion\":\"o")]

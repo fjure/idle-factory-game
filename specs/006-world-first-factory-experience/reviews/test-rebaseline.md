@@ -236,3 +236,23 @@ No other existing assertion changed. In particular the layout suites of every pa
 - **A-6 (panel part).** Details opens at the top of the sheet scroll (`MachinePanelPresenter.OnShown`).
 
 **New tests.** `Tests/PlayMode/F006/SurfaceConsistencyTests.cs` (scaffold scope, classes, 48 pt floor and disabled look on Market with inventory, priorities and expansion, Contracts, Items, Research, Industry, Prestige and Settings; the empty templates; the hub's scope and error state; the dialog and the notice line; the Offline summary and the start-up status; three notices at the worst case) and the #555 case in `ReducedMotionTests`.
+
+## T537 (#710): persistent layer
+
+The six-tab bar, the RP cell and the Contracts and Research tab badges are gone; the hub entry and Overdrive moved to an action bar (bottom row in phone portrait, right column in phone landscape; the strip is the left column there); zoom buttons show on pointer profiles or with the preference. `ShellRig` turns the preference on so layout tests keep the worst case; `PersistentLayerTests` sets it explicitly.
+
+| File | Change | Reason | Expectation changed? |
+|---|---|---|---|
+| `RunHudLayoutTests` | strip test now `ThePersistentControlsKeepTheirHomesAtTheirWorstCase`; phone density test asserts strip plus action bar; tab-bar assertions removed; sheet sits above the action bar; side panel keeps hub entry in the strip | tab bar gone | yes |
+| `RunKeyboardFocusTests` | tab arrow-key and tab-selected tests replaced by hub entry Enter/Space and dot test; invokers are persistent controls; focus ring test runs idle and with a sheet | tabs gone; landscape columns hide while a sheet is open | yes |
+| `RunTextScaleTests` | label font test on the hub label; tab wrap test replaced by action bar test; focus loop skips hidden controls | tabs gone | yes |
+| `RunDeviceProfileTests`, `NavigationInputTests`, `PixelCrispnessTests` | target list uses the hub entry (RunDeviceProfileTests); the other two needed no change | tab button removed | no |
+| `DevToolsOverlayPlacementTests` | action bar instead of tab bar; `DevToolsOverlay` places itself between the columns on phone landscape | strip is a column there | yes |
+| `RunShellLayoutAssertions`, `ShellGeometryProbe(Tests)`, `BaselineRig`, `InteractionCountJourney` | regions, probe names (`action-bar`), hub registered, journey = Office + card, return = Close or Back | tabs gone | yes |
+| `ContractsAutoDeliverPanelTests`, `UiReviewFixesTests` | tab badge tests replaced by hub attention tests; Research dot test removed (hub Research flag covers unspent IP) | badges gone | yes |
+| `HubPanelTests` | overlay assertions replaced by "outside the world column" | final placement | yes |
+| `DisplayPreferencesStoreTests`, `DisplayPreferencesV2Tests` | absent file reads defaults with no diagnostic | A-8 | yes |
+| `ItemsPanelTests` | empty message "Earn them from contracts." | copy | yes |
+| others (`OreVeinPanelTests`, `MachineCardTests`, `OfflineSummaryPanelTests`, `SettingsSheetTests`, `RunPanelCompositionTests`) | tab references replaced by hub entry, store button, action bar or hub path | tabs gone | no (intent kept) |
+
+**New.** `PersistentLayerTests` (every class at 100/150/200 %, 640x360 at 200 % included, and the zoom matrix), `RunSnapshotPredicateParityTests`, `core-public-api.txt` (+4 public predicates).

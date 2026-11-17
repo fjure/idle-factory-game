@@ -12,11 +12,6 @@
                             </ui:VisualElement>
                             <ui:VisualElement name="cash-pin-hint" class="run-pin-hint" picking-mode="Ignore" />
                         </ui:Button>
-                        <ui:Button name="rp" class="run-control run-stat" focusable="true">
-                            <ui:VisualElement name="rp-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                            <ui:Label name="rp-value" text="0" class="run-stat__value" picking-mode="Ignore" />
-                            <ui:VisualElement name="rp-pin-hint" class="run-pin-hint" picking-mode="Ignore" />
-                        </ui:Button>
                         <ui:Button name="store" class="run-control run-stat run-stat--store" focusable="true">
                             <ui:VisualElement name="store-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
                             <ui:VisualElement name="store-body" class="run-stat__body run-stat__body--store" picking-mode="Ignore">
@@ -28,17 +23,10 @@
                             <ui:Label name="store-value" text="0%" class="run-stat__value" picking-mode="Ignore" />
                             <ui:VisualElement name="store-pin-hint" class="run-pin-hint" picking-mode="Ignore" />
                         </ui:Button>
-                        <ui:Button name="overdrive" class="run-control run-overdrive" focusable="true">
-                            <ui:VisualElement name="overdrive-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                            <ui:VisualElement name="overdrive-body" class="run-overdrive__body" picking-mode="Ignore">
-                                <ui:Label name="overdrive-name" text="Overdrive" class="run-caption" picking-mode="Ignore" />
-                                <ui:Label name="overdrive-caption" text="Locked" class="run-caption" picking-mode="Ignore" />
-                            </ui:VisualElement>
-                        </ui:Button>
-                        <ui:Button name="hub-entry" class="run-control run-hub-entry" focusable="true" tooltip="Office">
-                            <ui:VisualElement name="hub-entry-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                            <ui:Label name="hub-entry-label" text="Office" class="run-hub-entry__label" picking-mode="Ignore" />
-                            <ui:Label name="hub-entry-dot" class="run-hub-entry__dot" picking-mode="Ignore" />
+                        <ui:Button name="attention" class="run-control run-attention" focusable="true" style="display: none;">
+                            <ui:VisualElement name="attention-icon" class="run-icon run-icon--tint-warning" picking-mode="Ignore" />
+                            <ui:Label name="attention-count" text="" class="run-attention__count" picking-mode="Ignore" />
+                            <ui:Label name="attention-more" text="" class="run-attention__more" picking-mode="Ignore" />
                         </ui:Button>
                         <ui:Button name="settings" class="run-control run-gear" focusable="true" tooltip="Settings">
                             <ui:VisualElement name="settings-icon" class="run-gear__icon" picking-mode="Ignore">
@@ -84,38 +72,23 @@
                             <ui:Label name="panel-close-label" text="Close" class="run-caption" picking-mode="Ignore" />
                         </ui:Button>
                     </ui:VisualElement>
-                    <ui:VisualElement name="panel-tabs-slot" class="run-panel__tabs-slot" />
                     <ui:ScrollView name="panel-scroll" class="run-scroll">
                         <ui:VisualElement name="panel-content" class="run-panel__content" />
                     </ui:ScrollView>
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement name="tab-bar" class="run-tabs" focusable="false">
-                <ui:Button name="tab-factory" class="run-control run-tab" focusable="true">
-                    <ui:VisualElement name="tab-factory-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                    <ui:Label text="Factory" class="run-tab__label" picking-mode="Ignore" />
+            <ui:VisualElement name="action-bar" class="run-actions">
+                <ui:Button name="hub-entry" class="run-control run-hub-entry" focusable="true" tooltip="Office">
+                    <ui:VisualElement name="hub-entry-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
+                    <ui:Label name="hub-entry-label" text="Office" class="run-hub-entry__label" picking-mode="Ignore" />
+                    <ui:Label name="hub-entry-dot" class="run-hub-entry__dot" picking-mode="Ignore" />
                 </ui:Button>
-                <ui:Button name="tab-market" class="run-control run-tab" focusable="true">
-                    <ui:VisualElement name="tab-market-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                    <ui:Label text="Market" class="run-tab__label" picking-mode="Ignore" />
-                </ui:Button>
-                <ui:Button name="tab-contracts" class="run-control run-tab" focusable="true">
-                    <ui:VisualElement name="tab-contracts-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                    <ui:Label text="Contracts" class="run-tab__label" picking-mode="Ignore" />
-                    <ui:Label name="tab-contracts-badge" class="run-tab__badge" picking-mode="Ignore" />
-                </ui:Button>
-                <ui:Button name="tab-items" class="run-control run-tab" focusable="true">
-                    <ui:VisualElement name="tab-items-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                    <ui:Label text="Items" class="run-tab__label" picking-mode="Ignore" />
-                </ui:Button>
-                <ui:Button name="tab-research" class="run-control run-tab" focusable="true">
-                    <ui:VisualElement name="tab-research-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                    <ui:Label text="Research" class="run-tab__label" picking-mode="Ignore" />
-                    <ui:Label name="tab-research-badge" class="run-tab__badge" picking-mode="Ignore" />
-                </ui:Button>
-                <ui:Button name="tab-prestige" class="run-control run-tab" focusable="true">
-                    <ui:VisualElement name="tab-prestige-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
-                    <ui:Label text="Prestige" class="run-tab__label" picking-mode="Ignore" />
+                <ui:Button name="overdrive" class="run-control run-overdrive" focusable="true">
+                    <ui:VisualElement name="overdrive-icon" class="run-icon run-icon--tint-text" picking-mode="Ignore" />
+                    <ui:VisualElement name="overdrive-body" class="run-overdrive__body" picking-mode="Ignore">
+                        <ui:Label name="overdrive-name" text="Overdrive" class="run-caption" picking-mode="Ignore" />
+                        <ui:Label name="overdrive-caption" text="Locked" class="run-caption" picking-mode="Ignore" />
+                    </ui:VisualElement>
                 </ui:Button>
             </ui:VisualElement>
         </ui:VisualElement>

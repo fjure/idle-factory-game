@@ -66,11 +66,11 @@ namespace IdleFactory.Tests.PlayMode.F006
                 Sheet = null,
             };
             result.Chrome.Add(new NamedRect("top-strip", new Rect(0f, 0f, 100f, 54f)));
-            result.Chrome.Add(new NamedRect("tab-bar", new Rect(0f, 194f, 100f, 30f)));
+            result.Chrome.Add(new NamedRect("action-bar", new Rect(0f, 194f, 100f, 30f)));
             result.Chrome.Add(new NamedRect("zoom-column", new Rect(0f, 54f, 20f, 40f)));
 
             Assert.That(result.WorldShare, Is.EqualTo(0.7d).Within(1e-9), "140 of 200");
-            // The strip reaches above the safe area; its part inside is 30 high. The tab bar adds 30, the zoom column 800.
+            // The strip reaches above the safe area; its part inside is 30 high. The action bar adds 30, the zoom column 800.
             Assert.That(result.ChromeShare, Is.EqualTo((3000d + 3000d + 800d) / 20000d).Within(1e-9));
             Assert.That(result.SheetShare, Is.EqualTo(0d));
             Assert.That(result.OverlayShare, Is.EqualTo(0d));
@@ -91,7 +91,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             var result = new ShellGeometryResult { Screen = "synthetic", State = "no panel", TextScalePercent = 100, PixelsPerPoint = 1f, Safe = new Rect(0f, 0f, 100f, 100f), World = new Rect(0f, 20f, 100f, 60f) };
             result.Chrome.Add(new NamedRect("top-strip", new Rect(0f, 0f, 100f, 20f)));
             result.Texts.Add(new ProbeText("top-strip", "Cash \"1\"", true));
-            result.Texts.Add(new ProbeText("tab-bar", "Market", false));
+            result.Texts.Add(new ProbeText("action-bar", "Office", false));
             result.Notes["a"] = 1.5d;
 
             var first = ShellGeometryProbe.ToJson(result, string.Empty);
@@ -199,9 +199,14 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(closed.WorldShare, Is.InRange(0.05d, 1d), screen.Name);
             Assert.That(closed.ChromeShare, Is.InRange(0.01d, 0.95d), screen.Name);
             Assert.That(closed.WorldShare + closed.ChromeShare, Is.LessThanOrEqualTo(1.0001d), screen + ": the world rect and the chrome do not overlap beyond the safe area");
-            Assert.That(closed.Chrome.Select(item => item.Name), Does.Contain("top-strip").And.Contain("tab-bar"), screen.Name);
-            Assert.That(closed.LabelCount, Is.GreaterThan(0), screen + ": the strip and tab bar carry labels");
-            Assert.That(closed.Texts.Select(item => item.Owner), Does.Contain("top-strip").And.Contain("tab-bar"), screen.Name);
+            Assert.That(closed.Chrome.Select(item => item.Name), Does.Contain("top-strip"), screen.Name);
+            Assert.That(closed.LabelCount, Is.GreaterThan(0), screen + ": the strip and the action bar carry labels");
+            Assert.That(closed.Texts.Select(item => item.Owner), Does.Contain("top-strip"), screen.Name);
+            if (!rig.Shell.IsSidePanelLayout)
+            {
+                Assert.That(closed.Chrome.Select(item => item.Name), Does.Contain("action-bar"), screen.Name);
+                Assert.That(closed.Texts.Select(item => item.Owner), Does.Contain("action-bar"), screen.Name);
+            }
             Assert.That(closed.Overlay.HasValue, Is.False);
 
             // The probe does not change the shell: a second reading is identical.

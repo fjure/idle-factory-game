@@ -406,14 +406,15 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(IsDisplayed(h.Card.Root), Is.True, context);
             AssertWithin(safe, card, context + ": the card stays inside the safe area");
             Assert.That(Intersects(card, world), Is.False, context + ": the card never covers the world column");
-            Assert.That(card.height, Is.LessThan(safe.height * 0.95f).And.GreaterThan(0f), context + ": the card is docked, not a full-screen fill");
+            // T537: on a phone in landscape the persistent columns step aside, so the side column takes the full height (its width is the 40 % check below).
+            Assert.That(card.height, Is.LessThan(safe.height * (screen.Expected == FactoryHudLayout.CompactLandscape ? 1.01f : 0.95f)).And.GreaterThan(0f), context + ": the card is docked, not a full-screen fill");
 
             if (screen.Expected == FactoryHudLayout.CompactPortrait)
             {
                 Assert.That(h.Card.Root.parent.name, Is.EqualTo("run-main"), context);
                 Assert.That(card.width, Is.EqualTo(safe.width).Within(1f), context + ": a bottom band across the width");
                 Assert.That(card.yMin, Is.GreaterThanOrEqualTo(world.yMax - 0.5f), context + ": below the world");
-                Assert.That(card.yMax, Is.LessThanOrEqualTo(shell.TabBar.worldBound.yMin + 0.5f), context + ": above the tab bar");
+                Assert.That(card.yMax, Is.LessThanOrEqualTo(shell.ActionBar.worldBound.yMin + 0.5f), context + ": above the action bar");
                 var allowed = RunShellDocument.CardBandFraction(percent);
                 Assert.That(card.height, Is.LessThanOrEqualTo(safe.height * allowed + 0.5f), context + ": the band cap (30 % up to 140 % text, 45 % hard cap above)");
             }

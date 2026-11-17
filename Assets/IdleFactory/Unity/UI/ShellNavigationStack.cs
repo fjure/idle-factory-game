@@ -30,7 +30,7 @@ namespace IdleFactory.Unity.UI
     /// <summary>
     /// The back-frame order of the run shell (R11, T511, T534): dialog, pinned value, settings, sheet (Details), machine card. One back press pops exactly one
     /// frame, and the press is idempotent within a frame so a key event and the input poll never act twice. Plain C#, no UI
-    /// Toolkit dependency. The tab bar and <c>ShellTab</c> stay in <see cref="RunShellDocument"/> as a shim.
+    /// Toolkit dependency. <c>ShellTab</c> stays in <see cref="RunShellDocument"/> as an internal shim (the tab bar is gone, T537).
     /// </summary>
     internal sealed class ShellNavigationStack
     {

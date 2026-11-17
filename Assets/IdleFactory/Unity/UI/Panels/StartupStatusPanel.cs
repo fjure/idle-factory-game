@@ -206,14 +206,14 @@ namespace IdleFactory.Unity.UI.Panels
             // surface watches the state it was given, a cheap read of the bootstrap's cached value, and applies it at once: a stopped spinner
             // resumes when the preference turns off, and a running one stops when it turns on.
             watchedReducedMotion = IsReducedMotion();
-            motionWatch = Root.schedule.Execute(WatchReducedMotion).Every(MotionWatchMilliseconds);
+            // The item lives and dies with the surface root (T537: the unused field was dropped).
+            Root.schedule.Execute(WatchReducedMotion).Every(MotionWatchMilliseconds);
         }
 
         /// <summary>How often the surface re-reads the reduced-motion state (T536, #555).</summary>
         public const long MotionWatchMilliseconds = 250;
 
         private bool watchedReducedMotion;
-        private IVisualElementScheduledItem motionWatch;
 
         private void WatchReducedMotion()
         {

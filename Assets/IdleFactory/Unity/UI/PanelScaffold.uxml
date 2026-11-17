@@ -19,7 +19,9 @@
             </ui:VisualElement>
             </ui:ScrollView>
             <ui:VisualElement name="scaffold-sheet" class="scaffold__sheet" picking-mode="Ignore" />
-            <ui:VisualElement name="scaffold-notices" class="scaffold__notices" picking-mode="Ignore" />
+            <ui:VisualElement name="scaffold-notices" class="scaffold__notices" picking-mode="Ignore">
+                <ui:ScrollView name="scaffold-notices-scroll" class="run-scroll scaffold__notices-scroll" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

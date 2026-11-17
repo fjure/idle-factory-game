@@ -59,16 +59,22 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(shell.Layout, Is.EqualTo(screen.Expected), $"{context}: screen class");
             var safe = rig.SafeRect();
 
-            var regions = new List<(string Name, VisualElement Element)> { ("Top strip", shell.TopStrip) };
+            // T537: on a phone in landscape the strip (left column) and the action bar (right column) step aside while a sheet or the card is open.
+            var regions = new List<(string Name, VisualElement Element)>();
+            if (IsDisplayed(shell.TopStrip))
+            {
+                regions.Add(("Top strip", shell.TopStrip));
+            }
+
             var hostDisplayed = IsDisplayed(shell.PanelHost);
             if (hostDisplayed)
             {
                 regions.Add(("Panel host", shell.PanelHost));
             }
 
-            if (!shell.IsSidePanelLayout)
+            if (!shell.IsSidePanelLayout && IsDisplayed(shell.ActionBar))
             {
-                regions.Add(("Tab bar", shell.TabBar));
+                regions.Add(("Action bar", shell.ActionBar));
             }
 
             foreach (var region in regions)
@@ -86,18 +92,18 @@ namespace IdleFactory.Tests.PlayMode
                 }
             }
 
-            if (shell.IsSidePanelLayout)
-            {
-                AssertWithin(shell.PanelHost.worldBound, shell.TabBar.worldBound, $"{context}: the tab bar belongs to the side panel");
-            }
-
             // The world column keeps the strip, the notice, the detail line and the zoom controls apart and inside itself.
             var world = shell.WorldColumn.worldBound;
             var worldItems = new List<(string Name, VisualElement Element)>();
             if (shell.IsSidePanelLayout)
             {
-                // On tablet and desktop the strip sits above the world beside the side panel; on a phone it spans the width above both.
+                // On tablet and desktop the strip sits above the world beside the side panel; on a phone it lies outside the world column (above it, or a column beside it).
                 worldItems.Add(("Top strip", shell.TopStrip));
+            }
+            else
+            {
+                Assert.That(shell.TopStrip.parent.name, Is.EqualTo("run-body"), $"{context}: on a phone the strip is a child of the body");
+                Assert.That(shell.ActionBar.parent.name, Is.EqualTo("run-body"), $"{context}: on a phone the action bar is a child of the body");
             }
 
             foreach (var name in new[] { "detail-line", "notice", "world-hint", "zoom-column" })
@@ -202,7 +208,7 @@ namespace IdleFactory.Tests.PlayMode
         public static string Dump(ShellRig rig)
         {
             var shell = rig.Shell;
-            return $"panel={shell.Root.panel.visualTree.worldBound} strip={shell.TopStrip.worldBound} host={shell.PanelHost.worldBound} tabs={shell.TabBar.worldBound} world={shell.WorldColumn.worldBound}";
+            return $"panel={shell.Root.panel.visualTree.worldBound} strip={shell.TopStrip.worldBound} host={shell.PanelHost.worldBound} actions={shell.ActionBar.worldBound} world={shell.WorldColumn.worldBound}";
         }
     }
 }

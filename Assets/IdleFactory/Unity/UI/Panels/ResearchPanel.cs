@@ -271,9 +271,9 @@ namespace IdleFactory.Unity.UI.Panels
             scroll.scrollOffset = new Vector2(scroll.scrollOffset.x, Mathf.Max(0f, y));
             if (focus)
             {
-                // The control that pointed here is on a hidden panel. Focus goes to the Research tab, which stays visible: moving it into the
+                // The control that pointed here is on a hidden panel. Focus goes to the hub entry (or the sheet Close), which stays visible: moving it into the
                 // section would scroll the first Industry button into view and push the section header out of a short sheet.
-                shell.FocusWhenReady(shell.TabButton(ShellTab.Research));
+                shell.FocusWhenReady(shell.SheetFocusFallback);
             }
 
             return true;

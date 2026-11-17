@@ -246,9 +246,59 @@ namespace IdleFactory.DevTools
                 hudBottom = Mathf.Max(hudBottom, barsBottomPx / pixelsPerPoint);
             }
 
-            root.style.left = left + EdgeMargin;
-            root.style.right = right + EdgeMargin;
+            var leftPoints = left;
+            var rightPoints = right;
+            if (ShellColumnEdgesPixels(out var columnLeftPx, out var columnRightPx))
+            {
+                // T537: on a phone in landscape the strip and the action bar are columns, not a top row. The overlay then sits at the top between them
+                // instead of below the strip, which would be the bottom of the screen.
+                hudBottom = topInset;
+                leftPoints = Mathf.Max(left, columnLeftPx / pixelsPerPoint);
+                if (!float.IsNaN(columnRightPx))
+                {
+                    rightPoints = Mathf.Max(right, screenWidthPx / pixelsPerPoint - columnRightPx / pixelsPerPoint);
+                }
+
+                if (!float.IsNaN(barsBottomPx))
+                {
+                    hudBottom = Mathf.Max(hudBottom, barsBottomPx / pixelsPerPoint);
+                }
+            }
+
+            root.style.left = leftPoints + EdgeMargin;
+            root.style.right = rightPoints + EdgeMargin;
             root.style.top = hudBottom + EdgeMargin;
+        }
+
+        // True when the persistent layer of the live shell is two columns (a phone in landscape with no sheet open): the right edge of the left column and the
+        // left edge of the right column in screen pixels (NaN when the right column is hidden). The strip is a column when it spans most of the panel height.
+        private static bool ShellColumnEdgesPixels(out float leftEdgePx, out float rightEdgePx)
+        {
+            leftEdgePx = 0f;
+            rightEdgePx = float.NaN;
+            var shell = FindFirstObjectByType<RunShellDocument>();
+            var strip = shell == null ? null : shell.TopStrip;
+            if (strip == null || strip.panel == null || strip.resolvedStyle.display == DisplayStyle.None)
+            {
+                return false;
+            }
+
+            var bounds = strip.worldBound;
+            var panelBounds = strip.panel.visualTree.worldBound;
+            if (float.IsNaN(bounds.xMax) || bounds.height <= 0f || bounds.height < panelBounds.height * 0.6f || bounds.width > panelBounds.width * 0.5f)
+            {
+                return false;
+            }
+
+            var scale = strip.panel.scaledPixelsPerPoint;
+            leftEdgePx = bounds.xMax * scale;
+            var bar = shell.ActionBar;
+            if (bar != null && bar.resolvedStyle.display != DisplayStyle.None && !float.IsNaN(bar.worldBound.xMin) && bar.worldBound.height > 0f)
+            {
+                rightEdgePx = bar.worldBound.xMin * scale;
+            }
+
+            return true;
         }
 
         // The bottom edge of the top strip of the live shell in screen pixels from the top, or NaN when there is no laid-out shell.
@@ -256,7 +306,7 @@ namespace IdleFactory.DevTools
         {
             var shell = FindFirstObjectByType<RunShellDocument>();
             var strip = shell == null ? null : shell.TopStrip;
-            if (strip == null || strip.panel == null)
+            if (strip == null || strip.panel == null || strip.resolvedStyle.display == DisplayStyle.None)
             {
                 return float.NaN;
             }

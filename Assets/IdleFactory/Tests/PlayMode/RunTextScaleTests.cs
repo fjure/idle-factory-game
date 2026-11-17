@@ -118,8 +118,8 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             var shell = rig.Shell;
             var expected = percent / 100f;
-            var tabLabel = shell.TabButton(ShellTab.Contracts).Q<Label>(className: "run-tab__label");
-            Assert.That(tabLabel.resolvedStyle.fontSize, Is.EqualTo(12f * expected).Within(0.51f), "tab labels are captions");
+            var tabLabel = shell.HubEntryButton.Q<Label>("hub-entry-label");
+            Assert.That(tabLabel.resolvedStyle.fontSize, Is.EqualTo(12f * expected).Within(0.51f), "the hub entry label is a caption");
             Assert.That(shell.CashButton.Q<Label>("cash-value").resolvedStyle.fontSize, Is.EqualTo(16f * expected).Within(0.51f), "HUD values");
             Assert.That(shell.Root.Q<Label>("detail-line").resolvedStyle.fontSize, Is.EqualTo(14f * expected).Within(0.51f), "body text");
             if (percent == 100)
@@ -147,7 +147,6 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(screen, percent);
             var shell = rig.Shell;
             shell.SetCash(Huge);
-            shell.SetRp(Huge, true);
             shell.SetStore(Huge, Huge);
             shell.SetOverdrive(RunShellFixtures.OverdriveStatusIn(OverdriveStage.CoolingDown));
             shell.ShowNotice(RunShellDocument.RotationCancelledNotice, ShellNoticeKind.Warning);
@@ -155,16 +154,21 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
 
             AssertShellLayout(rig, "worst-case strip, notice and detail line");
-            var stripControls = new List<VisualElement> { shell.CashButton, shell.RpButton, shell.StoreButton };
-            if (!shell.IsSidePanelLayout)
-            {
-                stripControls.Add(shell.OverdriveButton);
-            }
-
+            var stripControls = new List<VisualElement> { shell.CashButton, shell.StoreButton };
             foreach (var control in stripControls)
             {
                 Assert.That(IsDisplayed(control), Is.True, control.name);
                 AssertWithin(shell.TopStrip.worldBound, control.worldBound, $"{screen} @{percent}%: {control.name} stays in the top strip");
+            }
+
+            if (!shell.IsSidePanelLayout)
+            {
+                // T537: on a phone Overdrive and the hub entry live in the action bar (bottom row, or right column in landscape).
+                foreach (var control in new VisualElement[] { shell.OverdriveButton, shell.HubEntryButton })
+                {
+                    Assert.That(IsDisplayed(control), Is.True, control.name);
+                    AssertWithin(shell.ActionBar.worldBound, control.worldBound, $"{screen} @{percent}%: {control.name} stays in the action bar");
+                }
             }
 
             shell.SelectTab(ShellTab.Market);
@@ -211,7 +215,7 @@ namespace IdleFactory.Tests.PlayMode
                 AssertWithin(safe, button.worldBound, $"{screen} @{percent}%: focused '{button.name}' leaves the safe area");
             }
 
-            foreach (var control in new VisualElement[] { shell.CashButton, shell.TabButton(ShellTab.Prestige), shell.TabButton(ShellTab.Contracts), shell.ZoomInButton })
+            foreach (var control in new VisualElement[] { shell.CashButton, shell.HubEntryButton, shell.OverdriveButton, shell.ZoomInButton }.Where(item => IsDisplayed(item)))
             {
                 control.Focus();
                 yield return ShellRig.Settle();
@@ -228,7 +232,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen, percent);
             var shell = rig.Shell;
-            var invoker = shell.TabButton(ShellTab.Prestige);
+            var invoker = shell.CashButton;
             shell.SelectTab(ShellTab.Prestige);
             Assert.That(shell.RequestConfirmation(new ConfirmationRequest
             {
@@ -269,17 +273,22 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator TheTabBarWrapsIntoRowsFromOneHundredTwentyPercentAndKeepsOneRowAtOneHundred([ValueSource(nameof(PhoneScreens))] ShellScreen screen)
+        public IEnumerator TheActionBarKeepsItsControlsInsideAtOneHundredAndTwoHundredPercent([ValueSource(nameof(PhoneScreens))] ShellScreen screen)
         {
-            yield return Open(screen, 100);
-            Assert.That(rig.Shell.TabBar.worldBound.height, Is.LessThan(2f * 56f), $"{screen}: one row at 100 percent");
+            foreach (var percent in new[] { 100, 200 })
+            {
+                yield return Open(screen, percent);
+                var shell = rig.Shell;
+                shell.SetOverdrive(RunShellFixtures.OverdriveStatusIn(OverdriveStage.CoolingDown));
+                yield return ShellRig.Settle();
+                foreach (var control in new VisualElement[] { shell.OverdriveButton, shell.HubEntryButton })
+                {
+                    AssertWithin(shell.ActionBar.worldBound, control.worldBound, $"{screen} @{percent}%: {control.name} stays in the action bar");
+                }
 
-            rig.Shell.ApplyTextScale(2f);
-            rig.SetTextScalePercent(200);
-            yield return ShellRig.Settle();
-            var tabs = Enumerable.Range(0, 6).Select(index => rig.Shell.TabButton((ShellTab)index)).ToList();
-            Assert.That(tabs.Select(tab => Mathf.Round(tab.worldBound.yMin)).Distinct().Count(), Is.GreaterThan(1), $"{screen}: the six tabs wrap into rows at 200 percent");
-            AssertShellLayout(rig, "wrapped tab bar");
+                Assert.That(Intersects(shell.OverdriveButton.worldBound, shell.HubEntryButton.worldBound), Is.False, $"{screen} @{percent}%: the two controls do not overlap");
+                AssertShellLayout(rig, "action bar at " + percent + " percent");
+            }
         }
 
         public static IEnumerable<ShellScreen> PhoneScreens() => ShellScreens.Phones();

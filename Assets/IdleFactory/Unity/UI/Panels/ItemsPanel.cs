@@ -17,7 +17,7 @@ namespace IdleFactory.Unity.UI.Panels
     public sealed class ItemsPanel : IShellPanel
     {
         public const string PanelTitle = "Items";
-        public const string EmptyText = "No Items yet — earn them from contracts.";
+        public const string EmptyText = "Earn them from contracts."; // the title above it says "Nothing here yet" (T537, T536 copy)
 
         private readonly RunSession session;
         private readonly RunCommands commands;
@@ -57,7 +57,7 @@ namespace IdleFactory.Unity.UI.Panels
             // A wrapped label is wrapped in a container (wiki: UI Toolkit HUD layout pitfalls), or a bounded scroll view clamps its height.
             emptyBox = new VisualElement { name = "items-empty-box" };
             // T536 (FR-023): the scaffold's empty template (marker, title, message) instead of a panel-specific card.
-            ScaffoldEmpty.Style(emptyBox);
+            ScaffoldEmpty.Style(emptyBox, "items-card");
             emptyBox.Add(ScaffoldEmpty.Mark("items-empty-mark"));
             emptyBox.Add(ScaffoldEmpty.Title("items-empty-title"));
             emptyLabel = MakeText("items-empty", "items-line");
@@ -377,10 +377,10 @@ namespace IdleFactory.Unity.UI.Panels
             Refresh();
             if (shell != null)
             {
-                // The stack may be gone (the last Item was used), so focus the Activate control when it is still shown, else the tab.
+                // The stack may be gone (the last Item was used), so focus the Activate control when it is still shown, else the persistent entry (or Close).
                 var next = rows[stack.ItemId].Activate;
                 shell.FocusWhenReady(next.style.display == DisplayStyle.None || rows[stack.ItemId].Card.style.display == DisplayStyle.None
-                    ? shell.TabButton(ShellTab.Items)
+                    ? shell.SheetFocusFallback
                     : next);
             }
         }

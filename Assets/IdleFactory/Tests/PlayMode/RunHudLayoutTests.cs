@@ -75,7 +75,6 @@ namespace IdleFactory.Tests.PlayMode
         private static void ApplyWorstCaseStrip(RunShellDocument shell)
         {
             shell.SetCash(Huge);
-            shell.SetRp(Huge, true);
             shell.SetStore(Huge, Huge);
             shell.SetOverdrive(RunShellFixtures.OverdriveStatusIn(OverdriveStage.CoolingDown));
         }
@@ -91,39 +90,42 @@ namespace IdleFactory.Tests.PlayMode
             AssertShellLayout(rig, "closed, initial values");
 
             rig.Shell.SetCash(1234);
-            rig.Shell.SetRp(56, true);
             rig.Shell.SetStore(120, 500);
             yield return ShellRig.Settle();
             AssertShellLayout(rig, "closed, RP unlocked");
         }
 
         [UnityTest]
-        public IEnumerator TheTopStripKeepsItsFourControlsOnOneRowAtTheirWorstCase([ValueSource(nameof(Screens))] ShellScreen screen)
+        public IEnumerator ThePersistentControlsKeepTheirHomesAtTheirWorstCase([ValueSource(nameof(Screens))] ShellScreen screen)
         {
             yield return Open(screen);
             ApplyWorstCaseStrip(rig.Shell);
             yield return ShellRig.Settle();
 
-            AssertShellLayout(rig, "worst-case top strip");
+            AssertShellLayout(rig, "worst-case persistent layer");
             var shell = rig.Shell;
-            Assert.That(shell.TopStrip.worldBound.height, Is.LessThanOrEqualTo(56f), $"{screen}: the top strip is one row, not a wrapped block");
+            if (screen.Expected != FactoryHudLayout.CompactLandscape)
+            {
+                Assert.That(shell.TopStrip.worldBound.height, Is.LessThanOrEqualTo(56f), $"{screen}: the top strip is one row, not a wrapped block");
+            }
+
             Assert.That(shell.StatusText, Does.Contain("Qi").Or.Contain("Q"), "the huge value is shown compactly");
-            var cells = new VisualElement[] { shell.CashButton, shell.RpButton, shell.StoreButton };
+            var cells = new VisualElement[] { shell.CashButton, shell.StoreButton };
             foreach (var cell in cells)
             {
                 Assert.That(IsDisplayed(cell), Is.True, cell.name);
                 AssertWithin(shell.TopStrip.worldBound, cell.worldBound, $"{screen}: {cell.name} stays in the top strip");
             }
 
+            Assert.That(Intersects(cells[0].worldBound, cells[1].worldBound), Is.False, $"{screen}: Cash overlaps the store");
             if (!shell.IsSidePanelLayout)
             {
-                AssertWithin(shell.TopStrip.worldBound, shell.OverdriveButton.worldBound, $"{screen}: Overdrive stays in the top strip on a phone");
-                for (var i = 0; i < cells.Length; i++)
+                foreach (var control in new VisualElement[] { shell.OverdriveButton, shell.HubEntryButton })
                 {
-                    Assert.That(Intersects(cells[i].worldBound, shell.OverdriveButton.worldBound), Is.False, $"{screen}: {cells[i].name} overlaps Overdrive");
-                    for (var j = i + 1; j < cells.Length; j++)
+                    AssertWithin(shell.ActionBar.worldBound, control.worldBound, $"{screen}: {control.name} stays in the action bar on a phone");
+                    foreach (var cell in cells)
                     {
-                        Assert.That(Intersects(cells[i].worldBound, cells[j].worldBound), Is.False, $"{screen}: {cells[i].name} overlaps {cells[j].name}");
+                        Assert.That(Intersects(cell.worldBound, control.worldBound), Is.False, $"{screen}: {cell.name} overlaps {control.name}");
                     }
                 }
             }
@@ -154,38 +156,45 @@ namespace IdleFactory.Tests.PlayMode
         // ---------------------------------------------------------------------------------------------------
 
         [UnityTest]
-        public IEnumerator PhoneDensityTopStripHoldsCashRpStoreAndOverdriveAndTheTabBarHoldsSixTabs([ValueSource(nameof(PhoneScreens))] ShellScreen screen)
+        public IEnumerator PhoneDensityTheStripHoldsCashAndStoreAndTheActionBarHoldsTheHubEntryAndOverdrive([ValueSource(nameof(PhoneScreens))] ShellScreen screen)
         {
             yield return Open(screen);
             var shell = rig.Shell;
-            shell.SetRp(10, true);
             shell.SetOverdrive(RunShellFixtures.OverdriveStatusIn(OverdriveStage.Ready));
             yield return ShellRig.Settle();
 
             Assert.That(shell.IsSidePanelLayout, Is.False);
-            foreach (var control in new VisualElement[] { shell.CashButton, shell.RpButton, shell.StoreButton, shell.OverdriveButton })
+            foreach (var control in new VisualElement[] { shell.CashButton, shell.StoreButton })
             {
                 Assert.That(shell.TopStrip.Contains(control), Is.True, $"{screen}: {control.name} is in the top strip");
             }
 
-            Assert.That(shell.TabBar.parent.name, Is.EqualTo("run-body"), $"{screen}: the tab bar is the bottom bar of the shell");
-            var tabs = System.Enum.GetValues(typeof(ShellTab)).Cast<ShellTab>().Select(shell.TabButton).ToArray();
-            Assert.That(tabs.Length, Is.EqualTo(6));
-            foreach (var tab in tabs)
+            foreach (var control in new VisualElement[] { shell.HubEntryButton, shell.OverdriveButton })
             {
-                Assert.That(tab.worldBound.width, Is.GreaterThanOrEqualTo(44f - Tolerance), $"{screen}: {tab.name} width");
-                Assert.That(tab.worldBound.height, Is.GreaterThanOrEqualTo(44f - Tolerance), $"{screen}: {tab.name} height");
-                AssertWithin(shell.TabBar.worldBound, tab.worldBound, $"{screen}: {tab.name} in the tab bar");
+                Assert.That(shell.ActionBar.Contains(control), Is.True, $"{screen}: {control.name} is in the action bar");
+                Assert.That(control.worldBound.width, Is.GreaterThanOrEqualTo(44f - Tolerance), $"{screen}: {control.name} width");
+                Assert.That(control.worldBound.height, Is.GreaterThanOrEqualTo(44f - Tolerance), $"{screen}: {control.name} height");
             }
 
-            for (var i = 1; i < tabs.Length; i++)
+            Assert.That(shell.TopStrip.parent.name, Is.EqualTo("run-body"), $"{screen}: the strip is a child of the body");
+            Assert.That(shell.ActionBar.parent.name, Is.EqualTo("run-body"), $"{screen}: the action bar is a child of the body");
+            var safe = rig.SafeRect();
+            if (screen.Expected == FactoryHudLayout.CompactPortrait)
             {
-                Assert.That(tabs[i].worldBound.xMin, Is.GreaterThanOrEqualTo(tabs[i - 1].worldBound.xMax - Tolerance), $"{screen}: tabs do not overlap");
+                Assert.That(shell.TopStrip.worldBound.yMin, Is.EqualTo(safe.yMin).Within(1f), $"{screen}: the strip is the top row");
+                Assert.That(shell.ActionBar.worldBound.yMax, Is.EqualTo(safe.yMax).Within(1f), $"{screen}: the action bar sits on the bottom edge of the safe area");
+                Assert.That(shell.ActionBar.worldBound.yMin, Is.GreaterThanOrEqualTo(shell.WorldColumn.worldBound.yMax - Tolerance), $"{screen}: the action bar is below the world");
+            }
+            else
+            {
+                Assert.That(shell.TopStrip.worldBound.xMin, Is.EqualTo(safe.xMin).Within(1f), $"{screen}: the strip is the left column");
+                Assert.That(shell.ActionBar.worldBound.xMax, Is.EqualTo(safe.xMax).Within(1f), $"{screen}: the action bar is the right column");
+                Assert.That(shell.WorldColumn.worldBound.xMin, Is.GreaterThanOrEqualTo(shell.TopStrip.worldBound.xMax - Tolerance), $"{screen}: the world is right of the left column");
+                Assert.That(shell.WorldColumn.worldBound.xMax, Is.LessThanOrEqualTo(shell.ActionBar.worldBound.xMin + Tolerance), $"{screen}: the world is left of the right column");
             }
 
-            Assert.That(tabs.Select(tab => tab.Q<Label>().text), Is.EqualTo(new[] { "Factory", "Market", "Contracts", "Items", "Research", "Prestige" }));
-            Assert.That(shell.TabBar.worldBound.yMax, Is.EqualTo(rig.SafeRect().yMax).Within(1f), $"{screen}: the tab bar sits on the bottom edge of the safe area");
-            Assert.That(IsDisplayed(shell.PanelHost), Is.False, $"{screen}: no sheet is open until a tab or slot opens one");
+            Assert.That(shell.ZoomInButton.parent.parent, Is.SameAs(shell.WorldColumn), $"{screen}: the zoom column belongs to the world");
+            Assert.That(IsDisplayed(shell.PanelHost), Is.False, $"{screen}: no sheet is open until a hub card or slot opens one");
         }
 
         [UnityTest]
@@ -206,7 +215,7 @@ namespace IdleFactory.Tests.PlayMode
             {
                 Assert.That(host.height, Is.LessThanOrEqualTo(safe.height * 0.6f + Tolerance), $"{screen}: bottom sheet height {host.height} of {safe.height}");
                 Assert.That(host.width, Is.EqualTo(safe.width).Within(1f), $"{screen}: the bottom sheet spans the safe width");
-                Assert.That(host.yMax, Is.LessThanOrEqualTo(shell.TabBar.worldBound.yMin + Tolerance), $"{screen}: the sheet sits above the tab bar");
+                Assert.That(host.yMax, Is.LessThanOrEqualTo(shell.ActionBar.worldBound.yMin + Tolerance), $"{screen}: the sheet sits above the action bar");
             }
             else
             {
@@ -220,7 +229,7 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator SidePanelDensityPutsOverdriveInThePanelHeaderAndKeepsTheTabsInThePanel([ValueSource(nameof(SidePanelScreens))] ShellScreen screen)
+        public IEnumerator SidePanelDensityPutsOverdriveInThePanelHeaderAndTheHubEntryInTheStrip([ValueSource(nameof(SidePanelScreens))] ShellScreen screen)
         {
             yield return Open(screen);
             var shell = rig.Shell;
@@ -231,7 +240,8 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(IsDisplayed(shell.PanelHost), Is.True, $"{screen}: the side panel is always shown");
             Assert.That(shell.Root.Q<VisualElement>("panel-header-slot").Contains(shell.OverdriveButton), Is.True, $"{screen}: Overdrive is in the side-panel header");
             Assert.That(shell.TopStrip.Contains(shell.OverdriveButton), Is.False, $"{screen}: Overdrive is not in the top strip");
-            Assert.That(shell.PanelHost.Contains(shell.TabBar), Is.True, $"{screen}: the tabs live in the side panel");
+            Assert.That(shell.TopStrip.Contains(shell.HubEntryButton), Is.True, $"{screen}: the hub entry sits in the strip");
+            Assert.That(IsDisplayed(shell.ActionBar), Is.False, $"{screen}: the phone action bar is not used");
             Assert.That(shell.PanelHost.worldBound.width, Is.EqualTo(360f).Within(1f));
             var safe = rig.SafeRect();
             Assert.That(shell.PanelHost.worldBound.yMin, Is.EqualTo(safe.yMin).Within(1f));
@@ -288,7 +298,7 @@ namespace IdleFactory.Tests.PlayMode
             }
 
             // The strip and tab controls stay visible when focused.
-            foreach (var control in new VisualElement[] { shell.CashButton, shell.StoreButton, shell.TabButton(ShellTab.Prestige), shell.ZoomInButton })
+            foreach (var control in new VisualElement[] { shell.CashButton, shell.StoreButton, shell.HubEntryButton, shell.ZoomInButton }.Where(item => IsDisplayed(item)))
             {
                 control.Focus();
                 yield return ShellRig.Settle();
@@ -305,7 +315,7 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen);
             var shell = rig.Shell;
-            var invoker = shell.TabButton(ShellTab.Prestige);
+            var invoker = shell.CashButton;
             shell.SelectTab(ShellTab.Prestige);
             Assert.That(shell.RequestConfirmation(new ConfirmationRequest
             {
@@ -635,7 +645,7 @@ namespace IdleFactory.Tests.PlayMode
             var shell = rig.Shell;
             ApplyWorstCaseStrip(shell);
             yield return ShellRig.Settle();
-            foreach (var host in new VisualElement[] { shell.CashButton, shell.RpButton, shell.StoreButton })
+            foreach (var host in new VisualElement[] { shell.CashButton, shell.StoreButton })
             {
                 var context = $"{screen} @{percent}% {host.name}";
                 var hint = shell.PinHintOf(host);
@@ -670,7 +680,7 @@ namespace IdleFactory.Tests.PlayMode
                 Message = "You get half of the Cash back.",
                 ConfirmLabel = "Remove the machine",
                 Destructive = true,
-                Invoker = shell.TabButton(ShellTab.Prestige),
+                Invoker = shell.CashButton,
             };
             Assert.That(shell.RequestConfirmation(request), Is.True);
             yield return ShellRig.Settle();
@@ -751,12 +761,11 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Open(screen, percent);
             var shell = rig.Shell;
-            shell.SetRp(10, true);
             yield return ShellRig.Settle();
             var panel = shell.Root.panel.visualTree.worldBound;
             var edgeControls = new List<VisualElement>
             {
-                shell.CashButton, shell.TabButton(ShellTab.Factory), shell.TabButton(ShellTab.Prestige), shell.ZoomInButton, shell.OverdriveButton,
+                shell.CashButton, shell.HubEntryButton, shell.SettingsButton, shell.ZoomInButton, shell.OverdriveButton,
             };
             foreach (var control in edgeControls)
             {

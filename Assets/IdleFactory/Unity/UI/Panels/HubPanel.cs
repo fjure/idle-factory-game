@@ -167,7 +167,7 @@ namespace IdleFactory.Unity.UI.Panels
     /// Feeds <see cref="HubAttention"/> for Research (a node can be bought, or unspent IP waits in Industry), Prestige (eligible) and Overdrive
     /// (ready). It reads existing state only (no new rule, A-6) and only when the run changed, at most every <see cref="ReadSeconds"/>.
     /// Contracts has its own feed (<see cref="ContractsShellFeed"/>). T536 (T535 Architect F3): the per-frame path is allocation-free (a revision
-    /// compare), and so are the Research and Overdrive reads (they walk the catalog and the state directly instead of building snapshots). Only the
+    /// compare), and so are the Research and Overdrive reads (they call the shared predicates next to the snapshot builders, <c>RunSnapshots.AnyResearchAffordable</c> and <c>RunSnapshots.OverdriveReady</c>, which the snapshot builders use too). Only the
     /// Prestige preview allocates, because the domain call returns a new object; it is re-read when the structure changed or the timeline second
     /// moved, so at most once per second.
     /// </summary>
@@ -220,7 +220,7 @@ namespace IdleFactory.Unity.UI.Panels
 
         private void Read()
         {
-            var research = AnyResearchAffordable();
+            var research = RunSnapshots.AnyResearchAffordable(session);
 
             // Unspent Influence Points wait in Industry, which the Research view hosts (R-01): they keep the Research flag (the former tab dot).
             if (!research && session.Permanent != null && session.Permanent.Ip > 0)
@@ -239,45 +239,7 @@ namespace IdleFactory.Unity.UI.Panels
             }
 
             attention.Set(HubCard.Prestige, prestigeEligible);
-            attention.Set(HubCard.Overdrive, OverdriveReady());
-        }
-
-        /// <summary>The rule of <c>RunSnapshots.Research</c> (CanPurchase) without building the snapshot: not at max, prerequisites met, RP covers the cost.</summary>
-        private bool AnyResearchAffordable()
-        {
-            var state = session.State;
-            var content = session.Catalog.ResearchInContentOrder;
-            for (var i = 0; i < content.Count; i++)
-            {
-                var def = content[i];
-                var level = (int)state.ResearchLevel(def.Id);
-                if (level >= def.MaxLevel)
-                {
-                    continue;
-                }
-
-                var met = true;
-                for (var p = 0; p < def.Prerequisites.Count && met; p++)
-                {
-                    var pre = def.Prerequisites[p];
-                    met = state.ResearchLevel(pre.ResearchId) >= pre.Level;
-                }
-
-                if (met && state.Rp >= def.RpCostTable[level])
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>The rule of <c>RunSnapshots.Overdrive</c> (Ready) without building the snapshot: unlocked, neither active nor cooling down.</summary>
-        private bool OverdriveReady()
-        {
-            var state = session.State;
-            var now = session.TimelineUtcMs;
-            return state.IsUnlocked(IdleFactory.Run.Domain.RunState.OverdriveUnlockId) && !state.Overdrive.IsActive(now) && !state.Overdrive.IsCoolingDown(now);
+            attention.Set(HubCard.Overdrive, RunSnapshots.OverdriveReady(session));
         }
     }
 
@@ -614,7 +576,10 @@ namespace IdleFactory.Unity.UI.Panels
                             default:
                                 // T536 (T535 Product Owner note): a locked card states the condition, in the shared unlock wording.
                                 status = "Locked";
-                                reason = "Overdrive unlocks after " + UnlockCopy.After(session.Catalog, overdrive.Unlock) + ".";
+                                // T537 (T536 copy): content without an unlock condition says so instead of "unlocks after it unlocks".
+                                reason = overdrive.Unlock == null
+                                    ? "Overdrive is not unlocked yet"
+                                    : "Overdrive unlocks after " + UnlockCopy.After(session.Catalog, overdrive.Unlock) + ".";
                                 break;
                         }
 

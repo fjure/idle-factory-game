@@ -12,12 +12,20 @@ namespace IdleFactory.Unity.UI.Panels
         /// <summary>The fixed title of the empty template (the same words as the hub's empty state).</summary>
         public const string TitleText = "Nothing here yet";
 
-        /// <summary>Gives <paramref name="box"/> the empty-state card classes and drops any panel-specific card look.</summary>
-        public static void Style(VisualElement box)
+        /// <summary>
+        /// Gives <paramref name="box"/> the empty-state card classes. The caller names its own panel-specific card classes in <paramref name="dropClasses"/>
+        /// (T537, T536 Architect: the template knows no panel).
+        /// </summary>
+        public static void Style(VisualElement box, params string[] dropClasses)
         {
-            box.RemoveFromClassList("contracts-card");
-            box.RemoveFromClassList("contracts-card--plain");
-            box.RemoveFromClassList("items-card");
+            if (dropClasses != null)
+            {
+                for (var i = 0; i < dropClasses.Length; i++)
+                {
+                    box.RemoveFromClassList(dropClasses[i]);
+                }
+            }
+
             box.AddToClassList("scaffold__state");
             box.AddToClassList("scaffold__state--shown");
             box.AddToClassList("scaffold__state--empty");
@@ -30,9 +38,10 @@ namespace IdleFactory.Unity.UI.Panels
             return mark;
         }
 
-        public static Label Title(string name)
+        /// <summary>The title label of the template: <see cref="TitleText"/>, or the caller's own words (a locked state names the lock, T537).</summary>
+        public static Label Title(string name, string text = null)
         {
-            var title = new Label(TitleText) { name = name, pickingMode = PickingMode.Ignore };
+            var title = new Label(text ?? TitleText) { name = name, pickingMode = PickingMode.Ignore };
             title.AddToClassList("scaffold__state-title");
             return title;
         }

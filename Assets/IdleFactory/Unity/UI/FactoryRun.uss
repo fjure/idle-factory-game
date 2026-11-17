@@ -203,9 +203,10 @@
     -unity-background-image-tint-color: var(--on-accent);
 }
 
-/* Hub entry (T535, FR-020, OD-9b H-02): the icon and the visible word "Office" side by side, never the icon alone, 48 dp high, with the
+/* Hub entry (FR-020, OD-9b H-02; T537 final placement): the icon and the visible word "Office" side by side, never the icon alone, 48 dp high, with the
    system-attention dot as an overlay in the corner (a bullet glyph, so the dot is a shape and not colour alone). The word is one short word and
-   never truncates at 200 % text; the entry keeps its width and the strip wraps around it. */
+   never truncates at 200 % text. It lives in the action bar of a phone (bottom row in portrait, right column in landscape) and in the strip before the
+   gear on the side-panel classes; none of these places is inside the world column, so the entry never covers the framed world. */
 .run-control.run-hub-entry {
     flex-direction: row;
     align-items: center;
@@ -213,31 +214,9 @@
     flex-shrink: 0;
     min-width: 48px;
     min-height: 48px;
-    padding: 0 6px;
+    padding: 0 8px;
     margin: 0 2px;
     background-color: var(--surface-raised);
-}
-
-/* Phone portrait: the entry has a row of its own under the strip, at the right edge. */
-.run-control.run-hub-entry.run-hub-entry--row {
-    align-self: flex-end;
-    flex-shrink: 0;
-    margin: 2px 4px 0 0;
-}
-
-/* Phone landscape from 120 percent text: the strip wraps, so the entry floats at the bottom of the world column beside the zoom column (no flow, so no
-   line is added to the strip and the machine card keeps its height). */
-.run-control.run-hub-entry.run-hub-entry--overlay {
-    position: absolute;
-    left: 104px;
-    bottom: 0;
-    margin: 0;
-}
-
-/* While a sheet is open on a phone in portrait the sheet has its own Close and Back, and the world above it is short: the own-row entry steps aside
-   (it returns, with focus, when the sheet closes). */
-.run-shell--sheet-open .run-control.run-hub-entry.run-hub-entry--row {
-    display: none;
 }
 
 .run-hub-entry__label {
@@ -578,85 +557,6 @@
     color: var(--text-primary);
 }
 
-/* ---------- Tab bar (six tabs, 44 pt or more each) ---------- */
-
-.run-tabs {
-    flex-direction: row;
-    flex-shrink: 0;
-    min-height: 56px;
-    background-color: var(--surface);
-    border-top-width: 1px;
-    border-top-color: var(--border);
-}
-
-.run-tab {
-    flex-grow: 1;
-    flex-basis: 0;
-    flex-shrink: 1;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    min-height: 56px;
-    padding: 2px 0;
-    background-color: var(--surface);
-    border-left-width: 0;
-    border-right-width: 0;
-    border-bottom-width: 0;
-    border-top-width: 3px;
-    border-top-color: var(--surface);
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-}
-
-.run-tab:focus,
-.run-tab.run-control--focused {
-    border-left-width: 2px;
-    border-right-width: 2px;
-    border-bottom-width: 2px;
-    border-top-width: 3px;
-}
-
-.run-tab__label {
-    font-size: var(--run-fs-caption);
-    white-space: nowrap;
-    color: var(--text-secondary);
-    -unity-text-align: middle-center;
-    margin: 0;
-    padding: 0;
-}
-
-/* Contracts tab badge (T330): "Contracts (n)" and "Contracts !" are the label's own text; the compact bullet is an overlay in the tab corner. Neither changes the tab size. */
-.run-tab__badge {
-    display: none;
-    position: absolute;
-    top: 0;
-    right: 6px;
-    font-size: var(--run-fs-caption);
-    white-space: nowrap;
-    -unity-font-style: bold;
-    color: var(--accent);
-    margin: 0;
-    padding: 0;
-}
-
-/* The selected tab is marked by an accent bar and a bold label, not by color alone. */
-.run-tab--selected {
-    background-color: var(--surface-raised);
-    border-top-color: var(--accent);
-}
-
-.run-tab--selected .run-tab__label {
-    -unity-font-style: bold;
-    color: var(--text-primary);
-}
-
-.run-tab--selected .run-icon {
-    -unity-background-image-tint-color: var(--accent);
-}
-
 /* ---------- Panel host: bottom sheet on phones, side panel on tablet and desktop ---------- */
 
 .run-panel {
@@ -704,10 +604,6 @@
     justify-content: center;
     flex-shrink: 0;
     margin-left: 4px;
-}
-
-.run-panel__tabs-slot {
-    flex-shrink: 0;
 }
 
 .run-panel__content {
@@ -813,7 +709,7 @@
 
 /* ---------- Screen classes (the existing FactoryHudLayout classes) ---------- */
 
-/* Phone portrait: a bottom sheet of at most 60 percent of the safe-area height above the bottom tab bar. */
+/* Phone portrait: a bottom sheet of at most 60 percent of the safe-area height above the bottom action row. */
 .factory-hud--compact-portrait .run-main {
     flex-direction: column;
 }
@@ -844,7 +740,7 @@
     display: none;
 }
 
-/* Tablet and desktop: a side panel that is always shown, with the Overdrive control in its header and the tabs under it. */
+/* Tablet and desktop: a side panel that is always shown, with the Overdrive control in its header (the hub entry sits in the strip). */
 .factory-hud--tablet-portrait .run-main,
 .factory-hud--tablet-landscape .run-main,
 .factory-hud--desktop .run-main {
@@ -881,14 +777,6 @@
 .factory-hud--tablet-landscape .run-panel__close,
 .factory-hud--desktop .run-panel__close {
     display: none;
-}
-
-.factory-hud--tablet-portrait .run-panel .run-tabs,
-.factory-hud--tablet-landscape .run-panel .run-tabs,
-.factory-hud--desktop .run-panel .run-tabs {
-    border-top-width: 0;
-    border-bottom-width: 1px;
-    border-bottom-color: var(--border);
 }
 
 .factory-hud--tablet-portrait .run-panel .run-scroll,
@@ -1082,42 +970,6 @@
     margin-bottom: 2px;
 }
 
-.run-text-scale--120 .run-tabs,
-.run-text-scale--130 .run-tabs,
-.run-text-scale--140 .run-tabs,
-.run-text-scale--150 .run-tabs,
-.run-text-scale--160 .run-tabs,
-.run-text-scale--170 .run-tabs,
-.run-text-scale--180 .run-tabs,
-.run-text-scale--190 .run-tabs,
-.run-text-scale--200 .run-tabs {
-    flex-wrap: wrap;
-    align-content: flex-start;
-    min-height: 0;
-}
-
-.run-text-scale--120 .run-tab,
-.run-text-scale--130 .run-tab,
-.run-text-scale--140 .run-tab,
-.run-text-scale--150 .run-tab,
-.run-text-scale--160 .run-tab,
-.run-text-scale--170 .run-tab,
-.run-text-scale--180 .run-tab,
-.run-text-scale--190 .run-tab,
-.run-text-scale--200 .run-tab {
-    flex-basis: 32%;
-    flex-grow: 1;
-}
-
-.run-text-scale--120 .run-tab__label,
-.run-text-scale--130 .run-tab__label,
-.run-text-scale--140 .run-tab__label,
-.run-text-scale--150 .run-tab__label,
-.run-text-scale--160 .run-tab__label,
-.run-text-scale--170 .run-tab__label,
-.run-text-scale--180 .run-tab__label,
-.run-text-scale--190 .run-tab__label,
-.run-text-scale--200 .run-tab__label,
 .run-text-scale--120 .run-panel__title,
 .run-text-scale--130 .run-panel__title,
 .run-text-scale--140 .run-panel__title,
@@ -1240,32 +1092,6 @@
 .run-text-scale--190 .run-zoom__button,
 .run-text-scale--200 .run-zoom__button {
     margin: 2px 2px 0 0;
-}
-
-/* Phone landscape: the tab icon sits beside its label so the two tab rows stay low. */
-.run-text-scale--120.factory-hud--compact-landscape .run-tab,
-.run-text-scale--130.factory-hud--compact-landscape .run-tab,
-.run-text-scale--140.factory-hud--compact-landscape .run-tab,
-.run-text-scale--150.factory-hud--compact-landscape .run-tab,
-.run-text-scale--160.factory-hud--compact-landscape .run-tab,
-.run-text-scale--170.factory-hud--compact-landscape .run-tab,
-.run-text-scale--180.factory-hud--compact-landscape .run-tab,
-.run-text-scale--190.factory-hud--compact-landscape .run-tab,
-.run-text-scale--200.factory-hud--compact-landscape .run-tab {
-    flex-direction: row;
-    min-height: 44px;
-}
-
-.run-text-scale--120.factory-hud--compact-landscape .run-tab__label,
-.run-text-scale--130.factory-hud--compact-landscape .run-tab__label,
-.run-text-scale--140.factory-hud--compact-landscape .run-tab__label,
-.run-text-scale--150.factory-hud--compact-landscape .run-tab__label,
-.run-text-scale--160.factory-hud--compact-landscape .run-tab__label,
-.run-text-scale--170.factory-hud--compact-landscape .run-tab__label,
-.run-text-scale--180.factory-hud--compact-landscape .run-tab__label,
-.run-text-scale--190.factory-hud--compact-landscape .run-tab__label,
-.run-text-scale--200.factory-hud--compact-landscape .run-tab__label {
-    margin-left: 4px;
 }
 
 /* Phone landscape at 150 percent and more: the side sheet narrows to 40 percent (the contract allows at most 50) so the
@@ -1477,4 +1303,171 @@
 
 .run-control.run-vein.run-control--soft-disabled .run-vein__label {
     color: var(--text-muted);
+}
+
+/* ---------- Persistent layer (T537, FR-007 to FR-010, contracts/ui-surfaces-f006.md section 1) ----------
+   Phone portrait: the top strip (Cash, Store, production attention, gear) and a bottom row (hub entry and Overdrive); the ore vein overlay sits in the
+   world right above the bottom row. Phone landscape: no top bar. The strip becomes the left column and the action bar the right column of a row, and
+   while a sheet or the machine card is open the columns step aside (the sheet or card takes the screen, and has its own Close). Tablet and desktop keep
+   the strip above the world, the hub entry in it and Overdrive in the side panel header. The six-tab bar and the RP caption are gone. */
+
+.run-actions {
+    flex-direction: row;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+    padding: 2px 4px;
+    background-color: var(--surface);
+    border-top-width: 1px;
+    border-top-color: var(--border);
+}
+
+.run-actions .run-hub-entry {
+    flex-grow: 0;
+    justify-content: flex-start;
+    margin: 0 4px 0 0;
+}
+
+.run-actions .run-overdrive {
+    flex-grow: 0;
+}
+
+/* The production attention indicator (FR-026, R09): the resource icon, a count and "+N". A thick left bar, the count and the icon carry it, never colour alone. */
+.run-attention {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 6px 0 4px;
+    margin: 0 2px;
+    background-color: var(--surface-raised);
+    border-left-width: 5px;
+    border-left-color: var(--warning);
+}
+
+.run-attention__count {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    color: var(--text-strong);
+    margin: 0 0 0 4px;
+    padding: 0;
+}
+
+.run-attention__more {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: var(--run-fs-caption);
+    color: var(--text-secondary);
+    margin: 0 0 0 3px;
+    padding: 0;
+}
+
+/* The ready state of Overdrive is distinct (T537): the filled accent border and the "Ready" caption in bold, besides the icon. */
+.run-overdrive--ready {
+    border-left-color: var(--accent);
+    border-right-color: var(--accent);
+    border-top-color: var(--accent);
+    border-bottom-color: var(--accent);
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+}
+
+.run-overdrive--ready .run-caption {
+    -unity-font-style: bold;
+    color: var(--text-strong);
+}
+
+/* The Overdrive control stacks its name over its state word in the action bar (bottom row or right column), so it stays compact at 200 % text. */
+.run-shell.factory-hud--compact-portrait .run-actions .run-overdrive__body {
+    flex-direction: column;
+    align-items: center;
+}
+
+/* The action bar belongs to the phone classes only; on tablet and desktop the entry and Overdrive sit in the strip and the side panel header. */
+.factory-hud--tablet-portrait .run-actions,
+.factory-hud--tablet-landscape .run-actions,
+.factory-hud--desktop .run-actions {
+    display: none;
+}
+
+/* Phone landscape: left column (strip) and right column (action bar). Declared last so they win over the text-scale rules of the same specificity. */
+.run-shell.factory-hud--compact-landscape .run-body {
+    flex-direction: row;
+}
+
+.run-shell.factory-hud--compact-landscape .run-strip {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-shrink: 0;
+    min-height: 0;
+    padding: 2px;
+    border-bottom-width: 0;
+    border-right-width: 1px;
+    border-right-color: var(--border);
+}
+
+.run-shell.factory-hud--compact-landscape .run-actions {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: 0;
+    padding: 2px;
+    border-top-width: 0;
+    border-left-width: 1px;
+    border-left-color: var(--border);
+}
+
+.run-shell.factory-hud--compact-landscape .run-strip .run-stat,
+.run-shell.factory-hud--compact-landscape .run-strip .run-attention {
+    flex-grow: 0;
+    flex-shrink: 0;
+    margin: 0 0 2px 0;
+}
+
+.run-shell.factory-hud--compact-landscape .run-strip .run-stat__body,
+.run-shell.factory-hud--compact-landscape .run-strip .run-stat__body--store {
+    flex-direction: column;
+    align-items: stretch;
+    flex-grow: 1;
+}
+
+.run-shell.factory-hud--compact-landscape .run-strip .run-gear,
+.run-shell.factory-hud--compact-landscape .run-actions .run-gear {
+    align-self: flex-end;
+    margin: 2px 0 0 0;
+}
+
+.run-shell.factory-hud--compact-landscape .run-actions .run-hub-entry {
+    flex-grow: 0;
+    justify-content: flex-start;
+    margin: 0 0 2px 0;
+}
+
+.run-shell.factory-hud--compact-landscape .run-actions .run-overdrive {
+    flex-direction: column;
+    flex-grow: 0;
+    padding: 2px 4px;
+    margin: 0 0 2px 0;
+}
+
+.run-shell.factory-hud--compact-landscape .run-actions .run-overdrive__body {
+    flex-direction: column;
+    align-items: center;
+}
+
+/* A sheet or the machine card takes the screen on a phone in landscape: the columns step aside while it is open (the sheet has its own Close and Back). */
+.run-shell.factory-hud--compact-landscape.run-shell--sheet-open .run-strip,
+.run-shell.factory-hud--compact-landscape.run-shell--sheet-open .run-actions,
+.run-shell.factory-hud--compact-landscape.run-shell--card-open .run-strip,
+.run-shell.factory-hud--compact-landscape.run-shell--card-open .run-actions {
+    display: none;
 }
