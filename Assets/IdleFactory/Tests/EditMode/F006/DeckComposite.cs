@@ -140,7 +140,7 @@ namespace IdleFactory.Tests.EditMode.F006
         private readonly Color32[] colour;
         private readonly DeckLayer[] top;
 
-        public DeckComposite(FactoryWorldLayout layout, DeckPlan plan, string depotKey, string depositKey, bool withLinks)
+        public DeckComposite(FactoryWorldLayout layout, DeckPlan plan, string depotKey, string depositKey, bool withLinks, IReadOnlyList<SlotCondition> conditions = null)
         {
             Layout = layout;
             Plan = plan;
@@ -165,9 +165,12 @@ namespace IdleFactory.Tests.EditMode.F006
             top = new DeckLayer[Width * Height];
 
             var ground = DeckTestSupport.PixelsOfKey("F006-GROUND-BASE");
+            // T540: a lit ring cell shows the deck tile in place of the dark base tile (the stage-driven deck-lit area).
+            var lit = new HashSet<Vector2Int>(plan.LitRingCells);
+            var litTile = DeckTestSupport.PixelsOfKey("F006-GROUND-DECK");
             foreach (var cell in plan.BaseCells)
             {
-                Draw(DeckLayer.Base, ground, DeckPlanner.CellRect(cell).X, DeckPlanner.CellRect(cell).Y);
+                Draw(lit.Contains(cell) ? DeckLayer.Deck : DeckLayer.Base, lit.Contains(cell) ? litTile : ground, DeckPlanner.CellRect(cell).X, DeckPlanner.CellRect(cell).Y);
             }
 
             for (var i = 0; i < plan.LocationCells.Count; i++)
@@ -201,6 +204,11 @@ namespace IdleFactory.Tests.EditMode.F006
             var plate = ShippedArt.F004("F003-SLOT-OCCUPIED-BASE");
             for (var i = 0; i < layout.LocationCount; i++)
             {
+                if (conditions != null && (i >= conditions.Count || conditions[i] != SlotCondition.Occupied))
+                {
+                    continue;
+                }
+
                 var pivot = Pivot(i);
                 Draw(DeckLayer.Plate, plate, pivot.x - 40, pivot.y - 15);
                 Draw(DeckLayer.Machine, ShippedArt.F004("F003-MACHINE-" + Machines[i % 4]), pivot.x - 40, pivot.y - 15);

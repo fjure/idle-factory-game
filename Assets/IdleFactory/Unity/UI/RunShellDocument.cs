@@ -64,6 +64,7 @@ namespace IdleFactory.Unity.UI
         private Label detailLine;
         private Label noticeLabel;
         private VisualElement noticeBar;
+        private MilestoneBanner milestoneBanner;
         private VisualElement noticeIcon;
         private VisualElement worldHint;
         private IVisualElementScheduledItem noticeTimer;
@@ -320,6 +321,64 @@ namespace IdleFactory.Unity.UI
         public VisualElement PinHintOf(VisualElement host) => host?.Q<VisualElement>(host.name + "-pin-hint");
 
         public VisualElement NoticeBar => noticeBar;
+
+        /// <summary>The milestone banner (T540), or null before the shell is built.</summary>
+        public MilestoneBanner MilestoneBanner => milestoneBanner;
+
+        /// <summary>Shows a milestone banner with the given lines (T540). The banner is non-blocking, at most 2.5 s, and static under reduced motion.</summary>
+        public void ShowMilestoneBanner(string main, string extra, bool reducedMotion)
+        {
+            if (!EnsureReady() || milestoneBanner == null)
+            {
+                return;
+            }
+
+            milestoneBanner.Show(main, extra, reducedMotion);
+            PlaceMilestoneBanner();
+        }
+
+        // The banner is an overlay (position absolute): it takes no space in the world column and is NOT part of TryGetUnobstructedScreenRect, so showing or hiding it never
+        // reframes the camera (T540 fix, UI/UX U2, Architect 3). It sits right below the strip (when the strip is inside the world column: tablet, desktop, the landscape status
+        // band) and below the detail line, notice and hint bars, so it never covers Cash, Overdrive or the status band.
+        private void PlaceMilestoneBanner()
+        {
+            if (milestoneBanner == null || worldColumn == null)
+            {
+                return;
+            }
+
+            var column = worldColumn.worldBound;
+            var top = 0f;
+            if (topStrip != null && topStrip.parent == worldColumn && !float.IsNaN(topStrip.worldBound.yMax))
+            {
+                top = Mathf.Max(top, topStrip.worldBound.yMax - column.yMin);
+            }
+
+            foreach (var bar in new[] { detailLine, noticeBar, worldHint })
+            {
+                if (bar != null && bar.resolvedStyle.display != DisplayStyle.None && bar.worldBound.height > 0f && !float.IsNaN(bar.worldBound.yMax))
+                {
+                    top = Mathf.Max(top, bar.worldBound.yMax - column.yMin);
+                }
+            }
+
+            milestoneBanner.Root.style.top = top + 2f;
+        }
+
+        /// <summary>Advances the banner lifetime (called every frame by the presenter).</summary>
+        public void TickMilestoneBanner(float seconds)
+        {
+            if (milestoneBanner == null)
+            {
+                return;
+            }
+
+            milestoneBanner.Advance(seconds);
+            if (milestoneBanner.IsShown)
+            {
+                PlaceMilestoneBanner();
+            }
+        }
         public VisualElement NoticeIconElement => noticeIcon;
         public VisualElement WorldHint => worldHint;
         public VisualElement DetailBar => detailLine;
@@ -440,6 +499,7 @@ namespace IdleFactory.Unity.UI
             // T536 (FR-023, SC-009): the confirmation dialog and the notice line are scaffold surfaces like every hosted panel.
             MarkScaffoldScope(dialogCard);
             MarkScaffoldScope(noticeBar);
+            milestoneBanner = MilestoneBanner.Attach(worldColumn, noticeBar);
             oreVeinWanted = false;
             hasLastLayoutSize = false;
             oreVein.Root.style.display = DisplayStyle.None;
@@ -1344,6 +1404,8 @@ namespace IdleFactory.Unity.UI
         }
 
         // The back frames the navigation stack pops (R11): the policy lives in ShellNavigationStack, the actions stay here.
+        bool IShellBackFrames.HasBanner => milestoneBanner != null && milestoneBanner.IsShown;
+        void IShellBackFrames.PopBanner() => milestoneBanner.Dismiss();
         bool IShellBackFrames.HasDialog => dialogRequest != null;
         bool IShellBackFrames.HasPinnedValue => pinnedHost != null;
         bool IShellBackFrames.IsSettingsOpen => settingsOpen;
@@ -1632,8 +1694,12 @@ namespace IdleFactory.Unity.UI
             cardPanel = null;
             machineCardPanel = registeredMachine;
             buildCardPanel = registeredBuild;
-            ActivateCard(machineCardPanel ?? buildCardPanel);
+            ActivateCard(PickCardPanel(buildCardOpen, machineCardPanel, buildCardPanel));
         }
+
+        /// <summary>The card panel to mount after a rebind (T540, C-43): the build card while a build is open, otherwise the machine card; the other one when only it exists.</summary>
+        public static IShellPanel PickCardPanel(bool buildCardOpen, IShellPanel machine, IShellPanel build) =>
+            buildCardOpen ? build ?? machine : machine ?? build;
 
         // Mounts the given card (the machine card or the build card) in place of the other: only one card root is in the tree at a time, so the two can never
         // both show and the dock, the band cap and the geometry callback always belong to the open one (T539).

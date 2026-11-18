@@ -643,6 +643,9 @@ namespace IdleFactory.Unity.Bootstrap
                 runShell.LocationRectProvider = LocationScreenRect;
                 shellPresenter = new RunShellPresenter(runSession, runCommands, runShell, slotGrid, PresentationKeyOf);
                 shellPresenter.MarkerView = markerView;
+                // T540: the banner is static under reduced motion; the world adds the deck reveal and the foundation highlight to each milestone.
+                shellPresenter.ReducedMotionProbe = () => animationClock.ReducedMotion;
+                shellPresenter.MilestoneRaised += HandleMilestoneRaised;
                 ComposeRunPanels();
             }
 
@@ -662,8 +665,17 @@ namespace IdleFactory.Unity.Bootstrap
         private void HandleWorldSessionReplaced()
         {
             runShell?.ResetCardModels(false);
+            // T540: a prestige keeps the watcher baseline (its milestone is raised from the new run); a restore or a new run re-baselines.
+            shellPresenter?.RebaseMilestonesAfterSessionReplace();
             shellPresenter?.Invalidate();
         }
+
+        /// <summary>
+        /// Whether a lifecycle result delivers a loaded or restored state that must not be read as progress (T540): a cold start, and a return that carries no offline summary
+        /// (a restore or a reload). A return with an offline summary reconciles its milestones separately, a rotation and a departure change nothing.
+        /// </summary>
+        public static bool ShouldRebaseMilestones(LifecycleReturnKind kind, bool hasOfflineSummary) =>
+            kind == LifecycleReturnKind.ColdStart || (kind == LifecycleReturnKind.Return && !hasOfflineSummary);
 
         /// <summary>T529 hands the world effect pool here; until then the card answers with the static highlight (FR-034).</summary>
         public void UseMachineEffects(IMachineEffects effects) => MachineResponses.Effects = effects;
@@ -1174,6 +1186,18 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void HandleRunLifecycleResultChanged(RunCommandResult<RunPersistenceOutcome> result, LifecycleReturnKind kind)
         {
+            // T540 (R14): a milestone that arose while the player was away is listed in the offline summary and never raises a banner.
+            if (result.IsSuccess && kind == LifecycleReturnKind.Return && result.Value != null && result.Value.OfflineSummary != null && shellPresenter != null &&
+                offlinePanel != null)
+            {
+                offlinePanel.SetOfflineMilestones(shellPresenter.ReconcileOfflineMilestones(), shellPresenter.MilestoneText);
+            }
+
+            if (result.IsSuccess && ShouldRebaseMilestones(kind, result.Value != null && result.Value.OfflineSummary != null))
+            {
+                shellPresenter?.RebaseMilestones();
+            }
+
             // T118: a genuine return opens the offline summary, a return that could not be completed opens the blocked explanation
             // with Retry. A rotation and a departure open nothing (the panel decides by kind, FR-036).
             PresentOfflineReturn(result, kind);
@@ -1378,9 +1402,42 @@ namespace IdleFactory.Unity.Bootstrap
                     // T529: one refresh of the world model per frame (P2-F10), the pops of the new completions, and the 8 renderers.
                     worldEffects.Update(slotGrid.Layout, animationClock.Milliseconds, animationClock.ReducedMotion);
                     effectView.Present();
+                    PresentDevelopment();
                     PresentDepotAndDeposit();
                 }
             }
+        }
+
+        // T540: the development stage (recomputed by the presenter only when the factory snapshot is rebuilt) drives the deck dressing, the depot variant and the
+        // deposit dressing. The setters return at once when nothing changed, so this allocates nothing per frame.
+        private void PresentDevelopment()
+        {
+            if (shellPresenter == null)
+            {
+                return;
+            }
+
+            var development = shellPresenter.Development;
+            deckView?.SetDevelopment(development);
+            depotLinkView?.SetStage(development.Stage);
+            depositView?.SetStage(development.Stage);
+            deckView?.TickFeedback(animationClock.Milliseconds);
+        }
+
+        private void HandleMilestoneRaised(PendingMilestone milestone)
+        {
+            if (deckView == null)
+            {
+                return;
+            }
+
+            if (milestone.Kind == MilestoneKind.PrestigeCompleted)
+            {
+                deckView.ClearFeedback();
+                return;
+            }
+
+            deckView.ShowMilestone(milestone.FirstNewLocation, milestone.NewlyUnlockedCount, milestone.StageRaised, animationClock.Milliseconds, animationClock.ReducedMotion);
         }
 
         // T557: the presenter refreshed the attention model in UpdateRunShell (revision-gated and throttled); the view only draws it, once per frame,

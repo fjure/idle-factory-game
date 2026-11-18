@@ -431,7 +431,7 @@ namespace IdleFactory.Unity.UI
 
         private void RenderWorld(MachineTypeSnapshot selectedType, bool slotFree)
         {
-            var preview = previewSource?.Invoke();
+            var preview = LivePreview();
             if (preview == null)
             {
                 return;
@@ -464,8 +464,18 @@ namespace IdleFactory.Unity.UI
             shownAvailable.Clear();
             shownPreviewSlot = -1;
             shownPreviewKey = null;
-            previewSource?.Invoke()?.ClearBuildPreview();
+            LivePreview()?.ClearBuildPreview();
         }
+
+        /// <summary>
+        /// The world preview, or null when there is none or its view was destroyed (T540, C-42): the source returns the slot grid as an interface, and a destroyed
+        /// Unity object is not null through an interface, so it is checked as a Unity object.
+        /// </summary>
+        private IBuildPreview LivePreview() => Alive(previewSource?.Invoke());
+
+        /// <summary>The preview itself, or null when it is null or a destroyed Unity object (a destroyed view is not null through an interface).</summary>
+        public static IBuildPreview Alive(IBuildPreview preview) =>
+            preview is UnityEngine.Object unityObject && unityObject == null ? null : preview;
 
         private static bool SameLocations(List<int> a, List<int> b)
         {

@@ -3,6 +3,13 @@ namespace IdleFactory.Unity.UI
     /// <summary>What <see cref="ShellNavigationStack"/> asks of the shell: which back frames exist and how to pop each one.</summary>
     internal interface IShellBackFrames
     {
+        /// <summary>T540: a milestone banner is showing. It is the lightest frame: Back dismisses it first and touches nothing else, so no focus moves. Defaults to false.</summary>
+        bool HasBanner => false;
+
+        void PopBanner()
+        {
+        }
+
         bool HasDialog { get; }
 
         bool HasPinnedValue { get; }
@@ -48,7 +55,12 @@ namespace IdleFactory.Unity.UI
             }
 
             bool consumed;
-            if (frames.HasDialog)
+            if (frames.HasBanner)
+            {
+                frames.PopBanner();
+                consumed = true;
+            }
+            else if (frames.HasDialog)
             {
                 frames.PopDialog();
                 consumed = true;
