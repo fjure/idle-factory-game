@@ -593,12 +593,16 @@ namespace IdleFactory.Unity.Presentation
                 }
 
                 var cellRect = CellRect(cell);
+                if (!FitsInCell(cellRect, size))
+                {
+                    // A kind wider or taller than the cell cannot sit inside it: skip it (no modulus by zero or a wrapped negative span).
+                    continue;
+                }
+
                 for (var attempt = 0; attempt < CandidateTries; attempt++)
                 {
-                    var spanX = cellRect.Width - size.Width;
-                    var spanY = cellRect.Height - size.Height;
-                    var x0 = cellRect.X + (int)(Hash(cell.x, cell.y, 0xB100u + (uint)attempt) % (uint)(spanX + 1));
-                    var y0 = cellRect.Y + (int)(Hash(cell.x, cell.y, 0xC200u + (uint)attempt) % (uint)(spanY + 1));
+                    var x0 = cellRect.X + PropOffset(cell, attempt, 0xB100u, cellRect.Width - size.Width);
+                    var y0 = cellRect.Y + PropOffset(cell, attempt, 0xC200u, cellRect.Height - size.Height);
                     var rect = new PixelRect(x0, y0, size.Width, size.Height);
                     if (Blocked(obstacles, rect) || Overlaps(taken, rect))
                     {
@@ -613,6 +617,13 @@ namespace IdleFactory.Unity.Presentation
 
             return placements;
         }
+
+        /// <summary>True when a sprite of <paramref name="size"/> fits inside <paramref name="cellRect"/> (a wider or taller kind is skipped).</summary>
+        public static bool FitsInCell(PixelRect cellRect, DeckSpriteSize size) => size.Width <= cellRect.Width && size.Height <= cellRect.Height;
+
+        /// <summary>The deterministic offset (0 to <paramref name="span"/> inclusive) of a candidate; 0 when the span is not positive (no modulus by 0).</summary>
+        public static int PropOffset(Vector2Int cell, int attempt, uint salt, int span) =>
+            span <= 0 ? 0 : (int)(Hash(cell.x, cell.y, salt + (uint)attempt) % (uint)(span + 1));
 
         private static bool Overlaps(List<PixelRect> taken, PixelRect rect)
         {

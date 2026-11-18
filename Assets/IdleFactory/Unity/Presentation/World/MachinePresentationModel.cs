@@ -103,9 +103,12 @@ namespace IdleFactory.Unity.Presentation
     /// the save format is unchanged and an observer changes no result (the baseline is derived data).
     /// </para>
     /// <para>
-    /// Caller contract: refresh only when <see cref="NeedsRefresh"/> says so (the snapshots are built on demand and allocate; the model's own
-    /// <see cref="Refresh"/> does not). Call <see cref="ResetBaseline"/> when the session is replaced (restore, prestige, new run), because the
-    /// revisions of a new session may repeat old values. Pass <c>suppressDeltas</c> on the refresh that follows an offline return.
+    /// Caller contract (P2-F10): call <see cref="Refresh"/> every frame. It is cheap and allocation-free: with unchanged revisions it only clears the
+    /// completion deltas of the last rebuild, so the buffer never shows the same delta in two frames. The snapshots it reads are built on demand and
+    /// allocate, so a caller builds a new one only when <see cref="NeedsRefresh"/> says so and passes the cached one otherwise. A caller that skips
+    /// <see cref="Refresh"/> in a frame sees the old deltas again: compare <see cref="Generation"/> with the last one consumed. Call
+    /// <see cref="ResetBaseline"/> when the session is replaced (restore, prestige, new run), because the revisions of a new session may repeat old
+    /// values. Pass <c>suppressDeltas</c> on the refresh that follows an offline return.
     /// </para>
     /// </summary>
     public sealed class MachinePresentationModel
@@ -131,11 +134,9 @@ namespace IdleFactory.Unity.Presentation
 
         private static readonly IReadOnlyDictionary<string, int> NoCaps = new Dictionary<string, int>(0);
 
-        private static readonly IReadOnlyDictionary<string, int> ShippedCaps = new Dictionary<string, int>(StringComparer.Ordinal)
-        {
-            // The Assembler loop already flashes 3 times per second at its measured rate (Art Bible 6.4), so it never runs above 8 fps (R12).
-            { "machine.assembler", NormalFps },
-        };
+        // The shipped table is authored data (P2-F14): the defaults of WorldCompositionSettings, which the authored asset overrides. Nothing is hardcoded here.
+        private static readonly IReadOnlyDictionary<string, int> ShippedCaps =
+            WorldCompositionSettings.BuildFamilyFpsCaps(WorldCompositionSettings.NewDefaultFamilyFpsCaps());
 
         private readonly IReadOnlyDictionary<string, int> familyFpsCaps;
         private MachinePresentation[] buffer = Array.Empty<MachinePresentation>();
@@ -147,18 +148,25 @@ namespace IdleFactory.Unity.Presentation
         private long structureRevision;
         private long quantityRevision;
         private int lastLocationCount = -1;
+        private long generation;
 
-        /// <param name="familyFpsCaps">Machine id to the highest loop rate of that family; null uses <see cref="ShippedFamilyFpsCaps"/>.</param>
+        /// <param name="familyFpsCaps">Machine id to the highest loop rate of that family (<see cref="WorldCompositionSettings.FamilyFpsCapMap"/>); null uses <see cref="ShippedFamilyFpsCaps"/>.</param>
         public MachinePresentationModel(IReadOnlyDictionary<string, int> familyFpsCaps = null)
         {
             this.familyFpsCaps = familyFpsCaps ?? ShippedCaps;
         }
 
-        /// <summary>The per-family loop-rate caps that ship today (the Assembler at 8 fps). The art pass T522 may extend the table.</summary>
+        /// <summary>The per-family loop-rate caps of the default settings (the Assembler at 8 fps). The world feed passes the authored table of the settings asset instead.</summary>
         public static IReadOnlyDictionary<string, int> ShippedFamilyFpsCaps => ShippedCaps;
 
         /// <summary>The model without any family cap, for tests.</summary>
         public static IReadOnlyDictionary<string, int> NoFamilyFpsCaps => NoCaps;
+
+        /// <summary>
+        /// Counts the refreshes that rebuilt the buffer. The deltas of one generation are fresh: a consumer remembers the generation it consumed and
+        /// ignores a buffer it has seen, so reading the buffer twice, or in several frames, never repeats an effect (P2-F10).
+        /// </summary>
+        public long Generation => generation;
 
         /// <summary>The number of locations of the last refresh; the buffer holds one <see cref="MachinePresentation"/> per location id.</summary>
         public int LocationCount => locationCount;
@@ -231,24 +239,27 @@ namespace IdleFactory.Unity.Presentation
         /// order (it carries the completed-cycles counter) and <paramref name="factory"/> the snapshot of the same revisions (next upgrade, cycle time).
         /// <paramref name="rates"/> is optional and only supplies <see cref="MachinePresentation.LimitingResourceId"/>.
         /// </summary>
+        /// <param name="force">Rebuilds although the revisions did not move: the caller saw a completed-cycles counter move (a cycle can complete without a quantity change).</param>
         /// <returns>
         /// False when nothing changed (the revisions and the location count are as before): the buffer then reports no delta. A skipped refresh never
         /// repeats a delta, so a view that reads the buffer every frame spawns an effect once.
         /// </returns>
         public bool Refresh(
-            FactoryWorldLayout layout, RunFactorySnapshot factory, MachineStateView[] views, int viewCount, RatesSnapshot rates = null, bool suppressDeltas = false)
+            FactoryWorldLayout layout, RunFactorySnapshot factory, MachineStateView[] views, int viewCount, RatesSnapshot rates = null, bool suppressDeltas = false,
+            bool force = false)
         {
             if (layout == null) throw new ArgumentNullException(nameof(layout));
             if (factory == null) throw new ArgumentNullException(nameof(factory));
             if (views == null) throw new ArgumentNullException(nameof(views));
             var count = layout.LocationCount;
-            if (!suppressDeltas && !NeedsRefresh(factory.StructureRevision, factory.QuantityRevision, count))
+            if (!suppressDeltas && !force && !NeedsRefresh(factory.StructureRevision, factory.QuantityRevision, count))
             {
                 ClearDeltas();
                 return false;
             }
 
             EnsureCapacity(count);
+            generation++;
             locationCount = count;
             lastLocationCount = count;
             hasRevision = true;
@@ -314,6 +325,53 @@ namespace IdleFactory.Unity.Presentation
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// The allocation-free completion path (T529 fix round): computes the delta of every occupied location from <c>views[m].CompletedCycles</c>
+        /// against the baseline, with the logic and the display cap of <see cref="Refresh"/>, and writes a delta above 0 into the buffer. It needs no
+        /// snapshot, so a caller runs it every frame; it requires the buffer of a rebuild (the machines of the last <see cref="Refresh"/>) and a row
+        /// whose <c>SlotIndex</c> is an occupied location of it. A rebuild's own deltas are kept (the baseline already advanced, so nothing is
+        /// counted twice). <see cref="Generation"/> moves only when a delta above 0 was written, so a consumer sees it once.
+        /// </summary>
+        /// <returns>True when at least one location got a delta.</returns>
+        public bool ApplyCompletions(MachineStateView[] views, int viewCount)
+        {
+            if (views == null) throw new ArgumentNullException(nameof(views));
+            if (!hasRevision)
+            {
+                return false;
+            }
+
+            var any = false;
+            var rows = viewCount < views.Length ? viewCount : views.Length;
+            for (var m = 0; m < rows; m++)
+            {
+                var location = views[m].SlotIndex;
+                if (location < 0 || location >= locationCount || !buffer[location].IsOccupied)
+                {
+                    continue;
+                }
+
+                var value = buffer[location];
+                var delta = Advance(location, value.InstanceId, views[m].CompletedCycles, false);
+                if (delta <= 0)
+                {
+                    continue;
+                }
+
+                buffer[location] = new MachinePresentation(
+                    value.Location, value.InstanceId, value.MachineId, value.MachineTypeIndex, value.Level, value.VisualState, value.UpgradeAvailable,
+                    value.Pace, value.ActivityFps, delta, value.LimitingResourceId);
+                any = true;
+            }
+
+            if (any)
+            {
+                generation++;
+            }
+
+            return any;
         }
 
         private int Advance(int location, Guid instance, long counter, bool suppress)

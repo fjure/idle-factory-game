@@ -53,6 +53,23 @@ namespace IdleFactory.Unity.Presentation
         public float weight;
     }
 
+    /// <summary>
+    /// The highest activity-loop rate of one machine family (F006 R12, P2-F14): the measured flash rate of a family decides it, not the pace. The
+    /// Assembler already flashes 3 times per second, so it never runs above 8 fps. Authored here, in presentation tuning, never in gameplay content.
+    /// </summary>
+    [Serializable]
+    public struct FamilyFpsCap
+    {
+        public string machineId;
+        public int maxFps;
+
+        public FamilyFpsCap(string machineId, int maxFps)
+        {
+            this.machineId = machineId;
+            this.maxFps = maxFps;
+        }
+    }
+
     /// <summary>The prop-kind weights of one development stage.</summary>
     [Serializable]
     public sealed class StagePropWeights
@@ -139,6 +156,9 @@ namespace IdleFactory.Unity.Presentation
         public const float MaxMarginWorldUnits = 4f;
         public const int MaxDeckBandCells = 4;
 
+        /// <summary>The fastest activity loop (10 fps, a cycle under one second); a family cap is at most this.</summary>
+        public const int MaxFamilyFps = 10;
+
         [Tooltip("Fit margin in world units (cells of 24 art px, not lattice cells) that the camera model adds around the layout bounds. 0.5 reproduces F004.")]
         [UnityEngine.Serialization.FormerlySerializedAs("marginCells")]
         public float marginWorldUnits = DefaultMarginWorldUnits;
@@ -160,6 +180,9 @@ namespace IdleFactory.Unity.Presentation
         [Tooltip("Height limit for props in art pixels.")]
         public int maxPropHeightArtPx = MaxPropHeightLimitArtPx;
 
+        [Tooltip("Per machine family: the highest activity-loop rate in frames per second (6, 8 or 10), from the family's measured flash rate (R12). A family not listed runs at its pace rate.")]
+        public FamilyFpsCap[] familyFpsCaps = NewDefaultFamilyFpsCaps();
+
         public HatchRule hatchRule = HatchRule.HatchWithPadlock;
         public EdgeRule[] edgeRulePerStage = { EdgeRule.Railing, EdgeRule.Wall, EdgeRule.Gantry };
 
@@ -179,6 +202,32 @@ namespace IdleFactory.Unity.Presentation
                 return defaults;
             }
         }
+
+        /// <summary>The loop-rate caps the art pass T522 measured: the Assembler stays at 8 fps (3 flashes per second at its measured rate, Art Bible 6.4).</summary>
+        public static FamilyFpsCap[] NewDefaultFamilyFpsCaps() => new[] { new FamilyFpsCap("machine.assembler", 8) };
+
+        /// <summary>The cap table as a lookup (machine id to the highest fps). A missing, empty or invalid row is skipped.</summary>
+        public static IReadOnlyDictionary<string, int> BuildFamilyFpsCaps(IReadOnlyList<FamilyFpsCap> caps)
+        {
+            var map = new Dictionary<string, int>(StringComparer.Ordinal);
+            if (caps == null)
+            {
+                return map;
+            }
+
+            for (var i = 0; i < caps.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(caps[i].machineId) && caps[i].maxFps > 0)
+                {
+                    map[caps[i].machineId] = caps[i].maxFps;
+                }
+            }
+
+            return map;
+        }
+
+        /// <summary>The family loop-rate caps of these settings, for <see cref="MachinePresentationModel"/> (built once per call, not per frame).</summary>
+        public IReadOnlyDictionary<string, int> FamilyFpsCapMap() => BuildFamilyFpsCaps(familyFpsCaps);
 
         private static StagePropWeights[] NewStageWeights()
         {
@@ -281,6 +330,17 @@ namespace IdleFactory.Unity.Presentation
             if (maxPropHeightArtPx < 1 || maxPropHeightArtPx > MaxPropHeightLimitArtPx)
             {
                 problems.Add("maxPropHeightArtPx must be within [1, " + MaxPropHeightLimitArtPx + "].");
+            }
+
+            if (familyFpsCaps != null)
+            {
+                foreach (var cap in familyFpsCaps)
+                {
+                    if (string.IsNullOrEmpty(cap.machineId) || cap.maxFps < 1 || cap.maxFps > MaxFamilyFps)
+                    {
+                        problems.Add("a familyFpsCaps row needs a machine id and a rate within [1, " + MaxFamilyFps + "].");
+                    }
+                }
             }
 
             if (!Enum.IsDefined(typeof(HatchRule), hatchRule))

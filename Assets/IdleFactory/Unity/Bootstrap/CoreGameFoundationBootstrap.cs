@@ -209,6 +209,20 @@ namespace IdleFactory.Unity.Bootstrap
 
         private FactoryDeckView deckView;
 
+        // T529: the world effect pool, its renderers and the feed that refreshes the world's presentation model and spawns the completion pops.
+        private EffectPool effectPool;
+        private EffectPoolView effectView;
+        private WorldEffectsFeed worldEffects;
+
+        /// <summary>The world effect pool (null until the run shell is composed).</summary>
+        public EffectPool EffectPool => effectPool;
+
+        /// <summary>The 8 effect renderers of the world (null until the run shell is composed).</summary>
+        public EffectPoolView EffectView => effectView;
+
+        /// <summary>The feed of the world effects, which owns the world's machine presentation model (null until the run shell is composed).</summary>
+        public WorldEffectsFeed WorldEffects => worldEffects;
+
         /// <summary>The presenter that binds the run session to the shell and the grid, or null before a run is live.</summary>
         public RunShellPresenter ShellPresenter => shellPresenter;
 
@@ -568,6 +582,16 @@ namespace IdleFactory.Unity.Bootstrap
                 deckView = deckObject.AddComponent<FactoryDeckView>();
                 deckView.Configure(spriteCatalog, worldCompositionApplied ? worldComposition : null);
                 deckView.Bind(grid);
+                // T529: the effect pool (3 active renderers plus 5 draining tails) draws on the Effects layer above the slots and answers the card's responses.
+                var effectObject = new GameObject("Effect Pool");
+                effectObject.transform.SetParent(transform, false);
+                effectPool = new EffectPool();
+                effectView = effectObject.AddComponent<EffectPoolView>();
+                effectView.Configure(spriteCatalog, effectPool);
+                effectView.Bind(grid);
+                worldEffects = new WorldEffectsFeed(runSession, effectPool, worldCompositionApplied ? worldComposition.FamilyFpsCapMap() : null);
+                worldEffects.SessionReplaced += HandleWorldSessionReplaced;
+                UseMachineEffects(effectPool);
                 runShell = shell;
                 slotGrid = grid;
                 RefreshReducedMotion();
@@ -590,6 +614,14 @@ namespace IdleFactory.Unity.Bootstrap
 
         // One shared response policy for the card and the Details view; its sink is late-bound (T529 wires the pool after the panels exist).
         private MachineFeedback machineFeedback;
+
+        // A new run id (prestige, a new run, a restore): the derived models forget what they saw (P2-F12). The attention model is invalidated through
+        // the shell presenter, the card's model baseline and the pool reset in the feed.
+        private void HandleWorldSessionReplaced()
+        {
+            runShell?.ResetCardModels(false);
+            shellPresenter?.Invalidate();
+        }
 
         /// <summary>T529 hands the world effect pool here; until then the card answers with the static highlight (FR-034).</summary>
         public void UseMachineEffects(IMachineEffects effects) => MachineResponses.Effects = effects;
@@ -1109,6 +1141,8 @@ namespace IdleFactory.Unity.Bootstrap
                 {
                     // P2-F12: the first refresh after an offline return reports no completion delta.
                     runShell?.ResetCardModels(true);
+                    worldEffects?.ResetModels(true);
+                    shellPresenter?.Invalidate();
                     LastOfflineSummary = result.Value.OfflineSummary;
                 }
             }
@@ -1283,6 +1317,12 @@ namespace IdleFactory.Unity.Bootstrap
                 UpdateRunShell();
                 ApplyRunViewport();
                 animationClock.Drive((long)(Time.unscaledTimeAsDouble * 1000.0), slotGrid);
+                if (worldEffects != null)
+                {
+                    // T529: one refresh of the world model per frame (P2-F10), the pops of the new completions, and the 8 renderers.
+                    worldEffects.Update(slotGrid.Layout, animationClock.Milliseconds, animationClock.ReducedMotion);
+                    effectView.Present();
+                }
             }
         }
 
@@ -1466,6 +1506,11 @@ namespace IdleFactory.Unity.Bootstrap
             {
                 worldCompositionApplied = false;
                 LatticeLayoutBuilder.TryUseSettings(null, out _);
+            }
+
+            if (worldEffects != null)
+            {
+                worldEffects.SessionReplaced -= HandleWorldSessionReplaced;
             }
 
             if (displayPreferences != null)

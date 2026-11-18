@@ -418,9 +418,18 @@ namespace IdleFactory.Unity.Presentation
             Unbind();
             foreach (var tile in tiles.Values)
             {
-                if (tile != null)
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                if (Application.isPlaying)
                 {
                     Destroy(tile);
+                }
+                else
+                {
+                    DestroyImmediate(tile);
                 }
             }
 

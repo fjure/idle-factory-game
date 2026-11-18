@@ -61,9 +61,37 @@ namespace IdleFactory.Tests.EditMode
         [Test]
         public void ValidationRejectsAnOversizedPageOverride()
         {
-            var settings = new TextureImporterPlatformSettings { maxTextureSize = 1024 };
-            Assert.That(settings.maxTextureSize, Is.GreaterThan(F004SpriteAtlasSettings.MaxPageSize));
-            Assert.That(F004SpriteAtlasSettings.MaxPageBytes, Is.EqualTo(1024 * 1024), "512 x 512 RGBA32");
+            // A real importer: a copy of a shipped atlas gets a 1024 page override on every platform, and the validator must name it (A-10: the old
+            // test only compared constants). The unchanged source is the control and must carry no page problem.
+            var source = ShippedAtlasPaths().First();
+            var control = F004SpriteAtlasSettings.Validate((SpriteAtlasImporter)AssetImporter.GetAtPath(source));
+            Assert.That(control.Any(problem => problem.Contains("max page")), Is.False, "the shipped atlas stays within the page limit: " + string.Join("; ", control));
+
+            var copy = "Assets/IdleFactory/Tests/EditMode/OversizedAtlasProbe" + F004SpriteAtlasSettings.AtlasExtension;
+            try
+            {
+                Assert.That(AssetDatabase.CopyAsset(source, copy), Is.True, "the probe copy is created");
+                var importer = (SpriteAtlasImporter)AssetImporter.GetAtPath(copy);
+                foreach (var platform in F004SpriteAtlasSettings.Platforms)
+                {
+                    var settings = importer.GetPlatformSettings(platform);
+                    settings.overridden = true;
+                    settings.maxTextureSize = 1024;
+                    importer.SetPlatformSettings(settings);
+                }
+
+                importer.SaveAndReimport();
+                var problems = F004SpriteAtlasSettings.Validate((SpriteAtlasImporter)AssetImporter.GetAtPath(copy));
+                foreach (var platform in F004SpriteAtlasSettings.Platforms)
+                {
+                    Assert.That(problems.Any(problem => problem.StartsWith(platform + ": max page 1024", System.StringComparison.Ordinal)), Is.True,
+                        platform + " reports the oversized page: " + string.Join("; ", problems));
+                }
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(copy);
+            }
         }
     }
 }
