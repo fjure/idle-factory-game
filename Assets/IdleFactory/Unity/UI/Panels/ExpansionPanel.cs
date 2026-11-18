@@ -145,7 +145,7 @@ namespace IdleFactory.Unity.UI.Panels
             var line = new VisualElement();
             line.AddToClassList("exp-line");
             line.Add(MarketPanelParts.NewLabel(buttonName + "-caption", "exp-line__caption", caption));
-            var button = MarketPanelParts.NewValueButton(buttonName, "exp-value");
+            var button = MarketPanelParts.NewValueButton(buttonName, "exp-value", true);
             line.Add(button);
             track.Card.Add(line);
             exactHandles.Add(shell.AttachExactValue(button, exact));

@@ -371,7 +371,7 @@ namespace IdleFactory.Unity.UI
             {
                 Container = new VisualElement { name = "build-card-" + index },
                 Name = new Label { name = "build-name-" + index },
-                Price = MarketPanelParts.NewValueButton("build-price-" + index, "bsheet__price"),
+                Price = MarketPanelParts.NewValueButton("build-price-" + index, "bsheet__price", true),
                 Owned = new Label { name = "build-owned-" + index },
                 Capped = new Label { name = "build-capped-" + index },
                 Makes = new Label { name = "build-makes-" + index },

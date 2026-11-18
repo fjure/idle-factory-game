@@ -143,12 +143,13 @@ namespace IdleFactory.Unity.UI.Panels
             return label;
         }
 
-        /// <summary>A number the player can focus or tap to read exactly: a control (48 pt, T536) that shows a compact value.</summary>
         /// <summary>
-        /// A focusable value the player can read exactly (hover, focus, tap). With <paramref name="readOnly"/> it takes the scaffold's read-only value look
-        /// (T555, U-B8): no border box and no fill, so it never reads as a pressable button; it keeps its 44 pt target and focus ring.
+        /// A number the player can focus or tap to read exactly: a control (48 pt, T536) that shows a compact value. With <paramref name="readOnly"/> it takes the
+        /// scaffold's read-only value look (T555, U-B8): no border box and no fill, so it never reads as a pressable button; it keeps its 44 pt target and focus ring.
+        /// The parameter has no default (T539, T555 review A7): a caller states whether the value does anything when pressed, so a new value button never becomes
+        /// read-only by accident.
         /// </summary>
-        public static Button NewValueButton(string name, string cssClass, bool readOnly = true)
+        public static Button NewValueButton(string name, string cssClass, bool readOnly)
         {
             var button = new Button { name = name, focusable = true };
             button.AddToClassList("run-control");

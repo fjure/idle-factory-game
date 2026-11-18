@@ -1,0 +1,556 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using IdleFactory.Run.Application;
+using IdleFactory.Tests.PlayMode.F006;
+using IdleFactory.Unity.Presentation;
+using IdleFactory.Unity.UI;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
+using static IdleFactory.Tests.PlayMode.RunShellLayoutAssertions;
+
+#if UNITY_EDITOR
+using UnityEditor;
+
+namespace IdleFactory.Tests.PlayMode
+{
+    /// <summary>
+    /// T539 (FR-032, FR-033, FR-034, research R13, OD-9b C1): the docked build card. Enough and insufficient Cash, Back cancels, rotation, the preview and its
+    /// visibility, the 44 pt side-by-side actions at every screen class and text scale, the empty and error states, and the exclusivity with the machine card.
+    /// </summary>
+    public sealed class BuildCardTests
+    {
+        private readonly List<CardHarness> harnesses = new List<CardHarness>();
+        private readonly List<GameObject> objects = new List<GameObject>();
+        private CardHarness h;
+        private BuildCard card;
+        private RecordingPreview preview;
+
+        public static IEnumerable<ShellScreen> Screens() => ShellScreens.All();
+
+        public static IEnumerable<int> Percents() => new[] { 100, 200 };
+
+        [TearDown]
+        public void TearDown()
+        {
+            foreach (var item in harnesses)
+            {
+                item.Dispose();
+            }
+
+            foreach (var item in objects)
+            {
+                if (item != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(item);
+                }
+            }
+
+            harnesses.Clear();
+            objects.Clear();
+            h = null;
+            card = null;
+            preview = null;
+        }
+
+        private static ShellScreen PhoneScreen() => ShellScreens.All().First(screen => screen.Name.StartsWith("phone-portrait 390", StringComparison.Ordinal));
+
+        private IEnumerator Make(ShellScreen screen, int percent, long cash, bool unlockEverything = false, bool withEffects = false, bool reduced = false,
+            int factoryLevel = 1)
+        {
+            CardHarness made = null;
+            yield return CardHarness.Create(screen, percent, cash, built => made = built, reduced, withEffects, factoryLevel, unlockEverything);
+            harnesses.Add(made);
+            h = made;
+            preview = new RecordingPreview();
+            card = h.AttachBuildCard(preview);
+        }
+
+        private IEnumerator OpenBuild(int slot)
+        {
+            Assert.That(h.Shell.OpenSlot(slot, SlotCondition.Empty), Is.True, "an empty location opens a card");
+            yield return ShellRig.Settle();
+            h.Shell.RefreshCard();
+        }
+
+        private int MachineCount() => RunSnapshots.Factory(h.Session).Machines.Count;
+
+        private static void Press(VisualElement control) => CardHarness.Press(control);
+
+        // ---------------------------------------------------------------------------------------------------
+        // Opening, exclusivity, listing
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator AnEmptyLocationOpensTheBuildCardAndItIsExclusiveWithTheMachineCard()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
+            var shell = h.Shell;
+            h.Build(1, "machine.miner");
+
+            yield return OpenBuild(0);
+            Assert.That(shell.IsBuildCardOpen, Is.True);
+            Assert.That(shell.BuildCardSlot, Is.EqualTo(0));
+            Assert.That(shell.IsCardOpen, Is.False, "the machine card is not the open frame");
+            Assert.That(shell.IsSheetOpen, Is.False, "the build card replaces the build sheet");
+            Assert.That(shell.ActivePanelId, Is.Null);
+            Assert.That(shell.SelectedSlot, Is.EqualTo(0));
+            Assert.That(card.Root.parent, Is.Not.Null, "the build card is mounted");
+            Assert.That(shell.CardRoot.parent, Is.Null, "the machine card is not mounted while the build card is");
+            Assert.That(IsDisplayed(card.Root), Is.True);
+
+            // A tap on a machine hands the dock to the machine card and clears the preview.
+            Assert.That(shell.OpenSlot(1, SlotCondition.Occupied), Is.True);
+            yield return ShellRig.Settle();
+            Assert.That(shell.IsCardOpen, Is.True);
+            Assert.That(shell.IsBuildCardOpen, Is.False);
+            Assert.That(card.Root.parent, Is.Null, "the build card is gone");
+            Assert.That(shell.CardRoot.parent, Is.Not.Null);
+            Assert.That(preview.PreviewSlot, Is.EqualTo(-1), "the preview is cleared");
+            Assert.That(preview.Available, Is.Empty, "and so is the highlight");
+
+            // And back: an empty location takes the dock again.
+            yield return OpenBuild(0);
+            Assert.That(shell.IsBuildCardOpen, Is.True);
+            Assert.That(shell.CardRoot.parent, Is.Null);
+            Assert.That(preview.PreviewSlot, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator EveryTypeShowsItsIconCostAndAffordabilityAndALockedTypeCannotBeSelected()
+        {
+            // Level 1 without unlocks: the Miner is unlocked, the others are locked behind a requirement.
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.MinerCost);
+            yield return OpenBuild(0);
+
+            var snapshot = RunSnapshots.Factory(h.Session);
+            Assert.That(card.TypeButtons.Count, Is.EqualTo(snapshot.MachineTypes.Count), "one row per machine type");
+            var miner = card.TypeButton("machine.miner");
+            Assert.That(miner.Q<Label>(className: "bcard__name").text, Is.EqualTo("Miner"));
+            Assert.That(miner.Q<VisualElement>(className: "bcard__icon"), Is.Not.Null, "every row has its icon element");
+            Assert.That(miner.Q<Label>("build-card-cost-" + card.TypeButtons.ToList().IndexOf(miner)).text, Is.EqualTo("Cost: $" + RunShellFixtures.MinerCost));
+            Assert.That(miner.Q<Label>("build-card-status-" + card.TypeButtons.ToList().IndexOf(miner)).text, Is.EqualTo("Affordable"));
+            Assert.That(miner.tooltip, Does.Contain("Miner").And.Contain("Affordable").And.Contain("selected"), "the accessible name carries name, price, affordability and selection");
+            Assert.That(card.SelectedMachineId, Is.EqualTo("machine.miner"));
+
+            var locked = snapshot.MachineTypes.First(type => !type.Unlocked);
+            var lockedButton = card.TypeButton(locked.MachineId);
+            Assert.That(RunShellDocument.IsSoftDisabled(lockedButton), Is.True, "a locked type is disabled");
+            Press(lockedButton);
+            Assert.That(card.SelectedMachineId, Is.EqualTo("machine.miner"), "a locked type is not selected");
+            Assert.That(card.FeedbackLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex), "its reason shows as text, not only as a tooltip");
+            Assert.That(card.FeedbackLabel.text, Is.EqualTo(SlotSheetText.UnlockReason(h.Session, locked)));
+        }
+
+        [UnityTest]
+        public IEnumerator SelectingAnotherTypeMovesTheSelectedLineAndThePreview()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 100_000L, unlockEverything: true, factoryLevel: RunShellFixtures.FactoryLevelCount);
+            yield return OpenBuild(2);
+            var first = RunSnapshots.Factory(h.Session).MachineTypes.First(type => type.Unlocked && type.Affordable);
+            Assert.That(card.SelectedMachineId, Is.EqualTo(first.MachineId), "a fresh open selects the first affordable type");
+            Assert.That(card.SelectedLabel.text, Is.EqualTo("Selected: " + first.Label + " at location 3"));
+            Assert.That(preview.PreviewSlot, Is.EqualTo(2));
+            Assert.That(preview.PreviewKey, Is.EqualTo(h.Session.Catalog.Machines[first.MachineId].PresentationKey));
+
+            Assert.That(first.MachineId, Is.Not.EqualTo("machine.smelter"), "the fixture's first type is another one");
+            Press(card.TypeButton("machine.smelter"));
+            Assert.That(card.SelectedMachineId, Is.EqualTo("machine.smelter"));
+            Assert.That(card.SelectedLabel.text, Is.EqualTo("Selected: Smelter at location 3"));
+            Assert.That(preview.PreviewKey, Is.EqualTo(h.Session.Catalog.Machines["machine.smelter"].PresentationKey), "the ghost follows the selected type");
+            Assert.That(card.TypeButton("machine.smelter").ClassListContains("bcard__type--selected"), Is.True);
+            Assert.That(card.TypeButton(first.MachineId).ClassListContains("bcard__type--selected"), Is.False);
+            Assert.That(preview.Available, Has.Member(2).And.Member(3), "every free location is outlined");
+            Assert.That(preview.Available, Has.No.Member(-1));
+
+            // Retargeting to another free location keeps the selected type.
+            Assert.That(h.Shell.OpenSlot(4, SlotCondition.Empty), Is.True);
+            yield return ShellRig.Settle();
+            Assert.That(card.Slot, Is.EqualTo(4));
+            Assert.That(card.SelectedLabel.text, Is.EqualTo("Selected: Smelter at location 5"));
+            Assert.That(preview.PreviewSlot, Is.EqualTo(4));
+            Assert.That(h.Shell.SelectedSlot, Is.EqualTo(4));
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Enough Cash, not enough Cash
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator WithEnoughCashConfirmBuildsPlaysTheDustAndHandsOverToTheMachineCard()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash, withEffects: true);
+            yield return OpenBuild(0);
+            var cashBefore = h.Session.ReadCash();
+
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.False, "Confirm is enabled");
+            Assert.That(card.ReasonLabel.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(card.ConfirmButton.tooltip, Does.Contain("Selected: Miner at location 1"));
+
+            Press(card.ConfirmButton);
+            yield return ShellRig.Settle();
+
+            Assert.That(MachineCount(), Is.EqualTo(1));
+            Assert.That(h.MachineAt(0), Is.Not.Null, "the machine stands at the location");
+            Assert.That(h.Session.ReadCash(), Is.EqualTo(cashBefore - RunShellFixtures.MinerCost));
+            Assert.That(h.Effects.Spawned, Is.EqualTo(new[] { (MachineResponseKind.BuildDust, 0) }), "the build dust plays at the built location");
+            Assert.That(h.Shell.IsBuildCardOpen, Is.False);
+            Assert.That(h.Shell.IsCardOpen, Is.True, "the card hands over to the new machine's card");
+            Assert.That(h.Shell.CardSlot, Is.EqualTo(0));
+            Assert.That(h.Card.Slot, Is.EqualTo(0));
+            Assert.That(preview.PreviewSlot, Is.EqualTo(-1), "the ghost is gone");
+            Assert.That(preview.Available, Is.Empty);
+            Assert.That(h.Shell.SelectedSlot, Is.EqualTo(0), "the new machine stays selected");
+        }
+
+        [UnityTest]
+        public IEnumerator UnderReducedMotionTheDustIsTheStaticHighlightOnTheNewMachineCard()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash, withEffects: true, reduced: true);
+            yield return OpenBuild(0);
+            Press(card.ConfirmButton);
+            yield return ShellRig.Settle();
+
+            Assert.That(MachineCount(), Is.EqualTo(1));
+            Assert.That(h.Effects.Spawned, Is.Empty, "no effect ever spawns under reduced motion");
+            Assert.That(h.Feedback.LastKind, Is.EqualTo(MachineResponseKind.BuildDust));
+            Assert.That(h.Feedback.LastWasWorldEffect, Is.False);
+            Assert.That(h.Card.IsHighlighted, Is.True, "the static response is the one-second highlight of the new machine's card");
+        }
+
+        [UnityTest]
+        public IEnumerator WithoutEnoughCashConfirmIsDisabledAndTheCardSaysHowMuchIsMissing()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.MinerCost - 1, withEffects: true);
+            yield return OpenBuild(0);
+            var cashBefore = h.Session.ReadCash();
+
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.True, "Confirm is disabled");
+            Assert.That(card.ReasonLabel.text, Is.EqualTo("Need $1 more"), "the line the contract names");
+            Assert.That(card.ReasonLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex), "the reason is visible text, not only a tooltip");
+            Assert.That(card.ConfirmButton.tooltip, Does.Contain("Need $1 more"), "and it is the accessible description too");
+            Assert.That(card.SelectedLabel.text, Is.EqualTo("Selected: Miner at location 1"), "an unaffordable type still previews");
+            Assert.That(preview.PreviewSlot, Is.EqualTo(0));
+            Assert.That(card.HintLabel.text, Is.EqualTo(BuildCardCopy.NothingAffordable), "the empty state: nothing is affordable");
+            Assert.That(card.HintLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(card.TypeButton("machine.miner").Q<Label>(className: "bcard__line", name: "build-card-status-" + card.TypeButtons.ToList().IndexOf(card.TypeButton("machine.miner"))).text, Is.EqualTo("Need $1 more"));
+
+            // The control stays focusable and pressing it changes nothing.
+            Assert.That(card.ConfirmButton.focusable, Is.True);
+            Press(card.ConfirmButton);
+            yield return ShellRig.Settle();
+            Assert.That(MachineCount(), Is.EqualTo(0));
+            Assert.That(h.Session.ReadCash(), Is.EqualTo(cashBefore));
+            Assert.That(h.Shell.IsBuildCardOpen, Is.True, "the card stays open");
+            Assert.That(h.Effects.Spawned, Is.Empty);
+
+            // The reason sits directly below the actions.
+            Assert.That(card.ReasonLabel.worldBound.yMin, Is.GreaterThanOrEqualTo(card.ConfirmButton.worldBound.yMax - Tolerance));
+        }
+
+        [UnityTest]
+        public IEnumerator ARejectedBuildShowsTheReasonInlineAndKeepsTheCardOpen()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
+            yield return OpenBuild(0);
+            // A build at the location by another path while the card still shows it free: the command rejects, the card says why, nothing is charged.
+            h.Build(0, "machine.miner");
+            var cashBefore = h.Session.ReadCash();
+            Press(card.ConfirmButton);
+            yield return ShellRig.Settle();
+
+            Assert.That(h.Session.ReadCash(), Is.EqualTo(cashBefore), "a rejected build charges nothing");
+            Assert.That(MachineCount(), Is.EqualTo(1));
+            Assert.That(h.Shell.IsBuildCardOpen, Is.True, "the card stays open");
+            Assert.That(card.FeedbackLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex), "the error state is text");
+            Assert.That(card.FeedbackLabel.text, Is.EqualTo(RunRejectionCopy.For(RunReasons.SlotOccupied)));
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.True, "and Confirm now says the location is taken");
+            Assert.That(card.ReasonLabel.text, Is.EqualTo(BuildCardCopy.LocationTaken));
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Back and Cancel
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator BackCancelsTheBuildAndClearsThePreview()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
+            yield return OpenBuild(0);
+            var cashBefore = h.Session.ReadCash();
+            Assert.That(preview.PreviewSlot, Is.EqualTo(0));
+
+            Assert.That(h.Shell.HandleBack(), Is.True, "Back is consumed by the build card");
+            yield return ShellRig.Settle();
+
+            Assert.That(h.Shell.IsBuildCardOpen, Is.False);
+            Assert.That(h.Shell.IsDockedCardOpen, Is.False);
+            Assert.That(h.Shell.SelectedSlot, Is.EqualTo(-1));
+            Assert.That(preview.PreviewSlot, Is.EqualTo(-1), "the ghost is gone");
+            Assert.That(preview.Available, Is.Empty, "and the highlight");
+            Assert.That(MachineCount(), Is.EqualTo(0), "nothing was built");
+            Assert.That(h.Session.ReadCash(), Is.EqualTo(cashBefore), "nothing was charged");
+            Assert.That(h.Shell.HandleBack(), Is.False, "the next Back has nothing left to pop");
+        }
+
+        [UnityTest]
+        public IEnumerator CancelClosesTheCardWithoutBuilding()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
+            yield return OpenBuild(0);
+            Press(card.CancelButton);
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.IsDockedCardOpen, Is.False);
+            Assert.That(h.Shell.SelectedSlot, Is.EqualTo(-1));
+            Assert.That(MachineCount(), Is.EqualTo(0));
+            Assert.That(preview.PreviewSlot, Is.EqualTo(-1));
+        }
+
+        [UnityTest]
+        public IEnumerator OpeningTheHubClosesTheBuildCard()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
+            h.Shell.Panels.Register(HubHarness.NewHub(h.Session, h.Commands));
+            yield return OpenBuild(0);
+            h.Shell.OpenHub();
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.IsBuildCardOpen, Is.False, "the hub is exclusive with the build card");
+            Assert.That(h.Shell.IsHubOpen, Is.True);
+            Assert.That(preview.PreviewSlot, Is.EqualTo(-1));
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Layout: side by side, 44 pt, every class and scale, empty states
+        // ---------------------------------------------------------------------------------------------------
+
+        private void AssertActions(string context)
+        {
+            var confirm = card.ConfirmButton.worldBound;
+            var cancel = card.CancelButton.worldBound;
+            Assert.That(confirm.height, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{context}: Confirm height");
+            Assert.That(confirm.width, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{context}: Confirm width");
+            Assert.That(cancel.height, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{context}: Cancel height");
+            Assert.That(cancel.width, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{context}: Cancel width");
+            Assert.That(Mathf.Abs(confirm.yMin - cancel.yMin), Is.LessThan(1f), $"{context}: Confirm and Cancel share a row");
+            Assert.That(cancel.xMax, Is.LessThanOrEqualTo(confirm.xMin + Tolerance), $"{context}: Cancel sits beside Confirm, not over it");
+            var area = card.Root.worldBound;
+            AssertWithin(area, confirm, $"{context}: Confirm stays inside the card");
+            AssertWithin(area, cancel, $"{context}: Cancel stays inside the card");
+            Assert.That(IsDisplayed(card.ConfirmButton) && IsDisplayed(card.CancelButton), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator ConfirmAndCancelAreSideBySideAndAtLeast44PtOnEveryClassAndTextScale(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            var context = $"{screen} @{percent}%";
+            // Worst case: every type listed, Confirm disabled with its reason line showing, a two-line empty-state hint.
+            yield return Make(screen, percent, 0L, unlockEverything: true, factoryLevel: RunShellFixtures.FactoryLevelCount);
+            yield return OpenBuild(0);
+            yield return ShellRig.Settle();
+
+            Assert.That(h.Shell.IsBuildCardOpen, Is.True, context);
+            Assert.That(card.ReasonLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex), context);
+            AssertActions(context + " (short of Cash)");
+            AssertWithin(card.Root.worldBound, card.ReasonLabel.worldBound, context + ": the reason line stays inside the card");
+            AssertWithin(card.Root.worldBound, card.SelectedLabel.worldBound, context + ": the selected line stays inside the card");
+            AssertTextAndTargets(card.Root, h.Rig.SafeRect(), context + " (build card)", MinimumFontSize * percent / 100f);
+
+            // Every type row is a 44 pt target inside the scrolling list, and the list is the part that scrolls.
+            foreach (var button in card.TypeButtons)
+            {
+                Assert.That(button.worldBound.height, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{context}: {button.name} height");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TheEnabledStateAlsoKeepsBothActionsInTheCardOnEveryClassAndTextScale(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            var context = $"{screen} @{percent}%";
+            yield return Make(screen, percent, RunShellFixtures.ComfortableCash * 100_000L, unlockEverything: true, factoryLevel: RunShellFixtures.FactoryLevelCount);
+            yield return OpenBuild(0);
+            yield return ShellRig.Settle();
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.False, context);
+            AssertActions(context + " (enough Cash)");
+            AssertTextAndTargets(card.Root, h.Rig.SafeRect(), context + " (build card, enabled)", MinimumFontSize * percent / 100f);
+        }
+
+        [UnityTest]
+        public IEnumerator ANoUnlockedTypeCardShowsAnEmptyStateAndADisabledConfirm()
+        {
+            // The variant content that locks even the Miner is built by the build-sheet fixtures; here the shipped content with nothing affordable stands in for
+            // "no usable type": the empty-state line, the disabled Confirm and its reason are all text.
+            yield return Make(PhoneScreen(), 100, 0L);
+            yield return OpenBuild(0);
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.True);
+            Assert.That(card.HintLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(card.ReasonLabel.text, Does.StartWith("Need $"));
+            Assert.That(card.ConfirmButton.focusable && card.CancelButton.focusable, Is.True, "both actions stay reachable from the keyboard");
+        }
+
+        [UnityTest]
+        public IEnumerator EveryControlHasAnAccessibleNameAndTheKeyboardOrderIsTypesThenCancelThenConfirm()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash, unlockEverything: true);
+            yield return OpenBuild(0);
+            foreach (var button in card.Root.Query<Button>().ToList())
+            {
+                Assert.That(!string.IsNullOrEmpty(button.text) || !string.IsNullOrEmpty(button.tooltip), Is.True, $"{button.name} has an accessible name");
+                Assert.That(button.focusable, Is.True, $"{button.name} is focusable");
+            }
+
+            var order = card.Root.Query<Button>().ToList().Select(button => button.name).ToList();
+            Assert.That(order.IndexOf("build-card-cancel"), Is.GreaterThan(order.IndexOf(BuildCard.FirstFocusName)), "the types come before the actions");
+            Assert.That(order.IndexOf("build-card-confirm"), Is.GreaterThan(order.IndexOf("build-card-cancel")), "Cancel comes before Confirm");
+
+            // Opened for the keyboard, focus lands on the first type.
+            h.Shell.CloseBuildCard();
+            Assert.That(h.Shell.OpenSlot(0, SlotCondition.Empty, 0, true), Is.True);
+            yield return ShellRig.Settle();
+            yield return ShellRig.Settle();
+            Assert.That(card.Root.panel.focusController.focusedElement, Is.SameAs(card.TypeButtons[0]));
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Rotation
+        // ---------------------------------------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator ARotationKeepsTheCardTheSelectionAndThePreviewAndRedocksIt([ValueSource(nameof(Screens))] ShellScreen screen)
+        {
+            yield return Make(screen, 100, RunShellFixtures.ComfortableCash, unlockEverything: true, factoryLevel: RunShellFixtures.FactoryLevelCount);
+            var shell = h.Shell;
+            yield return OpenBuild(2);
+            Press(card.TypeButton("machine.smelter"));
+            Assert.That(shell.IsBuildCardOpen, Is.True);
+
+            var rotated = ShellScreens.Rotated(screen);
+            shell.ApplyScreenLayout(rotated.Width, rotated.Height, rotated.SafeAreaPx);
+            Assert.That(shell.IsCardBandPending, Is.True, $"{screen}: the rotation makes the camera wait for the card's new band");
+            yield return ShellRig.Settle();
+
+            Assert.That(shell.Layout, Is.EqualTo(rotated.Expected), "the class of the rotated device");
+            Assert.That(shell.IsBuildCardOpen, Is.True, "a rotation keeps the card");
+            Assert.That(shell.SelectedSlot, Is.EqualTo(2), "and the selection");
+            Assert.That(card.SelectedMachineId, Is.EqualTo("machine.smelter"), "and the selected type");
+            Assert.That(preview.PreviewSlot, Is.EqualTo(2), "and the preview");
+            Assert.That(shell.IsCardBandPending, Is.False);
+            Assert.That(card.Root.parent, rotated.Expected == FactoryHudLayout.CompactPortrait || rotated.Expected == FactoryHudLayout.CompactLandscape
+                ? Is.SameAs(shell.Root.Q<VisualElement>("run-main"))
+                : Is.SameAs(shell.PanelHost), "the card re-docks for the new class");
+            Assert.That(shell.TryGetUnobstructedScreenRect(rotated.Height, out var area), Is.True);
+            Assert.That(Intersects(new Rect(area.xMin, shell.Root.panel.visualTree.worldBound.height - area.yMax, area.width, area.height), card.Root.worldBound), Is.False,
+                $"{screen}: after the rotation the world band still leaves the card alone");
+            AssertActions($"{screen} rotated to {rotated.Expected}");
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Preview visibility (SC-002, OD-9b C1, U-B1)
+        // ---------------------------------------------------------------------------------------------------
+
+        private Camera CreateFramingCamera(out FactoryCameraController controller)
+        {
+            var host = new GameObject("build-card-camera");
+            objects.Add(host);
+            host.transform.position = new Vector3(0f, 0f, -10f);
+            var camera = host.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.targetTexture = h.Rig.Texture;
+            camera.enabled = false;
+            controller = host.AddComponent<FactoryCameraController>();
+            controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
+            return camera;
+        }
+
+        private static Rect ScreenRectOf(Camera camera, Rect world)
+        {
+            var low = camera.WorldToScreenPoint(new Vector3(world.xMin, world.yMin, 0f));
+            var high = camera.WorldToScreenPoint(new Vector3(world.xMax, world.yMax, 0f));
+            return Rect.MinMaxRect(Mathf.Min(low.x, high.x), Mathf.Min(low.y, high.y), Mathf.Max(low.x, high.x), Mathf.Max(low.y, high.y));
+        }
+
+        private static void AssertInside(Rect area, Rect inner, string message, float tolerance = 1.5f)
+        {
+            Assert.That(inner.xMin, Is.GreaterThanOrEqualTo(area.xMin - tolerance), message + " (left)");
+            Assert.That(inner.yMin, Is.GreaterThanOrEqualTo(area.yMin - tolerance), message + " (bottom)");
+            Assert.That(inner.xMax, Is.LessThanOrEqualTo(area.xMax + tolerance), message + " (right)");
+            Assert.That(inner.yMax, Is.LessThanOrEqualTo(area.yMax + tolerance), message + " (top)");
+        }
+
+        [UnityTest]
+        public IEnumerator ThePreviewLocationStaysFullyVisibleAboveTheCardOnEveryClassAndTextScale(
+            [ValueSource(nameof(Screens))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Make(screen, percent, RunShellFixtures.ComfortableCash * 100_000L, unlockEverything: true, factoryLevel: RunShellFixtures.FactoryLevelCount);
+            var shell = h.Shell;
+            var camera = CreateFramingCamera(out var controller);
+            var framing = new RunCameraFraming(new RunZoomSettings());
+            var layout = LatticeLayoutBuilder.ShippedForColumns(SlotGridLayout.ColumnsFor(screen.Width, screen.Height));
+            var context = $"{screen} @{percent}%";
+            Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var closedArea), Is.True, context);
+            controller.Fit(RunCameraFraming.Layout(camera, layout, h.Rig.PixelsPerPoint, closedArea));
+            var fitted = controller.Scale;
+            var count = Math.Min(layout.LocationCount, (int)RunShellFixtures.FactorySlots(RunShellFixtures.FactoryLevelCount));
+
+            foreach (var slot in new[] { 0, count / 2, count - 1 })
+            {
+                Assert.That(shell.OpenSlot(slot, SlotCondition.Empty), Is.True, context);
+                Assert.That(shell.IsCardBandPending, Is.True, $"{context}: slot {slot}: the card's band is pending until it is laid out");
+                yield return ShellRig.Settle();
+                Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var area), Is.True, context);
+                controller.OpenSheet(area, framing.FrameMachine(slot, layout));
+
+                var machine = ScreenRectOf(camera, layout.MachineRectOf(new BuildingLocationId(slot)));
+                AssertInside(area, machine, $"{context}: slot {slot}: the previewed location is 100 % inside the band above the card");
+                Assert.That(Intersects(new Rect(area.xMin, screen.Height - area.yMax, area.width, area.height), card.Root.worldBound), Is.False,
+                    $"{context}: slot {slot}: the world band does not overlap the card");
+                Assert.That(controller.Scale, Is.LessThanOrEqualTo(fitted), $"{context}: a card never zooms in");
+                Assert.That(preview.PreviewSlot, Is.EqualTo(slot), context);
+
+                shell.CloseBuildCard();
+                yield return ShellRig.Settle();
+                Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var reopened), Is.True, context);
+                controller.CloseSheet(reopened);
+                Assert.That(controller.Scale, Is.EqualTo(fitted), $"{context}: the prior scale returns");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator CashAndOverdriveStayOnScreenWhileTheBuildCardIsOpenOnAPhoneInLandscape(
+            [ValueSource(nameof(LandscapePhones))] ShellScreen screen, [ValueSource(nameof(Percents))] int percent)
+        {
+            yield return Make(screen, percent, 1_234_567L, unlockEverything: true, factoryLevel: RunShellFixtures.FactoryLevelCount);
+            var shell = h.Shell;
+            shell.SetCash(9_000_000_000_000_000_000L);
+            shell.SetStore(9_000_000_000_000_000_000L, 9_000_000_000_000_000_000L);
+            shell.SetOverdrive(RunShellFixtures.OverdriveStatusIn(OverdriveStage.CoolingDown));
+            yield return OpenBuild(0);
+            yield return ShellRig.Settle();
+            var context = $"{screen} @{percent}%";
+
+            Assert.That(shell.IsStatusBandShown, Is.True, context + ": the status band shows while the build card is open (U-B1)");
+            var safe = h.Rig.SafeRect();
+            foreach (var control in new VisualElement[] { shell.CashButton, shell.StoreButton, shell.OverdriveButton })
+            {
+                Assert.That(IsDisplayed(control), Is.True, $"{context}: {control.name} is shown");
+                AssertWithin(safe, control.worldBound, $"{context}: {control.name} stays in the safe area");
+                Assert.That(control.worldBound.height, Is.GreaterThanOrEqualTo(MinimumTarget - Tolerance), $"{context}: {control.name} height");
+                Assert.That(Intersects(control.worldBound, card.Root.worldBound), Is.False, $"{context}: {control.name} does not overlap the card");
+            }
+
+            Assert.That(shell.OverdriveButton.Q<Label>("overdrive-caption").text, Does.StartWith("Cool"), context + ": the Overdrive state word");
+            AssertActions(context);
+            shell.CloseBuildCard();
+            yield return ShellRig.Settle();
+            Assert.That(shell.IsStatusBandShown, Is.False, context + ": closed again");
+        }
+
+        public static IEnumerable<ShellScreen> LandscapePhones() =>
+            ShellScreens.All().Where(screen => screen.Expected == FactoryHudLayout.CompactLandscape);
+    }
+}
+#endif

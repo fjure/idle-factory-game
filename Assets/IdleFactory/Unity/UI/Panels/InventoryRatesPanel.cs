@@ -308,7 +308,7 @@ namespace IdleFactory.Unity.UI.Panels
             var line = new VisualElement();
             line.AddToClassList("inv-line");
             line.Add(MarketPanelParts.NewLabel(buttonName + "-caption", "inv-line__caption", caption));
-            var button = MarketPanelParts.NewValueButton(buttonName, "inv-value");
+            var button = MarketPanelParts.NewValueButton(buttonName, "inv-value", true);
             line.Add(button);
             row.Root.Add(line);
             exactHandles.Add(shell.AttachExactValue(button, exact));

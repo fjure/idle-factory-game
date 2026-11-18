@@ -8,6 +8,9 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>A successful switch-on: a restrained response (the Spark of the FX family stands in until the art pass names another).</summary>
         SwitchOn = 1,
+
+        /// <summary>A successful build (T539, FR-034): the dust of the new foundation, spawned at the built location through the same seam.</summary>
+        BuildDust = 2,
     }
 
     /// <summary>
@@ -18,5 +21,21 @@ namespace IdleFactory.Unity.Presentation
     {
         /// <summary>Spawns the effect of <paramref name="kind"/> at the machine of <paramref name="location"/>.</summary>
         void Spawn(MachineResponseKind kind, int location);
+    }
+
+    /// <summary>
+    /// The world side of the build card (T539, FR-032, FR-033, research R13): the highlight of the available locations and the ghost preview of the selected
+    /// machine type. <see cref="SlotGridView"/> implements it, so the card never draws a sprite itself.
+    /// </summary>
+    public interface IBuildPreview
+    {
+        /// <summary>Outlines the locations a machine can be built at (an empty list clears the highlight).</summary>
+        void ShowAvailable(System.Collections.Generic.IReadOnlyList<int> locations);
+
+        /// <summary>Shows the ghost of the machine body <paramref name="machineKey"/> (frame 0, 60 % alpha) at the empty <paramref name="location"/>.</summary>
+        void ShowPreview(int location, string machineKey);
+
+        /// <summary>Clears the highlight and the ghost.</summary>
+        void ClearBuildPreview();
     }
 }

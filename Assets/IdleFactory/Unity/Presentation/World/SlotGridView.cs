@@ -14,7 +14,7 @@ namespace IdleFactory.Unity.Presentation
     /// <see cref="SlotVisual"/> values and the <see cref="StateCueSet"/> decides which cue sprite a state draws. Tapping resolves
     /// through <see cref="TryHitSlot"/>, which stays footprint-only.
     /// </summary>
-    public sealed class SlotGridView : MonoBehaviour
+    public sealed class SlotGridView : MonoBehaviour, IBuildPreview
     {
         /// <summary>The sorting layer of every overlay (frame, label, markers, badge); it is declared after Default in <c>TagManager</c>.</summary>
         public const string OverlaySortingLayer = "Overlay";
@@ -270,7 +270,7 @@ namespace IdleFactory.Unity.Presentation
             {
                 if (i < visuals.Length)
                 {
-                    slots[i].Show(visuals[i], sprites, cueSet);
+                    slots[i].Show(visuals[i], sprites, cueSet, IsAvailable(i), i == previewSlot ? previewKey : null);
                 }
                 else
                 {
@@ -281,6 +281,90 @@ namespace IdleFactory.Unity.Presentation
             ApplyOverlayScale();
             AdvanceFrames(clockMilliseconds, clockFrozen);
             VisualsRendered?.Invoke(visuals);
+        }
+
+        // ------------------------------------------------------------------------------------------------------
+        // Build card preview (T539, FR-032, FR-033, research R13)
+        // ------------------------------------------------------------------------------------------------------
+
+        /// <summary>The alpha of the ghost preview of the selected machine type (frame 0).</summary>
+        public const float PreviewAlpha = 0.6f;
+
+        /// <summary>The alpha of the frame that outlines an available build location; the selected location keeps the full frame.</summary>
+        public const float HighlightAlpha = 0.5f;
+
+        private bool[] available = Array.Empty<bool>();
+        private int previewSlot = -1;
+        private string previewKey;
+
+        /// <summary>The location the ghost shows at, or -1.</summary>
+        public int PreviewSlot => previewSlot;
+
+        /// <summary>The machine body key of the ghost, or null.</summary>
+        public string PreviewKey => previewKey;
+
+        /// <summary>True when <paramref name="slotIndex"/> is outlined as an available build location.</summary>
+        public bool IsAvailable(int slotIndex) => slotIndex >= 0 && slotIndex < available.Length && available[slotIndex];
+
+        /// <summary>Outlines the given locations as the available ones; an empty or null list clears the outline.</summary>
+        public void ShowAvailable(IReadOnlyList<int> locations)
+        {
+            var count = locations == null ? 0 : locations.Count;
+            var size = Math.Max(slots == null ? 0 : slots.Length, layout.LocationCount);
+            if (available.Length != size)
+            {
+                available = new bool[size];
+            }
+            else
+            {
+                Array.Clear(available, 0, available.Length);
+            }
+
+            for (var i = 0; i < count; i++)
+            {
+                var location = locations[i];
+                if (location >= 0 && location < available.Length)
+                {
+                    available[location] = true;
+                }
+            }
+
+            Reapply();
+        }
+
+        /// <summary>Shows the ghost of <paramref name="machineKey"/> at the empty <paramref name="location"/> (frame 0, <see cref="PreviewAlpha"/>); a null key or a negative location clears it.</summary>
+        public void ShowPreview(int location, string machineKey)
+        {
+            var valid = machineKey != null && location >= 0;
+            previewSlot = valid ? location : -1;
+            previewKey = valid ? machineKey : null;
+            Reapply();
+        }
+
+        /// <summary>Clears the outline and the ghost.</summary>
+        public void ClearBuildPreview()
+        {
+            Array.Clear(available, 0, available.Length);
+            previewSlot = -1;
+            previewKey = null;
+            Reapply();
+        }
+
+        // Redraws every slot from the last visuals with the preview state, without raising VisualsRendered (the deck view has nothing to re-plan).
+        private void Reapply()
+        {
+            if (sprites == null || slots == null || visuals.Length == 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < slots.Length && i < visuals.Length; i++)
+            {
+                slots[i].Show(visuals[i], sprites, cueSet, IsAvailable(i), i == previewSlot ? previewKey : null);
+            }
+
+            ApplyOverlayScale();
+            AdvanceFrames(clockMilliseconds, clockFrozen);
         }
 
         private void Reposition()

@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- T539: the docked build card (FR-032, FR-033, R13). Like the machine card, the root carries the scaffold class so the scaffold button, disabled and reason
+         classes apply, and BuildCard.uss overrides the full-screen fill (a docked variant by composition). The type rows are added in code, one button per machine type. -->
+    <ui:VisualElement name="build-card" class="scaffold bcard">
+        <ui:Label name="build-card-selected" text="" class="bcard__selected" />
+        <ui:Label name="build-card-hint" text="" class="bcard__hint" />
+        <ui:ScrollView name="build-card-types" class="run-scroll bcard__types" />
+        <ui:VisualElement name="build-card-actions" class="bcard__actions">
+            <ui:Button name="build-card-cancel" text="Cancel" focusable="true" class="run-control scaffold-button scaffold-button--secondary bcard__action" />
+            <ui:Button name="build-card-confirm" text="Confirm" focusable="true" class="run-control scaffold-button scaffold-button--primary bcard__action" />
+        </ui:VisualElement>
+        <ui:Label name="build-card-reason" text="" class="bcard__reason" />
+        <ui:Label name="build-card-feedback" text="" class="bcard__feedback" />
+    </ui:VisualElement>
+</ui:UXML>
