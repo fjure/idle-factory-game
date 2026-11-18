@@ -77,6 +77,22 @@ namespace IdleFactory.Unity.UI
         public const string CloseName = "Close";
         public const string DetailsName = "Details";
 
+        /// <summary>
+        /// The reason an input is short, in a few words (A-5, B-4, T528): minimal model-driven text for the cause line's description. The visible wording is
+        /// copy work (T547). Null for <see cref="MissingInputCause.None"/>.
+        /// </summary>
+        public static string CauseDetail(MissingInputCause cause)
+        {
+            switch (cause)
+            {
+                case MissingInputCause.AutoSold: return "Auto-sell is selling it";
+                case MissingInputCause.NoSource: return "No machine makes it";
+                case MissingInputCause.StoreFull: return "The store is full, so its makers cannot deliver";
+                case MissingInputCause.SourceTooSlow: return "Its makers are not keeping up";
+                default: return null;
+            }
+        }
+
         /// <summary>The state line of a visual state: the state in words, the cause goes on its own line.</summary>
         public static string StateLine(MachineVisualState state)
         {
@@ -244,6 +260,9 @@ namespace IdleFactory.Unity.UI
             slot = shown.SlotIndex;
             shownInstance = Guid.Empty;
             ClearInline();
+            // P2-F12 and A-11 (T528): the model is not refreshed while the card is hidden, so its baselines are as old as the last show. A show forgets
+            // them: the first refresh takes a new baseline and reports no completion delta from before the show.
+            model.ResetBaseline();
             dirty = true;
             Refresh();
         }
@@ -392,6 +411,7 @@ namespace IdleFactory.Unity.UI
             string text = null;
             string iconKey = null;
             var resourceIcon = false;
+            string causeDetail = null;
             switch (state)
             {
                 case MachineVisualState.MissingInput:
@@ -401,6 +421,8 @@ namespace IdleFactory.Unity.UI
                     if (resource != null)
                     {
                         text = AttentionModel.ShortOnCopy(SlotSheetText.ResourceLabel(session, resource));
+                        var detail = MachineCardCopy.CauseDetail(presentation.LimitingCause);
+                        causeDetail = detail == null ? text : text + ". " + detail;
                         if (session.Catalog.Resources.TryGetValue(resource, out var def))
                         {
                             iconKey = def.PresentationKey;
@@ -430,6 +452,8 @@ namespace IdleFactory.Unity.UI
             }
 
             causeLabel.text = text ?? string.Empty;
+            // The specific cause (auto-sell, no source, a full store, a slow source) comes from the model and rides in the description; T547 owns the visible copy.
+            causeLabel.tooltip = causeDetail ?? text ?? string.Empty;
             causeLabel.style.display = text == null ? DisplayStyle.None : DisplayStyle.Flex;
             var sprite = iconKey != null && icons != null ? icons(iconKey) : null;
             causeLabel.style.backgroundImage = sprite == null ? new StyleBackground(StyleKeyword.None) : new StyleBackground(sprite);

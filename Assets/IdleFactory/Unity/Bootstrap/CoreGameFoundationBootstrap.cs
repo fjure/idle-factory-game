@@ -214,6 +214,20 @@ namespace IdleFactory.Unity.Bootstrap
         private EffectPoolView effectView;
         private WorldEffectsFeed worldEffects;
 
+        // T528: the depot with its links (the third Tilemap, the branch pips and the depot sprite) and the ore-vein deposit (scenery, never a hit target).
+        private DepotLinkView depotLinkView;
+        private DepotLinkModel depotLinkModel;
+        private DepositView depositView;
+
+        /// <summary>The depot and link layer of the world (null until the run shell is composed).</summary>
+        public DepotLinkView DepotLinkView => depotLinkView;
+
+        /// <summary>What the link layer and the depot show this frame (null until the run shell is composed).</summary>
+        public DepotLinkModel DepotLinkModel => depotLinkModel;
+
+        /// <summary>The ore-vein deposit of the world (null until the run shell is composed).</summary>
+        public DepositView DepositView => depositView;
+
         /// <summary>The world effect pool (null until the run shell is composed).</summary>
         public EffectPool EffectPool => effectPool;
 
@@ -589,6 +603,18 @@ namespace IdleFactory.Unity.Bootstrap
                 effectView = effectObject.AddComponent<EffectPoolView>();
                 effectView.Configure(spriteCatalog, effectPool);
                 effectView.Bind(grid);
+                // T528: the links and the depot (links layer, below the machines) and the vein (scenery). Both follow the grid's layout.
+                var linkObject = new GameObject("Depot Link View");
+                linkObject.transform.SetParent(transform, false);
+                depotLinkView = linkObject.AddComponent<DepotLinkView>();
+                depotLinkView.Configure(spriteCatalog);
+                depotLinkView.Bind(grid);
+                depotLinkModel = new DepotLinkModel();
+                var depositObject = new GameObject("Deposit View");
+                depositObject.transform.SetParent(transform, false);
+                depositView = depositObject.AddComponent<DepositView>();
+                depositView.Configure(spriteCatalog);
+                depositView.Bind(grid);
                 worldEffects = new WorldEffectsFeed(runSession, effectPool, worldCompositionApplied ? worldComposition.FamilyFpsCapMap() : null);
                 worldEffects.SessionReplaced += HandleWorldSessionReplaced;
                 UseMachineEffects(effectPool);
@@ -1322,7 +1348,28 @@ namespace IdleFactory.Unity.Bootstrap
                     // T529: one refresh of the world model per frame (P2-F10), the pops of the new completions, and the 8 renderers.
                     worldEffects.Update(slotGrid.Layout, animationClock.Milliseconds, animationClock.ReducedMotion);
                     effectView.Present();
+                    PresentDepotAndDeposit();
                 }
+            }
+        }
+
+        // T528: the live machine rows (this frame, never a snapshot) decide the branch pips, so a pip stops in the frame after its machine stops Running;
+        // the shared store gives the depot fill; the ore-vein hold gives the chip loop. Reduced motion shows the static variants.
+        private void PresentDepotAndDeposit()
+        {
+            if (depotLinkView == null || depotLinkModel == null)
+            {
+                return;
+            }
+
+            var inventory = runSession.State.Inventory;
+            var layout = slotGrid.Layout;
+            depotLinkModel.Refresh(layout.LocationCount, worldEffects.LiveStates, worldEffects.LiveStateCount, worldEffects.Model, inventory.Total, inventory.Capacity);
+            depotLinkView.Present(depotLinkModel, animationClock.Milliseconds, animationClock.ReducedMotion);
+            if (depositView != null)
+            {
+                var oreVein = runShell.OreVein;
+                depositView.Present(oreVein != null && oreVein.IsHolding, animationClock.Milliseconds, animationClock.ReducedMotion);
             }
         }
 

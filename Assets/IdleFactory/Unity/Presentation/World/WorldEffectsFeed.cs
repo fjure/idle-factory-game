@@ -57,6 +57,15 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The world's model (the card owns another one for its own location).</summary>
         public MachinePresentationModel Model => model;
 
+        /// <summary>
+        /// The machine rows read this frame (<see cref="RunSession.CopyMachineStates(MachineStateView[])"/>, always current, never a snapshot): the link layer
+        /// reads the live Running state from them, so a pip stops in the frame after its machine stops. Valid after <see cref="Update"/>; the array is reused.
+        /// </summary>
+        public MachineStateView[] LiveStates => states;
+
+        /// <summary>The number of valid rows of <see cref="LiveStates"/> this frame.</summary>
+        public int LiveStateCount { get; private set; }
+
         /// <summary>The number of full snapshot rebuilds so far (the allocating path), for tests and the profile.</summary>
         public int Rebuilds { get; private set; }
 
@@ -102,6 +111,7 @@ namespace IdleFactory.Unity.Presentation
             hasRun = true;
 
             var count = ReadStates(out var signature, out var completed);
+            LiveStateCount = count;
             var machinesChanged = signature != identitySignature || completed < lastCompleted;
             identitySignature = signature;
             lastCompleted = completed;

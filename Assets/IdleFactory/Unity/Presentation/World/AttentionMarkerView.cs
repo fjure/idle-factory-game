@@ -113,6 +113,26 @@ namespace IdleFactory.Unity.Presentation
         public float HitRadiusWorld => Mathf.Max(MinimumHitDiameterPoints * 0.5f / pointsPerCell, AttentionModel.MarkerSizePixels * 0.5f / SlotGridLayout.Density);
 
         /// <summary>
+        /// Resolves a world point inside the visible icon box of a marker (<see cref="AttentionModel.MarkerSizePixels"/> square) to the location it selects.
+        /// The icon wins over a machine shape under it (<see cref="WorldTapResolver"/>). Allocation-free.
+        /// </summary>
+        public bool TryHitIcon(Vector2 world, out BuildingLocationId target)
+        {
+            var half = AttentionModel.MarkerSizePixels * 0.5f / SlotGridLayout.Density;
+            for (var i = visibleCount - 1; i >= 0; i--)
+            {
+                if (Mathf.Abs(world.x - centres[i].x) <= half && Mathf.Abs(world.y - centres[i].y) <= half)
+                {
+                    target = targets[i];
+                    return true;
+                }
+            }
+
+            target = default;
+            return false;
+        }
+
+        /// <summary>
         /// Resolves a world point to the location a marker selects: the first affected location of the nearest marker within the hit radius.
         /// Allocation-free.
         /// </summary>

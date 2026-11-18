@@ -248,6 +248,20 @@ namespace IdleFactory.Unity.Presentation
             "F006-EDGE-GANTRY-FL", "F006-EDGE-GANTRY-FR", "F006-EDGE-GANTRY-CORNER",
         };
 
+        /// <summary>
+        /// The F006 keys that the depot, link and deposit views place (T528): four link tiles, the 12 depot sprites, four deposit sprites, the branch pip and the
+        /// vein chip loop. Their rows are required. Declared before <c>Registry</c>: the registry initializer reads it.
+        /// </summary>
+        public static readonly string[] PlacedF006LinkKeys =
+        {
+            "F006-LINK-TRUNK", "F006-LINK-JUNCTION", "F006-LINK-BRANCH", "F006-LINK-BRANCH-ACTIVE",
+            "F006-DEPOT-S1-EMPTY", "F006-DEPOT-S1-LOW", "F006-DEPOT-S1-HIGH", "F006-DEPOT-S1-FULL",
+            "F006-DEPOT-S2-EMPTY", "F006-DEPOT-S2-LOW", "F006-DEPOT-S2-HIGH", "F006-DEPOT-S2-FULL",
+            "F006-DEPOT-S3-EMPTY", "F006-DEPOT-S3-LOW", "F006-DEPOT-S3-HIGH", "F006-DEPOT-S3-FULL",
+            "F006-DEPOSIT-REST-S1", "F006-DEPOSIT-REST-S2", "F006-DEPOSIT-REST-S3", "F006-DEPOSIT-HIGHLIGHT",
+            "F006-FX-BRANCH-PIP", "F006-FX-VEIN-CHIP",
+        };
+
         // Declared before Registry: the registry initializer reads it.
         // T428 requirement registry. Architect decision (2026-10-30, confirming the 2026-10-27 re-validation), amended by T476
         // (owner decision 2026-11-05, option D: the Feature 003 placeholder sprites are deleted):
@@ -718,8 +732,8 @@ namespace IdleFactory.Unity.Presentation
         // glyph, Art Bible 21.4), derived from the approved source manifests: world size is canvas px / 24 (PPU = D = 24), the pivot is a whole
         // art pixel (rule P1), and the frame count is the sprite's frame count. None of these is a canvas layer (each is placed on its own
         // anchor). T527 flips the rows it places to required (ground, props, edges and the Office glyph; see PlacedF006Keys): the shipped scene
-        // catalog (RequireRegistryRows) fails closed without them. The depot, deposit, link, foundation and FX rows stay optional until the
-        // tasks that place them (T528, T529) flip them.
+        // catalog (RequireRegistryRows) fails closed without them. The foundation and the other FX rows stay optional until the
+        // tasks that place them flip them; T528 flipped the depot, deposit, link, pip and vein chip rows (PlacedF006LinkKeys).
         private static void AddF006Rows(Dictionary<string, PresentationSpriteRequirement> map)
         {
             // key, canvas width px, canvas height px, pivot x px, pivot y px, frames
@@ -779,7 +793,7 @@ namespace IdleFactory.Unity.Presentation
             {
                 map[row.Key] = new PresentationSpriteRequirement(
                     row.Key, row.Width / 24f, row.Height / 24f, row.PivotX / (float)row.Width, row.PivotY / (float)row.Height,
-                    row.Frames, row.Frames, Array.IndexOf(PlacedF006Keys, row.Key) >= 0 || row.Key == OfficeIconKey, false);
+                    row.Frames, row.Frames, Array.IndexOf(PlacedF006Keys, row.Key) >= 0 || Array.IndexOf(PlacedF006LinkKeys, row.Key) >= 0 || row.Key == OfficeIconKey, false);
             }
         }
 
