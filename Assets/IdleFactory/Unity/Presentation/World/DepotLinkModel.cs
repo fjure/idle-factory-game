@@ -219,23 +219,24 @@ namespace IdleFactory.Unity.Presentation
         public const string VeinChipKey = "F006-FX-VEIN-CHIP";
 
         /// <summary>
-        /// The depot fill index of the contract (FR-013, R15): <c>min(3, floor(4 x fill / capacity))</c>. An empty store or a store without capacity is 0;
-        /// a full store is 3. The index selects <see cref="DepotFillState"/> one to one.
+        /// The depot fill state of the shared store, without the full state (F1, R15): Empty only when nothing is stored; Low below half of the capacity; High from
+        /// half up to the capacity. <see cref="DepotFillState.Full"/> is never a fill level: it means the store is full (see <see cref="DepotLinkModel.StoreFull"/>),
+        /// so the copper lip of the full sprite is a distinct signal. A store at or over capacity returns High here; the model turns it into Full.
         /// </summary>
-        public static int FillIndexOf(long fill, long capacity)
+        public static DepotFillState FillStateOf(long fill, long capacity)
         {
-            if (capacity <= 0 || fill <= 0)
+            if (fill <= 0)
             {
-                return 0;
+                return DepotFillState.Empty;
             }
 
-            if (fill >= capacity)
+            if (capacity <= 0 || fill >= capacity)
             {
-                return 3;
+                return DepotFillState.High;
             }
 
-            var index = (long)(fill * 4m / capacity);
-            return index > 3 ? 3 : (int)index;
+            // fill / capacity < 0.5, written without a multiplication that could overflow.
+            return fill < capacity - fill ? DepotFillState.Low : DepotFillState.High;
         }
 
         /// <summary>
@@ -272,7 +273,7 @@ namespace IdleFactory.Unity.Presentation
         private BranchState[] branches = Array.Empty<BranchState>();
         private ActivityPace[] paces = Array.Empty<ActivityPace>();
         private int locationCount;
-        private int fillIndex;
+        private DepotFillState fillLevel;
         private bool storeFull;
         private int runningCount;
         private int occupiedCount;
@@ -289,14 +290,14 @@ namespace IdleFactory.Unity.Presentation
 
         public ActivityPace PaceOf(int location) => location >= 0 && location < locationCount ? paces[location] : ActivityPace.Normal;
 
-        /// <summary><c>min(3, floor(4 x fill / capacity))</c> of the shared store.</summary>
-        public int FillIndex => fillIndex;
+        /// <summary>The fill level of the shared store (Empty, Low or High); Full is <see cref="StoreFull"/>, not a level.</summary>
+        public DepotFillState FillLevel => fillLevel;
 
         /// <summary>True when the store is at capacity or a machine cannot store its output: the depot shows its full sprite.</summary>
         public bool StoreFull => storeFull;
 
-        /// <summary>The depot sprite state: the fill index, or full when the store is full.</summary>
-        public DepotFillState Fill => storeFull ? DepotFillState.Full : (DepotFillState)fillIndex;
+        /// <summary>The depot sprite state: the fill level, or Full only when the store is full.</summary>
+        public DepotFillState Fill => storeFull ? DepotFillState.Full : fillLevel;
 
         /// <summary>
         /// Recomputes the model. <paramref name="paceSource"/> supplies <see cref="ActivityPace"/> per location (null means Normal). Allocation-free once the
@@ -339,7 +340,7 @@ namespace IdleFactory.Unity.Presentation
                 anyStorageFull |= state == MachineVisualState.StorageFull;
             }
 
-            fillIndex = DepotLinkGeometry.FillIndexOf(storeUsed, storeCapacity);
+            fillLevel = DepotLinkGeometry.FillStateOf(storeUsed, storeCapacity);
             storeFull = anyStorageFull || (storeCapacity > 0 && storeUsed >= storeCapacity);
         }
     }

@@ -159,62 +159,74 @@ namespace IdleFactory.Tests.EditMode.F006
             }
         }
 
+        [TestCaseSource(nameof(Layouts))]
+        public void TheVisibleTileCountIncludingTheLinkTilesStaysInsideTheBudgetPlusOneTrunkRunPerRow(string name)
+        {
+            var layout = DeckTestSupport.Layout(name);
+            var linkTiles = DepotLinkGeometry.Build(layout).Tiles.Count;
+            var m = layout.DeckBandCells;
+            var budget = (layout.ColumnCount + 2 * m) * (layout.RowCount + 2 * m) * 2 + layout.RowCount * (layout.ColumnCount + 1);
+            for (var stage = 0; stage < WorldCompositionSettings.StageCount; stage++)
+            {
+                var plan = DeckPlanner.Build(layout, DeckTestSupport.All(layout.LocationCount, SlotCondition.Occupied), stage, DeckTestSupport.Settings());
+                Assert.That(plan.TileCount + linkTiles, Is.LessThanOrEqualTo(budget), name + " stage " + stage + ": base + deck + links");
+            }
+
+            Assert.That(linkTiles, Is.LessThanOrEqualTo(layout.RowCount * (layout.ColumnCount + 1)), name + ": at most one run of columns + junction per row");
+        }
+
         // ---------------------------------------------------------------------------------------------------
         // Depot fill
         // ---------------------------------------------------------------------------------------------------
 
-        [TestCase(0L, 100L, 0)]
-        [TestCase(1L, 100L, 0)]
-        [TestCase(24L, 100L, 0)]
-        [TestCase(25L, 100L, 1)]
-        [TestCase(49L, 100L, 1)]
-        [TestCase(50L, 100L, 2)]
-        [TestCase(74L, 100L, 2)]
-        [TestCase(75L, 100L, 3)]
-        [TestCase(99L, 100L, 3)]
-        [TestCase(100L, 100L, 3)]
-        [TestCase(250L, 100L, 3)]
-        [TestCase(5L, 0L, 0)]
-        [TestCase(-5L, 100L, 0)]
-        [TestCase(3L, 10L, 1)]
-        [TestCase(2L, 10L, 0)]
-        [TestCase(5L, 10L, 2)]
-        public void TheFillIndexIsMinThreeOfFloorFourTimesFillOverCapacity(long fill, long capacity, int expected)
+        [TestCase(0L, 100L, DepotFillState.Empty, TestName = "Zero")]
+        [TestCase(1L, 100L, DepotFillState.Low, TestName = "OneUnit")]
+        [TestCase(49L, 100L, DepotFillState.Low, TestName = "JustUnderFiftyPercent")]
+        [TestCase(50L, 100L, DepotFillState.High, TestName = "FiftyPercent")]
+        [TestCase(99L, 100L, DepotFillState.High, TestName = "CapacityMinusOne")]
+        [TestCase(100L, 100L, DepotFillState.High, TestName = "Capacity (the model turns it into Full)")]
+        [TestCase(-5L, 100L, DepotFillState.Empty, TestName = "Negative")]
+        [TestCase(3L, 7L, DepotFillState.Low, TestName = "OddCapacityJustUnderHalf")]
+        [TestCase(4L, 7L, DepotFillState.High, TestName = "OddCapacityJustOverHalf")]
+        public void TheFillLevelIsEmptyOnlyAtZeroLowBelowHalfAndHighFromHalf(long fill, long capacity, DepotFillState expected)
         {
-            Assert.That(DepotLinkGeometry.FillIndexOf(fill, capacity), Is.EqualTo(expected));
+            Assert.That(DepotLinkGeometry.FillStateOf(fill, capacity), Is.EqualTo(expected));
         }
 
         [Test]
-        public void TheFillIndexIsExactAtTheBoundsOfALargeStore()
+        public void TheFillLevelIsExactAtTheBoundsOfALargeStore()
         {
             const long Capacity = 4_000_000_000_000_000_000L;
-            Assert.That(DepotLinkGeometry.FillIndexOf(Capacity / 4 - 1, Capacity), Is.EqualTo(0));
-            Assert.That(DepotLinkGeometry.FillIndexOf(Capacity / 4, Capacity), Is.EqualTo(1));
-            Assert.That(DepotLinkGeometry.FillIndexOf(Capacity / 2, Capacity), Is.EqualTo(2));
-            Assert.That(DepotLinkGeometry.FillIndexOf(Capacity / 4 * 3, Capacity), Is.EqualTo(3));
-            Assert.That(DepotLinkGeometry.FillIndexOf(long.MaxValue, long.MaxValue), Is.EqualTo(3));
+            Assert.That(DepotLinkGeometry.FillStateOf(1, Capacity), Is.EqualTo(DepotFillState.Low));
+            Assert.That(DepotLinkGeometry.FillStateOf(Capacity / 2 - 1, Capacity), Is.EqualTo(DepotFillState.Low));
+            Assert.That(DepotLinkGeometry.FillStateOf(Capacity / 2, Capacity), Is.EqualTo(DepotFillState.High));
+            Assert.That(DepotLinkGeometry.FillStateOf(long.MaxValue - 1, long.MaxValue), Is.EqualTo(DepotFillState.High));
         }
 
         [Test]
-        public void TheDepotShowsTheFillStateAndTheFullStateWhenTheStoreOrAMachineIsFull()
+        public void TheDepotShowsTheFillLevelAndFullOnlyWhenTheStoreOrAMachineIsFull()
         {
             var model = new DepotLinkModel();
             var running = new[] { Row(0) };
-            foreach (var (used, state) in new[] { (0L, DepotFillState.Empty), (30L, DepotFillState.Low), (60L, DepotFillState.High), (80L, DepotFillState.Full) })
+            var cases = new[]
+            {
+                (0L, DepotFillState.Empty), (1L, DepotFillState.Low), (49L, DepotFillState.Low), (50L, DepotFillState.High),
+                (99L, DepotFillState.High), (100L, DepotFillState.Full),
+            };
+            foreach (var (used, state) in cases)
             {
                 model.Refresh(6, running, running.Length, null, used, 100);
-                Assert.That(model.Fill, Is.EqualTo(state), "used " + used);
-                Assert.That(model.FillIndex, Is.EqualTo((int)state));
+                Assert.That(model.Fill, Is.EqualTo(state), "used " + used + " of 100");
+                Assert.That(model.StoreFull, Is.EqualTo(state == DepotFillState.Full), "used " + used);
             }
 
-            model.Refresh(6, running, running.Length, null, 100, 100);
-            Assert.That(model.StoreFull, Is.True, "a store at capacity is full");
-            Assert.That(model.Fill, Is.EqualTo(DepotFillState.Full));
+            model.Refresh(6, running, running.Length, null, 150, 100);
+            Assert.That(model.Fill, Is.EqualTo(DepotFillState.Full), "over capacity is full");
 
             var blocked = new[] { Row(0), Row(1, blocker: MachineBlocker.StorageFull, phase: MachinePhase.Paused) };
             model.Refresh(6, blocked, blocked.Length, null, 10, 100);
-            Assert.That(model.FillIndex, Is.EqualTo(0), "the fill index is the store's");
-            Assert.That(model.StoreFull, Is.True, "a machine that cannot store its output shows the depot full (contracts section 3)");
+            Assert.That(model.FillLevel, Is.EqualTo(DepotFillState.Low), "the fill level is the store's");
+            Assert.That(model.StoreFull, Is.True, "StorageFull at low fill: a machine that cannot store its output shows the depot full (contracts section 3)");
             Assert.That(model.Fill, Is.EqualTo(DepotFillState.Full));
         }
 

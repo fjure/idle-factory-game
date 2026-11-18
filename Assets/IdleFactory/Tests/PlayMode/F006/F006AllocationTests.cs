@@ -128,11 +128,12 @@ namespace IdleFactory.Tests.PlayMode.F006
             public int ChipFrames;
             public int HighlightFrames;
             public int BranchSwaps;
+            public int DepotStates;
         }
 
         // A real session over a packaged catalog (no editor API): 8 miners complete cycles for 600 frames of 100 ms while the feed and the views run: the effect
         // pool, the depot and link layer (the branch pips and tile swaps) and the ore-vein deposit (the chip loop, toggled every 40 frames like a mining hold).
-        private IEnumerator MeasureEightMinersRunning(RunCatalog catalog, string offerToAccept, Measurement result, bool reduced = false)
+        private IEnumerator MeasureEightMinersRunning(RunCatalog catalog, string offerToAccept, Measurement result, bool reduced = false, bool events = false)
         {
             var permanent = new PermanentState(catalog);
             var start = NextRunStart.Compute(catalog, permanent);
@@ -214,10 +215,30 @@ namespace IdleFactory.Tests.PlayMode.F006
             var spawnedBefore = pool.SpawnedTotal;
             var structureBefore = session.StructureRevision;
             var rebuildsAtStart = feed.Rebuilds;
+            // Events that exercise the swap and sprite-change paths inside the measured window (the session is not measured): machine 0 is switched off for 50
+            // frames out of 100 (its branch swaps between the active and plain tile under reduced motion), and the ore is sold every 150 frames (the depot
+            // drops back to empty and refills, so more than one depot fill state shows).
+            var firstMachine = session.State.Machines[0].InstanceId;
+            var oreId = events ? catalog.RunStart.ManualMining.ResourceId : null;
+            var machineOn = true;
+            var lastTiles = new string[layout.LocationCount];
+            var depotKeys = new System.Collections.Generic.HashSet<string>();
             for (var frame = 0; frame < Frames; frame++)
             {
                 now += 100;
                 mining = (frame / 40) % 2 == 0;
+                var wantOn = (frame / 50) % 2 == 0;
+                if (events && wantOn != machineOn)
+                {
+                    machineOn = wantOn;
+                    Assert.That(commands.SetActive(firstMachine, wantOn).IsSuccess, Is.True);
+                }
+
+                if (events && frame % 150 == 75)
+                {
+                    commands.SellAll(oreId);
+                }
+
                 Assert.That(session.Advance(1_000_000).IsSuccess, Is.True); // 100 ms of run time per frame: the session itself is not measured
                 var rebuildsBefore = feed.Rebuilds;
                 var counted = GcAllocationCounter.Count(frameWork);
@@ -232,8 +253,17 @@ namespace IdleFactory.Tests.PlayMode.F006
 
                 result.SteadyFrames++;
                 result.Allocations += counted;
+                for (var i = 0; i < lastTiles.Length; i++)
+                {
+                    var tile = linkView.TileKeyAt(i);
+                    result.BranchSwaps += frame > 0 && !ReferenceEquals(tile, lastTiles[i]) && lastTiles[i] != null ? 1 : 0;
+                    lastTiles[i] = tile;
+                }
+
+                depotKeys.Add(linkView.ShownDepotKey);
             }
 
+            result.DepotStates = depotKeys.Count;
             result.SpawnedInWindow = pool.SpawnedTotal - spawnedBefore;
             result.StructureMoves = session.StructureRevision - structureBefore;
             result.Rebuilds = feed.Rebuilds - rebuildsAtStart;
@@ -256,10 +286,12 @@ namespace IdleFactory.Tests.PlayMode.F006
         {
             // Reduced motion: no pips, the Running branch shows the static active tile, and the vein shows the static highlight instead of the chip loop.
             var measured = new Measurement();
-            yield return MeasureEightMinersRunning(RunPlayerFixtures.IronCatalog(), null, measured, true);
+            yield return MeasureEightMinersRunning(RunPlayerFixtures.IronCatalog(), null, measured, true, true);
             Assert.That(measured.PipFrames, Is.GreaterThan(Frames / 2), "Running machines gave the branches their static active tile");
             Assert.That(measured.ChipFrames, Is.Zero, "no chip loop under reduced motion");
             Assert.That(measured.HighlightFrames, Is.GreaterThan(0), "the static highlight showed while mining");
+            Assert.That(measured.BranchSwaps, Is.GreaterThan(0), "branch tiles swapped between the active and plain tile inside the measured window (the reused SetTiles path ran under the assertion)");
+            Assert.That(measured.DepotStates, Is.GreaterThanOrEqualTo(2), "at least two depot fill states showed in the window");
             Assert.That(measured.Allocations, Is.Zero, "every steady frame allocates nothing under reduced motion");
         }
 

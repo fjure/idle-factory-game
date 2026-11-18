@@ -325,7 +325,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             for (var stage = 0; stage < WorldCompositionSettings.StageCount; stage++)
             {
                 view.SetStage(stage);
-                foreach (var (used, state) in new[] { (0L, "EMPTY"), (30L, "LOW"), (60L, "HIGH"), (80L, "FULL"), (100L, "FULL") })
+                foreach (var (used, state) in new[] { (0L, "EMPTY"), (1L, "LOW"), (49L, "LOW"), (50L, "HIGH"), (99L, "HIGH"), (100L, "FULL") })
                 {
                     Present(rows, 0, false, used, 100);
                     Assert.That(view.DepotRenderer.enabled, Is.True);
