@@ -28,6 +28,7 @@ namespace IdleFactory.Unity.Presentation
         private BuildingLocationId[] targets = new BuildingLocationId[AttentionModel.MaxMarkers];
         private int visibleCount;
         private float pointsPerCell = 48f;
+        private SlotGridView bound;
 
         /// <summary>The number of markers drawn now.</summary>
         public int VisibleMarkerCount => visibleCount;
@@ -69,6 +70,52 @@ namespace IdleFactory.Unity.Presentation
 
             visibleCount = 0;
         }
+
+        /// <summary>
+        /// Follows the grid's layout (T557, like <see cref="DepotLinkView"/>): a layout change clears the markers at once, so a stale position is never drawn
+        /// or hit; the attention model recomputes the positions from the new layout and the next <see cref="Render"/> draws them. Binding again replaces the
+        /// previous grid.
+        /// </summary>
+        public void Bind(SlotGridView slotGrid)
+        {
+            Unbind();
+            bound = slotGrid ?? throw new ArgumentNullException(nameof(slotGrid));
+            bound.LayoutChanged += HandleLayoutChanged;
+        }
+
+        private void Unbind()
+        {
+            if (bound == null)
+            {
+                return;
+            }
+
+            bound.LayoutChanged -= HandleLayoutChanged;
+            bound = null;
+        }
+
+        private void HandleLayoutChanged(FactoryWorldLayout newLayout) => Clear();
+
+        /// <summary>Hides every marker (no hit target remains) until the next <see cref="Render"/>.</summary>
+        public void Clear()
+        {
+            visibleCount = 0;
+            if (renderers == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] != null)
+                {
+                    renderers[i].enabled = false;
+                    renderers[i].sprite = null;
+                }
+            }
+        }
+
+        private void OnDestroy() => Unbind();
 
         /// <summary>The projected pixels per cell of the camera, for the hit radius. It changes no drawing.</summary>
         public void SetProjectedPixelsPerCell(float value) => pointsPerCell = Mathf.Max(1f, value);

@@ -230,6 +230,27 @@ namespace IdleFactory.Tests.EditMode.F006
             Assert.That(model.Fill, Is.EqualTo(DepotFillState.Full));
         }
 
+        // T528 re-QA carry (b): a store with no capacity but a positive fill is an inconsistent read (the inventory never holds units without capacity).
+        // The decision: the model does not invent a "full" signal from it. The fill level reads High (anything stored on an unusable capacity counts as "at
+        // least half"), StoreFull stays false (it needs a real capacity to be reached, so a transient zero-capacity read never shows the copper lip), and
+        // nothing throws or divides by zero. A machine reporting StorageFull still makes the depot full.
+        [TestCase(5L, 0L, TestName = "ZeroCapacity")]
+        [TestCase(5L, -10L, TestName = "NegativeCapacity")]
+        public void AStoreWithNoCapacityButSomeFillReadsHighAndNeverFull(long used, long capacity)
+        {
+            Assert.That(DepotLinkGeometry.FillStateOf(used, capacity), Is.EqualTo(DepotFillState.High));
+            var model = new DepotLinkModel();
+            var running = new[] { Row(0) };
+            model.Refresh(6, running, running.Length, null, used, capacity);
+            Assert.That(model.FillLevel, Is.EqualTo(DepotFillState.High));
+            Assert.That(model.StoreFull, Is.False, "full needs a real capacity to be reached");
+            Assert.That(model.Fill, Is.EqualTo(DepotFillState.High));
+
+            var blocked = new[] { Row(0, blocker: MachineBlocker.StorageFull, phase: MachinePhase.Paused) };
+            model.Refresh(6, blocked, blocked.Length, null, used, capacity);
+            Assert.That(model.StoreFull, Is.True, "a machine that cannot store its output still shows the depot full");
+        }
+
         [Test]
         public void TheDepotKeyIsTheStageVariantTimesTheFillState()
         {

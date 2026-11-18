@@ -96,6 +96,27 @@ namespace IdleFactory.Tests.PlayMode.F006
             return key.StartsWith("F006-DEPOSIT-", StringComparison.Ordinal) ? new Color32(150, 110, 70, 255) : new Color32(210, 140, 80, 255);
         }
 
+        /// <summary>A catalog of 32 x 24 flat-colour icons under <paramref name="keys"/> (the resource icons and the storage-full cue of the attention markers, T557).</summary>
+        public PresentationSpriteCatalog IconCatalog(params string[] keys)
+        {
+            var entries = new List<PresentationSpriteEntry>();
+            var requirements = new List<PresentationSpriteRequirement>();
+            for (var i = 0; i < keys.Length; i++)
+            {
+                entries.Add(new PresentationSpriteEntry(keys[i], new[] { Solid(keys[i], 32, 24, 16, 12, new Color32((byte)(60 + 40 * i), 180, 90, 255)) }, null));
+                requirements.Add(new PresentationSpriteRequirement(keys[i], 32f / D, 1f, 0.5f, 0.5f, 1, 1, false));
+            }
+
+            var result = new PresentationSpriteCatalog();
+            result.Configure(entries, requirements);
+            if (!result.IsValid)
+            {
+                throw new InvalidOperationException(result.Error);
+            }
+
+            return result;
+        }
+
         /// <summary>A catalog with every key the grid and the deck draw: the slot keys, a 6-frame Miner and its accent, the badges and markers, and the placed F006 keys.</summary>
         public PresentationSpriteCatalog Catalog()
         {

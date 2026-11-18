@@ -215,8 +215,8 @@ namespace IdleFactory.Tests.PlayMode.F006
             var spawnedBefore = pool.SpawnedTotal;
             var structureBefore = session.StructureRevision;
             var rebuildsAtStart = feed.Rebuilds;
-            // Events that exercise the swap and sprite-change paths inside the measured window (the session is not measured): machine 0 is switched off for 50
-            // frames out of 100 (its branch swaps between the active and plain tile under reduced motion), and the ore is sold every 150 frames (the depot
+            // Events that exercise the swap and sprite-change paths inside the measured window (the session is not measured): machine 0 is switched off for 100
+            // frames out of 200 (its branch swaps between the active and plain tile under reduced motion), and the ore is sold every 150 frames (the depot
             // drops back to empty and refills, so more than one depot fill state shows).
             var firstMachine = session.State.Machines[0].InstanceId;
             var oreId = events ? catalog.RunStart.ManualMining.ResourceId : null;
@@ -227,7 +227,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             {
                 now += 100;
                 mining = (frame / 40) % 2 == 0;
-                var wantOn = (frame / 50) % 2 == 0;
+                var wantOn = (frame / 100) % 2 == 0; // 5 toggles in the window: each is a deliberate structure change, so rebuild frames stay within the carry (a) bound of 5
                 if (events && wantOn != machineOn)
                 {
                     machineOn = wantOn;
@@ -287,12 +287,78 @@ namespace IdleFactory.Tests.PlayMode.F006
             // Reduced motion: no pips, the Running branch shows the static active tile, and the vein shows the static highlight instead of the chip loop.
             var measured = new Measurement();
             yield return MeasureEightMinersRunning(RunPlayerFixtures.IronCatalog(), null, measured, true, true);
+            Assert.That(measured.RebuildFrames, Is.LessThanOrEqualTo(5), "T528 re-QA carry (a): rebuild frames stay rare under reduced motion too (the measured frames exclude them)");
             Assert.That(measured.PipFrames, Is.GreaterThan(Frames / 2), "Running machines gave the branches their static active tile");
             Assert.That(measured.ChipFrames, Is.Zero, "no chip loop under reduced motion");
             Assert.That(measured.HighlightFrames, Is.GreaterThan(0), "the static highlight showed while mining");
             Assert.That(measured.BranchSwaps, Is.GreaterThan(0), "branch tiles swapped between the active and plain tile inside the measured window (the reused SetTiles path ran under the assertion)");
             Assert.That(measured.DepotStates, Is.GreaterThanOrEqualTo(2), "at least two depot fill states showed in the window");
             Assert.That(measured.Allocations, Is.Zero, "every steady frame allocates nothing under reduced motion");
+        }
+
+        // T557 (FR-026, FR-030): the attention markers of a real session (a smelter with no miner: a shortage marker; a nearly full store: the depot marker) draw
+        // and resolve taps without allocating once warm. The model refresh is revision-gated like the presenter's feed, so the steady frame is the compare, the
+        // draw of the (unchanged) markers and the tap resolution.
+        [UnityTest]
+        public IEnumerator TheAttentionMarkersDrawAndResolveTapsWithoutAllocatingInTheSteadyState()
+        {
+            var catalog = RunPlayerFixtures.IronCatalog();
+            var permanent = new PermanentState(catalog);
+            var start = NextRunStart.Compute(catalog, permanent);
+            var unlocked = new List<string>(catalog.RunStart.InitialUnlocks);
+            unlocked.AddRange(catalog.Machines.Keys);
+            unlocked.AddRange(catalog.Resources.Keys);
+            var state = new RunState(catalog, System.Guid.NewGuid(), 1, null, 1_000_000_000_000L, 0, start.StorageLevel, 5, unlocked.Distinct());
+            Assert.That(new RunSimulator(catalog).Advance(state, permanent, 0, RunPlayerFixtures.StartUtcMs, null), Is.EqualTo(RunAdvanceResult.Ok));
+            var session = new RunSession(catalog, state, permanent, RunPlayerFixtures.StartUtcMs, null);
+            var commands = new RunCommands(session);
+            Assert.That(commands.Build(0, "machine.smelter").IsSuccess, Is.True);
+            Assert.That(commands.Build(4, "machine.press").IsSuccess, Is.True);
+            Assert.That(session.Advance(2_000_000).IsSuccess, Is.True);
+
+            var grid = World(out _, out _);
+            var keys = catalog.Resources.Values.Select(r => r.PresentationKey).Concat(new[] { SlotGridModel.BadgeStorageFullKey }).Distinct().ToArray();
+            var host = new UnityEngine.GameObject("attention-marker-view");
+            rig.Owned.Add(host);
+            var view = host.AddComponent<AttentionMarkerView>();
+            view.Configure(rig.IconCatalog(keys), id => catalog.Resources[id].PresentationKey);
+            view.Bind(grid);
+            view.SetProjectedPixelsPerCell(24f);
+            var model = new AttentionModel();
+            var layout = grid.Layout;
+            Assert.That(model.Refresh(layout, RunSnapshots.Rates(session)), Is.True);
+            view.Render(model);
+            Assert.That(view.VisibleMarkerCount, Is.GreaterThan(0), "the smelter and the press lack input: shortage markers draw");
+            var marker = model.GetMarker(0);
+            var probe = new UnityEngine.Vector2(-1000f, -1000f);
+            void Frame()
+            {
+                if (model.NeedsRefresh(session.StructureRevision, session.QuantityRevision, layout, SystemAttentionFlags.None))
+                {
+                    return;
+                }
+
+                view.Render(model);
+                WorldTapResolver.Resolve(layout, view, marker.Position, out _);
+                WorldTapResolver.Resolve(layout, view, probe, out _);
+            }
+
+            for (var i = 0; i < 30; i++)
+            {
+                Frame();
+            }
+
+            yield return null;
+            Assert.That(model.NeedsRefresh(session.StructureRevision, session.QuantityRevision, layout, SystemAttentionFlags.None), Is.False, "the model is current, so every frame takes the steady path");
+            var allocations = GcAllocationCounter.Count(() =>
+            {
+                for (var i = 0; i < Frames; i++)
+                {
+                    Frame();
+                }
+            });
+            Assert.That(allocations, Is.Zero, "drawing the markers and resolving a tap allocate nothing in the steady state");
+            Assert.That(view.VisibleMarkerCount, Is.GreaterThan(0), "markers were drawn throughout");
         }
 
         [UnityTest]
