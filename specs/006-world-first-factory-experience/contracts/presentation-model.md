@@ -1,6 +1,6 @@
 # Contract: Presentation Models (F006)
 
-**Revision 2** (plan reviews, 2026-11-11).
+**Revision 3** (as built by T529 and T528, 2026-11-18; P2-F11). Revision 2: plan reviews, 2026-11-11.
 
 | | |
 |---|---|
@@ -83,9 +83,13 @@
   - There is one world marker per shortage resource, at most 2 visible, ranked by the shortage order. Each marker sits at the trunk junction of its first affected row, or at the depot for store full, and shows the resource icon.
   - The strip indicator shows the top resource and its affected count, plus "+N" for further resources.
   - Tapping a marker or the strip indicator selects the first affected location.
+  - Revision 3 caps: at most 2 shortage markers plus 1 store-full marker. A second marker in the same row shifts 22 px. "+N" counts further shortage resources only, never store full. `IsSharedCause` applies to shortages; store full is a single depot-level cause.
+- **Tap priority (revision 3, T528).** `WorldTapResolver`: a visible marker icon wins, then a machine tap shape, then a marker's 48 pt touch circle, else nothing. The depot, links and deposit are never hit. A marker's invisible circle never steals a tap from a visible machine.
+- **Limiting cause (revision 3, T528).** `MachinePresentation.LimitingCause` names why a MissingInput machine waits: `AutoSold` (the input is being auto-sold), `NoSource` (nothing produces it), `StoreFull`, `SourceTooSlow`, in that order; `None` otherwise. The card reads it from the model and does not derive it again. Copy belongs to T547.
 - **System attention.** Contracts, Research, Prestige and Overdrive drive only the hub dot. Market has no flag.
 - **No numbers in the world** (FR-030).
 - **When it is computed.** Only on a revision change, into reused buffers.
+- **Completion deltas (revision 3, T529).** The completion-delta display cap is 3. `Refresh` runs every frame; `Generation` moves only when a delta above 0 is written, and a consumer compares it before reading `CompletionsDelta`. The card model resets its baseline on every card show; session replace and offline return reset all baselines and suppress the first delta. The world-effects feed applies completions every frame from live machine rows (`ApplyCompletions`) and rebuilds its snapshot immediately only on machine identity, layout, offline return or session replace, otherwise at most once per second.
 
 ### Tests
 

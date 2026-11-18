@@ -1,6 +1,6 @@
 # Contract: World Presentation (F006)
 
-**Revision**: 2 (plan reviews, 2026-11-11).
+**Revision**: 3 (as built by T527–T529 and T528, 2026-11-18; P2-F11). Revision 2: plan reviews, 2026-11-11.
 **Scope**: world layout and composition; deck and environment; depot, links and deposit; development growth; art families and budgets; direction and acceptance evidence; World Bible conformance.
 **Requirements**: FR-004, FR-010a, FR-011 to FR-015, FR-037 to FR-044, FR-046, FR-047.
 **Research**: R02 to R07, R15, R17, R18, R22, R23.
@@ -49,7 +49,13 @@ The camera scale never changes on unlock.
 
 **Branches.** Each occupied location has one branch, from the plate's rear edge to its trunk. Empty and locked locations have none.
 
-**Depot.** Sits at `DepotCell` in the margin band. It has 4 fill states (index `min(3, floor(4·fill/capacity))`, plus the existing full state) times 3 stage variants.
+**Depot.** Sits at `DepotCell` in the margin band. Four sprites times 3 stage variants (`F006-DEPOT-S{stage}-{state}`). Revision 3 (T528 Art Director review, Art Bible 21.12): EMPTY at fill 0; LOW below 50 %; HIGH from 50 % up to, but excluding, capacity; FULL only when the store is at capacity or any machine is StorageFull-blocked. This supersedes the index `min(3, floor(4·fill/capacity))`.
+
+**Layers (as built, revision 3).**
+- Links are the third Tilemap (Grid cell 70 x 54), shifted +12 art px so the tile bottom is the row pivot − 15 and the lane centre is 29 px above the row pivot. Order: link Tilemap on `WorldLinks` 0, deposit rest on `WorldLinks` 20, depot on `WorldLinks` 100.
+- One trunk run per location row, independent of occupancy, with a junction on the depot column (mirrored for a left depot, which shifts the 3 px spine by 1 px; no shipped layout uses a left depot). The branch tile replaces the trunk tile on an occupied cell. A trunk's far end overshoots half a cell beyond the farthest branch.
+- Pips: one per location, pre-created with the layout, on `Overlay` order 100 + location, below every cue (150), because the Overdrive marker sits on the branch spine. A pip moves in whole-pixel steps from the plate's rear edge (+20) to the lane (+29); the branch is one lane cell.
+- Pips read the live machine rows each frame (`WorldEffectsFeed.LiveStates`), not the world model, so a pip stops in the frame after a block.
 
 **Pips.**
 - Shown **only on branches**, while the machine is Running.
@@ -62,7 +68,7 @@ The camera scale never changes on unlock.
 - A pip never represents a unit count.
 
 **Tests:**
-- `DepotLinkModelTests` (Edit Mode): geometry on the 3×4, 4×3, 6, 20 and L layouts; fill index; branch presence per condition; pace mapping.
+- `DepotLinkModelTests` (Edit Mode): geometry on the 3×4, 4×3, 6, 20 and L layouts; fill state at its boundaries (0, 1 unit, under and at 50 %, capacity − 1, capacity, StorageFull at low fill); branch presence per condition; pace mapping.
 - `DepotLinkViewTests` (Play Mode): a pip stops within one frame of a block.
 
 ## 2a. Ore vein (FR-010a)
@@ -70,10 +76,10 @@ The camera scale never changes on unlock.
 **Placement.** `DepositCell` is chosen by `WorldCompositionSettings`. It is a margin cell outside hit shapes and keep-outs.
 
 **Activity.**
-- While manual mining is in progress, a 6-frame chip loop plays on the shared clock.
+- While manual mining is in progress (the ore-vein hold, `OreVeinControl.IsHolding`), a 6-frame chip loop plays on the shared clock (`Effects` order −80).
 - Under reduced motion, a static highlight replaces the loop.
 
-**Interaction.** The vein is not a hit target in F006.
+**Interaction.** The vein is not a hit target in F006: it has no collider and no hit API, and the tap resolver never returns it.
 
 **Economy.** Yield, rate and pacing are unchanged. Game Systems confirms this.
 
