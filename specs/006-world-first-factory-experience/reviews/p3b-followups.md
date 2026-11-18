@@ -74,3 +74,20 @@ The Art Director accepted the outline-carried copper pairs with an area limit (n
 | C-17 | T556 Art Director F1 | The area gate is a per-badge average, not a per-badge maximum. Add a maximum when lane art changes. | Later art task |
 | C-18 | T556 Art Director F2 | Thin margins (outline over `copper_1` 3.47:1, `cue_alert` over `dim_0` 3.52:1); CVD-simulated luminance is not computed in the cue gate. | Later art task |
 | C-19 | T556 Art Director F3 | The gate note still points to the T522 report; reword at the next pipeline regeneration (never hand-edit the report). | Later art task |
+
+## T529 (P2 strand)
+
+| Task | Issue | PR | Commit | QA | Reviews |
+|---|---|---|---|---|---|
+| T529 | #703 | #765 | `5d64819` (two fix rounds on `87f4ac0`) | PASS: Edit Mode 2971/2971, Play Mode 3202/3202, settings noise OK | Architect APPROVE_WITH_NOTES; Performance ACCEPT_WITH_NOTES (re-checked twice) |
+
+Fix round 1 replaced a throttled full `RunSnapshots.Factory` rebuild (up to 10 per second on a running factory) with an allocation-free per-frame completion path. Re-QA then found that an active production contract bumps `Contracts.Version`, and with it `StructureRevision`, on every produced unit, so fix round 2 rebuilds immediately only on machine identity, layout, offline return and session replace, and at most once per second otherwise. Both cases now have 600-frame zero-allocation Play Mode tests.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-20 | Performance re-check | Measure structural rebuilds per 600 frames and allocations per rebuild (about 174) on W006-V; label them structural-event allocations, not steady state. Consider one shared factory snapshot for `RunShellPresenter` and the feed. | T531 |
+| C-21 | Architect, QA | The world model's VisualState and QuantityRevision are as old as the last rebuild (up to 1 s). The feed uses only deltas and ActivityFps; a later reader must not rely on them. | T531, T534 |
+| C-22 | Architect | `familyFpsCaps` is not serialized in `WorldCompositionSettings.asset` (class default Assembler 8 fps applies; a test pins it). Serialize at the next Unity re-save. | T534 or T547 |
+| C-23 | Architect | P2-F14 decision: the per-family fps caps live in the presentation tuning asset `WorldCompositionSettings`, not gameplay content data. | Recorded |
+| C-24 | Worker | FX rows (pop, spark, steam, glint, dust) stay optional in the catalog; Steam and BuildDust are not spawned yet; pop placement at `PlateCentreOf` is unverified on device. | T528 (FX), T543-C gate |
+| C-25 | Worker (P2-F15 N3) | Document in research R09 that a locked input gives no shortage. | Parent at batch end |
