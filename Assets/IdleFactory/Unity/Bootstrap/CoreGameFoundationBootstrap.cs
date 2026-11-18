@@ -733,7 +733,12 @@ namespace IdleFactory.Unity.Bootstrap
             TryComposePanel(ShellPanelIds.MachineCard,
                 () => new MachineCard(runSession, runCommands, machineCardTree, machineCardStyles, panelScaffoldStyles, icons, machineFeedback,
                     () => slotGrid != null ? slotGrid.Layout : null));
-            if (buildCardTree != null)
+            if (buildCardTree == null)
+            {
+                // T539: a missing wiring must not go unnoticed again; the build sheet stays the fallback route.
+                Debug.LogWarning("The build card is not wired (buildCardTree is unassigned on the bootstrap): an empty location opens the build sheet.", this);
+            }
+            else
             {
                 // T539: the build card shares the response policy (the build dust goes through the same sink) and previews through the slot grid.
                 TryComposePanel(ShellPanelIds.BuildCard,
