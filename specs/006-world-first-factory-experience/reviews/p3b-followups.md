@@ -120,3 +120,20 @@ Fix round 1 replaced a throttled full `RunSnapshots.Factory` rebuild (up to 10 p
 | C-38 | UI/UX F4 | World markers have no screen-reader name or focus; the strip indicator is the accessible route. Record as a deliberate decision. | T547, T542 |
 | C-39 | UI/UX F5 | After a layout change a marker can be drawn and hit at its old position for up to 0.25 s until the feed refreshes. Fix: invalidate the presenter on `LayoutChanged`, or skip rendering when the model's layout differs. | T542 |
 | C-40 | QA, Architect | The touch-circle negative check is weak (skips plates that hit the icon); no Edit Mode bind-twice test. | T542 |
+
+## T539 (build card)
+
+| Task | Issue | PR | Commit | QA | Reviews |
+|---|---|---|---|---|---|
+| T539 | #711 | #769 | `760c1d1` | PASS: Edit Mode 3043/3043, Play Mode 3320/3320, settings noise OK | Architect APPROVE_WITH_NOTES; UI/UX ACCEPT_WITH_NOTES |
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-41 | Architect 1 | `BuildCard.Refresh` rebuilds `RunSnapshots.Factory` on every quantity change, so it can allocate every frame while the card is open (SC-008). Cache the snapshot or refresh only when affordability or Cash display changes; measure. | T547 perf; T542 |
+| C-42 | Architect 2 | `previewSource` returns `SlotGridView` as an interface; a destroyed view is not `null` through the interface. Add a Unity-object null or alive guard in `Reapply`/`ClearBuildPreview`. | T540 |
+| C-43 | Architect 3 | `RunShellDocument.RebindCard` always activates the machine card panel; pick the panel from `buildCardOpen` (unreachable today). | T540 |
+| C-44 | UI/UX 1 | Available and selected locations differ only in alpha; occupied and locked locations get no explicit mark from the card (FR-032 "mark"). | T543-C gate; T542 |
+| C-45 | UI/UX 2 | "location N" has no number drawn in the world. Copy change or optional number badge. | T542 |
+| C-46 | UI/UX 3 | At 200 % in portrait and 640x360 the type list may show 0–1 rows; no test for visible rows or scroll-to-selected. | T543-C gate; T542 |
+| C-47 | UI/UX 4, 5 | The shortfall text appears up to three times. `BuildDust` is silently empty when the optional FX row is missing, with no static fallback outside reduced motion. | T542; T543-C gate |
+| C-48 | UI/UX 6–8, QA | Record Cancel-left order; no test of the not-available state for the build card; warning/danger text contrast on the card not asserted; T555 A3 focus guard and A6 hold reset have no direct assertions. | T547; T543-C gate (contrast) |
