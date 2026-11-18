@@ -333,9 +333,16 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
+            milestoneBanner.PrimaryOnly = BannerPrimaryOnly;
             milestoneBanner.Show(main, extra, reducedMotion);
             PlaceMilestoneBanner();
         }
+
+        /// <summary>T558 (C-F1, U-C4): the banner shows only its main line on compact height (a phone in landscape) or at a large text scale (150 % and up).</summary>
+        public bool BannerPrimaryOnly => Layout == FactoryHudLayout.CompactLandscape || TextScalePercent >= LargeTextPercent;
+
+        /// <summary>The text scale from which the banner drops its second line.</summary>
+        public const int LargeTextPercent = 150;
 
         // The banner is an overlay (position absolute): it takes no space in the world column and is NOT part of TryGetUnobstructedScreenRect, so showing or hiding it never
         // reframes the camera (T540 fix, UI/UX U2, Architect 3). It sits right below the strip (when the strip is inside the world column: tablet, desktop, the landscape status
@@ -376,6 +383,7 @@ namespace IdleFactory.Unity.UI
             milestoneBanner.Advance(seconds);
             if (milestoneBanner.IsShown)
             {
+                milestoneBanner.PrimaryOnly = BannerPrimaryOnly;
                 PlaceMilestoneBanner();
             }
         }

@@ -204,7 +204,15 @@ namespace IdleFactory.Tests.PlayMode
             var framing = new RunCameraFraming(zoom);
             var area = new Rect(0f, 0f, width, height);
             var fit = framing.FitAll(area, LatticeLayoutBuilder.ShippedForColumns(columns), 1f);
-            Assert.That(fit, Is.EqualTo(Mathf.Clamp(Mathf.FloorToInt(ppc / zoom.artPixelsPerCell + 1e-4f), 1, zoom.maxScale)));
+            var content = Mathf.Clamp(Mathf.FloorToInt(ppc / zoom.artPixelsPerCell + 1e-4f), 1, zoom.maxScale);
+            var layout = LatticeLayoutBuilder.ShippedForColumns(columns);
+            var floor = framing.ConfigureLimits(1f).Min;
+            var withVein = Mathf.Clamp(CameraScaleModel.LargestFittingScale(area, layout.ViewBounds, zoom.artPixelsPerCell, layout.Margin), 1, zoom.maxScale);
+            var depotColumn = Mathf.Clamp(CameraScaleModel.LargestFittingScale(area, layout.FitBounds, zoom.artPixelsPerCell, layout.Margin), 1, zoom.maxScale);
+            // T558 (U-C1): the table gives the content's scale; fit-all steps down to the next integer scale that also frames the depot column while that stays at or above n_min.
+            var expectedFit = withVein >= content ? content : depotColumn >= Mathf.Max(1, Mathf.Min(content, floor)) ? depotColumn : content;
+            Assert.That(fit, Is.EqualTo(expectedFit));
+            Assert.That(fit, Is.LessThanOrEqualTo(content), "never above the table's scale");
             Assert.That(fit, Is.GreaterThanOrEqualTo(framing.ConfigureLimits(1f).Min), "n_fit >= n_min for the table's screens");
         }
 

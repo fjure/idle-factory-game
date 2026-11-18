@@ -161,6 +161,13 @@ namespace IdleFactory.Tests.PlayMode
             // The text is not truncated: each label is as tall as its wrapped text needs (a clipped label would be shorter than its content).
             foreach (var label in new[] { Banner.PrimaryLabel, Banner.SecondaryLabel })
             {
+                if (label.resolvedStyle.display == DisplayStyle.None)
+                {
+                    // T558: on compact height or large text the second line is not shown (it stays in the accessible text); GateCFixTests asserts that rule.
+                    Assert.That(label == Banner.SecondaryLabel && rig.Shell.BannerPrimaryOnly, Is.True, where + ": only the second line may be hidden, and only for the compact banner");
+                    continue;
+                }
+
                 var preferred = label.MeasureTextSize(label.text, label.resolvedStyle.width, VisualElement.MeasureMode.Exactly, 0f, VisualElement.MeasureMode.Undefined);
                 Assert.That(label.worldBound.height, Is.GreaterThanOrEqualTo(preferred.y - 1f), where + ": " + label.name + " shows all its lines");
             }

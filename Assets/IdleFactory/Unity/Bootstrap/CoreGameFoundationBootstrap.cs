@@ -91,9 +91,7 @@ namespace IdleFactory.Unity.Bootstrap
         private int observedHeight;
         private ScreenOrientation observedOrientation;
         private bool initialized;
-        private ScaleLayout observedLayout;
-        private bool hasObservedLayout;
-        private Rect lastClosedRect;
+        private RunViewportDriver viewportDriver;
         private string cameraLayoutId;
 
         // Feature 003 run composition. The run is null until the cold-start source selection created it.
@@ -112,9 +110,7 @@ namespace IdleFactory.Unity.Bootstrap
         private SlotGridView slotGrid;
         private RunCameraFraming framing;
         private IDisposable dialogRotationRegistration;
-        private bool runFramingPending;
         private int selectedSlot = -1;
-        private bool selectionChanged;
         private bool shellAvailabilityKnown;
         private bool shellAvailable;
 
@@ -1043,19 +1039,19 @@ namespace IdleFactory.Unity.Bootstrap
                 model.Settings.ReadableCellPoints != settings.ReadableCellPoints || model.Settings.MaxScale != settings.MaxScale)
             {
                 cameraController.Configure(factoryCamera, settings);
-                hasObservedLayout = false;
-                runFramingPending = true;
+                Viewport.ResetObserved();
+                Viewport.FramingPending = true;
             }
 
             if (worldLayout.LayoutId != cameraLayoutId)
             {
                 cameraLayoutId = worldLayout.LayoutId;
-                runFramingPending = true;
+                Viewport.FramingPending = true;
             }
 
             if (fitAll)
             {
-                runFramingPending = true;
+                Viewport.FramingPending = true;
             }
         }
 
@@ -1064,7 +1060,7 @@ namespace IdleFactory.Unity.Bootstrap
             // The sheet that a selection opens leaves a world band after the layout resolves; the viewport step keeps the selected
             // slot in that band on every layout change while the selection lasts (rule 7).
             selectedSlot = slot;
-            selectionChanged = true;
+            Viewport.NotifySelectionChanged();
         }
 
         private static string StartupBlockedMessage(string code)
@@ -1579,49 +1575,11 @@ namespace IdleFactory.Unity.Bootstrap
             }
 
             var layout = RunCameraFraming.Layout(factoryCamera, slotGrid.Layout, PixelsPerPoint(), visibleArea);
-            var fit = runFramingPending || !cameraController.HasLayout;
-            var structural = hasObservedLayout && (observedLayout.PixelWidth != layout.PixelWidth || observedLayout.PixelHeight != layout.PixelHeight ||
-                observedLayout.LayoutId != layout.LayoutId || !Mathf.Approximately(observedLayout.PixelsPerPoint, layout.PixelsPerPoint));
-            var changed = !hasObservedLayout || structural || observedLayout.UnobstructedRect != visibleArea;
             var wantSheet = selectedSlot >= 0;
-            var closedNow = false;
-
-            if (fit)
-            {
-                runFramingPending = false;
-                cameraController.Fit(layout);
-                changed = true;
-            }
-            else if (!wantSheet && cameraController.SheetOpen)
-            {
-                // The prior view returns at once; the rectangle that is still the band is not remembered as the closed one.
-                cameraController.CloseSheet(lastClosedRect);
-                closedNow = true;
-            }
-            else if (changed && structural && wantSheet)
-            {
-                // The model's sheet band carries the old screen size: fit again, the selection then reopens its sheet below.
-                cameraController.Fit(layout);
-            }
-            else if (changed && !wantSheet)
-            {
-                cameraController.UpdateLayout(layout);
-            }
-
-            if (wantSheet && (changed || selectionChanged || !cameraController.SheetOpen))
-            {
-                // SC-002: the whole machine (plate and badge band) stays in the band the card or sheet leaves, not only its plate.
-                cameraController.OpenSheet(visibleArea, framing.FrameMachine(selectedSlot, slotGrid.Layout));
-            }
-
-            selectionChanged = false;
-            observedLayout = layout;
-            hasObservedLayout = true;
-            if (!wantSheet && !closedNow && !cameraController.SheetOpen)
-            {
-                lastClosedRect = visibleArea;
-            }
+            Viewport.Apply(layout, visibleArea, wantSheet, wantSheet ? framing.FrameMachine(selectedSlot, slotGrid.Layout) : default);
         }
+
+        private RunViewportDriver Viewport => viewportDriver ?? (viewportDriver = new RunViewportDriver(cameraController));
 
         private void OnApplicationFocus(bool hasFocus)
         {

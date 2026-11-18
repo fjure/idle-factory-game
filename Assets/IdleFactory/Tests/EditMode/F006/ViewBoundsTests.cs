@@ -108,18 +108,58 @@ namespace IdleFactory.Tests.EditMode
         }
 
         [Test]
-        public void AViewExtentThatWouldCostAScaleFallsBackToTheContentForTheFitButStaysPannable()
+        public void AViewExtentThatCostsAScaleStepsDownToFrameTheDepotColumnWhileTheReadableFloorHolds()
         {
-            // A tall phone: the content fits by width at n = 4, the wider view extent only at a smaller scale.
+            // T558 (U-C1): a tall phone. The content fits by width at a larger scale than the wider view extent; fit-all now steps down to the view extent's scale
+            // (the depot, the collector and the marker boxes in view) as long as that is not below the readable floor n_min.
             var layout = LatticeLayoutBuilder.ShippedForColumns(3);
             var area = new Rect(0f, 0f, 1080f, 2400f);
-            var plain = new CameraScaleModel(Settings);
-            plain.Fit(new ScaleLayout(1080, 2400, 2.625f, area, layout));
+            var contentScale = CameraScaleModel.LargestFittingScale(area, layout.Bounds, 24, layout.Margin);
+            var wholeViewScale = CameraScaleModel.LargestFittingScale(area, layout.ViewBounds, 24, layout.Margin);
+            var viewScale = CameraScaleModel.LargestFittingScale(area, layout.FitBounds, 24, layout.Margin);
+            var floor = CameraScaleModel.MinScale(Settings, 2.625f);
+            TestContext.Out.WriteLine($"T558-FIT | 1080x2400@2.625 columns 3 | content n={contentScale} depot column n={viewScale} with the vein n={wholeViewScale} floor {floor}");
+            Assert.That(wholeViewScale, Is.LessThan(contentScale), "the fixture: the whole view extent (with the vein) costs a scale");
+            Assert.That(viewScale, Is.GreaterThanOrEqualTo(floor), "and the depot column still meets the readable floor");
+
             var view = new CameraScaleModel(Settings);
             view.Fit(ScaleLayout.WithView(1080, 2400, 2.625f, area, layout));
+            Assert.That(view.Scale, Is.EqualTo(viewScale), "fit-all drops to the next integer scale that frames the depot column");
+            Assert.That(view.Extent, Is.EqualTo(layout.FitBounds));
+            Assert.That(view.PanExtent, Is.EqualTo(layout.ViewBounds), "the pan limits still cover the vein");
+            foreach (var part in new[] { layout.Bounds, layout.DepotRect, AttentionModel.MarkerBoxAt(layout.DepotAnchor) })
+            {
+                var low = view.WorldToScreen(part.min, view.Position, view.Scale);
+                var high = view.WorldToScreen(part.max, view.Position, view.Scale);
+                Assert.That(low.x, Is.GreaterThanOrEqualTo(area.xMin - 1f), "left");
+                Assert.That(high.x, Is.LessThanOrEqualTo(area.xMax + 1f), "right");
+                Assert.That(low.y, Is.GreaterThanOrEqualTo(area.yMin - 1f), "bottom");
+                Assert.That(high.y, Is.LessThanOrEqualTo(area.yMax + 1f), "top");
+            }
+        }
 
-            Assert.That(CameraScaleModel.LargestFittingScale(area, layout.ViewBounds, 24, layout.Margin), Is.LessThan(CameraScaleModel.LargestFittingScale(area, layout.Bounds, 24, layout.Margin)),
-                "the fixture: the view extent would cost a scale");
+        [Test]
+        public void AViewExtentThatWouldFallBelowTheReadableFloorFallsBackToTheContentForTheFitButStaysPannable()
+        {
+            // The floor is never traded for the depot: find a width at which the content fits at n_min but the depot column only below it.
+            var layout = LatticeLayoutBuilder.ShippedForColumns(3);
+            var floor = CameraScaleModel.MinScale(Settings, 2.625f);
+            Rect area = default;
+            var found = false;
+            for (var width = 400f; width < 2400f && !found; width += 4f)
+            {
+                var candidate = new Rect(0f, 0f, width, 4000f);
+                found = CameraScaleModel.LargestFittingScale(candidate, layout.Bounds, 24, layout.Margin) == floor
+                    && CameraScaleModel.LargestFittingScale(candidate, layout.FitBounds, 24, layout.Margin) < floor;
+                area = candidate;
+            }
+
+            Assert.That(found, Is.True, "the fixture exists");
+            var plain = new CameraScaleModel(Settings);
+            plain.Fit(new ScaleLayout((int)area.width, 4000, 2.625f, area, layout));
+            var view = new CameraScaleModel(Settings);
+            view.Fit(ScaleLayout.WithView((int)area.width, 4000, 2.625f, area, layout));
+
             Assert.That(view.Scale, Is.EqualTo(plain.Scale), "fit-all keeps the scale the content alone gives");
             Assert.That(view.Position, Is.EqualTo(plain.Position), "and the centring");
             Assert.That(view.Extent, Is.EqualTo(layout.Bounds));
@@ -128,7 +168,7 @@ namespace IdleFactory.Tests.EditMode
             // The player can pan to the depot (right of the content) and to the vein (left of it).
             view.Pan(new Vector2(100f, 0f));
             var depot = view.WorldToScreen(layout.DepotRect.center, view.Position, view.Scale);
-            Assert.That(depot.x, Is.InRange(0f, 1080f), "panning right brings the depot into view");
+            Assert.That(depot.x, Is.InRange(0f, area.width), "panning right brings the depot into view");
             Assert.That(plain.Pan(new Vector2(100f, 0f)), Is.False, "without the view extent the content could not be panned at all at fit-all");
         }
 
