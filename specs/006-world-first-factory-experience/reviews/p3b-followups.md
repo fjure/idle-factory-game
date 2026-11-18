@@ -137,3 +137,22 @@ Fix round 1 replaced a throttled full `RunSnapshots.Factory` rebuild (up to 10 p
 | C-46 | UI/UX 3 | At 200 % in portrait and 640x360 the type list may show 0–1 rows; no test for visible rows or scroll-to-selected. | T543-C gate; T542 |
 | C-47 | UI/UX 4, 5 | The shortfall text appears up to three times. `BuildDust` is silently empty when the optional FX row is missing, with no static fallback outside reduced motion. | T542; T543-C gate |
 | C-48 | UI/UX 6–8, QA | Record Cancel-left order; no test of the not-available state for the build card; warning/danger text contrast on the card not asserted; T555 A3 focus guard and A6 hold reset have no direct assertions. | T547; T543-C gate (contrast) |
+
+## T540 (development stages and milestones)
+
+| Task | Issue | PR | Commit | QA | Reviews |
+|---|---|---|---|---|---|
+| T540 | #712 | #770 | `6a5f525` | PASS: Edit Mode 3119/3119, Play Mode 3351/3351, settings noise OK (first round 641c5a0 also PASS) | Architect APPROVE_WITH_NOTES; UI/UX + Art Director ACCEPT_WITH_NOTES (re-check 6a5f525: overlay acceptable as transient); Product Owner + Game Systems ACCEPT_WITH_NOTES |
+
+Owner decision 2026-11-18: the stage is offset by the level-1 location count (research R15, data-model, tasks, world-presentation amended), so a new Iron run starts Early.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-49 | UI/UX re-check, QA | Banner overlay vs OD-9b C1: at 200 % on 640x360, 844x390 and 360x640 the banner (up to ~29 % of the height) may cover a top-row selected machine or build ghost for 2.5 s; no test checks the selected machine rect. Mandatory device check; fallback fix = primary line only on compact height or large text (B-04 in accessible text and summary). Whether C6 (≤ 20 % chrome) covers transients is an owner reading. | T543-C gate (mandatory); T542 fix if covered; owner (C6 reading) |
+| C-50 | UI/UX U3 | The banner has no live-region announce; TalkBack may never read it. | T543-C gate; T547 |
+| C-51 | UI/UX U5, Architect 4 | A second milestone within 2.5 s replaces the first text; `ClearFeedback` is not called when reduced motion is switched on mid-reveal; check the animation clock across background and return. | T546; T542 |
+| C-52 | Architect 2 | Banner pops before an open confirm dialog on Back (probably unreachable). Document or reorder. | T542 |
+| C-53 | Architect 5, 6 | Bootstrap is 1862+ lines; extract a WorldFeedbackCoordinator. `DeckPlanner.Build` legacy undressed path is a footgun: make dressing mandatory in production callers or assert in the view. | T547; T542 |
+| C-54 | UI/UX re-check | `PlaceMilestoneBanner` allocates a new array every tick while the banner shows. Hoist it. | T542 |
+| C-55 | QA | No end-to-end Play Mode test of a real prestige banner after the re-baseline change, nor of a real offline return through `OfflineSummaryPanel`; the test-rebaseline DeckRenderTests row sits below the table (cosmetic). | T542; T543-C gate (offline return) |
+| C-56 | PO, UI/UX, Art | B-01s "Level {n}. 1 new location opens." is provisional; World Designer to confirm. Stage-3 density on a full factory is 5 props (C-13), and the shuffled triptych trial must use the new Early start. Art Bible 21.12 still a draft (owner). | T547; T546; owner |
