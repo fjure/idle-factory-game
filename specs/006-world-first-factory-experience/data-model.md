@@ -103,7 +103,7 @@ Inputs come from the existing read models: `MachineStateView`, `RunFactorySnapsh
 
 | Field | Rule |
 |---|---|
-| `Stage` | `t ≤ 0 → Early`; otherwise `clamp(floor(3·u/t), 0, 2)`, giving Early, Partial or Established. |
+| `Stage` | `t ≤ u0 → Early`; otherwise `clamp(floor(3·(u − u0)/(t − u0)), 0, 2)`, giving Early, Partial or Established; u0 is the unlocked-location count at factory level 1 (owner decision 2026-11-18). |
 | `ActivityDensity` | 3 bins. |
 | `LevelDensity` | 3 bins. |
 

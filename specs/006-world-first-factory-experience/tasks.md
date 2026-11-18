@@ -757,14 +757,14 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Resources**: unity.
   - **Covers**: FR-032, FR-033, FR-034; research R13.
 - [ ] T540 [US5] Gameplay Developer (Game Systems/Economy Low-tier, Art Director and Test/QA lenses), after T527, T528, T533, T536 and T555.
-  - **Stages**: `DevelopmentStage.cs`: "`t ≤ 0 → Early`; otherwise `clamp(floor(3·u/t), 0, 2)`", plus the activity and level density bins.
+  - **Stages**: `DevelopmentStage.cs`: "`t ≤ u0 → Early`; otherwise `clamp(floor(3·(u − u0)/(t − u0)), 0, 2)`" (u0 = level-1 unlocked count; owner decision 2026-11-18 replaced `floor(3·u/t)`), plus the activity and level density bins.
   - **Dressing**: stage-driven deck-lit area, edges, prop weights and depot variant in `FactoryDeckView` and `DepotLinkView`. They reset with prestige; prestige count is never an input.
   - **Milestones**: `MilestoneWatcher.cs` detects a factory-level increase and prestige completion.
     - `Assets/IdleFactory/Unity/UI/MilestoneBanner.cs`: non-blocking, at most 2.5 s, dismissible, copy from `world-copy.md`.
     - A deck reveal and a 2 s foundation highlight. Static under reduced motion.
     - Offline milestones appear in the summary only: T540 adds the listing to `OfflineSummaryPanel`, after T536.
   - **Tests**:
-    - `DevelopmentStageTests` (4 and 8 of 12, `t ≤ 0`, no prestige input);
+    - `DevelopmentStageTests` (Iron 4/6/8/10/12 of 12 → Early, Early, Partial, Established, Established; `t ≤ u0`; no prestige input);
     - `StageTriptychDeltaTests` (at least 25 percentage points of deck-lit share between adjacent stages, plus a grayscale delta at n_min);
     - `MilestoneWatcherTests`;
     - `MilestoneBannerTests`.

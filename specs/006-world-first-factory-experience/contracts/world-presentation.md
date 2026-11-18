@@ -93,7 +93,7 @@ Deck-lit area, edges, prop weights and the depot variant change per `Development
 **Minimum delta.** Between adjacent stages the deck-lit area share differs by at least 25 percentage points, and the grayscale difference is visible at n_min.
 
 **Tests:**
-- `DevelopmentStageTests`: boundaries at 4 and 8 of 12; `t ≤ 0` gives Early; no prestige input.
+- `DevelopmentStageTests`: with u0 = 4 and t = 12 (Iron), Early at 4 and 6, Partial at 8, Established at 10 and 12; `t ≤ u0` gives Early; no prestige input (owner decision 2026-11-18).
 - `StageTriptychDeltaTests`.
 
 ## 4. Layout independence (FR-037, FR-038, SC-011)
