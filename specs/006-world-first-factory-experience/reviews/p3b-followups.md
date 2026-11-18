@@ -156,3 +156,16 @@ Owner decision 2026-11-18: the stage is offset by the level-1 location count (re
 | C-54 | UI/UX re-check | `PlaceMilestoneBanner` allocates a new array every tick while the banner shows. Hoist it. | T542 |
 | C-55 | QA | No end-to-end Play Mode test of a real prestige banner after the re-baseline change, nor of a real offline return through `OfflineSummaryPanel`; the test-rebaseline DeckRenderTests row sits below the table (cosmetic). | T542; T543-C gate (offline return) |
 | C-56 | PO, UI/UX, Art | B-01s "Level {n}. 1 new location opens." is provisional; World Designer to confirm. Stage-3 density on a full factory is 5 props (C-13), and the shuffled triptych trial must use the new Early start. Art Bible 21.12 still a draft (owner). | T547; T546; owner |
+
+## T543 batch-C gate (reports `playtest-agent-f006-C.md`, `uiux-f006-C.md`, build 15deea2)
+
+Owner decision 2026-11-18: fix before batch D through T558 (U-C1/C-F5 depot framing, C-F2 rotation re-fit, C-F1/U-C4 compact banner) and T559 (U-B13 periodic autosave). Refuted by UI/UX: C-F3 as a marker cap defect (per-machine pins are T528 slot badges; the attention marker cap holds) and C-F4 (the badge is not a tap target; the marker tap selects).
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-57 | UI/UX U-C2 (C-F3) | The store-full attention marker reuses the machine badge sprite and is much smaller than the per-machine badges; the shortage marker shows a generic arrow instead of the resource icon. | T542; owner |
+| C-58 | UI/UX U-C3 (C-F4) | The large slot badge looks tappable but is not; nothing shows which pin is the tappable marker. | T542 |
+| C-59 | UI/UX U-C5, U-C11, Play-Tester C-F8 | 640x360 at 200 %: build card Cancel/Confirm break mid-word, 3-line title, about 1.3 type rows, Confirm collides with the dev-build label; "Overdrive Ready" clipped at 360x640/200 %; "Research" breaks mid-word at 844x390. | T547; T542 |
+| C-60 | UI/UX U-C6, U-C7, U-C8; Play-Tester C-F7, C-F10, C-F11 | Mine button overlaps lattice slots while a card is open; stale idle hint under the tablet build card; after Expand factory the first Back left Market open; a 9 s gap shows a full Welcome back modal; the world recentres about 120 px on build-card hand-over. | T547; T542 |
+| C-61 | UI/UX U-C12, Play-Tester C-F6 | Hard-edged deck rectangle with about 13 % black above it. | Art Director; owner |
+| C-62 | Both reports, not covered | TalkBack and accessible names (Android tree is one SurfaceView), Windows player, prestige banner, offline milestone line, build dust and hand-over on device, second shortage marker (rank 0 possibly off screen right), 150 % text. Build note: delete `Library/Bee/Android` before a gate APK build (stale Gradle intermediate gave a hanging 64 MB APK). | T542; final T543 gate |
