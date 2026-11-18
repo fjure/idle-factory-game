@@ -204,6 +204,16 @@ namespace IdleFactory.Tests.PlayMode.F006
                 requirements.Add(row);
             }
 
+            // T540: the static foundation highlight of a milestone (one frame).
+            if (!entries.Any(e => e.Key == FactoryDeckView.HighlightKey))
+            {
+                PresentationSpriteCatalog.TryGetRegistryRequirement(FactoryDeckView.HighlightKey, out var highlightRow);
+                var hw = Mathf.RoundToInt(highlightRow.WorldWidth * D);
+                var hh = Mathf.RoundToInt(highlightRow.WorldHeight * D);
+                entries.Add(new PresentationSpriteEntry(FactoryDeckView.HighlightKey, Solid(FactoryDeckView.HighlightKey, hw, hh, highlightRow.PivotX * hw, highlightRow.PivotY * hh, new Color32(192, 199, 212, 255))));
+                requirements.Add(highlightRow);
+            }
+
             var catalog = new PresentationSpriteCatalog();
             catalog.Configure(entries, requirements);
             if (!catalog.IsValid)

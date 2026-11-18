@@ -1573,3 +1573,32 @@
     flex-direction: column;
     align-items: center;
 }
+
+/* ---------- Milestone banner (T540, FR-035) ----------
+   A transient line in the world column's flow below the notice, so the camera frames beneath it and it never covers the world, Cash or Overdrive.
+   At least 44 px high (it is a dismiss target); the text wraps at every text scale. */
+.run-milestone {
+    flex-direction: column;
+    flex-shrink: 0;
+    min-height: 44px;
+    justify-content: center;
+    padding: 4px 8px 4px 10px;
+    margin: 2px 4px 0 4px;
+    background-color: var(--surface-raised);
+    border-left-width: 4px;
+    border-left-color: var(--accent);
+    display: none;
+}
+
+.run-milestone__text {
+    white-space: normal;
+    margin: 0;
+    padding: 0;
+    color: var(--text-primary);
+    font-size: var(--run-fs-body);
+    -unity-text-align: middle-left;
+}
+
+.run-milestone__text--extra {
+    color: var(--text-muted);
+}

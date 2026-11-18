@@ -306,3 +306,15 @@ An empty location in the authored scene now opens the docked build card (`ShellP
 | `SlotGridTests.AnUnregisteredPanelShowsTheNotAvailableStateInsteadOfNothing` | clears `buildSheetTree` and `prestigeTree`, expects the "build sheet ... not available" placeholder after an empty-slot tap | also clears `buildCardTree` first, same expectations | with the card wired, an empty slot no longer reaches the sheet; clearing the card restores the sheet route this test covers | yes (setup) |
 
 **New.** `BuildCardTests` (72), `BuildCardWorldTests` (2), `RunPanelCompositionTests.InTheAuthoredSceneAnEmptyLocationOpensTheBuildCardAndConfirmBuildsAndHandsOver`, and `BuildSheetPanelTests.WithABuildCardRegisteredAnEmptyLocationOpensTheCardAndNotTheSheet`.
+
+## T540 (#712): development stages and milestones
+
+No existing test assertion was changed. Camera, fit and column assertions are untouched. Additive support changes only:
+
+| File | Old assertion | New assertion | Reason | Expectation changed? |
+|---|---|---|---|---|
+| `DeckComposite` (Edit Mode helper) | every location drawn occupied, the ring always the dark base | optional `conditions` argument (null keeps the old behaviour) and lit ring cells draw the deck tile | the stage triptych composes a factory with a lit ring and unbuilt locations (FR-036) | no |
+| `DeckTestRig.Catalog` (Play Mode helper) | no highlight sprite | adds the one-frame `F006-FX-COMPLETION-HIGHLIGHT` | the milestone foundation highlight (R14) | no |
+| `F006AllocationTests.MeasureEightMinersRunning` | zero allocations per steady frame for the world views | the same assertion now also covers the stage, watcher and deck/depot/deposit stage calls and the feedback tick | SC-008 for a running factory with the watcher active | no (stricter) |
+
+`DeckPlanner.Build` without a dressing argument keeps the T527 behaviour, so every T527 prop, edge and ring test is unchanged.

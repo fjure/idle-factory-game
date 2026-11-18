@@ -643,6 +643,9 @@ namespace IdleFactory.Unity.Bootstrap
                 runShell.LocationRectProvider = LocationScreenRect;
                 shellPresenter = new RunShellPresenter(runSession, runCommands, runShell, slotGrid, PresentationKeyOf);
                 shellPresenter.MarkerView = markerView;
+                // T540: the banner is static under reduced motion; the world adds the deck reveal and the foundation highlight to each milestone.
+                shellPresenter.ReducedMotionProbe = () => animationClock.ReducedMotion;
+                shellPresenter.MilestoneRaised += HandleMilestoneRaised;
                 ComposeRunPanels();
             }
 
@@ -1174,6 +1177,13 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void HandleRunLifecycleResultChanged(RunCommandResult<RunPersistenceOutcome> result, LifecycleReturnKind kind)
         {
+            // T540 (R14): a milestone that arose while the player was away is listed in the offline summary and never raises a banner.
+            if (result.IsSuccess && kind == LifecycleReturnKind.Return && result.Value != null && result.Value.OfflineSummary != null && shellPresenter != null &&
+                offlinePanel != null)
+            {
+                offlinePanel.SetOfflineMilestones(shellPresenter.ReconcileOfflineMilestones(), shellPresenter.MilestoneText);
+            }
+
             // T118: a genuine return opens the offline summary, a return that could not be completed opens the blocked explanation
             // with Retry. A rotation and a departure open nothing (the panel decides by kind, FR-036).
             PresentOfflineReturn(result, kind);
@@ -1378,9 +1388,42 @@ namespace IdleFactory.Unity.Bootstrap
                     // T529: one refresh of the world model per frame (P2-F10), the pops of the new completions, and the 8 renderers.
                     worldEffects.Update(slotGrid.Layout, animationClock.Milliseconds, animationClock.ReducedMotion);
                     effectView.Present();
+                    PresentDevelopment();
                     PresentDepotAndDeposit();
                 }
             }
+        }
+
+        // T540: the development stage (recomputed by the presenter only when the factory snapshot is rebuilt) drives the deck dressing, the depot variant and the
+        // deposit dressing. The setters return at once when nothing changed, so this allocates nothing per frame.
+        private void PresentDevelopment()
+        {
+            if (shellPresenter == null)
+            {
+                return;
+            }
+
+            var development = shellPresenter.Development;
+            deckView?.SetDevelopment(development);
+            depotLinkView?.SetStage(development.Stage);
+            depositView?.SetStage(development.Stage);
+            deckView?.TickFeedback(animationClock.Milliseconds);
+        }
+
+        private void HandleMilestoneRaised(PendingMilestone milestone)
+        {
+            if (deckView == null)
+            {
+                return;
+            }
+
+            if (milestone.Kind == MilestoneKind.PrestigeCompleted)
+            {
+                deckView.ClearFeedback();
+                return;
+            }
+
+            deckView.ShowMilestone(milestone.FirstNewLocation, milestone.NewlyUnlockedCount, milestone.StageRaised, animationClock.Milliseconds, animationClock.ReducedMotion);
         }
 
         // T557: the presenter refreshed the attention model in UpdateRunShell (revision-gated and throttled); the view only draws it, once per frame,

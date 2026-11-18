@@ -37,6 +37,9 @@ namespace IdleFactory.Unity.UI
         private bool overdriveActive;
         private bool disposed;
         private FactoryWorldLayout orderedFor;
+        private readonly MilestoneWatcher milestones = new MilestoneWatcher();
+        private readonly MilestoneCopy milestoneCopy = new MilestoneCopy();
+        private DevelopmentStageValue development;
 
         public RunShellPresenter(
             RunSession session,
@@ -66,6 +69,38 @@ namespace IdleFactory.Unity.UI
 
         /// <summary>The production attention model the strip shows and the world markers draw (refreshed by the presenter).</summary>
         public AttentionModel AttentionModel => productionFeed.Model;
+
+        /// <summary>
+        /// The development stage of the current run (T540, FR-036): recomputed only when the factory snapshot is rebuilt (a level, layout, machine or run change), never
+        /// per frame. It depends on the run's unlocked locations, machine activity and levels only; the prestige count is not an input.
+        /// </summary>
+        public DevelopmentStageValue Development => development;
+
+        /// <summary>The milestone watcher (T540); it observes each rebuilt snapshot.</summary>
+        public MilestoneWatcher Milestones => milestones;
+
+        /// <summary>The milestone copy the banner and the offline summary share.</summary>
+        public MilestoneCopy MilestoneText => milestoneCopy;
+
+        /// <summary>Whether reduced motion is on (the banner is static then); null means off.</summary>
+        public Func<bool> ReducedMotionProbe { get; set; }
+
+        /// <summary>Raised once for each milestone after its banner was shown, so the world can add the deck reveal and the foundation highlight.</summary>
+        public event Action<PendingMilestone> MilestoneRaised;
+
+        /// <summary>
+        /// An offline return changed the state (T540, R14): the milestones that caused it are returned for the offline summary and never raise a banner. The
+        /// watcher's baseline moves to the returned state and the next refresh rebuilds the snapshot.
+        /// </summary>
+        public IReadOnlyList<PendingMilestone> ReconcileOfflineMilestones()
+        {
+            var after = RunSnapshots.Factory(session);
+            var found = milestones.ReconcileOffline(after, session.State.RunId, PrestigeCountOf());
+            Invalidate();
+            return found;
+        }
+
+        private long PrestigeCountOf() => session.Permanent != null ? session.Permanent.PrestigeCount : -1;
 
         /// <summary>The latest factory snapshot the grid was drawn from, or null before the first refresh.</summary>
         public RunFactorySnapshot Snapshot => snapshot;
@@ -162,6 +197,15 @@ namespace IdleFactory.Unity.UI
             if (shell.IsSheetOpen)
             {
                 shell.RefreshActivePanel();
+            }
+
+            // T540: the banner lives 2.5 s at most; milestones detected by the last snapshot show now. Nothing here allocates while no milestone waits.
+            shell.TickMilestoneBanner(Time.unscaledDeltaTime);
+            while (milestones.TryDequeue(out var milestone))
+            {
+                var reduced = ReducedMotionProbe != null && ReducedMotionProbe();
+                shell.ShowMilestoneBanner(milestoneCopy.Primary(milestone), milestoneCopy.Secondary(milestone), reduced);
+                MilestoneRaised?.Invoke(milestone);
             }
 
             // T534: the card refreshes its model every frame (P2-F10) and the keyboard stop follows the camera.
@@ -312,6 +356,8 @@ namespace IdleFactory.Unity.UI
         private void RenderFactory()
         {
             snapshot = RunSnapshots.Factory(session);
+            development = DevelopmentStage.Evaluate(snapshot);
+            milestones.Observe(snapshot, session.State.RunId, PrestigeCountOf());
             var visuals = SlotGridModel.DescribeAll(snapshot, presentationKeyOf, overdriveActive, boosted, shell.SelectedSlot);
             grid.Render(visuals);
             var anyOccupied = false;

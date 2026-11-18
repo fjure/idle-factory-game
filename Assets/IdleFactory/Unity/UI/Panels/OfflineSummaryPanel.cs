@@ -5,6 +5,7 @@ using System.Text;
 using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Unity.Bootstrap;
+using IdleFactory.Unity.Presentation;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -72,6 +73,8 @@ namespace IdleFactory.Unity.UI.Panels
         private OfflineSurfaceKind kind;
         private RunOfflineSummary summary;
         private bool retrying;
+        private IReadOnlyList<PendingMilestone> offlineMilestones = Array.Empty<PendingMilestone>();
+        private MilestoneCopy milestoneCopy;
 
         /// <summary>
         /// Builds the surface. <paramref name="catalog"/> supplies the labels of resources, machines, items and contracts (without it the
@@ -152,6 +155,23 @@ namespace IdleFactory.Unity.UI.Panels
 
         /// <summary>The line label with this name (names are listed in the tests), or null.</summary>
         public Label Line(string name) => Content.Q<Label>(name);
+
+        /// <summary>The milestones the summary lists (T540, R14), empty when none arose offline.</summary>
+        public IReadOnlyList<PendingMilestone> OfflineMilestones => offlineMilestones;
+
+        /// <summary>
+        /// Sets the milestones of the next summary (T540, R14): a milestone that arose while the player was away is listed here with the same strings the banner uses, and
+        /// never as a banner. Call it before <see cref="Present"/> or <see cref="ShowSummary"/>; the list is replaced, and an open summary is rebuilt.
+        /// </summary>
+        public void SetOfflineMilestones(IReadOnlyList<PendingMilestone> milestones, MilestoneCopy copy)
+        {
+            offlineMilestones = milestones ?? Array.Empty<PendingMilestone>();
+            milestoneCopy = copy ?? milestoneCopy ?? new MilestoneCopy();
+            if (kind == OfflineSurfaceKind.Summary && summary != null)
+            {
+                Rebuild();
+            }
+        }
 
         /// <summary>Raised when the player closes the summary with Continue.</summary>
         public event Action Dismissed;
@@ -266,6 +286,7 @@ namespace IdleFactory.Unity.UI.Panels
 
             CloseSurface();
             summary = null;
+            offlineMilestones = Array.Empty<PendingMilestone>();
             kind = OfflineSurfaceKind.None;
             Dismissed?.Invoke();
         }
@@ -343,6 +364,7 @@ namespace IdleFactory.Unity.UI.Panels
                 }
 
                 AddEvents(offline);
+                AddMilestones();
                 AddLimits(offline);
             }
             else
@@ -503,6 +525,20 @@ namespace IdleFactory.Unity.UI.Panels
                 }
 
                 AddLine("offline-unlocks", "Newly unlocked: " + string.Join(", ", names) + ".", "status-line");
+            }
+        }
+
+        private void AddMilestones()
+        {
+            if (offlineMilestones.Count == 0)
+            {
+                return;
+            }
+
+            AddSection("offline-milestones-title", "Milestones");
+            for (var i = 0; i < offlineMilestones.Count; i++)
+            {
+                AddLine("offline-milestone-" + i.ToString(CultureInfo.InvariantCulture), milestoneCopy.Full(offlineMilestones[i]), "status-line");
             }
         }
 

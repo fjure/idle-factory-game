@@ -164,7 +164,7 @@ namespace IdleFactory.Tests.PlayMode.F006
                 Assert.That(accepted.IsSuccess, Is.True, "the production contract is active: " + accepted.ReasonCode);
             }
 
-            var grid = World(out _, out _);
+            var grid = World(out var worldDeck, out _);
             var pool = new EffectPool();
             var host = new UnityEngine.GameObject("effect-pool-view-real");
             rig.Owned.Add(host);
@@ -188,8 +188,20 @@ namespace IdleFactory.Tests.PlayMode.F006
             var inventory = session.State.Inventory;
             var mining = false;
             long now = 0;
+            // T540 (SC-008): the stage and milestone path of a running factory. The snapshot is the one the presenter rebuilds on a change (excluded here like the feed's
+            // own rebuilds); every frame reads the cached value, drives the three views and the watcher, and must allocate nothing.
+            var developmentSnapshot = RunSnapshots.Factory(session);
+            var development = DevelopmentStage.Evaluate(developmentSnapshot);
+            var milestones = new MilestoneWatcher();
+            milestones.Observe(developmentSnapshot, session.State.RunId, 0);
             void WorldFrame()
             {
+                milestones.Observe(developmentSnapshot, session.State.RunId, 0);
+                worldDeck.SetDevelopment(development);
+                linkView.SetStage(development.Stage);
+                depositView.SetStage(development.Stage);
+                worldDeck.TickFeedback(now);
+                milestones.TryDequeue(out _);
                 feed.Update(layout, now, reduced);
                 view.Present();
                 // The link layer reads this frame's machine rows (never a snapshot) and the shared store; the deposit follows the mining hold.
