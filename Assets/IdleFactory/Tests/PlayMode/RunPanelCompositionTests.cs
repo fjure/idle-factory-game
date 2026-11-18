@@ -9,6 +9,7 @@ using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Unity.Bootstrap;
 using IdleFactory.Unity.Persistence;
+using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using IdleFactory.Unity.UI.Panels;
 using NUnit.Framework;
@@ -31,7 +32,7 @@ namespace IdleFactory.Tests.PlayMode
 
         private static readonly string[] AllPanelIds =
         {
-            ShellPanelIds.Build, ShellPanelIds.Machine, ShellPanelIds.MachineCard, ShellPanelIds.Market, ShellPanelIds.Contracts,
+            ShellPanelIds.Build, ShellPanelIds.Machine, ShellPanelIds.MachineCard, ShellPanelIds.BuildCard, ShellPanelIds.Market, ShellPanelIds.Contracts,
             ShellPanelIds.Items, ShellPanelIds.Research, ShellPanelIds.Prestige, ShellPanelIds.Settings,
             // T535: the Industry system view and the hub ("Office") are composed and registered like the other panels.
             ShellPanelIds.Industry, ShellPanelIds.Hub,
@@ -161,14 +162,16 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator EverySlotTapOpensTheBuildSheetOrTheMachinePanelAndNeverThePlaceholder()
+        public IEnumerator EverySlotTapOpensTheBuildCardOrTheMachineCardAndNeverThePlaceholder()
         {
             yield return StartLiveRun();
             var shell = Bootstrap.RunShell;
 
             Assert.That(Bootstrap.ShellPresenter.HandleWorldTap(Bootstrap.SlotGrid.WorldRectOf(0).center), Is.True);
             yield return null;
-            AssertPanelShown(shell, ShellPanelIds.Build, "empty slot");
+            Assert.That(shell.IsBuildCardOpen, Is.True, "an empty slot opens the docked build card (T539)");
+            Assert.That(shell.ActivePanelId, Is.Null);
+            Assert.That(shell.PlaceholderText, Does.Not.Contain("not available"));
             Assert.That(shell.SelectedSlot, Is.EqualTo(0));
 
             var built = Bootstrap.RunCommands.Build(0, MinerId);
@@ -186,6 +189,36 @@ namespace IdleFactory.Tests.PlayMode
             OpenFromHub(shell, ShellTab.Prestige);
             yield return null;
             AssertPanelShown(shell, ShellPanelIds.Prestige, "a tab after a slot sheet");
+        }
+
+        [UnityTest]
+        public IEnumerator InTheAuthoredSceneAnEmptyLocationOpensTheBuildCardAndConfirmBuildsAndHandsOver()
+        {
+            yield return StartLiveRun();
+            var shell = Bootstrap.RunShell;
+            Assert.That(shell.HasBuildCard, Is.True, "the scene wires the build card (T539)");
+            Assert.That(Bootstrap.SlotGrid.Visuals[0].Condition, Is.EqualTo(SlotCondition.Empty));
+            Assert.That(Bootstrap.ShellPresenter.HandleWorldTap(Bootstrap.SlotGrid.WorldRectOf(0).center), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(shell.IsBuildCardOpen, Is.True);
+            var card = (BuildCard)shell.BuildCardPanel;
+            Assert.That(Bootstrap.SlotGrid.PreviewSlot, Is.EqualTo(0), "the world shows the ghost at the location");
+            var machinesBefore = RunSnapshots.Factory(Bootstrap.RunSession).Machines.Count;
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.False, "the live run can afford the first type");
+            using (var press = NavigationSubmitEvent.GetPooled())
+            {
+                press.target = card.ConfirmButton;
+                card.ConfirmButton.SendEvent(press);
+            }
+
+            yield return null;
+            yield return null;
+            Assert.That(RunSnapshots.Factory(Bootstrap.RunSession).Machines.Count, Is.EqualTo(machinesBefore + 1), "the confirm built the machine");
+            Assert.That(shell.IsBuildCardOpen, Is.False);
+            Assert.That(shell.IsCardOpen, Is.True, "and the card handed over to the machine card");
+            Assert.That(shell.CardSlot, Is.EqualTo(0));
+            Assert.That(Bootstrap.SlotGrid.PreviewSlot, Is.EqualTo(-1));
         }
 
         // ---------------------------------------------------------------------------------------------

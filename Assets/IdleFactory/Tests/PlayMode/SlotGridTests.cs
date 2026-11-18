@@ -418,7 +418,7 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ATapOpensTheBuildSheetForAnEmptySlotAndTheMachinePanelForAnOccupiedSlot()
+        public IEnumerator ATapOpensTheBuildCardForAnEmptySlotAndTheMachineCardForAnOccupiedSlot()
         {
             yield return StartRun();
             var bootstrap = run.Bootstrap;
@@ -426,21 +426,24 @@ namespace IdleFactory.Tests.PlayMode
             var presenter = bootstrap.ShellPresenter;
             var grid = bootstrap.SlotGrid;
 
-            // Since T194 the bootstrap mounts the real build sheet and machine panel.
-            Assert.That(shell.Panels.TryGet(ShellPanelIds.Build, out var build), Is.True);
+            // Since T194 the bootstrap mounts the real build sheet and machine panel; since T539 it also mounts the docked build card, which an empty slot opens.
+            Assert.That(shell.Panels.TryGet(ShellPanelIds.Build, out _), Is.True);
+            Assert.That(shell.Panels.TryGet(ShellPanelIds.BuildCard, out var build), Is.True);
             Assert.That(shell.Panels.TryGet(ShellPanelIds.Machine, out var machine), Is.True);
             Assert.That(presenter.HandleWorldTap(grid.WorldRectOf(2).center), Is.True);
             yield return null;
-            Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Build), "an empty slot opens the build sheet");
+            Assert.That(shell.IsBuildCardOpen, Is.True, "an empty slot opens the docked build card (T539)");
+            Assert.That(shell.ActivePanelId, Is.Null, "and not the build sheet");
             Assert.That(shell.SelectedSlot, Is.EqualTo(2));
-            Assert.That(build.Root.parent, Is.SameAs(shell.PanelContent), "the panel was mounted without editing the shell");
+            Assert.That(build.Root.parent, Is.Not.Null, "the card was mounted without editing the shell");
             Assert.That(grid.Visuals[2].Selected, Is.True);
 
             var built = bootstrap.RunCommands.Build(2, MinerId);
             Assert.That(built.IsSuccess, Is.True, built.ReasonCode);
             yield return null;
             yield return null;
-            Assert.That(shell.IsCardOpen, Is.True, "after the build the open sheet hands over to the machine card (T534)");
+            Assert.That(shell.IsCardOpen, Is.True, "after the build the open build card hands over to the machine card (T534, T539)");
+            Assert.That(shell.IsBuildCardOpen, Is.False);
 
             shell.CloseSheet();
             Assert.That(presenter.HandleWorldTap(grid.WorldRectOf(2).center), Is.True);
@@ -471,6 +474,8 @@ namespace IdleFactory.Tests.PlayMode
             var shell = bootstrap.RunShell;
 
             // The bootstrap mounts every panel since T194: a panel that could not be built (a missing asset) is the unregistered case.
+            // T539: an empty slot opens the build card, so the card is cleared too; without a card the build sheet is the route and its placeholder is what shows.
+            RunPanelCompositionTests.ClearAsset(bootstrap, "buildCardTree");
             RunPanelCompositionTests.ClearAsset(bootstrap, "buildSheetTree");
             RunPanelCompositionTests.ClearAsset(bootstrap, "prestigeTree");
             Assert.That(bootstrap.RecomposeRunPanels(), Is.True);

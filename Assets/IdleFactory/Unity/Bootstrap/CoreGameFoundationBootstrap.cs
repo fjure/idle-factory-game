@@ -55,6 +55,9 @@ namespace IdleFactory.Unity.Bootstrap
         [Tooltip("T534: the docked machine card (UXML, USS) and the shared PanelScaffold USS it reuses. A missing asset leaves a machine tap on the Details view with a coded diagnostic.")]
         [SerializeField] private VisualTreeAsset machineCardTree;
         [SerializeField] private StyleSheet machineCardStyles;
+        [Tooltip("T539: the docked build card (UXML, USS). Left unassigned, an empty location opens the build sheet as before; assigned, it opens the build card.")]
+        [SerializeField] private VisualTreeAsset buildCardTree;
+        [SerializeField] private StyleSheet buildCardStyles;
         [SerializeField] private StyleSheet panelScaffoldStyles;
         [SerializeField] private VisualTreeAsset hubPanelTree;
         [SerializeField] private StyleSheet hubPanelStyles;
@@ -730,6 +733,19 @@ namespace IdleFactory.Unity.Bootstrap
             TryComposePanel(ShellPanelIds.MachineCard,
                 () => new MachineCard(runSession, runCommands, machineCardTree, machineCardStyles, panelScaffoldStyles, icons, machineFeedback,
                     () => slotGrid != null ? slotGrid.Layout : null));
+            if (buildCardTree == null)
+            {
+                // T539: a missing wiring must not go unnoticed again; the build sheet stays the fallback route.
+                Debug.LogWarning("The build card is not wired (buildCardTree is unassigned on the bootstrap): an empty location opens the build sheet.", this);
+            }
+            else
+            {
+                // T539: the build card shares the response policy (the build dust goes through the same sink) and previews through the slot grid.
+                TryComposePanel(ShellPanelIds.BuildCard,
+                    () => new BuildCard(runSession, runCommands, buildCardTree, buildCardStyles, panelScaffoldStyles, icons, machineFeedback,
+                        () => slotGrid, PresentationKeyOf));
+            }
+
             TryComposePanel(ShellPanelIds.Market,
                 () => new MarketPanelHost(runSession, runCommands, runShell, inventoryRatesTree, inventoryRatesStyles,
                     prioritiesTree, prioritiesStyles, expansionTree, expansionStyles, icons, sessionLog),

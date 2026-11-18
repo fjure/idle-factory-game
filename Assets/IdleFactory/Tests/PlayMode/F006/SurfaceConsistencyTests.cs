@@ -435,7 +435,7 @@ namespace IdleFactory.Tests.PlayMode.F006
         [Test]
         public void AReadOnlyValueTakesTheValueClassAndAControlLikeValueDoesNot()
         {
-            var value = MarketPanelParts.NewValueButton("probe-value", "probe");
+            var value = MarketPanelParts.NewValueButton("probe-value", "probe", true);
             Assert.That(value.ClassListContains(MarketPanelParts.ReadOnlyValueClass), Is.True, "a read-only value");
             var exact = MarketPanelParts.NewValueButton("probe-exact", "probe", false);
             Assert.That(exact.ClassListContains(MarketPanelParts.ReadOnlyValueClass), Is.False, "a labelled control keeps its button look");

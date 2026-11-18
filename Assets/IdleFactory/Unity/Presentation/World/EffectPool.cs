@@ -185,9 +185,16 @@ namespace IdleFactory.Unity.Presentation
             }
         }
 
-        /// <summary>The effect a machine response plays: the glint of an upgrade, the spark of a switch-on.</summary>
-        public static EffectKind KindOf(MachineResponseKind response) =>
-            response == MachineResponseKind.UpgradeGlint ? EffectKind.UpgradeGlint : EffectKind.Spark;
+        /// <summary>The effect a machine response plays: the glint of an upgrade, the dust of a build (T539), the spark of a switch-on.</summary>
+        public static EffectKind KindOf(MachineResponseKind response)
+        {
+            switch (response)
+            {
+                case MachineResponseKind.UpgradeGlint: return EffectKind.UpgradeGlint;
+                case MachineResponseKind.BuildDust: return EffectKind.BuildDust;
+                default: return EffectKind.Spark;
+            }
+        }
 
         /// <summary>Declares the art of a kind: its frame count and its default rate. A kind with no frames cannot spawn.</summary>
         public void SetKindArt(EffectKind kind, int frameCount, int framesPerSecond)

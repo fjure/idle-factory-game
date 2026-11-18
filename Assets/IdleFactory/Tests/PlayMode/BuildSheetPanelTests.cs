@@ -23,6 +23,8 @@ namespace IdleFactory.Tests.PlayMode
     /// T113 (FR-009, FR-011, US1 scenario 1, UX-3, F-4): the build sheet of an empty slot. Normal, empty, disabled and error
     /// states are reached through the application seams (a real run session and its commands) without the scene; keyboard
     /// activation, 44 pt targets and the worst-case layout at every screen class, rotations and 200 % text scale.
+    /// T539 re-baseline: an empty location opens the docked <see cref="BuildCard"/> when one is registered; the sheet is the route only where none is (a shell
+    /// composed without the build card assets). These tests register no card, so they keep proving the sheet unchanged, and the last test below pins the routing.
     /// </summary>
     public sealed class BuildSheetPanelTests
     {
@@ -118,6 +120,32 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         private int MachineCount() => RunSnapshots.Factory(session).Machines.Count;
+
+        [UnityTest]
+        public IEnumerator WithABuildCardRegisteredAnEmptyLocationOpensTheCardAndNotTheSheet()
+        {
+            yield return Open(PhoneScreen(), 100, RunShellFixtures.MinerCost, false);
+            var shell = rig.Shell;
+            Assert.That(shell.HasBuildCard, Is.False, "no build card is registered here, so the sheet is the route");
+            yield return ShowSlot(0);
+            Assert.That(shell.ActivePanelId, Is.EqualTo(ShellPanelIds.Build));
+            Assert.That(shell.IsBuildCardOpen, Is.False);
+            shell.CloseSheet();
+
+            var cardTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(PanelRoot + "BuildCard.uxml");
+            var cardStyles = AssetDatabase.LoadAssetAtPath<StyleSheet>(PanelRoot + "BuildCard.uss");
+            Assert.That(cardTree, Is.Not.Null);
+            using (shell.Panels.Register(new BuildCard(session, commands, cardTree, cardStyles, null, ContractsPanelTestSupport.Icon)))
+            {
+                Assert.That(shell.HasBuildCard, Is.True);
+                Assert.That(shell.OpenSlot(0, SlotCondition.Empty), Is.True);
+                yield return ShellRig.Settle();
+                Assert.That(shell.IsBuildCardOpen, Is.True, "the docked card replaces the sheet");
+                Assert.That(shell.ActivePanelId, Is.Null, "the build sheet is not shown");
+                Assert.That(panel.Slot, Is.EqualTo(-1), "and it was never shown for the slot");
+                Assert.That(shell.IsSheetOpen, Is.False);
+            }
+        }
 
         // ---------------------------------------------------------------------------------------------------
         // Normal

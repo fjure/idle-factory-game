@@ -215,6 +215,7 @@ namespace IdleFactory.Tests.PlayMode
         public enum Surface
         {
             Card,
+            BuildCard,
             Details,
             Sheet,
             Hub,
@@ -238,6 +239,12 @@ namespace IdleFactory.Tests.PlayMode
             {
                 case Surface.Card:
                     yield return made.OpenCard(0);
+                    break;
+                case Surface.BuildCard:
+                    // T539: the build card of an empty location docks like the machine card, so the same U-B1 rule holds for it.
+                    made.AttachBuildCard(new RecordingPreview());
+                    Assert.That(shell.OpenSlot(1, SlotCondition.Empty), Is.True);
+                    Assert.That(shell.IsBuildCardOpen, Is.True);
                     break;
                 case Surface.Details:
                     Assert.That(shell.OpenDetails(0), Is.True);
@@ -309,7 +316,7 @@ namespace IdleFactory.Tests.PlayMode
             var host = new GameObject("status-band-camera");
             try
             {
-                if (surface != Surface.Card)
+                if (surface != Surface.Card && surface != Surface.BuildCard)
                 {
                     TestContext.Out.WriteLine($"T555-BAND | {context} | world band {area.width:0}x{area.height:0} px | strip {shell.TopStrip.worldBound.height:0} pt");
                 }
@@ -341,6 +348,7 @@ namespace IdleFactory.Tests.PlayMode
             switch (surface)
             {
                 case Surface.Card: shell.CloseMachineCard(); break;
+                case Surface.BuildCard: shell.CloseBuildCard(); break;
                 case Surface.Details: shell.CloseSheetOrDetails(); shell.CloseMachineCard(); break;
                 default: shell.CloseSheet(); break;
             }

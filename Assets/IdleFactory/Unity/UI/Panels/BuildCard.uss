@@ -1,0 +1,187 @@
+/* T539 build card (FR-032 to FR-034, research R13, OD-9b UI/UX C1 to C6). Docked like the machine card (MachineCard.uss): the same dock rules by class, a bottom
+   band on a phone in portrait (the shell caps its height at 30 percent of the safe height, 45 percent above 140 percent text), a column of about 40 percent of the
+   width on a phone in landscape, and the side panel body on tablet and desktop. Font sizes only through the shell --run-fs-* variables, colours only through the
+   shell tokens, touch targets 48 pt, nothing is nowrap. The type list is the only part that scrolls: the selected line, Confirm and Cancel and the reason stay in view.
+
+   P2-F16 (docked variant): the PanelScaffold root is a full-screen opaque fill, which the card must never be. The card root carries the scaffold class so the
+   scaffold button, disabled-state and reason classes apply, and this sheet overrides the fill with a more specific selector (.scaffold.bcard). */
+
+.scaffold.bcard {
+    position: relative;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: none;
+    flex-direction: column;
+    flex-grow: 0;
+    flex-shrink: 0;
+    background-color: var(--surface);
+    border-top-width: 1px;
+    border-top-color: var(--border);
+    overflow: hidden;
+}
+
+/* The card shows only while the shell is in its card state (the shell mounts one card root at a time). */
+.run-shell--card-open .scaffold.bcard {
+    display: flex;
+}
+
+.run-shell--card-open .run-panel > .run-scroll {
+    display: none;
+}
+
+.factory-hud--compact-portrait .scaffold.bcard {
+    width: 100%;
+}
+
+.factory-hud--compact-landscape .scaffold.bcard {
+    width: 40%;
+    border-top-width: 0;
+    border-left-width: 1px;
+    border-left-color: var(--border);
+}
+
+.run-panel .scaffold.bcard {
+    width: auto;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    border-top-width: 0;
+}
+
+.bcard__selected {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-strong);
+    font-size: var(--run-fs-value);
+    -unity-font-style: bold;
+    margin: 6px 8px 0 8px;
+}
+
+.bcard__hint {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--warning);
+    font-size: var(--run-fs-caption);
+    margin: 2px 8px 0 8px;
+}
+
+/* The type list shrinks first: Confirm and Cancel below it never scroll out of the card. */
+.scaffold.bcard .bcard__types {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    margin: 4px 8px 0 8px;
+}
+
+.bcard__type {
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 48px;
+    margin: 0 0 4px 0;
+    padding: 4px 8px;
+    -unity-text-align: middle-left;
+}
+
+.bcard__icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+    background-position-x: center;
+    background-position-y: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.bcard__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.bcard__name {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-strong);
+    font-size: var(--run-fs-body);
+    -unity-font-style: bold;
+    -unity-text-align: middle-left;
+}
+
+.bcard__line {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--text-primary);
+    font-size: var(--run-fs-caption);
+    -unity-text-align: middle-left;
+}
+
+.bcard__status--short {
+    color: var(--warning);
+}
+
+/* The selected row is shown by a thicker accent border and a bold name, never by colour alone (the selected line above says it in words too). */
+.bcard__type--selected {
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: var(--accent);
+    border-right-color: var(--accent);
+    border-top-color: var(--accent);
+    border-bottom-color: var(--accent);
+    background-color: var(--surface-raised);
+}
+
+.bcard__actions {
+    flex-shrink: 0;
+    flex-direction: row;
+    margin: 4px 8px 0 8px;
+}
+
+/* Confirm and Cancel side by side, each a 48 pt target that wraps its word at large text (C4). */
+.scaffold.bcard .bcard__action {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 44px;
+    min-height: 48px;
+    margin: 0 2px;
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+
+/* T555 (U-B8): a disabled control's reason sits directly below the control. */
+.bcard__reason {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--warning);
+    font-size: var(--run-fs-body);
+    margin: 2px 8px 0 8px;
+}
+
+.bcard__feedback {
+    flex-shrink: 0;
+    white-space: normal;
+    color: var(--danger);
+    font-size: var(--run-fs-caption);
+    margin: 2px 8px 4px 8px;
+}
+
+/* Phone landscape: the column is narrow, so the heading takes the body size. */
+.factory-hud--compact-landscape .bcard__selected {
+    font-size: var(--run-fs-body);
+    margin: 4px 6px 0 6px;
+}
+
+.factory-hud--compact-landscape .bcard__actions,
+.factory-hud--compact-landscape .scaffold.bcard .bcard__types,
+.factory-hud--compact-landscape .bcard__reason {
+    margin-left: 6px;
+    margin-right: 6px;
+}

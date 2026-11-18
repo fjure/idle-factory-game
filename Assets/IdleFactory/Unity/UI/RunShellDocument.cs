@@ -103,9 +103,14 @@ namespace IdleFactory.Unity.UI
 
         // T534: the docked machine card (one instance, registered as ShellPanelIds.MachineCard), its details hand-over and the keyboard
         // stop of the world locations.
+        // T539: the build card is the second docked card. The two are mutually exclusive, so one frame (cardOpen, cardSlot) describes whichever is open and
+        // buildCardOpen says which; cardPanel is the card whose root is mounted now, machineCardPanel and buildCardPanel are the registered ones.
         private IShellPanel cardPanel;
+        private IShellPanel machineCardPanel;
+        private IShellPanel buildCardPanel;
         private VisualElement cardMountedRoot;
         private bool cardOpen;
+        private bool buildCardOpen;
         private int cardSlot = -1;
         private bool detailsFromCard;
         private bool cardBandPending;
@@ -219,10 +224,25 @@ namespace IdleFactory.Unity.UI
         public Func<int, Rect?> LocationRectProvider { get; set; }
 
         /// <summary>True while the machine card is the open frame (it is hidden while its Details view shows).</summary>
-        public bool IsCardOpen => cardOpen;
+        public bool IsCardOpen => cardOpen && !buildCardOpen;
 
-        /// <summary>The slot the card shows, or -1.</summary>
-        public int CardSlot => cardOpen ? cardSlot : -1;
+        /// <summary>True while a docked card, the machine card or the build card, is the open frame.</summary>
+        public bool IsDockedCardOpen => cardOpen;
+
+        /// <summary>The slot the machine card shows, or -1.</summary>
+        public int CardSlot => cardOpen && !buildCardOpen ? cardSlot : -1;
+
+        /// <summary>True while the build card (T539) is the open frame.</summary>
+        public bool IsBuildCardOpen => cardOpen && buildCardOpen;
+
+        /// <summary>The location the build card builds at, or -1.</summary>
+        public int BuildCardSlot => cardOpen && buildCardOpen ? cardSlot : -1;
+
+        /// <summary>True when a build card is registered; without one, an empty location opens the build sheet as before.</summary>
+        public bool HasBuildCard => registry.IsRegistered(ShellPanelIds.BuildCard);
+
+        /// <summary>The registered build card, or null.</summary>
+        public IShellPanel BuildCardPanel => buildCardPanel;
 
         /// <summary>True while the Details view of a machine, opened from the card, is the open sheet (closing it returns to the card).</summary>
         public bool IsDetailsFromCard => detailsFromCard;
@@ -231,10 +251,10 @@ namespace IdleFactory.Unity.UI
         public bool HasMachineCard => registry.IsRegistered(ShellPanelIds.MachineCard);
 
         /// <summary>The root of the machine card, or null when none is registered.</summary>
-        public VisualElement CardRoot => cardPanel?.Root;
+        public VisualElement CardRoot => machineCardPanel?.Root;
 
         /// <summary>The registered machine card, or null.</summary>
-        public IShellPanel Card => cardPanel;
+        public IShellPanel Card => machineCardPanel;
 
         /// <summary>True from the moment a card opens (or the layout changes under it) until its band has been laid out: the camera waits for it.</summary>
         public bool IsCardBandPending => cardBandPending;
@@ -1204,6 +1224,12 @@ namespace IdleFactory.Unity.UI
                 return OpenMachineCard(slot, focusCard);
             }
 
+            if (condition == SlotCondition.Empty && HasBuildCard)
+            {
+                // T539: an empty location opens the docked build card; the build sheet stays the route where no build card is registered.
+                return OpenBuildCard(slot, focusCard);
+            }
+
             ClearTransientNotice();
             DismissCard(false);
             detailsFromCard = false;
@@ -1224,6 +1250,22 @@ namespace IdleFactory.Unity.UI
         /// </summary>
         public void UpdateSlotRoute(int slot, SlotCondition condition)
         {
+            if (buildCardOpen && cardOpen && slot == cardSlot)
+            {
+                // T539: the location the build card builds at changed under it. A machine there (built by the card, or by another path) hands the card over to
+                // the machine card; a locked location closes the card. An unchanged (empty) location keeps it.
+                if (condition == SlotCondition.Occupied && HasMachineCard)
+                {
+                    OpenMachineCard(slot);
+                }
+                else if (condition != SlotCondition.Empty)
+                {
+                    CloseMachineCard(true);
+                }
+
+                return;
+            }
+
             if (cardOpen && slot == cardSlot && condition != SlotCondition.Occupied)
             {
                 // A removed machine closes the card and says so (FR-016, U-9). The card also checks its own instance every refresh.
@@ -1311,6 +1353,7 @@ namespace IdleFactory.Unity.UI
         void IShellBackFrames.PopSettings() => CloseSettings();
         void IShellBackFrames.PopSheet() => CloseSheetOrDetails();
         bool IShellBackFrames.HasCard => cardOpen;
+        // Back pops the open docked card, the machine card or the build card, and the selection clears (a build in progress is cancelled).
         void IShellBackFrames.PopCard() => CloseMachineCard();
 
         /// <summary>The shown panel changed because the run read model changed: lets a visible panel refresh itself.</summary>
@@ -1341,14 +1384,19 @@ namespace IdleFactory.Unity.UI
                 ShowPanel(null, null, -1);
             }
 
+            if (buildCardOpen)
+            {
+                // T539: the build card yields to the machine card (the hand-over after a build, or a tap on a machine); the selection moves with the call below.
+                DismissCard(false);
+            }
+
             var wasOpen = cardOpen;
             RebindCard(false);
             activeTab = ShellTab.Factory;
             cardOpen = true;
             cardSlot = slot;
             SetSelectedSlot(slot);
-            MountCard();
-            ApplyCardCap();
+            ActivateCard(machineCardPanel);
             root.EnableInClassList("run-shell--card-open", true);
             if (!wasOpen)
             {
@@ -1356,6 +1404,9 @@ namespace IdleFactory.Unity.UI
             }
 
             cardPanel.OnShown(new ShellPanelContext(this, slot));
+            // T555 review A2: showing a card is not a pure card change. UpdateSheetState re-places the persistent layer (PlacePersistentLayer), which on a phone in
+            // landscape turns the strip into the status band and moves Overdrive into it, and it ends any sheet scroll hold, because no view is shown now.
+            panelTopHold = false;
             UpdateSheetState();
             if (focusCard && cardOpen)
             {
@@ -1363,6 +1414,69 @@ namespace IdleFactory.Unity.UI
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Opens the docked build card for an empty location (T539, FR-032, research R13), or retargets it to another empty location. It is exclusive with the
+        /// machine card and every sheet, docks as the machine card does, and selects the location so the camera keeps it fully visible in the band the card leaves.
+        /// Returns false when no build card is registered.
+        /// </summary>
+        public bool OpenBuildCard(int slot, bool focusCard = false)
+        {
+            if (!EnsureReady() || !HasBuildCard || slot < 0)
+            {
+                return false;
+            }
+
+            ClearTransientNotice();
+            if (sheetOpen)
+            {
+                sheetOpen = false;
+                detailsFromCard = false;
+                activeTab = ShellTab.Factory;
+                ShowPanel(null, null, -1);
+            }
+
+            if (cardOpen && !buildCardOpen)
+            {
+                // The machine card yields; its selection moves with the call below.
+                DismissCard(false);
+            }
+
+            var wasOpen = cardOpen;
+            RebindCard(false);
+            activeTab = ShellTab.Factory;
+            buildCardOpen = true;
+            cardOpen = true;
+            cardSlot = slot;
+            SetSelectedSlot(slot);
+            ActivateCard(buildCardPanel);
+            root.EnableInClassList("run-shell--card-open", true);
+            if (!wasOpen)
+            {
+                MarkCardBandPending();
+            }
+
+            cardPanel.OnShown(new ShellPanelContext(this, slot));
+            // The same card-show path as OpenMachineCard (T555 review A2): the persistent layer is re-placed (the status band on a phone in landscape keeps Cash
+            // and Overdrive on screen, U-B1) and no sheet view is shown, so its scroll hold ends.
+            panelTopHold = false;
+            UpdateSheetState();
+            if (focusCard && cardOpen)
+            {
+                FocusWhenReady(cardPanel.Root.Q<Button>(BuildCard.FirstFocusName));
+            }
+
+            return true;
+        }
+
+        /// <summary>Closes the build card (Cancel, Back) and clears the selection; does nothing when the build card is not the open frame.</summary>
+        public void CloseBuildCard(bool restoreFocus = true)
+        {
+            if (cardOpen && buildCardOpen)
+            {
+                CloseMachineCard(restoreFocus);
+            }
         }
 
         /// <summary>
@@ -1476,6 +1590,7 @@ namespace IdleFactory.Unity.UI
             }
 
             cardOpen = false;
+            buildCardOpen = false;
             cardSlot = -1;
             cardBandPending = false;
             cardPanel?.OnHidden();
@@ -1500,8 +1615,9 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
-            registry.TryGet(ShellPanelIds.MachineCard, out var registered);
-            if (ReferenceEquals(registered, cardPanel))
+            registry.TryGet(ShellPanelIds.MachineCard, out var registeredMachine);
+            registry.TryGet(ShellPanelIds.BuildCard, out var registeredBuild);
+            if (ReferenceEquals(registeredMachine, machineCardPanel) && ReferenceEquals(registeredBuild, buildCardPanel))
             {
                 return;
             }
@@ -1513,7 +1629,28 @@ namespace IdleFactory.Unity.UI
 
             cardMountedRoot?.RemoveFromHierarchy();
             cardMountedRoot = null;
-            cardPanel = registered;
+            cardPanel = null;
+            machineCardPanel = registeredMachine;
+            buildCardPanel = registeredBuild;
+            ActivateCard(machineCardPanel ?? buildCardPanel);
+        }
+
+        // Mounts the given card (the machine card or the build card) in place of the other: only one card root is in the tree at a time, so the two can never
+        // both show and the dock, the band cap and the geometry callback always belong to the open one (T539).
+        private void ActivateCard(IShellPanel panel)
+        {
+            if (panel == null)
+            {
+                return;
+            }
+
+            if (!ReferenceEquals(cardPanel, panel))
+            {
+                cardMountedRoot?.RemoveFromHierarchy();
+                cardMountedRoot = null;
+                cardPanel = panel;
+            }
+
             MountCard();
             ApplyCardCap();
         }
@@ -1806,6 +1943,13 @@ namespace IdleFactory.Unity.UI
             activePanelId = id;
             settingsOpen = id == ShellPanelIds.Settings;
             HoldPanelAtTop();
+            if (id == null)
+            {
+                // T539 (T555 review A6): the hold belongs to a shown view. With none shown it ends here, so it never outlives the view it was taken for and a later
+                // programmatic focus (a card, a notice) is not pinned to the top of a scroll that holds nothing.
+                panelTopHold = false;
+            }
+
             foreach (var child in panelContent.Children())
             {
                 if (child != placeholder)
@@ -2907,7 +3051,7 @@ namespace IdleFactory.Unity.UI
 
         private void OnRegistryChanged(string id)
         {
-            if (IsReady && id == ShellPanelIds.MachineCard)
+            if (IsReady && (id == ShellPanelIds.MachineCard || id == ShellPanelIds.BuildCard))
             {
                 RebindCard();
                 return;
@@ -3088,12 +3232,15 @@ namespace IdleFactory.Unity.UI
             }
 
             cardOpen = false;
+            buildCardOpen = false;
             cardSlot = -1;
             detailsFromCard = false;
             cardBandPending = false;
             cardMountedRoot?.RemoveFromHierarchy();
             cardMountedRoot = null;
             cardPanel = null;
+            machineCardPanel = null;
+            buildCardPanel = null;
             locationStop = null;
             if (root != null && panelContent != null)
             {

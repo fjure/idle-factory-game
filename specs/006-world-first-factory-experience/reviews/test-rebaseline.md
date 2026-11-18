@@ -291,3 +291,18 @@ The F004 floor pool, its family folder, its atlas and its catalog key are gone; 
 **Render baselines (T527).** The nine `w003s-*-shell.png` baselines under `Tests/PlayMode/Fixtures/Screenshots/F004-B2/` were regenerated, not edited: `IDLEFACTORY_RENDER_BASELINE_WRITE=1 scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/PlayMode/RenderParityTests.cs` (the harness write mode). Only the hub entry glyph changed (the Contracts glyph became the Office glyph: 125 to 165 pixels per frame, max channel delta 162). No `w004v-*` world frame changed.
 
 **Settings.** No `ProjectSettings` change is committed. `ProjectSettings/ProjectSettings.asset` run noise was restored after every Unity run.
+
+## T539 (#711): the docked build card
+
+An empty location in the authored scene now opens the docked build card (`ShellPanelIds.BuildCard`) instead of the build sheet. The sheet stays the route in a shell that registers no card (`BuildSheetPanelTests`, the layout rigs). `CoreGameFoundation.unity` gains exactly two references, `buildCardTree` and `buildCardStyles`, written by `F006SceneWiring -f006WiringSteps buildcard` (SerializedObject, idempotent, touches nothing else).
+
+| File | Old assertion | New assertion | Reason | Expectation changed? |
+|---|---|---|---|---|
+| `SlotGridTests.ATapOpensTheBuildCardForAnEmptySlotAndTheMachineCardForAnOccupiedSlot` (was `...BuildSheetForAnEmptySlot...MachinePanel...`) | `ActivePanelId == Build`, the build sheet root is mounted in `PanelContent` | `IsBuildCardOpen`, `ActivePanelId` is null, the card root is mounted; the sheet panel stays registered; after a build `IsCardOpen` and not `IsBuildCardOpen` | FR-032: an empty location opens the build card | yes |
+| `RunPanelCompositionTests.EverySlotTapOpensTheBuildCardOrTheMachineCardAndNeverThePlaceholder` (was `...BuildSheetOrTheMachinePanel...`) | `AssertPanelShown(Build, "empty slot")` | `IsBuildCardOpen`, no sheet, no placeholder "not available" text | same | yes |
+| `RunPanelCompositionTests` panel id list | 11 registered ids | 12 (adds `build-card`); every count assertion (`EveryPanelIdIsRegistered...`, shell rebuild once-only, failed-panel and blocked-import cases) follows `AllPanelIds.Length` | the card is one more composed panel | yes |
+| `HubPanelTests`, `SettingsSheetTests`, `MachineCardTests` | none | none: their rigs register a test sheet panel and no card, so the sheet route they assert is unchanged | rigs, not the authored scene | no |
+| `PersistentLayerTests` | the U-B1 matrix covered Card, Details, Sheet, Hub | adds `Surface.BuildCard`, with the same fit-all and band assertions | the build card docks like the machine card | new case |
+| `SlotGridTests.AnUnregisteredPanelShowsTheNotAvailableStateInsteadOfNothing` | clears `buildSheetTree` and `prestigeTree`, expects the "build sheet ... not available" placeholder after an empty-slot tap | also clears `buildCardTree` first, same expectations | with the card wired, an empty slot no longer reaches the sheet; clearing the card restores the sheet route this test covers | yes (setup) |
+
+**New.** `BuildCardTests` (72), `BuildCardWorldTests` (2), `RunPanelCompositionTests.InTheAuthoredSceneAnEmptyLocationOpensTheBuildCardAndConfirmBuildsAndHandsOver`, and `BuildSheetPanelTests.WithABuildCardRegisteredAnEmptyLocationOpensTheCardAndNotTheSheet`.

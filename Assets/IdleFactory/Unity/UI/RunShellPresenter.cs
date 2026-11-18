@@ -235,8 +235,9 @@ namespace IdleFactory.Unity.UI
                     shell.CloseMachineCard(false);
                     shell.FocusLocation(detailsSlot);
                 }
-                else if (shell.IsCardOpen)
+                else if (shell.IsDockedCardOpen)
                 {
+                    // The machine card or the build card (T539): a tap on empty world cancels a build in progress, as it closes the machine card.
                     shell.CloseMachineCard(false);
                 }
 

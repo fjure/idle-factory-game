@@ -84,6 +84,14 @@ namespace IdleFactory.Editor.Art
                 WireScene();
             }
 
+            if (set.Contains("buildcard"))
+            {
+                // T539: its own step (run it alone with -f006WiringSteps buildcard): it touches only the two build card fields and never rewrites the composition settings.
+                F004ArtIntegration.GuardSceneSwitch(Application.isBatchMode, EditorApplication.isPlayingOrWillChangePlaymode,
+                    EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo);
+                WireBuildCard();
+            }
+
             AssetDatabase.SaveAssets();
             Debug.Log("[F006SceneWiring] done: steps " + string.Join(",", set));
         }
@@ -219,6 +227,54 @@ namespace IdleFactory.Editor.Art
                 }
 
                 Debug.Log("[F006SceneWiring] registered " + registered + " F006 catalog keys, removed " + FloorTileKey + ", wired the world composition.");
+            }
+            finally
+            {
+                if (previousSetup != null && previousSetup.Length > 0)
+                {
+                    EditorSceneManager.RestoreSceneManagerSetup(previousSetup);
+                }
+            }
+        }
+
+        public const string BuildCardUxmlPath = "Assets/IdleFactory/Unity/UI/Panels/BuildCard.uxml";
+        public const string BuildCardUssPath = "Assets/IdleFactory/Unity/UI/Panels/BuildCard.uss";
+
+        /// <summary>T539: assigns <c>buildCardTree</c> and <c>buildCardStyles</c> on the bootstrap through SerializedObject. Idempotent; nothing else is written.</summary>
+        private static void WireBuildCard()
+        {
+            var previousSetup = Application.isBatchMode ? null : EditorSceneManager.GetSceneManagerSetup();
+            try
+            {
+                var scene = EditorSceneManager.OpenScene(F004ArtIntegration.ScenePath, OpenSceneMode.Single);
+                // Loaded after the scene opens: a Single open unloads assets that were loaded before it.
+                var tree = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(BuildCardUxmlPath);
+                var styles = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.StyleSheet>(BuildCardUssPath);
+                if (tree == null || styles == null)
+                {
+                    throw new FileNotFoundException(BuildCardUxmlPath + " or " + BuildCardUssPath);
+                }
+
+                var host = FindBootstrap(scene);
+                var serialized = new SerializedObject(host);
+                var treeProperty = serialized.FindProperty("buildCardTree");
+                var styleProperty = serialized.FindProperty("buildCardStyles");
+                treeProperty.objectReferenceValue = tree;
+                styleProperty.objectReferenceValue = styles;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                serialized.Update();
+                if (serialized.FindProperty("buildCardTree").objectReferenceValue == null || serialized.FindProperty("buildCardStyles").objectReferenceValue == null)
+                {
+                    throw new InvalidOperationException("The build card references did not stick (" + tree.GetType().Name + ", " + styles.GetType().Name + ").");
+                }
+
+                EditorSceneManager.MarkSceneDirty(scene);
+                if (!EditorSceneManager.SaveScene(scene))
+                {
+                    throw new InvalidOperationException("The scene could not be saved: " + F004ArtIntegration.ScenePath);
+                }
+
+                Debug.Log("[F006SceneWiring] wired the build card tree and styles.");
             }
             finally
             {
