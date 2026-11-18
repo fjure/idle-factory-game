@@ -122,10 +122,17 @@ namespace IdleFactory.Tests.PlayMode.F006
             public long SpawnedInWindow;
             public long StructureMoves;
             public int Rebuilds;
+
+            // T528: how many measured frames had a pip running (a Running branch), the chip loop playing, or the static highlight showing.
+            public int PipFrames;
+            public int ChipFrames;
+            public int HighlightFrames;
+            public int BranchSwaps;
         }
 
-        // A real session over a packaged catalog (no editor API): 8 miners complete cycles for 600 frames of 100 ms while the feed and the view run.
-        private IEnumerator MeasureEightMinersRunning(RunCatalog catalog, string offerToAccept, Measurement result)
+        // A real session over a packaged catalog (no editor API): 8 miners complete cycles for 600 frames of 100 ms while the feed and the views run: the effect
+        // pool, the depot and link layer (the branch pips and tile swaps) and the ore-vein deposit (the chip loop, toggled every 40 frames like a mining hold).
+        private IEnumerator MeasureEightMinersRunning(RunCatalog catalog, string offerToAccept, Measurement result, bool reduced = false)
         {
             var permanent = new PermanentState(catalog);
             var start = NextRunStart.Compute(catalog, permanent);
@@ -165,32 +172,58 @@ namespace IdleFactory.Tests.PlayMode.F006
             view.Bind(grid);
             var feed = new WorldEffectsFeed(session, pool);
             var layout = grid.Layout;
+            var viewCatalog = rig.Catalog();
+            var linkHost = new UnityEngine.GameObject("depot-link-view-real");
+            rig.Owned.Add(linkHost);
+            var linkView = linkHost.AddComponent<DepotLinkView>();
+            linkView.Configure(viewCatalog);
+            linkView.Bind(grid);
+            var linkModel = new DepotLinkModel();
+            var depositHost = new UnityEngine.GameObject("deposit-view-real");
+            rig.Owned.Add(depositHost);
+            var depositView = depositHost.AddComponent<DepositView>();
+            depositView.Configure(viewCatalog);
+            depositView.Bind(grid);
+            var inventory = session.State.Inventory;
+            var mining = false;
             long now = 0;
-            for (var i = 0; i < 30; i++)
+            void WorldFrame()
             {
-                now += 16;
-                feed.Update(layout, now, false);
+                feed.Update(layout, now, reduced);
                 view.Present();
+                // The link layer reads this frame's machine rows (never a snapshot) and the shared store; the deposit follows the mining hold.
+                linkModel.Refresh(layout.LocationCount, feed.LiveStates, feed.LiveStateCount, feed.Model, inventory.Total, inventory.Capacity);
+                linkView.Present(linkModel, now, reduced);
+                depositView.Present(mining, now, reduced);
+            }
+
+            // Warm-up with run time passing (100 ms a frame), so every pip renderer has been shown once and every tile swap and sprite change has happened.
+            for (var i = 0; i < 60; i++)
+            {
+                now += 100;
+                mining = i % 2 == 0;
+                Assert.That(session.Advance(1_000_000).IsSuccess, Is.True);
+                WorldFrame();
             }
 
             yield return null;
             long allocations = 0;
             var steadyFrames = 0;
             var structuralFrames = 0;
-            System.Action frameWork = () =>
-            {
-                feed.Update(layout, now, false);
-                view.Present();
-            };
+            System.Action frameWork = WorldFrame;
             var spawnedBefore = pool.SpawnedTotal;
             var structureBefore = session.StructureRevision;
             var rebuildsAtStart = feed.Rebuilds;
             for (var frame = 0; frame < Frames; frame++)
             {
                 now += 100;
+                mining = (frame / 40) % 2 == 0;
                 Assert.That(session.Advance(1_000_000).IsSuccess, Is.True); // 100 ms of run time per frame: the session itself is not measured
                 var rebuildsBefore = feed.Rebuilds;
                 var counted = GcAllocationCounter.Count(frameWork);
+                result.PipFrames += linkModel.RunningCount > 0 ? 1 : 0;
+                result.ChipFrames += depositView.Mode == DepositMode.Chip ? 1 : 0;
+                result.HighlightFrames += depositView.Mode == DepositMode.Highlight ? 1 : 0;
                 if (feed.Rebuilds != rebuildsBefore)
                 {
                     result.RebuildFrames++;
@@ -213,7 +246,21 @@ namespace IdleFactory.Tests.PlayMode.F006
             yield return MeasureEightMinersRunning(RunPlayerFixtures.IronCatalog(), null, measured);
             Assert.That(measured.SpawnedInWindow, Is.GreaterThan(0), "completions happened inside the measured window");
             Assert.That(measured.RebuildFrames, Is.LessThanOrEqualTo(5), "structure changes are rare events without a contract");
-            Assert.That(measured.Allocations, Is.Zero, "SC-008: every steady frame of the world effects allocates nothing while cycles complete");
+            Assert.That(measured.PipFrames, Is.GreaterThan(Frames / 2), "the branch pips ran in the measured window (Running machines)");
+            Assert.That(measured.ChipFrames, Is.GreaterThan(0), "the chip loop played in the measured window");
+            Assert.That(measured.Allocations, Is.Zero, "SC-008: every steady frame of the world effects, the pips and the chip loop allocates nothing while cycles complete");
+        }
+
+        [UnityTest]
+        public IEnumerator ThePipsAndTheChipLoopAllocateNothingUnderReducedMotionToo()
+        {
+            // Reduced motion: no pips, the Running branch shows the static active tile, and the vein shows the static highlight instead of the chip loop.
+            var measured = new Measurement();
+            yield return MeasureEightMinersRunning(RunPlayerFixtures.IronCatalog(), null, measured, true);
+            Assert.That(measured.PipFrames, Is.GreaterThan(Frames / 2), "Running machines gave the branches their static active tile");
+            Assert.That(measured.ChipFrames, Is.Zero, "no chip loop under reduced motion");
+            Assert.That(measured.HighlightFrames, Is.GreaterThan(0), "the static highlight showed while mining");
+            Assert.That(measured.Allocations, Is.Zero, "every steady frame allocates nothing under reduced motion");
         }
 
         [UnityTest]
@@ -224,6 +271,8 @@ namespace IdleFactory.Tests.PlayMode.F006
             yield return MeasureEightMinersRunning(W003PlayerFixtures.WithProductionContract("contract.produce-ore", 100_000), "contract.produce-ore", measured);
             Assert.That(measured.StructureMoves, Is.GreaterThan(100), "the contract churned the structure revision: " + measured.StructureMoves);
             Assert.That(measured.SpawnedInWindow, Is.GreaterThan(0), "completions happened inside the measured window");
+            Assert.That(measured.PipFrames, Is.GreaterThan(Frames / 2), "the branch pips ran while the contract was active");
+            Assert.That(measured.ChipFrames, Is.GreaterThan(0), "the chip loop played while the contract was active");
             Assert.That(measured.Rebuilds, Is.LessThanOrEqualTo(Frames / 10 + 3), "at most about one rebuild per simulated second (60 s window): " + measured.Rebuilds);
             Assert.That(measured.SteadyFrames, Is.GreaterThanOrEqualTo(Frames - (Frames / 10 + 3)));
             Assert.That(measured.Allocations, Is.Zero, "every frame that did not rebuild allocates nothing");

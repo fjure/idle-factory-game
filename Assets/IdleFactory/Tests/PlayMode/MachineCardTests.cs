@@ -698,6 +698,144 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(FocusedElement, Is.SameAs(h.Shell.LocationStop), screen.Name + ": focus is back on the location");
         }
 
+        // P2-F12 and A-11 (T528): the card model is not refreshed while the card is hidden, so a show must forget its baselines; otherwise the first refresh
+        // after a show would report the completions of the whole hidden time (up to the display cap) as a fresh delta.
+        [UnityTest]
+        public IEnumerator ShowingTheCardForgetsTheBaselineSoNoCompletionFromBeforeTheShowIsReported()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
+            h.Build(0, "machine.miner");
+            yield return h.OpenCard(0);
+            h.Session.Advance(RunShellFixtures.CycleMs("machine.miner") * 2L * RunSession.TicksPerMs);
+            h.Shell.RefreshCard();
+            Assert.That(h.Card.Model.Get(new BuildingLocationId(0)).CompletionsDelta, Is.GreaterThan(0), "control: a shown card reports the completions it sees");
+
+            h.Shell.CloseMachineCard(false);
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.IsCardOpen, Is.False);
+            h.Session.Advance(RunShellFixtures.CycleMs("machine.miner") * 12L * RunSession.TicksPerMs);
+
+            yield return h.OpenCard(0);
+            h.Shell.RefreshCard();
+            Assert.That(h.Card.Model.Get(new BuildingLocationId(0)).CompletionsDelta, Is.EqualTo(0), "the show took a new baseline: no completion from before the show");
+            h.Session.Advance(RunShellFixtures.CycleMs("machine.miner") * 2L * RunSession.TicksPerMs);
+            h.Shell.RefreshCard();
+            Assert.That(h.Card.Model.Get(new BuildingLocationId(0)).CompletionsDelta, Is.GreaterThan(0), "completions after the show count again");
+        }
+
+        // A-5 and B-4 (T528): the cause line stays the model's "Short on <resource>"; the specific reason is the model's LimitingCause, carried in the line's description.
+        [UnityTest]
+        public IEnumerator ThePausedMachineCarriesTheSpecificCauseFromTheModelInTheCauseLineDescription()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, level: 2);
+            h.Build(0, "machine.smelter");
+            yield return h.OpenCard(0);
+            h.Session.Advance(2_000L * RunSession.TicksPerMs);
+            h.Shell.RefreshCard();
+            yield return ShellRig.Settle();
+
+            var card = h.Card;
+            var presentation = card.Model.Get(new BuildingLocationId(0));
+            Assert.That(card.VisualState, Is.EqualTo(MachineVisualState.MissingInput));
+            Assert.That(presentation.LimitingCause, Is.Not.EqualTo(MissingInputCause.None), "a missing-input machine names why its input is short");
+            var rates = RunSnapshots.Rates(h.Session);
+            var limiting = rates.Resources.Single(r => r.ResourceId == presentation.LimitingResourceId);
+            var expected = limiting.AutoSold ? MissingInputCause.AutoSold : MissingInputCause.NoSource;
+            Assert.That(presentation.LimitingCause, Is.EqualTo(expected), "no miner is built, so nothing makes the input unless auto-sell reads it first");
+            Assert.That(card.CauseLabel.text, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore")), "the visible line is unchanged (copy follows in T547)");
+            Assert.That(card.CauseLabel.tooltip, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore") + ". " + MachineCardCopy.CauseDetail(expected)));
+        }
+
+        // P2-F13 (T528): the tap priority between an attention marker and a machine shape, through the real presenter. The marker icon never overlaps a machine
+        // (geometry); the 48 pt touch circle can, and there the machine wins. A tap on the padding outside every machine selects the marker's first affected location.
+        [UnityTest]
+        public IEnumerator AMarkerTouchCircleCatchesAnEmptyTapButNeverStealsAMachineTap()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, level: 2);
+            h.Build(0, "machine.smelter");
+            h.Session.Advance(2_000L * RunSession.TicksPerMs);
+
+            var host = new GameObject("p2f13-world");
+            tapObjects.Add(host);
+            var texture = new Texture2D(22, 22, TextureFormat.RGBA32, false);
+            var sprite = Sprite.Create(texture, new Rect(0, 0, 22, 22), new Vector2(0.5f, 0.5f), 24f);
+            var catalog = new PresentationSpriteCatalog();
+            catalog.Configure(new[] { new PresentationSpriteEntry("test-marker-icon", sprite) });
+            var grid = host.AddComponent<SlotGridView>();
+            grid.SetLayout(LatticeLayoutBuilder.ShippedForColumns(3));
+            grid.Configure(catalog);
+            var markers = host.AddComponent<AttentionMarkerView>();
+            markers.Configure(catalog, id => "test-marker-icon");
+            // A small zoom: 48 points are a large part of the world, so the touch circle reaches over neighbouring machines.
+            markers.SetProjectedPixelsPerCell(6f);
+            var catalogOfRun = h.Session.Catalog;
+            var presenter = new RunShellPresenter(
+                h.Session, h.Commands, h.Shell, grid,
+                id => catalogOfRun.Machines.TryGetValue(id, out var machine) ? machine.PresentationKey : string.Empty);
+            presenters.Add(presenter);
+            presenter.MarkerView = markers;
+            h.Shell.SetGameplayAvailable(true);
+            presenter.Invalidate();
+            presenter.Refresh();
+            presenter.Refresh();
+            markers.Render(presenter.AttentionModel);
+
+            Assert.That(presenter.AttentionModel.MarkerCount, Is.GreaterThan(0), "the smelter lacks ore: a shortage marker exists");
+            Assert.That(markers.VisibleMarkerCount, Is.GreaterThan(0));
+            var marker = presenter.AttentionModel.GetMarker(0);
+            var layout = grid.Layout;
+
+            // (1) the icon of the marker: selects its first affected location.
+            Assert.That(WorldTapResolver.Resolve(layout, markers, marker.Position, out var viaIcon), Is.EqualTo(WorldTapSource.MarkerIcon));
+            Assert.That(viaIcon, Is.EqualTo(marker.FirstAffected));
+            Assert.That(presenter.HandleWorldTap(marker.Position), Is.True, "a tap on a marker selects its first affected location");
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.SelectedSlot, Is.EqualTo(marker.FirstAffected.Value));
+
+            // (2) a machine shape inside the touch circle but outside the icon: the machine wins.
+            BuildingLocationId? contested = null;
+            var contestedPoint = Vector2.zero;
+            for (var i = 0; i < layout.LocationCount && contested == null; i++)
+            {
+                var id = new BuildingLocationId(i);
+                if (id == marker.FirstAffected)
+                {
+                    continue;
+                }
+
+                var point = layout.PlateCentreOf(id);
+                if (Vector2.Distance(point, marker.Position) <= markers.HitRadiusWorld && !markers.TryHitIcon(point, out _))
+                {
+                    contested = id;
+                    contestedPoint = point;
+                }
+            }
+
+            Assert.That(contested, Is.Not.Null, "the test geometry has a machine inside the touch circle");
+            Assert.That(markers.TryHit(contestedPoint, out var halo), Is.True, "the touch circle also covers that machine centre");
+            Assert.That(halo, Is.EqualTo(marker.FirstAffected));
+            Assert.That(WorldTapResolver.Resolve(layout, markers, contestedPoint, out var machineWins), Is.EqualTo(WorldTapSource.Machine));
+            Assert.That(machineWins, Is.EqualTo(contested.Value), "the invisible padding of a marker never steals a tap from a visible machine");
+            h.Shell.CloseMachineCard(false);
+            yield return ShellRig.Settle();
+            Assert.That(presenter.HandleWorldTap(contestedPoint), Is.True);
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.SelectedSlot, Is.EqualTo(contested.Value.Value), "the presenter opens the machine, not the marker's target");
+
+            // (3) padding outside every machine: the marker's circle catches the tap.
+            var outward = marker.Position + new Vector2(layout.DepotOnRight ? 1f : -1f, 0f) * (30f / SlotGridLayout.Density);
+            Assert.That(layout.TryHit(outward, out _), Is.False, "the point is in the margin, outside every machine");
+            Assert.That(markers.TryHitIcon(outward, out _), Is.False, "and outside the icon");
+            Assert.That(WorldTapResolver.Resolve(layout, markers, outward, out var viaHalo), Is.EqualTo(WorldTapSource.MarkerHalo));
+            Assert.That(viaHalo, Is.EqualTo(marker.FirstAffected));
+            Assert.That(presenter.HandleWorldTap(outward), Is.True);
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.SelectedSlot, Is.EqualTo(marker.FirstAffected.Value));
+
+            // (4) far from everything: empty world, which closes the card as before.
+            Assert.That(presenter.HandleWorldTap(new Vector2(-1000f, -1000f)), Is.False);
+        }
+
         [UnityTest]
         public IEnumerator ACardWithoutAnyRegisteredCardFallsBackToTheDetailsSheet()
         {

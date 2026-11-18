@@ -61,6 +61,12 @@ namespace IdleFactory.Unity.UI
             shell.BindOreVein(new RunOreVeinSource(session, commands));
         }
 
+        /// <summary>The world's attention markers, when the owner wires them: a tap on one selects its first affected location (<see cref="WorldTapResolver"/>). Null: no marker is a hit target.</summary>
+        public AttentionMarkerView MarkerView { get; set; }
+
+        /// <summary>The production attention model the strip shows and the world markers draw (refreshed by the presenter).</summary>
+        public AttentionModel AttentionModel => productionFeed.Model;
+
         /// <summary>The latest factory snapshot the grid was drawn from, or null before the first refresh.</summary>
         public RunFactorySnapshot Snapshot => snapshot;
 
@@ -215,10 +221,11 @@ namespace IdleFactory.Unity.UI
                 return false;
             }
 
-            if (!grid.TryHitSlot(world, out var slot))
+            // P2-F13 (T528): the tap priority between an attention marker and a machine shape is WorldTapResolver's rule. Without a marker view
+            // (nothing wires one yet) it reduces to the machine shape, as before.
+            if (WorldTapResolver.Resolve(grid.Layout, MarkerView, world, out var hit) == WorldTapSource.None)
             {
-                // A tap on empty world closes the card (US3 scenario 5). The marker-versus-machine tap priority belongs to T528 (P2-F13): no
-                // attention marker is a hit target yet, so a tap that hits no machine shape is empty world.
+                // A tap on empty world closes the card (US3 scenario 5).
                 if (shell.IsDetailsFromCard)
                 {
                     // T553 (U-A2): with the Details view open the card is hidden, so IsCardOpen is false. The tap still closes both, through the
@@ -236,7 +243,7 @@ namespace IdleFactory.Unity.UI
                 return false;
             }
 
-            return OpenSlot(slot);
+            return OpenSlot(hit.Value);
         }
 
         /// <summary>Opens the build sheet, the machine card or the locked-slot notice for a slot; <paramref name="focusCard"/> moves focus into the card (keyboard).</summary>

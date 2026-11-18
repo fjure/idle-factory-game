@@ -18,6 +18,28 @@ namespace IdleFactory.Unity.Presentation
     }
 
     /// <summary>
+    /// Why a missing-input machine lacks its input, beyond which input it is (A-5, B-4, T528). The card's cause line says which resource is short;
+    /// this says the reason, so the player sees the cause in one tap. Derived from the rates snapshot only; nothing here is saved.
+    /// </summary>
+    public enum MissingInputCause
+    {
+        /// <summary>No specific cause is known (the machine is not missing an input, or no rates were supplied).</summary>
+        None = 0,
+
+        /// <summary>The input is auto-sold: the store sells it as it arrives, so it never accumulates for the machine.</summary>
+        AutoSold = 1,
+
+        /// <summary>No active machine makes the input: nothing upstream supplies it.</summary>
+        NoSource = 2,
+
+        /// <summary>The store is full, so machines that make the input cannot store their output.</summary>
+        StoreFull = 3,
+
+        /// <summary>Something makes the input, but its supply is not keeping up with the demand (the upstream machines are slower, idle or short themselves).</summary>
+        SourceTooSlow = 4,
+    }
+
+    /// <summary>
     /// What the world draws for one building location (F006 data-model "MachinePresentation", contracts/presentation-model.md section 2).
     /// A plain value: the model overwrites its buffer in place on a refresh, so copy a value to keep it.
     /// </summary>
@@ -25,7 +47,8 @@ namespace IdleFactory.Unity.Presentation
     {
         public MachinePresentation(
             BuildingLocationId location, Guid instanceId, string machineId, int machineTypeIndex, int level, MachineVisualState visualState,
-            bool upgradeAvailable, ActivityPace pace, int activityFps, int completionsDelta, string limitingResourceId)
+            bool upgradeAvailable, ActivityPace pace, int activityFps, int completionsDelta, string limitingResourceId,
+            MissingInputCause limitingCause = MissingInputCause.None)
         {
             Location = location;
             IsOccupied = true;
@@ -39,6 +62,7 @@ namespace IdleFactory.Unity.Presentation
             ActivityFps = activityFps;
             CompletionsDelta = completionsDelta;
             LimitingResourceId = limitingResourceId;
+            LimitingCause = limitingCause;
         }
 
         public MachinePresentation(BuildingLocationId location)
@@ -55,6 +79,7 @@ namespace IdleFactory.Unity.Presentation
             ActivityFps = 0;
             CompletionsDelta = 0;
             LimitingResourceId = null;
+            LimitingCause = MissingInputCause.None;
         }
 
         public BuildingLocationId Location { get; }
@@ -92,6 +117,9 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The resource a missing-input machine is short of (its first short input), otherwise null.</summary>
         public string LimitingResourceId { get; }
+
+        /// <summary>Why <see cref="LimitingResourceId"/> is short (auto-sell, no source, a full store, a slow source); <see cref="MissingInputCause.None"/> without rates.</summary>
+        public MissingInputCause LimitingCause { get; }
     }
 
     /// <summary>
@@ -305,14 +333,17 @@ namespace IdleFactory.Unity.Presentation
                 }
 
                 string limiting = null;
+                var cause = MissingInputCause.None;
                 if (state == MachineVisualState.MissingInput && rateMachines != null && m < rateMachines.Count && rateMachines[m].InstanceId == machine.InstanceId)
                 {
-                    limiting = FirstMissingResource(rateMachines[m]);
+                    var blocker = FirstMissingBlocker(rateMachines[m]);
+                    limiting = blocker != null ? blocker.ResourceId : null;
+                    cause = blocker != null ? CauseOf(blocker, rates) : MissingInputCause.None;
                 }
 
                 buffer[location] = new MachinePresentation(
                     new BuildingLocationId(location), machine.InstanceId, machine.MachineId, machine.TypeIndex, machine.Level, state, upgrade, pace, fps,
-                    delta, limiting);
+                    delta, limiting, cause);
             }
 
             // A location that lost its machine forgets its baseline: a machine built there later starts a new baseline.
@@ -362,7 +393,7 @@ namespace IdleFactory.Unity.Presentation
 
                 buffer[location] = new MachinePresentation(
                     value.Location, value.InstanceId, value.MachineId, value.MachineTypeIndex, value.Level, value.VisualState, value.UpgradeAvailable,
-                    value.Pace, value.ActivityFps, delta, value.LimitingResourceId);
+                    value.Pace, value.ActivityFps, delta, value.LimitingResourceId, value.LimitingCause);
                 any = true;
             }
 
@@ -390,18 +421,59 @@ namespace IdleFactory.Unity.Presentation
             return delta;
         }
 
-        private static string FirstMissingResource(MachineDiagnosis diagnosis)
+        private static MachineBlockerInfo FirstMissingBlocker(MachineDiagnosis diagnosis)
         {
             var blockers = diagnosis.Blockers;
             for (var i = 0; i < blockers.Count; i++)
             {
                 if (blockers[i].Kind == MachineBlocker.MissingInput)
                 {
-                    return blockers[i].ResourceId;
+                    return blockers[i];
                 }
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// The reason an input is short (A-5, B-4): the input is auto-sold; nothing active makes it; the store is full so its makers cannot store; or its makers
+        /// are slower than the demand. Order matters: auto-sell explains an empty stock whatever else is true; a full store only matters when something makes
+        /// the input. Read from the blocker and the rates snapshot, never recomputed from the economy.
+        /// </summary>
+        public static MissingInputCause CauseOf(MachineBlockerInfo blocker, RatesSnapshot rates)
+        {
+            if (blocker == null || blocker.ResourceId == null)
+            {
+                return MissingInputCause.None;
+            }
+
+            if (blocker.AutoSold)
+            {
+                return MissingInputCause.AutoSold;
+            }
+
+            if (rates == null)
+            {
+                return MissingInputCause.None;
+            }
+
+            var resources = rates.Resources;
+            for (var i = 0; i < resources.Count; i++)
+            {
+                if (!string.Equals(resources[i].ResourceId, blocker.ResourceId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (resources[i].ProductionPerMinuteMicro <= 0)
+                {
+                    return MissingInputCause.NoSource;
+                }
+
+                return rates.StoreFree <= 0 ? MissingInputCause.StoreFull : MissingInputCause.SourceTooSlow;
+            }
+
+            return MissingInputCause.NoSource;
         }
 
         private void ClearDeltas()
@@ -413,7 +485,7 @@ namespace IdleFactory.Unity.Presentation
                 {
                     buffer[i] = new MachinePresentation(
                         value.Location, value.InstanceId, value.MachineId, value.MachineTypeIndex, value.Level, value.VisualState, value.UpgradeAvailable,
-                        value.Pace, value.ActivityFps, 0, value.LimitingResourceId);
+                        value.Pace, value.ActivityFps, 0, value.LimitingResourceId, value.LimitingCause);
                 }
             }
         }

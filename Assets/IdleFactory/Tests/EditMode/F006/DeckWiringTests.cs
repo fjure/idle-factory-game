@@ -159,10 +159,18 @@ namespace IdleFactory.Tests.EditMode.F006
 
             Assert.That(PresentationSpriteCatalog.TryGetRegistryRequirement(PresentationSpriteCatalog.OfficeIconKey, out var office), Is.True);
             Assert.That(office.Required, Is.True, "the hub entry icon");
-            foreach (var key in new[] { "F006-DEPOT-S1-EMPTY", "F006-DEPOSIT-REST-S1", "F006-LINK-TRUNK", "F006-FX-SPARK", "F006-FOUNDATION-FLAT" })
+            // T528 places the links, the depot, the deposit, the branch pip and the vein chip: those rows are required now.
+            Assert.That(PresentationSpriteCatalog.PlacedF006LinkKeys, Has.Length.EqualTo(22), "4 link tiles, 12 depot, 4 deposit, the pip and the vein chip");
+            foreach (var key in PresentationSpriteCatalog.PlacedF006LinkKeys)
             {
                 Assert.That(PresentationSpriteCatalog.TryGetRegistryRequirement(key, out var row), Is.True, key);
-                Assert.That(row.Required, Is.False, key + " is placed by T528 or later");
+                Assert.That(row.Required, Is.True, key + " is placed by T528, so the shipped catalog fails closed without it");
+            }
+
+            foreach (var key in new[] { "F006-FX-SPARK", "F006-FOUNDATION-FLAT" })
+            {
+                Assert.That(PresentationSpriteCatalog.TryGetRegistryRequirement(key, out var row), Is.True, key);
+                Assert.That(row.Required, Is.False, key + " is placed by a later task");
             }
 
             Assert.That(PresentationSpriteCatalog.TryGetRegistryRequirement("F004-FLOOR-TILE", out _), Is.False, "the F004 floor row is removed");
