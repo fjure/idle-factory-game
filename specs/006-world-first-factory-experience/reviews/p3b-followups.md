@@ -105,3 +105,18 @@ Fix round 1 replaced a throttled full `RunSnapshots.Factory` rebuild (up to 10 p
 | C-32 | T528 Art Director 3 | The pip loop is not in `check_flash` composites; optional per-location pip phase. | T522 tooling or T542 |
 | C-33 | T528 Art Director 1, 5 | SetPass may rise by one (Overlay: pips from the FX atlas between cue draws); census and budget 8 re-measure; Art Bible 21.12 awaits owner confirmation. | T531; owner |
 | C-34 | T528 Art Director 2 | A visually stronger depot full cue (art change). | Later art task |
+
+## T557 (attention marker wiring)
+
+| Task | Issue | PR | Commit | QA | Reviews |
+|---|---|---|---|---|---|
+| T557 | #767 | #768 | `1e2d474` | PASS: Edit Mode 3043/3043, Play Mode 3240/3240, settings noise OK | Architect APPROVE_WITH_NOTES; UI/UX with Art Director ACCEPT_WITH_NOTES |
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-35 | UI/UX F1 | The scene test proves keep-out for the first marker only: not the shifted second shortage marker, the store-full marker, other layouts, the card band, or the backdrop tone (Art Bible C1/C8). Optional Edit Mode sweep over all shipped layouts. | T543-C gate; T542 |
+| C-36 | UI/UX F2 | The store-full marker draws over the depot and may hide the FULL copper lip. | T543-C gate; owner if an offset (contract change) is needed |
+| C-37 | UI/UX F3 | The marker icon is scaled 22/23 (non-integer) on pixel art. Drawing at native size changes `MarkerSizePixels` in the contract. | T543-C gate; owner |
+| C-38 | UI/UX F4 | World markers have no screen-reader name or focus; the strip indicator is the accessible route. Record as a deliberate decision. | T547, T542 |
+| C-39 | UI/UX F5 | After a layout change a marker can be drawn and hit at its old position for up to 0.25 s until the feed refreshes. Fix: invalidate the presenter on `LayoutChanged`, or skip rendering when the model's layout differs. | T542 |
+| C-40 | QA, Architect | The touch-circle negative check is weak (skips plates that hit the icon); no Edit Mode bind-twice test. | T542 |
