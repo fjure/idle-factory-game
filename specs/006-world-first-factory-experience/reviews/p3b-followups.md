@@ -91,3 +91,17 @@ Fix round 1 replaced a throttled full `RunSnapshots.Factory` rebuild (up to 10 p
 | C-23 | Architect | P2-F14 decision: the per-family fps caps live in the presentation tuning asset `WorldCompositionSettings`, not gameplay content data. | Recorded |
 | C-24 | Worker | FX rows (pop, spark, steam, glint, dust) stay optional in the catalog; Steam and BuildDust are not spawned yet; pop placement at `PlateCentreOf` is unverified on device. | T528 (FX), T543-C gate |
 | C-25 | Worker (P2-F15 N3) | Document in research R09 that a locked input gives no shortage. | Parent at batch end |
+
+## T528 (P2 strand) review carries
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-26 | T528 Architect F1; owner decision 2026-11-18 | `AttentionMarkerView` was never instantiated in production since T532, so world attention markers never showed and the tap priority is inactive. | T557 (#767) |
+| C-27 | T528 Architect 6 | B-2 ("first reframe before the entry layout", T535 Architect F6): the original F6 text is not in the repo, the wiki or Issue #707. Probable reading: the first camera fit must wait for the entry/hub layout, as the card already does through `TryGetUnobstructedScreenRect`. | T542 (confirm with the owner if the reading is wrong) |
+| C-28 | T528 Architect 7 | B-5 confirmed by code: a text-scale change with Details open runs the `ApplyRunViewport` Fit branch without the `cardBandPending` guard. Named acceptance check: portrait 200 %, Details open, change text scale, card edge not overdrawn. | T542 |
+| C-29 | T528 Architect F2, F3 | `MachinePresentationModel.CauseOf` classifies from aggregate rates (confirm `ProductionPerMinuteMicro` is effective, not potential; test a blocked maker). `MachineCard.CauseDetail` English strings and tooltip-only detail. | T547 |
+| C-30 | T528 Architect N4, N5 | `WorldTapResolver` takes the concrete `AttentionMarkerView` (an `IMarkerHits` interface would keep it pure); `CoreGameFoundationBootstrap` keeps growing (1,773 lines). | T542 or a refactor task |
+| C-31 | T528 Art Director 1, 4 | Look items for the batch-C gate: an Overdrive machine's pip is mostly under the marker; the pip's lower half crosses the machine body at the rear edge (mitigation: start at rear edge + 5); the depot slab is clipped 5 px by the last-column plate; the left-depot junction is mirrored 1 px off (no shipped layout). | T543-C gate |
+| C-32 | T528 Art Director 3 | The pip loop is not in `check_flash` composites; optional per-location pip phase. | T522 tooling or T542 |
+| C-33 | T528 Art Director 1, 5 | SetPass may rise by one (Overlay: pips from the FX atlas between cue draws); census and budget 8 re-measure; Art Bible 21.12 awaits owner confirmation. | T531; owner |
+| C-34 | T528 Art Director 2 | A visually stronger depot full cue (art change). | Later art task |

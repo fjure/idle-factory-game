@@ -884,3 +884,35 @@ Recorded by the F006 MAQA parent from the T556 Art Director review. No style cha
    - `copper_2` (active dashes): 0 px under any badge mask and 0 in the ring.
    - Any outline-only lane tone not listed here fails the gate.
 4. **Maintenance.** The gate reports the average per badge. A change to a cue, lane, badge anchor or palette that breaks a limit, or that adds an outline-only tone, is re-decided in this section. A per-badge maximum is a later-task upgrade.
+
+### 21.12 World-layer census and depot fill after T528 (#702, 2026-11-18) — draft, owner confirmation pending
+
+Recorded by the F006 MAQA parent from the T528 Art Director, Technical Artist and Performance review. It corrects the renderer arithmetic that OD-10 signed off in 2.2a and 21.3. Until the owner confirms it, the 2.2a rows stand as signed off and this section is the measured correction.
+
+1. **Census at 12 locations.** The 2.2a sum omitted the vein chip renderer and the edge pieces.
+   - **World sprite renderers:** at most 41 (39 at 3 columns). They are:
+     - 1 branch pip per location, 12 in total, each enabled only while its machine is Running;
+     - 8 FX;
+     - props, at most 0.5 per eligible cell, so at most 9;
+     - 1 depot;
+     - 2 deposit renderers (the rest sprite and the vein chip);
+     - edge pieces, 2 × columns + 1, which is 7 or 9.
+   - **Renderers in the world camera:** F004 cap 61 + 41 + 3 Tilemaps, at most 105 (103 at 3 columns). This is below the 173 single-pass tier.
+   - **Visible tiles:**
+     - base and deck stay within (columns + 2m) × (rows + 2m) × 2;
+     - link tiles add at most rows × (columns + 1);
+     - that gives at most 76 at 12 locations and 108 at 20 locations in 5 × 4, across 3 Tilemaps;
+     - asserted by `TheVisibleTileCountIncludingTheLinkTilesStaysInsideTheBudgetPlusOneTrunkRunPerRow`.
+2. **Edges and links.** Edge pieces stay sprite renderers (2 × columns + 1, 7 to 11). The third Tilemap carries only link tiles. This supersedes the deferral in 21.10 item 3.
+3. **Draw order.**
+   - Link Tilemap on WorldLinks order 0, deposit rest on order 20, depot on order 100.
+   - Branch pips on Overlay order 100 + location, below every cue (150). The Overdrive marker sits on the branch spine, so a pip passes under it.
+   - Vein chip on Effects order -80.
+4. **Depot fill.** The four depot sprites map as follows, each × stage S1 to S3:
+   - EMPTY at fill 0;
+   - LOW below 50 %;
+   - HIGH from 50 % up to, but excluding, capacity;
+   - FULL only when the store is at capacity or a machine is StorageFull-blocked.
+
+   This supersedes `min(3, floor(4·fill/capacity))` for the depot sprite.
+5. **Re-measured at T531:** Budget 8 (SetPass) and the tile and renderer census. Overlay now holds pips (FX atlas) between cue draws, which may add one SetPass.
