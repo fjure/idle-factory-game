@@ -219,6 +219,12 @@ namespace IdleFactory.Unity.Bootstrap
         private DepotLinkModel depotLinkModel;
         private DepositView depositView;
 
+        // T557: the production attention markers (Overlay layer). They draw the shell presenter's AttentionModel and are the tap targets of WorldTapResolver.
+        private AttentionMarkerView markerView;
+
+        /// <summary>The attention markers of the world (null until the run shell is composed).</summary>
+        public AttentionMarkerView MarkerView => markerView;
+
         /// <summary>The depot and link layer of the world (null until the run shell is composed).</summary>
         public DepotLinkView DepotLinkView => depotLinkView;
 
@@ -615,6 +621,12 @@ namespace IdleFactory.Unity.Bootstrap
                 depositView = depositObject.AddComponent<DepositView>();
                 depositView.Configure(spriteCatalog);
                 depositView.Bind(grid);
+                // T557: the attention markers (shortage at the trunk junction, store full at the depot), re-bound with the grid's layout.
+                var markerObject = new GameObject("Attention Marker View");
+                markerObject.transform.SetParent(transform, false);
+                markerView = markerObject.AddComponent<AttentionMarkerView>();
+                markerView.Configure(spriteCatalog, ResourceKeyOf);
+                markerView.Bind(grid);
                 worldEffects = new WorldEffectsFeed(runSession, effectPool, worldCompositionApplied ? worldComposition.FamilyFpsCapMap() : null);
                 worldEffects.SessionReplaced += HandleWorldSessionReplaced;
                 UseMachineEffects(effectPool);
@@ -627,6 +639,7 @@ namespace IdleFactory.Unity.Bootstrap
                 dialogRotationRegistration = RegisterTransientAction(runShell.CancelConfirmationForRotation);
                 runShell.LocationRectProvider = LocationScreenRect;
                 shellPresenter = new RunShellPresenter(runSession, runCommands, runShell, slotGrid, PresentationKeyOf);
+                shellPresenter.MarkerView = markerView;
                 ComposeRunPanels();
             }
 
@@ -1343,6 +1356,7 @@ namespace IdleFactory.Unity.Bootstrap
                 UpdateRunShell();
                 ApplyRunViewport();
                 animationClock.Drive((long)(Time.unscaledTimeAsDouble * 1000.0), slotGrid);
+                PresentAttentionMarkers();
                 if (worldEffects != null)
                 {
                     // T529: one refresh of the world model per frame (P2-F10), the pops of the new completions, and the 8 renderers.
@@ -1352,6 +1366,22 @@ namespace IdleFactory.Unity.Bootstrap
                 }
             }
         }
+
+        // T557: the presenter refreshed the attention model in UpdateRunShell (revision-gated and throttled); the view only draws it, once per frame,
+        // and takes the camera's scale for the 48 pt touch circle.
+        private void PresentAttentionMarkers()
+        {
+            if (markerView == null || shellPresenter == null)
+            {
+                return;
+            }
+
+            markerView.SetProjectedPixelsPerCell(CurrentPixelsPerCell);
+            markerView.Render(shellPresenter.AttentionModel);
+        }
+
+        private string ResourceKeyOf(string resourceId) =>
+            runSession != null && runSession.Catalog.Resources.TryGetValue(resourceId, out var resource) ? resource.PresentationKey : null;
 
         // T528: the live machine rows (this frame, never a snapshot) decide the branch pips, so a pip stops in the frame after its machine stops Running;
         // the shared store gives the depot fill; the ore-vein hold gives the chip loop. Reduced motion shows the static variants.

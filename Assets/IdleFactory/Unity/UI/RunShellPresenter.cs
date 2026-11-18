@@ -61,7 +61,7 @@ namespace IdleFactory.Unity.UI
             shell.BindOreVein(new RunOreVeinSource(session, commands));
         }
 
-        /// <summary>The world's attention markers, when the owner wires them: a tap on one selects its first affected location (<see cref="WorldTapResolver"/>). Null: no marker is a hit target.</summary>
+        /// <summary>The world's attention markers, when the bootstrap wires them (T557): a tap on one selects its first affected location (<see cref="WorldTapResolver"/>). Null: no marker is a hit target.</summary>
         public AttentionMarkerView MarkerView { get; set; }
 
         /// <summary>The production attention model the strip shows and the world markers draw (refreshed by the presenter).</summary>
@@ -221,8 +221,8 @@ namespace IdleFactory.Unity.UI
                 return false;
             }
 
-            // P2-F13 (T528): the tap priority between an attention marker and a machine shape is WorldTapResolver's rule. Without a marker view
-            // (nothing wires one yet) it reduces to the machine shape, as before.
+            // P2-F13 (T528): the tap priority between an attention marker and a machine shape is WorldTapResolver's rule. The bootstrap wires the marker
+            // view (T557); without one (a bare test shell) it reduces to the machine shape.
             if (WorldTapResolver.Resolve(grid.Layout, MarkerView, world, out var hit) == WorldTapSource.None)
             {
                 // A tap on empty world closes the card (US3 scenario 5).
