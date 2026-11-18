@@ -334,10 +334,51 @@ namespace IdleFactory.Unity.UI
             }
 
             milestoneBanner.Show(main, extra, reducedMotion);
+            PlaceMilestoneBanner();
+        }
+
+        // The banner is an overlay (position absolute): it takes no space in the world column and is NOT part of TryGetUnobstructedScreenRect, so showing or hiding it never
+        // reframes the camera (T540 fix, UI/UX U2, Architect 3). It sits right below the strip (when the strip is inside the world column: tablet, desktop, the landscape status
+        // band) and below the detail line, notice and hint bars, so it never covers Cash, Overdrive or the status band.
+        private void PlaceMilestoneBanner()
+        {
+            if (milestoneBanner == null || worldColumn == null)
+            {
+                return;
+            }
+
+            var column = worldColumn.worldBound;
+            var top = 0f;
+            if (topStrip != null && topStrip.parent == worldColumn && !float.IsNaN(topStrip.worldBound.yMax))
+            {
+                top = Mathf.Max(top, topStrip.worldBound.yMax - column.yMin);
+            }
+
+            foreach (var bar in new[] { detailLine, noticeBar, worldHint })
+            {
+                if (bar != null && bar.resolvedStyle.display != DisplayStyle.None && bar.worldBound.height > 0f && !float.IsNaN(bar.worldBound.yMax))
+                {
+                    top = Mathf.Max(top, bar.worldBound.yMax - column.yMin);
+                }
+            }
+
+            milestoneBanner.Root.style.top = top + 2f;
         }
 
         /// <summary>Advances the banner lifetime (called every frame by the presenter).</summary>
-        public void TickMilestoneBanner(float seconds) => milestoneBanner?.Advance(seconds);
+        public void TickMilestoneBanner(float seconds)
+        {
+            if (milestoneBanner == null)
+            {
+                return;
+            }
+
+            milestoneBanner.Advance(seconds);
+            if (milestoneBanner.IsShown)
+            {
+                PlaceMilestoneBanner();
+            }
+        }
         public VisualElement NoticeIconElement => noticeIcon;
         public VisualElement WorldHint => worldHint;
         public VisualElement DetailBar => detailLine;
@@ -727,7 +768,7 @@ namespace IdleFactory.Unity.UI
 
             // On a phone the strip lies outside the world column (above it in portrait, a column beside it in landscape); only on tablet and desktop it sits in it.
             var topPoint = topStrip.parent == worldColumn ? Mathf.Max(bounds.yMin, strip.yMax) : bounds.yMin;
-            foreach (var bar in new[] { detailLine, noticeBar, milestoneBanner?.Root, worldHint })
+            foreach (var bar in new[] { detailLine, noticeBar, worldHint })
             {
                 // The notice, detail and hint bars overlay the first slot row, so the camera frames below them (T192, F-8).
                 if (bar != null && bar.resolvedStyle.display != DisplayStyle.None && bar.worldBound.height > 0f && !float.IsNaN(bar.worldBound.yMax))

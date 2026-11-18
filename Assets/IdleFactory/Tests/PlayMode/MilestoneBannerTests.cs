@@ -138,15 +138,18 @@ namespace IdleFactory.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator TheBannerIsReadableAndCoversNeitherCashNorOverdriveNorTheCameraRectOnEveryClassAtOneAndTwoHundredPercent(
+        public IEnumerator TheBannerIsReadableCoversNeitherCashNorOverdriveNorTheStripAndNeverReframesTheCameraOnEveryClassAtOneAndTwoHundredPercent(
             [ValueSource(nameof(Screens))] ShellScreen screen,
             [Values(100, 200)] int percent)
         {
             yield return Make(screen, percent);
+            var where = screen.Name + " at " + percent + " %";
+            Assert.That(rig.Shell.TryGetUnobstructedScreenRect(screen.Height, out var before), Is.True, where);
+
             rig.Shell.ShowMilestoneBanner(Main, Extra, false);
             rig.Shell.TickMilestoneBanner(0.3f);
             yield return ShellRig.Settle();
-            var where = screen.Name + " at " + percent + " %";
+            rig.Shell.TickMilestoneBanner(0.01f);
             var box = Banner.Root.worldBound;
             var panel = rig.Root.panel.visualTree.worldBound;
             Assert.That(Banner.IsShown, Is.True, where);
@@ -162,18 +165,33 @@ namespace IdleFactory.Tests.PlayMode
                 Assert.That(label.worldBound.height, Is.GreaterThanOrEqualTo(preferred.y - 1f), where + ": " + label.name + " shows all its lines");
             }
 
-            foreach (var other in new VisualElement[] { rig.Shell.CashButton, rig.Shell.OverdriveButton })
+            // It never covers Cash, the store, the attention indicator, the gear, the hub entry or Overdrive (the status band and the strip are these controls).
+            foreach (var other in new VisualElement[] { rig.Shell.CashButton, rig.Shell.StoreButton, rig.Shell.SettingsButton, rig.Shell.OverdriveButton, rig.Root.Q("hub-entry"), rig.Root.Q("top-strip") })
             {
                 var o = other.worldBound;
-                if (o.width > 0f && o.height > 0f)
+                if (other.resolvedStyle.display != DisplayStyle.None && o.width > 0f && o.height > 0f)
                 {
                     Assert.That(box.Overlaps(o), Is.False, where + ": the banner does not cover " + other.name);
                 }
             }
 
-            Assert.That(rig.Shell.TryGetUnobstructedScreenRect(screen.Height, out var camera), Is.True, where);
-            var cameraTopInPanel = screen.Height - (camera.y + camera.height);
-            Assert.That(box.yMax, Is.LessThanOrEqualTo(cameraTopInPanel + 0.5f), where + ": the shell frames the camera below the banner, so it covers no framed world");
+            // Neutral to the camera (UI/UX U2, Architect 3): the rectangle the camera frames is identical before, during and after the banner, so nothing reframes.
+            Assert.That(rig.Shell.TryGetUnobstructedScreenRect(screen.Height, out var during), Is.True, where);
+            Assert.That(during, Is.EqualTo(before), where + ": the camera rectangle is unchanged while the banner shows");
+            Banner.Dismiss();
+            yield return ShellRig.Settle();
+            Assert.That(rig.Shell.TryGetUnobstructedScreenRect(screen.Height, out var after), Is.True, where);
+            Assert.That(after, Is.EqualTo(before), where + ": and after it");
+
+            // C6 chrome share, reported: the banner together with a notice bar over the panel height.
+            rig.Shell.ShowNotice("Cancelled by rotation");
+            rig.Shell.ShowMilestoneBanner(Main, Extra, true);
+            yield return ShellRig.Settle();
+            var share = (Banner.Root.worldBound.height + rig.Shell.NoticeBar.worldBound.height) / panel.height;
+            UnityEngine.Debug.Log("[T540 chrome] " + where + ": banner " + Banner.Root.worldBound.height.ToString("0") + " + notice " + rig.Shell.NoticeBar.worldBound.height.ToString("0")
+                + " of " + panel.height.ToString("0") + " pt = " + (share * 100f).ToString("0.0") + " %");
+            Assert.That(rig.Shell.TryGetUnobstructedScreenRect(screen.Height, out var withNotice), Is.True, where);
+            Assert.That(withNotice.height, Is.LessThanOrEqualTo(before.height + 0.5f), where + ": only the notice may move the camera rectangle, never the banner");
         }
     }
 }

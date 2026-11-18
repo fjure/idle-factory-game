@@ -39,9 +39,10 @@ namespace IdleFactory.Unity.Presentation
     }
 
     /// <summary>
-    /// The development stage rule (R15, [G-4]): <c>t &lt;= 0 gives Early; otherwise clamp(floor(3 * u / t), 0, 2)</c>, where <c>u</c> is the number of unlocked
-    /// locations at the current factory level and <c>t</c> the number of locations at the maximum factory level. With 12 locations the steps fall at 4 and 8
-    /// [AD-12]. Pure integer arithmetic, so the result is deterministic. <b>The inputs are the current run's own values; the prestige count is not an input</b>
+    /// The development stage rule (R15, owner decision 2026-11-18): <c>t &lt;= u0 gives Early; otherwise clamp(floor(3 * (u - u0) / (t - u0)), 0, 2)</c>, where <c>u</c> is
+    /// the number of unlocked locations at the current factory level, <c>u0</c> the number unlocked at factory level 1 (the run's starting factory) and <c>t</c> the number of
+    /// locations at the maximum factory level. The shipped 4, 6, 8, 10 and 12 of 12 give Early, Early, Partial, Established and Established. Pure integer arithmetic, so the
+    /// result is deterministic. <b>The inputs are the current run's own values; the prestige count is not an input</b>
     /// (a new run starts again from its own factory level, owner decision, FR-036). Nothing here allocates.
     /// </summary>
     public static class DevelopmentStage
@@ -49,16 +50,16 @@ namespace IdleFactory.Unity.Presentation
         public const int StageCount = 3;
         public const int BinCount = 3;
 
-        /// <summary>The stage of <paramref name="unlocked"/> of <paramref name="total"/> locations.</summary>
-        public static int StageOf(int unlocked, int total)
+        /// <summary>The stage of <paramref name="unlocked"/> of <paramref name="total"/> locations, counted from <paramref name="baseUnlocked"/> (u0, the locations at factory level 1).</summary>
+        public static int StageOf(int unlocked, int total, int baseUnlocked)
         {
-            if (total <= 0)
+            if (total <= baseUnlocked || unlocked < baseUnlocked)
             {
                 return 0;
             }
 
-            // 3 * u cannot overflow for any realistic location count; widen anyway so a huge test value stays exact.
-            var stage = (int)(3L * unlocked / total);
+            // Widen so a huge test value stays exact.
+            var stage = (int)(3L * (unlocked - baseUnlocked) / (total - baseUnlocked));
             return stage < 0 ? 0 : stage > StageCount - 1 ? StageCount - 1 : stage;
         }
 
@@ -75,17 +76,17 @@ namespace IdleFactory.Unity.Presentation
         }
 
         /// <summary>The value for explicit counts: locations, active machines and the sum of machine levels over the sum of their maximum levels.</summary>
-        public static DevelopmentStageValue Evaluate(int unlockedLocations, int totalLocations, int activeMachines, long levelSum, long maxLevelSum) =>
+        public static DevelopmentStageValue Evaluate(int unlockedLocations, int totalLocations, int baseUnlocked, int activeMachines, long levelSum, long maxLevelSum) =>
             new DevelopmentStageValue(
-                StageOf(unlockedLocations, totalLocations),
+                StageOf(unlockedLocations, totalLocations, baseUnlocked),
                 BinOf(activeMachines, unlockedLocations),
                 BinOf(levelSum, maxLevelSum));
 
         /// <summary>
         /// The value of a factory snapshot: <c>u</c> is <see cref="RunFactorySnapshot.SlotCount"/> (the unlocked locations of the current factory level) and
-        /// <c>t</c> the location count of the snapshot (the slots at the maximum level). The snapshot carries no prestige count and none is read.
+        /// <c>t</c> the location count of the snapshot (the slots at the maximum level); <paramref name="baseUnlocked"/> is u0, the locations of factory level 1 (from the catalog, never a prestige count). The snapshot carries no prestige count and none is read.
         /// </summary>
-        public static DevelopmentStageValue Evaluate(RunFactorySnapshot snapshot)
+        public static DevelopmentStageValue Evaluate(RunFactorySnapshot snapshot, int baseUnlocked)
         {
             if (snapshot == null)
             {
@@ -104,7 +105,7 @@ namespace IdleFactory.Unity.Presentation
                 maxLevels += machine.MaxLevel;
             }
 
-            return Evaluate(snapshot.SlotCount, snapshot.Slots.Count, active, levels, maxLevels);
+            return Evaluate(snapshot.SlotCount, snapshot.Slots.Count, baseUnlocked, active, levels, maxLevels);
         }
     }
 }

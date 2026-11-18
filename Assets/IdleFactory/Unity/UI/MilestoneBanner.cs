@@ -4,10 +4,10 @@ using UnityEngine.UIElements;
 namespace IdleFactory.Unity.UI
 {
     /// <summary>
-    /// The milestone banner (T540, FR-035, research R14, contracts/ui-surfaces-f006.md): a non-blocking line in the world column, right below the notice bar. It shows
+    /// The milestone banner (T540, FR-035, research R14, contracts/ui-surfaces-f006.md): a non-blocking overlay at the top of the world column, below the strip and the notice bars. It shows
     /// for at most <see cref="MaxSeconds"/>, a tap on it or Back and Escape dismiss it, and it never takes focus (it is not focusable), so a machine card keeps the focus
-    /// it had. Because it sits in the world column's flow like the notice, the shell frames the camera below it (<c>TryGetUnobstructedScreenRect</c>): the banner never
-    /// covers the framed world, the selected machine, Cash or Overdrive. Under reduced motion it is static (it appears and goes without the fade).
+    /// it had. It takes no layout space and is not part of <c>TryGetUnobstructedScreenRect</c>, so showing and hiding it never reframes the camera;
+    /// the shell places it below the strip, so it never covers Cash, Overdrive or the status band. Under reduced motion it is static (it appears and goes without the fade).
     /// <para>
     /// Only the banner's own box takes pointer input; everything around it passes through (<c>picking-mode</c> Ignore on the parent chain, Position on the banner), so
     /// input outside the banner is never captured. The element is time-driven by <see cref="Advance"/> (the shell calls it every frame), which makes the lifetime

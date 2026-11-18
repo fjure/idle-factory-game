@@ -95,9 +95,36 @@ namespace IdleFactory.Unity.UI
         public IReadOnlyList<PendingMilestone> ReconcileOfflineMilestones()
         {
             var after = RunSnapshots.Factory(session);
-            var found = milestones.ReconcileOffline(after, session.State.RunId, PrestigeCountOf());
+            var found = milestones.ReconcileOffline(after, session.State.RunId, PrestigeCountOf(), BaseUnlockedOf());
             Invalidate();
             return found;
+        }
+
+        /// <summary>u0: the locations unlocked at factory level 1, from the catalog (never a prestige count).</summary>
+        private int BaseUnlockedOf()
+        {
+            var levels = session.Catalog.FactoryLevels;
+            return levels.Count > 0 ? levels[0].SlotCount : 0;
+        }
+
+        /// <summary>
+        /// A load, a restore or a cold start delivered a state the player did not play into: forget the baseline, so a higher factory level or another run that arrives with
+        /// it raises no banner (T540, Architect 1).
+        /// </summary>
+        public void RebaseMilestones() => milestones.Reset();
+
+        /// <summary>
+        /// The run id changed in the world (a prestige, a new run or a restore). A prestige keeps its baseline, so the watcher raises its milestone from the new
+        /// state; anything else (the prestige count did not rise) re-baselines silently.
+        /// </summary>
+        public void RebaseMilestonesAfterSessionReplace()
+        {
+            var baseline = milestones.BaselinePrestigeCount;
+            var current = PrestigeCountOf();
+            if (!(baseline >= 0 && current > baseline))
+            {
+                milestones.Reset();
+            }
         }
 
         private long PrestigeCountOf() => session.Permanent != null ? session.Permanent.PrestigeCount : -1;
@@ -356,8 +383,8 @@ namespace IdleFactory.Unity.UI
         private void RenderFactory()
         {
             snapshot = RunSnapshots.Factory(session);
-            development = DevelopmentStage.Evaluate(snapshot);
-            milestones.Observe(snapshot, session.State.RunId, PrestigeCountOf());
+            development = DevelopmentStage.Evaluate(snapshot, BaseUnlockedOf());
+            milestones.Observe(snapshot, session.State.RunId, PrestigeCountOf(), BaseUnlockedOf());
             var visuals = SlotGridModel.DescribeAll(snapshot, presentationKeyOf, overdriveActive, boosted, shell.SelectedSlot);
             grid.Render(visuals);
             var anyOccupied = false;

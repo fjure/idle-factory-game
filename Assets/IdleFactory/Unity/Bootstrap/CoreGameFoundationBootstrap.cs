@@ -665,8 +665,17 @@ namespace IdleFactory.Unity.Bootstrap
         private void HandleWorldSessionReplaced()
         {
             runShell?.ResetCardModels(false);
+            // T540: a prestige keeps the watcher baseline (its milestone is raised from the new run); a restore or a new run re-baselines.
+            shellPresenter?.RebaseMilestonesAfterSessionReplace();
             shellPresenter?.Invalidate();
         }
+
+        /// <summary>
+        /// Whether a lifecycle result delivers a loaded or restored state that must not be read as progress (T540): a cold start, and a return that carries no offline summary
+        /// (a restore or a reload). A return with an offline summary reconciles its milestones separately, a rotation and a departure change nothing.
+        /// </summary>
+        public static bool ShouldRebaseMilestones(LifecycleReturnKind kind, bool hasOfflineSummary) =>
+            kind == LifecycleReturnKind.ColdStart || (kind == LifecycleReturnKind.Return && !hasOfflineSummary);
 
         /// <summary>T529 hands the world effect pool here; until then the card answers with the static highlight (FR-034).</summary>
         public void UseMachineEffects(IMachineEffects effects) => MachineResponses.Effects = effects;
@@ -1182,6 +1191,11 @@ namespace IdleFactory.Unity.Bootstrap
                 offlinePanel != null)
             {
                 offlinePanel.SetOfflineMilestones(shellPresenter.ReconcileOfflineMilestones(), shellPresenter.MilestoneText);
+            }
+
+            if (result.IsSuccess && ShouldRebaseMilestones(kind, result.Value != null && result.Value.OfflineSummary != null))
+            {
+                shellPresenter?.RebaseMilestones();
             }
 
             // T118: a genuine return opens the offline summary, a return that could not be completed opens the blocked explanation

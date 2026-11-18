@@ -1575,15 +1575,17 @@
 }
 
 /* ---------- Milestone banner (T540, FR-035) ----------
-   A transient line in the world column's flow below the notice, so the camera frames beneath it and it never covers the world, Cash or Overdrive.
-   At least 44 px high (it is a dismiss target); the text wraps at every text scale. */
+   A transient overlay at the top of the world column, below the strip and the notice bars (RunShellDocument.PlaceMilestoneBanner). It takes no layout space and is not part
+   of the camera rectangle, so it never reframes the camera. At least 44 px high (a dismiss target); the text wraps at every text scale. */
 .run-milestone {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    top: 0;
     flex-direction: column;
-    flex-shrink: 0;
     min-height: 44px;
     justify-content: center;
     padding: 4px 8px 4px 10px;
-    margin: 2px 4px 0 4px;
     background-color: var(--surface-raised);
     border-left-width: 4px;
     border-left-color: var(--accent);

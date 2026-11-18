@@ -20,6 +20,9 @@ namespace IdleFactory.Tests.EditMode.F006
 
         private static IEnumerable<string> Names => DeckTestSupport.LayoutNames;
 
+        // u0, the locations unlocked at factory level 1: a third of the layout, the shipped 4 of 12 (owner decision 2026-11-18). The stage is counted from it.
+        private static int U0(FactoryWorldLayout layout) => layout.LocationCount / 3;
+
         private static IReadOnlyList<SlotCondition> Unlocked(int count, int unlocked, SlotCondition unlockedCondition)
         {
             var result = new SlotCondition[count];
@@ -33,7 +36,7 @@ namespace IdleFactory.Tests.EditMode.F006
 
         private static DeckPlan Plan(FactoryWorldLayout layout, int unlocked, SlotCondition unlockedCondition, int bin = 0)
         {
-            var stage = DevelopmentStage.StageOf(unlocked, layout.LocationCount);
+            var stage = DevelopmentStage.StageOf(unlocked, layout.LocationCount, U0(layout));
             return DeckPlanner.Build(layout, Unlocked(layout.LocationCount, unlocked, unlockedCondition), stage, DeckTestSupport.Settings(), new DeckDressing(bin));
         }
 
@@ -52,10 +55,11 @@ namespace IdleFactory.Tests.EditMode.F006
                 high[s] = float.MinValue;
             }
 
-            for (var unlocked = 0; unlocked <= total; unlocked++)
+            // Every reachable unlock count: from the starting factory (u0) to the maximum.
+            for (var unlocked = U0(layout); unlocked <= total; unlocked++)
             {
                 var plan = Plan(layout, unlocked, SlotCondition.Empty);
-                var stage = DevelopmentStage.StageOf(unlocked, total);
+                var stage = DevelopmentStage.StageOf(unlocked, total, U0(layout));
                 low[stage] = Mathf.Min(low[stage], plan.LitShare);
                 high[stage] = Mathf.Max(high[stage], plan.LitShare);
             }
@@ -137,7 +141,7 @@ namespace IdleFactory.Tests.EditMode.F006
 
         private static DeckComposite Composite(FactoryWorldLayout layout, int unlocked)
         {
-            var stage = DevelopmentStage.StageOf(unlocked, layout.LocationCount);
+            var stage = DevelopmentStage.StageOf(unlocked, layout.LocationCount, U0(layout));
             var conditions = Unlocked(layout.LocationCount, unlocked, SlotCondition.Occupied);
             var plan = DeckPlanner.Build(layout, conditions, stage, DeckTestSupport.Settings(), new DeckDressing(2));
             return new DeckComposite(layout, plan, "F006-DEPOT-S" + (stage + 1) + "-HIGH", "F006-DEPOSIT-REST-S" + (stage + 1), true, conditions);
@@ -148,10 +152,10 @@ namespace IdleFactory.Tests.EditMode.F006
         public void AdjacentStagesDifferInGrayscaleAtNMin(string name)
         {
             // n_min is a whole-number device scale, so the composite at n_min is the art-pixel composite with every pixel repeated n x n: the share of differing pixels
-            // is the same at every n and is measured at n = 1. The same factory is composed at u = 3, 6 and 10 of 12 (Early, Partial, Established), all unlocked
+            // is the same at every n and is measured at n = 1. The same factory is composed at u = 5, 8 and 11 of 12 with u0 = 4 (Early, Partial, Established; they were 3, 6 and 10 before the owner stage offset of 2026-11-18), all unlocked
             // locations built, and a pixel counts as different when its gray (Rec. 709 luma of the sRGB value) moves by at least 12 of 255.
             var layout = DeckTestSupport.Layout(name);
-            var unlockedPerStage = new[] { 3, 6, 10 };
+            var unlockedPerStage = new[] { 5, 8, 11 };
             var composites = unlockedPerStage.Select(u => Composite(layout, u)).ToArray();
             var report = new StringBuilder("[T540 grayscale delta] " + name + ": ");
             for (var s = 0; s < 2; s++)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using NUnit.Framework;
@@ -135,6 +136,81 @@ namespace IdleFactory.Tests.EditMode.F006
             Assert.That(watcher.PendingCount, Is.EqualTo(MilestoneWatcher.MaxQueued));
             watcher.TryDequeue(out var oldest);
             Assert.That(oldest.Level, Is.EqualTo(20 - MilestoneWatcher.MaxQueued + 1), "the oldest were dropped");
+        }
+
+        [Test]
+        public void TheStageRaisedFlagFollowsTheOffsetStageRuleOfTheShippedFactory()
+        {
+            // u0 = 4 of 12: the levels 1 to 5 open 4, 6, 8, 10 and 12 locations, so the stage rises at level 3 (Partial) and at level 4 (Established).
+            var watcher = new MilestoneWatcher();
+            watcher.Observe(1, 4, 12, RunA, 0, 4);
+            var raised = new List<bool>();
+            foreach (var (level, unlocked) in new[] { (2, 6), (3, 8), (4, 10), (5, 12) })
+            {
+                watcher.Observe(level, unlocked, 12, RunA, 0, 4);
+                Assert.That(watcher.TryDequeue(out var m), Is.True);
+                raised.Add(m.StageRaised);
+            }
+
+            Assert.That(raised, Is.EqualTo(new[] { false, true, true, false }));
+        }
+
+        [Test]
+        public void AResetRebaselinesSoARestoredHigherLevelOfTheSameRunRaisesNoBanner()
+        {
+            var watcher = new MilestoneWatcher();
+            watcher.Observe(1, 4, 12, RunA, 0, 4);
+            watcher.Reset();
+            watcher.Observe(4, 10, 12, RunA, 0, 4);
+            Assert.That(watcher.PendingCount, Is.Zero, "a load or a restore that carries a higher factory level in the same run is not a level-up");
+            watcher.Observe(5, 12, 12, RunA, 0, 4);
+            Assert.That(watcher.PendingCount, Is.EqualTo(1), "play after the restore is detected again");
+        }
+
+        [Test]
+        public void AResetRebaselinesSoAnotherRunWithAHigherPrestigeCountRaisesNoBanner()
+        {
+            var watcher = new MilestoneWatcher();
+            watcher.Observe(5, 12, 12, RunA, 2, 4);
+            watcher.Reset();
+            watcher.Observe(1, 4, 12, RunB, 5, 4);
+            Assert.That(watcher.PendingCount, Is.Zero, "a restore of a later run is not a prestige the player completed");
+            Assert.That(watcher.BaselinePrestigeCount, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void WithoutAResetTheSameRestoreWouldHaveBeenTakenForAMilestone()
+        {
+            var watcher = new MilestoneWatcher();
+            watcher.Observe(1, 4, 12, RunA, 0, 4);
+            watcher.Observe(4, 10, 12, RunA, 0, 4);
+            Assert.That(watcher.PendingCount, Is.EqualTo(1), "this is the false banner the lifecycle re-baseline prevents");
+        }
+
+        [Test]
+        public void TheLifecycleRebasesOnAColdStartAndOnAReturnWithoutAnOfflineSummaryOnly()
+        {
+            Assert.That(IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap.ShouldRebaseMilestones(IdleFactory.Unity.Bootstrap.LifecycleReturnKind.ColdStart, false), Is.True);
+            Assert.That(IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap.ShouldRebaseMilestones(IdleFactory.Unity.Bootstrap.LifecycleReturnKind.ColdStart, true), Is.True);
+            Assert.That(IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap.ShouldRebaseMilestones(IdleFactory.Unity.Bootstrap.LifecycleReturnKind.Return, false), Is.True, "a restore or reload");
+            Assert.That(IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap.ShouldRebaseMilestones(IdleFactory.Unity.Bootstrap.LifecycleReturnKind.Return, true), Is.False, "an offline return reconciles its own milestones");
+            Assert.That(IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap.ShouldRebaseMilestones(IdleFactory.Unity.Bootstrap.LifecycleReturnKind.ConfigurationChange, false), Is.False);
+            Assert.That(IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap.ShouldRebaseMilestones(IdleFactory.Unity.Bootstrap.LifecycleReturnKind.None, false), Is.False);
+        }
+
+        [Test]
+        public void ASingleNewLocationUsesTheSingularCopy()
+        {
+            var copy = new MilestoneCopy();
+            var one = new PendingMilestone(MilestoneKind.FactoryLevelUp, 3, 6, 1, false, 1, false);
+            Assert.That(copy.Primary(one), Is.EqualTo("Level 3. 1 new location opens."));
+            var two = new PendingMilestone(MilestoneKind.FactoryLevelUp, 3, 6, 2, false, 1, false);
+            Assert.That(copy.Primary(two), Is.EqualTo("Level 3. 2 new locations open."));
+            Assert.That(MilestoneCopy.ShippedKeys, Does.Contain(MilestoneCopy.LevelWithOneUnlockKey));
+            var warnings = new List<string>();
+            var gap = new MilestoneCopy(new Dictionary<string, string> { { MilestoneCopy.LevelWithUnlocksKey, "Level {n}. {k} new locations open." } }, warnings.Add);
+            Assert.That(gap.Primary(one), Is.EqualTo(MilestoneCopy.FallbackText), "a missing singular key falls back with a warning");
+            Assert.That(warnings.Single(), Does.Contain("B-01s"));
         }
 
         // ---- copy ---------------------------------------------------------------------------------------------------------------

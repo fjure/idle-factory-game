@@ -17,6 +17,9 @@ namespace IdleFactory.Unity.UI
         /// <summary>Factory level up with unlocks (world-copy B-01).</summary>
         public const string LevelWithUnlocksKey = "B-01";
 
+        /// <summary>Factory level up with exactly one new location (B-01s, provisional until the World Designer confirms it in T547; UI/UX U1).</summary>
+        public const string LevelWithOneUnlockKey = "B-01s";
+
         /// <summary>Factory level up without unlocks (B-02).</summary>
         public const string LevelOnlyKey = "B-02";
 
@@ -32,6 +35,7 @@ namespace IdleFactory.Unity.UI
         private static readonly Dictionary<string, string> Shipped = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             { LevelWithUnlocksKey, "Level {n}. {k} new locations open." },
+            { LevelWithOneUnlockKey, "Level {n}. 1 new location opens." },
             { LevelOnlyKey, "Level {n} reached." },
             { PrestigeKey, "New run begins." },
             { DeckExtendedKey, "Deck extended." },
@@ -65,7 +69,7 @@ namespace IdleFactory.Unity.UI
                 case MilestoneKind.PrestigeCompleted:
                     return Resolve(PrestigeKey, milestone);
                 default:
-                    return Resolve(milestone.NewlyUnlockedCount > 0 ? LevelWithUnlocksKey : LevelOnlyKey, milestone);
+                    return Resolve(milestone.NewlyUnlockedCount == 1 ? LevelWithOneUnlockKey : milestone.NewlyUnlockedCount > 1 ? LevelWithUnlocksKey : LevelOnlyKey, milestone);
             }
         }
 

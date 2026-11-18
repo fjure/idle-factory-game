@@ -191,12 +191,12 @@ namespace IdleFactory.Tests.PlayMode.F006
             // T540 (SC-008): the stage and milestone path of a running factory. The snapshot is the one the presenter rebuilds on a change (excluded here like the feed's
             // own rebuilds); every frame reads the cached value, drives the three views and the watcher, and must allocate nothing.
             var developmentSnapshot = RunSnapshots.Factory(session);
-            var development = DevelopmentStage.Evaluate(developmentSnapshot);
+            var development = DevelopmentStage.Evaluate(developmentSnapshot, catalog.FactoryLevels[0].SlotCount);
             var milestones = new MilestoneWatcher();
-            milestones.Observe(developmentSnapshot, session.State.RunId, 0);
+            milestones.Observe(developmentSnapshot, session.State.RunId, 0, 4);
             void WorldFrame()
             {
-                milestones.Observe(developmentSnapshot, session.State.RunId, 0);
+                milestones.Observe(developmentSnapshot, session.State.RunId, 0, 4);
                 worldDeck.SetDevelopment(development);
                 linkView.SetStage(development.Stage);
                 depositView.SetStage(development.Stage);

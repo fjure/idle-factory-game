@@ -91,7 +91,13 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The total number of milestones detected so far (live and offline), for tests.</summary>
         public int DetectedTotal { get; private set; }
 
-        /// <summary>Forgets the baseline and the queue; the next observation starts again.</summary>
+        /// <summary>The prestige count of the baseline (negative when unknown or before the first observation).</summary>
+        public long BaselinePrestigeCount => hasBaseline ? prestigeCount : -1;
+
+        /// <summary>
+        /// Forgets the baseline and the queue (a re-baseline): the next observation only sets the baseline. A load, a restore and a cold start call it, so a state that
+        /// merely arrived with a higher factory level, or another run, is never taken for a milestone.
+        /// </summary>
         public void Reset()
         {
             hasBaseline = false;
@@ -99,20 +105,20 @@ namespace IdleFactory.Unity.Presentation
         }
 
         /// <summary>Observes a factory snapshot of the run <paramref name="currentRunId"/>; <paramref name="currentPrestigeCount"/> is the run's prestige count (a negative value means unknown).</summary>
-        public void Observe(RunFactorySnapshot snapshot, Guid currentRunId, long currentPrestigeCount = -1)
+        public void Observe(RunFactorySnapshot snapshot, Guid currentRunId, long currentPrestigeCount = -1, int baseUnlocked = 0)
         {
             if (snapshot == null)
             {
                 throw new ArgumentNullException(nameof(snapshot));
             }
 
-            Observe(snapshot.FactoryLevel, snapshot.SlotCount, snapshot.Slots.Count, currentRunId, currentPrestigeCount);
+            Observe(snapshot.FactoryLevel, snapshot.SlotCount, snapshot.Slots.Count, currentRunId, currentPrestigeCount, baseUnlocked);
         }
 
         /// <summary>Observes the raw values: the factory level, the unlocked locations, the locations at the maximum level, the run id and the prestige count.</summary>
-        public void Observe(int factoryLevel, int unlockedLocations, int totalLocations, Guid currentRunId, long currentPrestigeCount = -1)
+        public void Observe(int factoryLevel, int unlockedLocations, int totalLocations, Guid currentRunId, long currentPrestigeCount = -1, int baseUnlocked = 0)
         {
-            if (!Detect(factoryLevel, unlockedLocations, totalLocations, currentRunId, currentPrestigeCount, false, out var milestone))
+            if (!Detect(factoryLevel, unlockedLocations, totalLocations, currentRunId, currentPrestigeCount, baseUnlocked, false, out var milestone))
             {
                 return;
             }
@@ -143,9 +149,9 @@ namespace IdleFactory.Unity.Presentation
         /// The state changed because the player was away (an offline return): the milestone it caused, flagged <see cref="PendingMilestone.ArisenOffline"/>, is returned
         /// to the caller for the offline summary and is never queued for the banner. The baseline moves to the returned state either way.
         /// </summary>
-        public IReadOnlyList<PendingMilestone> ReconcileOffline(int factoryLevel, int unlockedLocations, int totalLocations, Guid currentRunId, long currentPrestigeCount = -1)
+        public IReadOnlyList<PendingMilestone> ReconcileOffline(int factoryLevel, int unlockedLocations, int totalLocations, Guid currentRunId, long currentPrestigeCount = -1, int baseUnlocked = 0)
         {
-            if (!Detect(factoryLevel, unlockedLocations, totalLocations, currentRunId, currentPrestigeCount, true, out var milestone))
+            if (!Detect(factoryLevel, unlockedLocations, totalLocations, currentRunId, currentPrestigeCount, baseUnlocked, true, out var milestone))
             {
                 return Array.Empty<PendingMilestone>();
             }
@@ -155,17 +161,17 @@ namespace IdleFactory.Unity.Presentation
         }
 
         /// <summary>The snapshot form of <see cref="ReconcileOffline(int,int,int,Guid,long)"/>.</summary>
-        public IReadOnlyList<PendingMilestone> ReconcileOffline(RunFactorySnapshot snapshot, Guid currentRunId, long currentPrestigeCount = -1)
+        public IReadOnlyList<PendingMilestone> ReconcileOffline(RunFactorySnapshot snapshot, Guid currentRunId, long currentPrestigeCount = -1, int baseUnlocked = 0)
         {
             if (snapshot == null)
             {
                 throw new ArgumentNullException(nameof(snapshot));
             }
 
-            return ReconcileOffline(snapshot.FactoryLevel, snapshot.SlotCount, snapshot.Slots.Count, currentRunId, currentPrestigeCount);
+            return ReconcileOffline(snapshot.FactoryLevel, snapshot.SlotCount, snapshot.Slots.Count, currentRunId, currentPrestigeCount, baseUnlocked);
         }
 
-        private bool Detect(int factoryLevel, int unlockedLocations, int totalLocations, Guid currentRunId, long currentPrestigeCount, bool offline, out PendingMilestone milestone)
+        private bool Detect(int factoryLevel, int unlockedLocations, int totalLocations, Guid currentRunId, long currentPrestigeCount, int baseUnlocked, bool offline, out PendingMilestone milestone)
         {
             milestone = default;
             var previousLevel = level;
@@ -183,7 +189,7 @@ namespace IdleFactory.Unity.Presentation
                 return false;
             }
 
-            var stage = DevelopmentStage.StageOf(unlockedLocations, totalLocations);
+            var stage = DevelopmentStage.StageOf(unlockedLocations, totalLocations, baseUnlocked);
             if (currentRunId != previousRun)
             {
                 // A run-id change is a prestige only when the prestige count says so (a restore or a recovery that swaps the run keeps it). An unknown count (a
@@ -204,7 +210,7 @@ namespace IdleFactory.Unity.Presentation
             }
 
             var opened = Math.Max(0, unlockedLocations - previousUnlocked);
-            var raised = stage > DevelopmentStage.StageOf(previousUnlocked, totalLocations);
+            var raised = stage > DevelopmentStage.StageOf(previousUnlocked, totalLocations, baseUnlocked);
             milestone = new PendingMilestone(MilestoneKind.FactoryLevelUp, factoryLevel, opened > 0 ? previousUnlocked : -1, opened, raised, stage, offline);
             return true;
         }
