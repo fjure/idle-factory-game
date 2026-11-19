@@ -194,3 +194,26 @@ As built: `AutosavePolicy` (30 s interval, 2 s spacing after a structural change
 | C-65 | Architect F2, QA | No IL2CPP/Android coverage of the pool thread: add a `[Category("StandalonePlayer")]` two-write case and confirm a periodic checkpoint in the F006 emulator journey (force-stop after more than 30 s). Main-thread cost measured on the Windows host only. | T542; T544 |
 | C-66 | Architect F6, Security | Write rate during build bursts (up to about 30 writes per minute, five flushed files each) and flash wear (about 120 writes per hour while the run changes); measure frame time and IO on the emulator. The `mainMedian < 8 ms` assertion is wall-clock based. | T544 |
 | C-67 | Architect F7, Security N3/N4 | The interval is a code default (`AutosavePolicy.DefaultIntervalMs`), not a run setting as the task text says; PO to confirm. The operation gate is held for about 30 ms of IO, so a command in that window waits. Diagnostics listeners can now run on a pool thread. Wiki `run-persistence.md` and `desktop-focus-lifecycle.md` ("no periodic autosave") are stale: update at the batch ingest. | owner (interval); wiki ingest; T547 |
+
+## Batch 6 (P4): T541, T547, T531 and owner decisions 2026-11-19
+
+| Task | Issue | PR | Commit | QA | Reviews |
+|---|---|---|---|---|---|
+| T541 | #713 | #778 | `b7282a2` | PASS: no-emulator validation of all five scenarios, negative cases, settings noise OK | DevOps lens in QA |
+| T547 | #718 | #777 | `8289733` (two fix rounds on `2139397`) | PASS on re-QA 2: independent coverage scan, citations, v0.1 untouched | World Designer record (verdict CONFLICTS, 4 open: CF-2..CF-5, applied by T560) |
+| T531 | #704 | #779 | `40ff48d` | PASS: Edit Mode 3163/3163, Play Mode 3450/3450, Windows player 82/82, settings noise OK | Performance ACCEPT_WITH_NOTES |
+
+Owner decisions 2026-11-19 (through the coordinating session):
+- T560 (#776) added: pre-T542 polish takes the code carries named for T542/T547; T542 only verifies. The T542 user32 real-input checklist on the Windows player is recorded as not covered.
+- CF-1: World Bible `F006-WB v0.2` (MINOR): "Store" is the capacity term in player text, "Depot" the world structure; no string renamed.
+- T560 behaviours accepted: Mine hidden while a phone card is open; one Back clears the banner and the sheet or card under it; milestone banners queue; no welcome-back modal under 60 s; dim tint marks occupied and locked locations while the build card is open (no sprite-mark art task).
+- Budget 8 restated on the player method (F006 delta at most +12 passes over the F004-only 34; `camera.Render()` CPU tier 1 binding): `specs/004-visual-identity/reviews/performance-b3.md` section 12.
+- Art Bible 21.12 confirmed with a worst-case ceiling of 110 renderers (v1.1.2).
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-68 | T531 Performance review 3 | Card-closed steady state allocates about 21 per frame, unattributed (about 100x the PR-2 floor). Deep profile. | Owner decision: separate Issue after the P4 gates |
+| C-69 | T531 Performance review 4, 5, 7 | Report text: budget 4 was read on W003, not on W006-V; budget 9 is outside R16's list; probe with/without labels swapped (absolute values used); C-33 closed as within noise; optional C-20 shared factory snapshot and atlas-sorted sprite order. | T544 (final `performance-b4.md`) |
+| C-70 | T541 QA | `F006Autosave` restore check can pass against an unchanged periodic file (require a newer generation or check the screenshot); every tap fraction is provisional; landscape zoom and card-column fractions unconfirmed; `-ZoomPrefTaps` from the Settings screenshot. | T542 |
+| C-71 | T547 QA W-1..W-3 | Name FactoryCameraController, GridWorldMapper, StateCueSet and AttentionMarkerView in class D; the coverage extraction script is not committed; L-rows are term-swept only. | World Designer re-read after T560 |
+| C-72 | T560 worker | `ProductionPerMinuteMicro` is the potential rate of active makers, not the effective rate: a starved smelter reads "Makers cannot keep up" (C-29). Semantics unchanged, pinned by a test. | Record |
