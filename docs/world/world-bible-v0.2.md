@@ -70,7 +70,7 @@ Later regions own real deposit placement. v0.1 fixes only this: in F006 deposits
 
 **What changed.**
 1. "Store" is an approved term and the capacity term in player text (section 4: rule 2 list, tone vocabulary).
-2. Rule 3 separates the structure ("Depot") from its capacity ("Store"); v0.1 rule 3 said "store" was never allowed for the central store.
+2. Rule 3 is **reworded**, not only extended: v0.1 rule 3 said the central store is "Depot" and never "store" in player text; v0.2 rule 3 separates the structure ("Depot") from its capacity ("Store"). The owner approved this clarification together with the new term (CF-1, 2026-11-19); the project treats it as MINOR because no existing string, asset or mechanic changes and no conformant v0.1 content becomes non-conformant.
 3. Section 1 states that the depot holds the Store.
 Nothing was removed. No string, asset, mechanic or sprite is renamed. The v0.1 file is left unchanged under its freeze; this section is the record of the supersession.
 
@@ -80,6 +80,7 @@ Nothing was removed. No string, asset, mechanic or sprite is renamed. The v0.1 f
 - Vein: `UI/OreVeinCopy.cs:19` "Store full" (also `FactoryRun.uxml:63`); `:71` accessible name ", store full".
 - Hub: `UI/Panels/HubPanel.cs:581` "Store N% full".
 - Inventory: `UI/Panels/InventoryRatesPanel.cs:100`, `:320`, `:348`, `:349`; `UI/Panels/InventoryRatesPanel.uxml:8`.
+- Startup: `UI/Panels/StartupStatusPanel.cs:807` ("... than the first store level holds.").
 - Rejections and notices: `UI/RunRejectionCopy.cs:43` StorageFull; `UI/Panels/OfflineSummaryPanel.cs:567` ("the store is full"); `UI/Panels/MachinePanelPresenter.cs:389`; `UI/Panels/PrioritiesPanel.cs:70` and `UI/Panels/PrioritiesPanel.uxml:3` ("store space").
 Strings that say "storage" for the same capacity (Expansion "Storage" and "Upgrade storage", machine panel "Storage is full", research effect "starting storage level", prestige "Stored resources" and "Storage and factory upgrades", system messages in the startup and session-log panels) are not forbidden by rule 3 and are not renamed. A later one-word pass may unify them under a separate decision.
 **Assets: no recheck.** No sprite family carries text, the depot art is unchanged, and the swappable-ground rule (section 5) is untouched. Site name, tagline, stage names and the hub label are unchanged.
