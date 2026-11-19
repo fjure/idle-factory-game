@@ -295,6 +295,24 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(renderer.transform.position.y, Is.EqualTo(layout.DepotAnchor.y).Within(1e-4f));
         }
 
+        // C-40 (T560): binding a second grid replaces the first (no double subscription, no stale handler), and the replaced grid no longer drives the view.
+        [Test]
+        public void BindingTheViewTwiceFollowsOnlyTheLastGrid()
+        {
+            var hostB = new GameObject("attention-display-grid-b");
+            owned.Add(hostB);
+            var gridB = hostB.AddComponent<SlotGridView>();
+            gridB.Configure(sprites);
+            view.Bind(grid);
+            view.Bind(gridB);
+            grid.SetLayout(LatticeLayoutBuilder.ShippedForColumns(layout.RowCount == 4 ? 4 : 3));
+            Assert.That(view.AwaitingModelLayout, Is.False, "the replaced grid no longer drives the view");
+            gridB.SetLayout(layout);
+            Assert.That(view.AwaitingModelLayout, Is.True, "the last grid does");
+            view.Bind(gridB);
+            Assert.That(view.AwaitingModelLayout, Is.False, "binding again starts clean");
+        }
+
         [UnityTest]
         public IEnumerator AMarkerDisappearsWhenTheShortageIsResolved()
         {

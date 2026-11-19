@@ -558,7 +558,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(ShellScreens.All().First());
             var shell = rig.Shell;
             shell.NoticeSeconds = 0.2f;
-            shell.ShowNotice("Slot 5 unlocks at factory level 2.", ShellNoticeKind.Lock);
+            shell.ShowNotice("Location 5 unlocks at factory level 2.", ShellNoticeKind.Lock);
             Assert.That(shell.NoticeText, Is.Not.Empty);
             yield return new WaitForSecondsRealtime(0.8f);
             Assert.That(shell.NoticeText, Is.Empty, "the notice clears itself after a timeout");
@@ -599,7 +599,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(ShellScreens.All().First());
             var shell = rig.Shell;
             Assert.That(shell.OpenSlot(4, SlotCondition.Locked, 2), Is.False);
-            Assert.That(shell.NoticeText, Is.EqualTo("Slot 5 unlocks at factory level 2."));
+            Assert.That(shell.NoticeText, Is.EqualTo("Location 5 unlocks at factory level 2."));
             Assert.That(shell.NoticeKind, Is.EqualTo(ShellNoticeKind.Lock));
             Assert.That(shell.LockNoticeSlot, Is.EqualTo(4));
             shell.ReconcileLockNotice(3, SlotCondition.Empty);
@@ -717,7 +717,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var clear), Is.True);
 
             shell.SetEmptyHint(true);
-            shell.ShowNotice("Slot 5 unlocks at factory level 2.", ShellNoticeKind.Lock);
+            shell.ShowNotice("Location 5 unlocks at factory level 2.", ShellNoticeKind.Lock);
             shell.CashButton.Focus();
             yield return ShellRig.Settle();
             Assert.That(shell.TryGetUnobstructedScreenRect(screen.Height, out var covered), Is.True);

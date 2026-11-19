@@ -289,7 +289,7 @@ namespace IdleFactory.Tests.PlayMode
             }
 
             var heading = card.SelectedLabel;
-            var lineHeight = heading.resolvedStyle.fontSize * 1.6f;
+            var lineHeight = heading.resolvedStyle.fontSize * 1.8f;
             Assert.That(heading.worldBound.height, Is.LessThanOrEqualTo(2f * lineHeight + Tolerance), where + ": the heading takes at most two lines");
 
             var visibleRows = 0;

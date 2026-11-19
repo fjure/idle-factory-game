@@ -111,7 +111,7 @@ namespace IdleFactory.Tests.PlayMode
             var watcher = new MilestoneWatcher();
             watcher.Observe(1, 4, 12, runId);
             var found = watcher.ReconcileOffline(5, 12, 12, runId);
-            Assert.That(found, Has.Count.EqualTo(1), "the absence raised one milestone");
+            Assert.That(found.Count, Is.EqualTo(1), "the absence raised one milestone");
             Assert.That(found[0].ArisenOffline, Is.True);
             Assert.That(found[0].StageRaised, Is.True, "a jump to the full factory raises the stage");
             Assert.That(watcher.PendingCount, Is.Zero, "an offline milestone is never queued for the banner");

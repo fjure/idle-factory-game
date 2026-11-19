@@ -98,6 +98,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(camera.transform.position, Is.EqualTo(cameraPosition), "and the camera does not move");
             Assert.That(camera.orthographicSize, Is.EqualTo(cameraSize).Within(1e-4f));
 
+            banner.Dismiss(); // C-51 (T560): a milestone queues behind a showing banner, so each is read after the last closed
             Assert.That(bootstrap.RunCommands.UpgradeFactory().IsSuccess, Is.True);
             yield return Frames(4);
             Assert.That(presenter.Development.Stage, Is.EqualTo(1), "8 of 12 is Partial");
@@ -109,6 +110,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(banner.SecondaryLabel.text, Is.EqualTo("Deck extended."), "the stage rose");
             Assert.That(deck.RevealActive || deck.BaseTilemap.color.r >= 0.99f, Is.True, "the deck reveal ran in normal motion");
 
+            banner.Dismiss();
             Assert.That(bootstrap.RunCommands.UpgradeFactory().IsSuccess, Is.True);
             yield return Frames(4);
             Assert.That(presenter.Development.Stage, Is.EqualTo(2), "10 of 12 is Established");

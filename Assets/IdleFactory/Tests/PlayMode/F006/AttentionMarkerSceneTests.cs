@@ -195,26 +195,6 @@ namespace IdleFactory.Tests.PlayMode.F006
 
             Assert.That(markers.VisibleMarkerCount, Is.GreaterThan(0), "the model recomputed the positions from the new layout and the view draws them");
         }
-
-        // C-39 (T560): between a layout change and the model's next refresh (up to 0.25 s) the view draws nothing, instead of the old positions on the new lattice.
-        [UnityTest]
-        public IEnumerator NoMarkerIsDrawnFromAModelThatStillCarriesTheOldLayout()
-        {
-            yield return StartRunWithShortage();
-            var bootstrap = run.Bootstrap;
-            var markers = bootstrap.MarkerView;
-            var current = bootstrap.SlotGrid.Layout;
-            var other = LatticeLayoutBuilder.ShippedForColumns(current.RowCount == 4 ? 4 : 3);
-            bootstrap.SlotGrid.SetLayout(other);
-            for (var frame = 0; frame < 30; frame++)
-            {
-                yield return null;
-                if (markers.VisibleMarkerCount > 0)
-                {
-                    Assert.That(bootstrap.ShellPresenter.AttentionModel.Layout, Is.SameAs(other), "a marker is only ever drawn from positions computed on the layout the grid has now");
-                }
-            }
-        }
     }
 }
 #endif

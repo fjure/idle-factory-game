@@ -209,3 +209,9 @@
 .factory-hud--compact-landscape .scaffold.bcard .bcard__action {
     margin: 0 1px;
 }
+
+.factory-hud--compact-landscape .scaffold.bcard .bcard__action {
+    font-size: var(--run-fs-caption);
+    padding-left: 0;
+    padding-right: 0;
+}

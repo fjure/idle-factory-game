@@ -306,7 +306,15 @@ namespace IdleFactory.Unity.UI
                 // The card shows only the upgrade shortfall (Cash) and the machine's state and cause, so rebuild only when one of those changed; the model still reads
                 // the live machine states every frame.
                 quantityRevision = session.QuantityRevision;
-                RefreshModel();
+                statesCount = session.CopyMachineStates(states);
+                if (statesCount > states.Length)
+                {
+                    states = new MachineStateView[statesCount];
+                    statesCount = session.CopyMachineStates(states);
+                }
+
+                // The completions come from the live states, so the card's delta still follow every cycle.
+                model.ApplyCompletions(states, statesCount);
                 if (QuantityKey(session.ReadCash()) == quantityKey)
                 {
                     return;
@@ -331,6 +339,7 @@ namespace IdleFactory.Unity.UI
         }
 
         private ulong quantityKey;
+        private int statesCount;
 
         /// <summary>Everything the card derives from quantities: the upgrade shortfall at four significant digits, the visual state and the limiting cause.</summary>
         private ulong QuantityKey(long cash)
@@ -359,12 +368,17 @@ namespace IdleFactory.Unity.UI
                     key = (key ^ part) * 1099511628211UL;
                 }
 
-                if (machine != null && slot >= 0)
+                for (var i = 0; i < statesCount && i < states.Length; i++)
                 {
-                    var presentation = model.Get(new BuildingLocationId(slot));
-                    key = (key ^ (ulong)(int)presentation.VisualState) * 1099511628211UL;
-                    key = (key ^ (ulong)(int)presentation.LimitingCause) * 1099511628211UL;
-                    key = (key ^ (ulong)(presentation.LimitingResourceId == null ? 0 : presentation.LimitingResourceId.GetHashCode())) * 1099511628211UL;
+                    if (states[i].SlotIndex != slot)
+                    {
+                        continue;
+                    }
+
+                    key = (key ^ (states[i].IsActive ? 1UL : 0UL)) * 1099511628211UL;
+                    key = (key ^ (ulong)(int)states[i].Phase) * 1099511628211UL;
+                    key = (key ^ (ulong)(int)states[i].Blocker) * 1099511628211UL;
+                    break;
                 }
 
                 return key;
@@ -384,6 +398,8 @@ namespace IdleFactory.Unity.UI
                 states = new MachineStateView[count];
                 count = session.CopyMachineStates(states);
             }
+
+            statesCount = count;
 
             var layout = layoutSource?.Invoke();
             if (layout == null)

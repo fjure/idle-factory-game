@@ -25,6 +25,9 @@ namespace IdleFactory.Unity.Presentation
         /// C-57 (U-C2, T560): the store-full marker uses the 24 x 24 storage icon the Store pill and the card cause line use, a glyph of the marker's own size, so it is not
         /// mistaken for the per-machine store-full badge (<see cref="SlotGridModel.BadgeStorageFullKey"/>, 72 x 64). No new art; the badge stays the fallback.
         /// </summary>
+        /// <summary>The longest a layout change blanks the markers: the feed refreshes within 0.25 s, so a model that never refreshed (same layout) is trusted after this.</summary>
+        public const float PendingLayoutSeconds = 0.3f;
+
         public const string StoreFullMarkerKey = "F003-UI-ICON-STORAGE";
 
         private PresentationSpriteCatalog sprites;
@@ -36,6 +39,7 @@ namespace IdleFactory.Unity.Presentation
         private float pointsPerCell = 48f;
         private SlotGridView bound;
         private FactoryWorldLayout pendingLayout;
+        private float pendingSince;
 
         /// <summary>True between a layout change of the bound grid and the first render of a model computed on that layout (C-39): nothing is drawn then.</summary>
         public bool AwaitingModelLayout => pendingLayout != null;
@@ -110,6 +114,7 @@ namespace IdleFactory.Unity.Presentation
             // C-39 (T560): the model recomputes its positions only on its next refresh (up to 0.25 s). Until it carries this layout, Render draws nothing, so
             // a stale marker is neither drawn nor hit.
             pendingLayout = newLayout;
+            pendingSince = Time.unscaledTime;
             Clear();
         }
 
@@ -145,7 +150,7 @@ namespace IdleFactory.Unity.Presentation
             visibleCount = 0;
             if (pendingLayout != null)
             {
-                if (!ReferenceEquals(model.Layout, pendingLayout))
+                if (!ReferenceEquals(model.Layout, pendingLayout) && Time.unscaledTime - pendingSince < PendingLayoutSeconds)
                 {
                     return;
                 }

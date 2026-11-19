@@ -70,9 +70,11 @@ namespace IdleFactory.Tests.PlayMode
         {
             yield return Make();
             var shell = rig.ShellDocument;
-            var panel = new TestShellPanel(ShellPanelIds.Items, "Items", 40, true, true);
+            // The rig registers the system tabs but not Settings: a tall test panel stands in for it.
+            Assert.That(shell.Panels.TryGet(ShellPanelIds.Settings, out _), Is.False, "the rig has no Settings panel");
+            var panel = new TestShellPanel(ShellPanelIds.Settings, "Settings", 40, true, true);
             registrations.Add(shell.Panels.Register(panel));
-            shell.SelectTab(ShellTab.Items);
+            shell.OpenSettings();
             yield return rig.Settle();
             Assert.That(shell.IsPanelTopHeld, Is.True, "a view that just opened is held at its top");
             Assert.That(shell.PanelScroll.scrollOffset.y, Is.EqualTo(0f).Within(0.5f));
