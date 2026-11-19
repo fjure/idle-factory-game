@@ -344,3 +344,17 @@ Camera: fit-all now frames the depot column (depot sprite, collector, store-full
 | `SlotGridTests.FitAllReproducesTheArtBibleTableAndStaysAboveTheReadableFloor` | `FitAll == floor(ppc / D)` for the 8 table screens | the `ppc` and floor assertions are unchanged; `FitAll` equals the content scale, or the depot-column scale when that is a step lower and at or above n_min (rows 664x720, 920x672, 1560x1032 drop by one); never above the table scale | U-C1 | yes (3 rows) |
 | `MilestoneBannerTests` (per class, 100 and 200 %) | each label is as tall as its wrapped text | a label with `display: none` is skipped, and only the second line of the compact banner may be hidden | C-F1: primary line only on compact height or large text | yes (narrowed to visible labels) |
 | `RunViewportDriverTests`, `GateCFixTests` | none | new: depot column in the camera rectangle per class and reference device, rotation then Back (build surface and machine card), banner per class | T558 | new |
+
+## T559 (#772): periodic autosave
+
+No existing test assertion changed: both full suites pass on the final commit with every earlier expectation intact (the focus-loss `Autosave()` and its FR-033 interval are unchanged, and the timer-driven autosave is a separate path with its own cadence). One shared fixture changed, additively:
+
+| File | Old content | New content | Reason | Expectation changed? |
+|---|---|---|---|---|
+| `Fixtures/PublicApi/core-public-api.txt` | Core public surface as of T558 | adds `AutosaveTickOutcome` (enum), `IRunCheckpointBackgroundPromoter`, `IPreparedPromotion` and `RunPersistence.AutosaveWhenDue(Action)`; nothing removed or changed | T559 public surface (regenerated with `IDLEFACTORY_REGENERATE_PUBLIC_API=1`, diff reviewed: 10 added lines) | no (additive) |
+
+New tests: Edit Mode `Run/AutosaveTests` (cadence, action throttle, lifecycle gating, failure path, kill and offline accounting, the background write, steady-path allocation) and `Run/AutosaveWriteCostTests` (the measurement); Play Mode `RunAutosaveTests` (kill without a pause callback, action trigger, failing store, allocation, suspended).
+
+### T559 fix round (QA passed 4f5b5ef; Architect and Security notes)
+
+No existing assertion changed. Four existing Play Mode fixtures changed in setup only: `HubPlayerTests`, `MachineCardPlayerTests` and `JsonContentPlayerTests` (they load the scene against the player's real persistence folder) now switch the timer-driven autosave off after the scene loads; `PlayerCheckpointRoundTripTests` adds its diagnostics under a lock because a background write can raise them from a pool thread. `RunAutosaveTests` (new in T559) now drives a second periodic write through the background path and asserts it (`BackgroundWritesStarted`).

@@ -123,7 +123,7 @@ namespace IdleFactory.Run.Application
             IRunReturnReconciler reconciler)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
-            this.store = new SafeRunStore(store ?? throw new ArgumentNullException(nameof(store)));
+            this.store = new SafeRunStore(store ?? throw new ArgumentNullException(nameof(store)), JoinAutosave);
             this.clock = clock ?? throw new ArgumentNullException(nameof(clock));
             this.checkpointIds = checkpointIds ?? throw new ArgumentNullException(nameof(checkpointIds));
             this.reconciler = reconciler ?? throw new ArgumentNullException(nameof(reconciler));
@@ -180,6 +180,7 @@ namespace IdleFactory.Run.Application
         /// </summary>
         public RunCommandResult<RunPersistenceOutcome> Autosave()
         {
+            JoinAutosave(); // T559: the interval check must see a background write in flight
             if (session.PendingTransition != null || lifecycle != LifecycleState.Running)
                 return Succeeded(null, null, false, true, false, false);
             if (IsWithinAutosaveInterval())
@@ -632,6 +633,7 @@ namespace IdleFactory.Run.Application
             var promoted = store.Promote(checkpoint);
             if (!promoted.Succeeded || promoted.Value != checkpoint.Id)
             {
+                durableKnown = false; // T559: the failed promote may have landed; the next background write reads the store again
                 var activeNow = store.ReadActive();
                 CheckpointId? activeId = activeNow.Succeeded ? activeNow.Checkpoint.Id : active?.Id ?? lastActiveCheckpointId;
                 SetStatus(PersistenceStatusKind.Failure, activeId, active != null || previous != null, SaveFailureMessage);
@@ -640,6 +642,7 @@ namespace IdleFactory.Run.Application
 
             lastActiveCheckpointId = checkpoint.Id;
             lastCheckpointUtcMs = clockMs;
+            NoteDurable(checkpoint);
             SetStatus(PersistenceStatusKind.Ready, checkpoint.Id, active != null || previous != null, "Factory saved.");
             return Succeeded(checkpoint.Id, checkpoint.Generation, false, false, false, false);
         }
@@ -833,7 +836,9 @@ namespace IdleFactory.Run.Application
             }
 
             session.BeginCommand();
-            return session.EndCommand(true, true).IsSuccess;
+            bool settled = session.EndCommand(true, true).IsSuccess;
+            if (settled) NoteDurable(durable);
+            return settled;
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -842,6 +847,7 @@ namespace IdleFactory.Run.Application
 
         private string Admit(ApplicationOperation operation)
         {
+            JoinAutosave(); // T559: a command never runs with a background autosave of this process outstanding and unapplied
             if (operation == ApplicationOperation.StatusQuery) return null;
             if (operation == ApplicationOperation.RecoverPreviousCheckpoint)
             {

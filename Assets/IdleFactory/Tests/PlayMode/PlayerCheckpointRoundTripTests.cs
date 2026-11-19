@@ -26,19 +26,25 @@ namespace IdleFactory.Tests.PlayMode
         private string root;
         private List<CheckpointDiagnostic> diagnostics;
 
+        // T559: a background autosave can raise diagnostics from a pool thread.
+        private void AddDiagnostic(CheckpointDiagnostic item)
+        {
+            lock (diagnostics) diagnostics.Add(item);
+        }
+
         [SetUp]
         public void CreateIsolatedRoot()
         {
             root = Path.Combine(Application.temporaryCachePath, "t052-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(root);
             diagnostics = new List<CheckpointDiagnostic>();
-            CheckpointDiagnostics.Reported += diagnostics.Add;
+            CheckpointDiagnostics.Reported += AddDiagnostic;
         }
 
         [TearDown]
         public void DeleteIsolatedRoot()
         {
-            CheckpointDiagnostics.Reported -= diagnostics.Add;
+            CheckpointDiagnostics.Reported -= AddDiagnostic;
             if (root != null && Directory.Exists(root))
             {
                 Directory.Delete(root, true);
