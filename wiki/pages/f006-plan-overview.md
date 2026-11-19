@@ -1,13 +1,13 @@
 ---
 title: Feature 006 plan overview (planned)
 type: decision
-sources: [S056, S057, S058, S059]
-updated: 2026-11-13
+sources: [S056, S057, S058, S059, S060, S061, S062]
+updated: 2026-11-19
 ---
 
 # Feature 006 plan overview (planned, not implemented)
 
-F006 "World-First Factory Experience" makes the factory the screen. Gameplay, content and saves stay unchanged; the plan (revision 2) passed seven review lenses including the new World Designer. Status: planning complete; batch P0 (T502-T508) merged (see [baseline](./f006-p0-baseline.md)); batch P1, the enabling refactor (T510-T518), merged on 2026-11-12 (see [P1](./f006-batch-p1-enabling-refactor.md)); batch P2, art families plus T532, T533 and T538, merged on 2026-11-13 (see [P2](./f006-batch-p2-art-and-presentation.md)). (S056, S057, S058, S059)
+F006 "World-First Factory Experience" makes the factory the screen. Gameplay, content and saves stay unchanged; the plan (revision 2) passed seven review lenses including the new World Designer. Status: planning complete; batch P0 (T502-T508) merged (see [baseline](./f006-p0-baseline.md)); batch P1, the enabling refactor (T510-T518), merged on 2026-11-12 (see [P1](./f006-batch-p1-enabling-refactor.md)); batch P2, art families plus T532, T533 and T538, merged on 2026-11-13 (see [P2](./f006-batch-p2-art-and-presentation.md)). Batch 5 (T527-T529, T536, T537, T539, T540, T555-T559) merged by 2026-11-18, with gates B and C accepted; its owner decisions (U-B1, C-10, markers, stage offset u0, T558 and T559, AR-3 and AR-4 with Art Bible v1.1.1) are in [batch 5 gates](./f006-batch-5-gate-and-owner-decisions.md). (S056, S057, S058, S059, S061)
 
 ## Phases and gates
 
@@ -42,3 +42,11 @@ FR-047: World Bible v0.1 (`docs/world/world-bible-v0.1.md`, World Designer) must
 ## Review waves and constraints
 
 Discovery and plan reviews are recorded under `specs/006-world-first-factory-experience/reviews/`. Sound Designer omitted (audio out of scope). No new package or asmdef; `com.unity.modules.tilemap` is already in the manifest but F006 is its first runtime use, so an Android IL2CPP and Player check applies. Budgets are the F004 frozen ones on workload W006-V. (S056) Related: [Feature 005 plan overview](./f005-plan-overview.md), [visual identity](./visual-identity-art-direction.md), [future capabilities](./future-free-building-vision.md).
+
+## Batch 4 status (P3 batch A, 2026-11-13)
+
+P3 batch A merged (T525, T526, T534, T552-T554, T535): card, Details, hub and the art import are in; the batch-A gate was REJECT then ACCEPT_WITH_NOTES, and the owner deferred Android accessibility (R-7) to a later feature. See [gate and owner decisions](./f006-p3a-gate-and-owner-decisions.md), [card and hub](./f006-batch-p3a-card-hub-and-gate-fixes.md), [art review and import](./f006-batch-p3a-art-review-and-import.md). (S060)
+
+## Batch 6 status (P4 part A, 2026-11-19)
+
+T531 (B4a measurement), T541 (journey), T547 (World Designer conformance) and the added T560 (pre-T542 polish) merged; World Bible is now `F006-WB v0.2` and Art Bible v1.1.2. Remaining: T545, T542, T544, final T543, T548, T549-T551. See [verification and polish](./f006-batch-6-verification-and-polish.md), [copy conformance and polish](./f006-batch-6-copy-conformance-and-polish.md) and [pitfalls](./f006-batch-6-workflow-pitfalls.md). (S062)

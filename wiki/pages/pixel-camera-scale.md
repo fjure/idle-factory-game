@@ -1,8 +1,8 @@
 ---
 title: Pixel camera scale
 type: decision
-sources: [S045, S038, S039, S041, S052, S053, S055, S056]
-updated: 2026-11-11
+sources: [S045, S038, S039, S041, S052, S053, S055, S056, S061]
+updated: 2026-11-19
 ---
 
 # Pixel camera scale
@@ -58,3 +58,5 @@ Related: [visual identity and art direction](./visual-identity-art-direction.md)
 Owner decision F1 (2026-11-05): the 720x1280 @ 320 dpi phone (2.004 px/pt) is a DEV-2 class with `n_min` 2 (world cue 22.95 pt, digit 14.97 pt); Art Bible v1.0.4 corrects sections 4.1, 4.3, DEV-2 and DEV-4. The T445 sheets measured n_min/n_fit 2/2 on that class and 1280x720, 3/4 on 1080x2400, and 2/4 (not the Art Bible 5) on the 2048x1536 tablet. Markers were named correctly at n=2. (S055) See [batch 12](./f004-batch-12-final-verification.md).
 
 Planned (F006): camera math moves from `columns` to `FactoryWorldLayout.Bounds` (= today's Extent) plus `LayoutId`, with a `LargestFittingScale` parity test. See [F006 world presentation design](./f006-world-presentation-design.md). (S056)
+
+F006 T558 (owner decision 2026-11-19, Art Bible v1.1.1 sections 4.1 and 4.2): fit-all now includes the depot column (depot sprite, collector spine, store-full and shortage marker boxes), so the table's `n_fit` values are upper bounds and fit-all may sit one whole scale lower. AR-3: on the phone portrait 1080x2400 fit-all equals `n_min` 3, so there is no zoom-out and machines are about 25 % smaller (a cell about 27 pt). AR-4: where the depot column cannot fit at `n_min` (tablet portrait 1536x2048; 200 % text on 360x640, 390x844, 640x360) the depot is reached by panning while the content stays in view. Details: [batch 5 shell and framing](./f006-batch-5-shell-card-and-stages.md). (S061)

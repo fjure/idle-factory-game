@@ -1,6 +1,6 @@
 # Contract: World Presentation (F006)
 
-**Revision**: 2 (plan reviews, 2026-11-11).
+**Revision**: 3 (as built by T527–T529 and T528, 2026-11-18; P2-F11). Revision 2: plan reviews, 2026-11-11.
 **Scope**: world layout and composition; deck and environment; depot, links and deposit; development growth; art families and budgets; direction and acceptance evidence; World Bible conformance.
 **Requirements**: FR-004, FR-010a, FR-011 to FR-015, FR-037 to FR-044, FR-046, FR-047.
 **Research**: R02 to R07, R15, R17, R18, R22, R23.
@@ -49,7 +49,13 @@ The camera scale never changes on unlock.
 
 **Branches.** Each occupied location has one branch, from the plate's rear edge to its trunk. Empty and locked locations have none.
 
-**Depot.** Sits at `DepotCell` in the margin band. It has 4 fill states (index `min(3, floor(4·fill/capacity))`, plus the existing full state) times 3 stage variants.
+**Depot.** Sits at `DepotCell` in the margin band. Four sprites times 3 stage variants (`F006-DEPOT-S{stage}-{state}`). Revision 3 (T528 Art Director review, Art Bible 21.12): EMPTY at fill 0; LOW below 50 %; HIGH from 50 % up to, but excluding, capacity; FULL only when the store is at capacity or any machine is StorageFull-blocked. This supersedes the index `min(3, floor(4·fill/capacity))`.
+
+**Layers (as built, revision 3).**
+- Links are the third Tilemap (Grid cell 70 x 54), shifted +12 art px so the tile bottom is the row pivot − 15 and the lane centre is 29 px above the row pivot. Order: link Tilemap on `WorldLinks` 0, deposit rest on `WorldLinks` 20, depot on `WorldLinks` 100.
+- One trunk run per location row, independent of occupancy, with a junction on the depot column (mirrored for a left depot, which shifts the 3 px spine by 1 px; no shipped layout uses a left depot). The branch tile replaces the trunk tile on an occupied cell. A trunk's far end overshoots half a cell beyond the farthest branch.
+- Pips: one per location, pre-created with the layout, on `Overlay` order 100 + location, below every cue (150), because the Overdrive marker sits on the branch spine. A pip moves in whole-pixel steps from the plate's rear edge (+20) to the lane (+29); the branch is one lane cell.
+- Pips read the live machine rows each frame (`WorldEffectsFeed.LiveStates`), not the world model, so a pip stops in the frame after a block.
 
 **Pips.**
 - Shown **only on branches**, while the machine is Running.
@@ -62,7 +68,7 @@ The camera scale never changes on unlock.
 - A pip never represents a unit count.
 
 **Tests:**
-- `DepotLinkModelTests` (Edit Mode): geometry on the 3×4, 4×3, 6, 20 and L layouts; fill index; branch presence per condition; pace mapping.
+- `DepotLinkModelTests` (Edit Mode): geometry on the 3×4, 4×3, 6, 20 and L layouts; fill state at its boundaries (0, 1 unit, under and at 50 %, capacity − 1, capacity, StorageFull at low fill); branch presence per condition; pace mapping.
 - `DepotLinkViewTests` (Play Mode): a pip stops within one frame of a block.
 
 ## 2a. Ore vein (FR-010a)
@@ -70,10 +76,10 @@ The camera scale never changes on unlock.
 **Placement.** `DepositCell` is chosen by `WorldCompositionSettings`. It is a margin cell outside hit shapes and keep-outs.
 
 **Activity.**
-- While manual mining is in progress, a 6-frame chip loop plays on the shared clock.
+- While manual mining is in progress (the ore-vein hold, `OreVeinControl.IsHolding`), a 6-frame chip loop plays on the shared clock (`Effects` order −80).
 - Under reduced motion, a static highlight replaces the loop.
 
-**Interaction.** The vein is not a hit target in F006.
+**Interaction.** The vein is not a hit target in F006: it has no collider and no hit API, and the tap resolver never returns it.
 
 **Economy.** Yield, rate and pacing are unchanged. Game Systems confirms this.
 
@@ -87,7 +93,7 @@ Deck-lit area, edges, prop weights and the depot variant change per `Development
 **Minimum delta.** Between adjacent stages the deck-lit area share differs by at least 25 percentage points, and the grayscale difference is visible at n_min.
 
 **Tests:**
-- `DevelopmentStageTests`: boundaries at 4 and 8 of 12; `t ≤ 0` gives Early; no prestige input.
+- `DevelopmentStageTests`: with u0 = 4 and t = 12 (Iron), Early at 4 and 6, Partial at 8, Established at 10 and 12; `t ≤ u0` gives Early; no prestige input (owner decision 2026-11-18).
 - `StageTriptychDeltaTests`.
 
 ## 4. Layout independence (FR-037, FR-038, SC-011)
@@ -159,3 +165,5 @@ Camera scale, framing, pan limits, hit-testing, card and build-card docking, dec
 - the depot and vein names, if shown.
 
 **`reviews/world-bible-conformance.md`.** The World Designer checklist, run after P2 and at P4. It must report zero conflicts and no unowned string.
+
+**As built (T540).** `DevelopmentStage` gives `stage = t ≤ u0 ? Early : clamp(floor(3·(u − u0)/(t − u0)), 0, 2)` with u the unlocked locations, t the locations at the maximum level and u0 the locations at factory level 1 (catalog, never a prestige count); the shipped 4/6/8/10/12 of 12 give Early, Early, Partial, Established, Established; plus activity and level bins of 3. The presenter recomputes it only when the factory snapshot is rebuilt, and the bootstrap drives `FactoryDeckView.SetDevelopment` and the depot and deposit `SetStage`. `DeckPlanner.Build(..., DeckDressing?)` lights the margin ring by stage (none, the half nearest the depot, all) by swapping the base tile for the deck tile (tile count unchanged), allows props only on lit ring cells and empty or locked location cells, adds 0.03 prop density per secondary bin and caps props at 0.5 per ring cell (world sprites 35/37 of 41, camera renderers 99/101 of 105 at 12 locations; Art Bible 21.12 draft). Adjacent stages differ by at least 30 percentage points of lit deck share. `MilestoneWatcher` diffs snapshots (level-up with the opened locations and a stage-raised flag; prestige = run-id change with a higher prestige count) and is re-baselined on cold start, restore or reload and a non-prestige session replace; offline milestones come from `ReconcileOffline` and never raise a banner. A level-up gives a 2 s foundation highlight on the new locations and a stage raise eases the deck brightness over 0.6 s, both static under reduced motion.

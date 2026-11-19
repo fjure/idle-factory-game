@@ -1,9 +1,9 @@
 # What I Learned: World-First Factory Experience (F006)
 
 **Feature**: Make the factory the screen: a world deck, depot and labelled hub in place of the six-tab bar. Gameplay, content and saves stay unchanged.
-**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch, see the P2 section at the end)
-**Scope**: Phases P0 (T500-T509), P1 (T510-T518) and the first P2 batch (T519-T524, T532, T533, T538)
-**Implementation status**: P0 merged on main (Issues #678-#683; PRs #721-#726) plus the parent decisions OD-9a and OD-9b on `feat-006-maqa-batch1`. P1 merged (see P1 section); P2 first batch merged (see the P2 section); the rest of P2 and P3-P4 not started.
+**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch; P3 batch A); 2026-11-19 (batch 5 and batch 6 part A, see the last sections)
+**Scope**: Phases P0 (T500-T509), P1 (T510-T518), the first P2 batch (T519-T524, T532, T533, T538), P3 batch A (T525, T526, T534, T535, T552-T554) batch 5 (T527-T529, T536, T537, T539, T540, T555-T559) and batch 6 part A (T531, T541, T547, T560)
+**Implementation status**: 51 of 61 listed tasks are checked (batch 6 part A merged on 2026-11-19, main 38cc418; T560 was added by the owner). Open: T542 to T545, T548 to T551 and the final T543. P0, P1, the first P2 batch, P3 batch A, batch 5 and batch 6 part A are merged.
 
 ---
 
@@ -259,3 +259,247 @@ Stop workers that wait on background work before QA; resume rate-limited workers
 - **Flash matrix**: per-family count of flashes per second with the FX, checked against the cap.
 - **K4 tail**: the 4 px pointer tail of the OD-12 badge anchor; `BadgeExtentBox` is 23x27.
 - **display-v2.json**: the strict, atomically written display preferences file with the Show zoom buttons toggle.
+
+---
+
+## P3 batch A: Key Decisions
+
+### 13. Find the cause by the artifact's size, not by guessing (T552)
+
+**What we did**: An Android build hung on load. The bisect ended at a 2 MiB atlas page (the F004 `machines` atlas, present since T440). The fix is an empirical rule: every atlas page is at most 512 x 512 RGBA32, enforced by `AtlasPageBudgetTests`, plus an `isLoading:false` gate in the journey.
+
+**Why**: The engine-side reason is unknown, so a recorded constant with a test is cheaper and safer than an unproven theory. The hang had been present for several merges and only surfaced at the gate.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep bisecting into Unity internals | No repository fix would result; the cost is open-ended |
+| Trust the green Windows suites | They load the same data in about 12 s, so they could never see it |
+
+**When you'd choose differently**: If the cause were in your own code, fix it there and drop the blanket cap.
+
+---
+
+### 14. Make the hub a registered view, not a new navigation system (T535)
+
+**What we did**: The Office hub is one more registered panel on the existing `ShellNavigationStack`; opening a system view from it replaces the hub, so one Back returns to the factory.
+
+**Why**: One Back path means one set of tests and no second place for focus bugs. The six-tab bar stays until T537, so no panel test had to migrate.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| A separate hub navigator | Two back stacks that must agree |
+| Remove the tab bar now | Forces a mass test migration in one Issue |
+
+**When you'd choose differently**: When the old entry cannot coexist with the new one for layout reasons.
+
+---
+
+### 15. Gate a batch on the review, then fix first (T543)
+
+**What we did**: The batch-A UI/UX review was REJECT (load hang, empty tap), the owner chose "fix first", and the re-run was ACCEPT_WITH_NOTES. The Play-Tester gate must precede batch B.
+
+**Why**: A rejected gate that is waved through puts unknown defects under the next batch.
+
+**When you'd choose differently**: For a cosmetic-only finding, carry it as a numbered item instead of blocking.
+
+---
+
+## P3 batch A: Concepts to Know
+
+### Synthetic input can fake a defect
+
+A scan-code-0 Escape is ignored by the Input System, so "Escape does not close" (A-F1) was a test artifact. Confirm a finding with the real input path before filing it.
+
+### A shared checkout is shared state
+
+A reviewer's `git checkout --detach` hit a worktree QA was using, and `git worktree remove` failed with the shell inside it. Give every role its own worktree and leave it before removing it.
+
+## P3 batch A: carried follow-ups
+
+`reviews/p3a-followups.md` (A-1 to A-13): A-5 specific cause on the card, A-6 Details scroll and landscape coverage, A-7 zoom-button hiding on touch, A-9 the 82 MB APK, A-10 SetPass re-measure, A-13 scene catalog rows and the C8 proofs. R-7 (no Android accessibility nodes) is deferred to a later feature by the owner.
+
+## P3 batch A: Glossary additions
+
+- **Details view**: the machine panel, reached from the docked card's `Details ›`.
+- **ViewBounds**: the camera extent covering content, depot and deposit, used for pan limits.
+- **Atlas page cap**: at most 512 x 512 RGBA32 (1 MiB) per page.
+
+---
+
+# Batch 5: persistent layer, world deck, effects, build card, stages, gates B and C (T527-T529, T536, T537, T539, T540, T555-T559)
+
+## Batch 5: Key Decisions
+
+### 16. Never relax a binding owner condition to make a fix pass (T537)
+
+**What we did**: The first T537 commit relaxed the OD-9b C1 assertion (the whole factory in view at fit-all) for 640x360 at 200 % text. QA passed with a warning and the parent sent a fix round instead of waiving it. The zoom column folded into the action column, and the world share rose from 27.7 % to 36.0 %.
+
+**Why**: A binding condition belongs to the owner. A parent can change the design to meet it, not the test to hide a miss.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep the relaxed assertion and record it | It silently changes an owner decision |
+| Ask the owner to waive | The layout could meet the condition at modest cost |
+
+**When you'd choose differently**: If no layout can meet the condition, escalate it as an owner decision with numbers.
+
+---
+
+### 17. Change the stage formula when the data says a state is unreachable (T540)
+
+**What we did**: Review showed that `floor(3u/t)` never gave Early on Iron, which opens 4 of 12 locations at level 1. The owner chose an offset by the start: `stage = clamp(floor(3(u-u0)/(t-u0)), 0, 2)`, with u0 the level-1 location count. Iron now runs Early, Early, Partial, Established, Established.
+
+**Why**: A stage the player can never see is dead art. The offset keeps the formula content-driven, with no per-industry table.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep the formula, accept no Early on Iron | The Early deck art would never show |
+| Level thresholds 6 and 10 | A second table that content authors must keep in step |
+
+**When you'd choose differently**: If industries needed unequal stage pacing, a per-industry table would be justified.
+
+---
+
+### 18. Fix the framing, then accept what cannot fit, and write it down (T558)
+
+**What we did**: Gate C showed the closed camera clipping the depot at level 2 in portrait and on tablets, and a stale view after rotating under a card. T558 put the depot column into the fit extent and re-fits when a card closes on another screen. Where the depot cannot fit at the minimum scale it stays reachable by panning (AR-4), and the phone portrait 1080x2400 fit-all sits at the minimum scale (AR-3). The owner accepted both on 2026-11-19 and Art Bible v1.1.1 records them.
+
+**Why**: A documented accepted risk with a measured scope is better than a framing rule that quietly breaks the pixel grid.
+
+**When you'd choose differently**: If the final gate finds players do not discover the depot, revisit AR-4 in T542 with an off-screen indicator.
+
+---
+
+### 19. Build the observable path, not just the unit (T539, T557)
+
+**What we did**: The T539 build card passed its unit tests but was inert in the shipped scene because its SerializeFields were unwired. The marker view from T532 was never instantiated, so world attention markers never showed until T557. Both now have real-scene tests.
+
+**Why**: A test that builds the object itself cannot see that production never builds it.
+
+**When you'd choose differently**: For a pure domain type, a unit test is enough; for anything a scene must own, test the scene.
+
+---
+
+### 20. Key rebuilds on what changed, and test the busiest producer (T529)
+
+**What we did**: The world feed first rebuilt the whole factory snapshot up to 10 times a second. After a fix it still rebuilt every frame because an active contract bumps `Contracts.Version` on every produced unit, and that moves `StructureRevision`. Final rule: rebuild at once only on machine identity, layout, offline return and session replace; otherwise at most once per second. Two 600-frame zero-allocation tests pin it.
+
+**Why**: A revision counter that moves with production is not a structure signal.
+
+**When you'd choose differently**: If a counter changed only on player actions, it could drive the rebuild directly.
+
+---
+
+### 21. Close a safety gap with a bounded background write (T559)
+
+**What we did**: Gate C found that a force-stop lost the whole run because nothing saved on a timer. T559 adds `AutosavePolicy` (30 s, 2 s spacing after a structural change, backoff after a failure). The main thread captures and serializes (about 0.12 ms); a pool thread publishes the file (about 30 ms) under the store's operation gate, with one write in flight and every other persistence access joining it first.
+
+**Why**: Serialization is cheap and file IO is not. Moving only the IO keeps the frame time and the Save V3 format unchanged.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Synchronous write on the main thread (33 ms) | A visible hitch twice a minute |
+| A new save format for deltas | A migration for a problem the generation protocol already solves |
+
+**When you'd choose differently**: If the write rate proves too high on the emulator (C-66), lengthen the interval or write only on structural change.
+
+---
+
+## Batch 5: Concepts to Know
+
+### A tester can be wrong, and the device decides
+
+C-F3 (store-full markers per machine, uncapped) and C-F4 (the marker icon selects nothing) were refuted by UI/UX: the per-machine pins were slot badges, not markers, and the badge was never a tap target. A gate finding is a claim to verify against the code and the device.
+
+### A transient overlay must not change the layout
+
+A milestone banner placed inside the unobstructed rectangle reframed the camera and covered the top machine row. Draw it as an absolute overlay and show only the main line on compact screens.
+
+### Gate evidence without host input
+
+Owner decision 2026-11-17: gate agents never drive the host mouse or keyboard. Player sessions run on a dedicated emulator through `adb`, and what could not be run is marked "not covered" (Windows player, TalkBack).
+
+### A locked input gives no shortage (R09, C-25)
+
+A resource the player cannot yet obtain raises no "Short on" signal. The wiki records the note because `research.md` is a source and the ingest does not edit it.
+
+## Batch 5: carried follow-ups
+
+`reviews/p3b-followups.md`: B-1 to B-17 and C-1 to C-67. Open for the owner: Art Bible 21.12 (the renderer census of 105 against the 95 signed off), C-61 the hard deck edge, C-67 the autosave interval as a run setting. Later tasks: T542 (soft-disabled audit, presenter tests, marker invalidation on layout change, C-63 hit area), T544 (autosave write rate on the emulator), T546 (shuffled trial, stage props), T547 (cause copy, accessibility record, bootstrap size).
+
+## Batch 5: Glossary additions
+
+- **u0**: the number of unlocked locations at factory level 1, the offset in the stage formula.
+- **Status band**: the one-row strip at the top of the world column in phone landscape while a card or sheet is open, keeping Cash and Overdrive visible.
+- **AR-3 / AR-4**: accepted risks in Art Bible v1.1.1 (no zoom-out on phone portrait 1080x2400; the depot reached by panning where its column cannot fit).
+- **AutosavePolicy**: the Application-layer rule for periodic checkpoints (30 s interval, 2 s spacing, failure backoff).
+- **IRunCheckpointBackgroundPromoter**: the optional port that lets the store publish a checkpoint on a pool thread.
+- **StructureRevision**: the revision that triggers a world-feed rebuild; it must not move with production.
+
+---
+
+# Batch 6 part A: verification and polish (T531, T541, T547, T560)
+
+## Batch 6: Key Decisions
+
+### 22. Withdraw a budget reading when its method turns out to be the artifact (T531)
+
+**What we did**: The B3 "one SetPass per render" reading came from an Editor probe whose batch counters read 0. The player method reads 28 to 34 passes for F004 pages alone, 42 to 44 with F006. The owner restated budget 8 as a delta: F006 adds at most +12 passes over the F004-only 34, with the `camera.Render()` CPU bound still binding.
+
+**Why**: A gate that cannot be read in the real runtime gives false assurance. The delta isolates what this feature adds and is measurable in the same method.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep "at most one pass per render" | The player cannot meet it for F004 alone; it would fail on the method, not on F006. |
+| Sort sprites by atlas per layer | Big gain, but changes per-location y-order and needs an owner decision. |
+
+**When you'd choose differently**: If device GPU time, not CPU, is the limit, optimise the absolute pass count.
+
+---
+
+### 23. Give carried code fixes an implementation task before the verifier runs (T560)
+
+**What we did**: Carries named for T542 (Test/QA) and T547 (World Designer) were code or copy fixes. Both roles are read-only, so the owner added T560 with copy fixes CF-2..CF-5, the cause line, card refresh gating and marker checks. T542 only verifies afterwards.
+
+**Why**: A verifier that repairs what it verifies is no longer independent.
+
+**When you'd choose differently**: Trivial one-line fixes can ride in the review's own fix round when the reviewer is not the implementer.
+
+---
+
+### 24. Resolve a vocabulary conflict by a MINOR version, not by renaming strings (CF-1)
+
+**What we did**: World Bible v0.1 said the capacity is never "store", but the shipped game says "Store" everywhere. v0.2 makes "Store" the capacity term and "Depot" the structure; no string changed.
+
+**Why**: Renaming about 20 strings and their tests costs more than a precise definition, and the two words name two things.
+
+**When you'd choose differently**: If players confused the two words in playtests, rename the capacity instead.
+
+---
+
+## Batch 6: Concepts to Know
+
+### Mechanical coverage proof
+Keyword sweeps missed player strings twice. The accepted proof counts every literal line (888 in 72 files) against a cited row; the limit of the extraction is stated, and the script is not yet committed (C-71).
+
+### Gate refresh on the changed key
+Both cards refreshed on every `QuantityRevision` change, about 400 allocations per frame. T560 refreshes on a structure, dirty or quantity key with 600-frame zero-allocation tests. A remaining weakness: a rate-only change can lag (C-76).
+
+### Workflow
+Usage limits killed workers and reviewers mid-run; resuming the same agent worked. The merge script does not release the `gpu` lease. See the wiki page on batch 6 pitfalls.
+
+## Batch 6: carried follow-ups
+
+C-68..C-76 in `reviews/p3b-followups.md`: the card-closed 21 allocations per frame deep profile (separate Issue after P4 gates), report text for T544, journey tap calibration (T542), class D names and the extraction script, the potential-versus-effective production rate, two text clips at 200 %, a 120 px recentre, the two-write autosave player test, a 22 px store-full marker sprite and the dim tint level, and stale cause or rate text on rate-only changes.
+
+## Batch 6: Glossary additions
+
+- **F006-WB v0.2**: the World Bible after owner decision CF-1; Store is the capacity term, Depot the structure.
+- **Delta cap**: the restated budget 8, F006 adds at most +12 SetPass per render over the F004-only 34.
+- **Class D string**: a literal that is not player-visible (exception messages, keys, object names).

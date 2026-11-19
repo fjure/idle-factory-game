@@ -92,7 +92,7 @@ P1-F5 stays provisional by the earlier owner decision; no new decision is needed
 **Evidence**: (a) visual: the gate captures `playtest-agent-f006-C/` (c03, c07, c17, c23 viewed as PNG; coordination worktree) and the composites `t527-proofs/3x4-stage2.png` and `3x4-stage3.png` (this branch); (b) strings: a scan of the shipped source (`Assets/IdleFactory/Unity/UI/**`, `Presentation/**`, UXML and USS; `RunRejectionCopy`, `MilestoneCopy`, `HubPanel`, `MachineCard`, `BuildCard`, `ExpansionPanel`, `OfflineSummaryPanel`, `SettingsPanelPresenter`, `OreVeinCopy`, `AttentionModel`, `PersistentLayer`, `RunShellDocument*`). No localisation tables exist; all copy is in code or UXML. Content data holds resource, machine and research labels of F001 to F005, which are not F006 world strings.
 **Scope note**: palette, numbers, layout fit and code quality are not this lens. Tone, vocabulary, naming and forbidden-term rules, and the world reading of deck, depot, links, props, vein and stage dressing, are.
 
-### Overall verdict: CONFLICTS (4 conflicts, 0 blockers; CF-1 is RESOLVED (v0.2); each remaining conflict is a proposed string change not yet applied)
+### Overall verdict: CONFORMS (CF-1 resolved by v0.2; CF-2 to CF-5, B-4 and B-6 applied by T560, #776, PR #780; see Part 3). At T547 merge (8289733) the verdict was CONFLICTS (4 conflicts, 0 blockers).
 
 Under the task rule, a proposed change counts as a conflict until an implementation worker applies it; CF-2 to CF-5 are applied by T560 (#776). No conflict touches a forbidden reading: no people, lore, brand, planet, power, region or hype word; no exclamation marks in player text; no text baked into a world sprite; "Systems" is not a label anywhere. The world art itself conforms. The remaining conflicts are vocabulary drift in strings.
 
@@ -176,7 +176,7 @@ OD-9b World Designer conditions: (1) trunks end at the depot: MET (M2). (2) Vein
 | Props | CONFORMS | Crate, stack, pallet, lamp: neutral, unbranded scenery (c17, composites). |
 | Vein | CONFORMS | A resource source plus the Mine control; D-02 "Ore vein" is not shown; the control's accessible name is "Mine Iron Ore, +0.1 per click". |
 | Stage dressing | CONFORMS | Three stages, no text; names G-01 to G-03 are not shown in the build. |
-| Strings | CONFLICTS | CF-2 to CF-5 open; every player-visible literal in the swept scope is owned (world-copy.md section 7). |
+| Strings | CONFORMS (after T560) | CF-2 to CF-5 applied by T560 (Part 3); every player-visible literal in the swept scope is owned (world-copy.md section 7). |
 | Forbidden terms | CONFORMS | A search of the F006 surfaces for epic, legendary, mega, ultimate, boss, empire, tycoon, expedition, warehouse, region names and exclamation marks found none. "Systems" is not a label (CF-4 covers the generic noun). |
 | Site name and tagline | CONFORMS (not shipped) | S-01 and S-02 are in no build string or UXML; they stay store and title-surface copy. |
 
@@ -221,3 +221,17 @@ OD-9b World Designer conditions: (1) trunks end at the depot: MET (M2). (2) Vein
 1. CF-1 is decided (option A, `F006-WB v0.2`, authored in this PR); the parent records v0.2 on the coordination branch.
 2. T560 (#776) applies CF-2 to CF-5, B-4 and B-6 exactly as listed, with the matching test string updates and a 200 % re-read.
 3. A short World Designer re-read afterwards to flip the verdict to CONFORMS.
+
+## Part 3 (T560 re-read)
+**Task**: T547 re-read after T560 (#776, PR #780, commit `137da8e4563e0aa482b3f9843df9db9fde8523ea`, diff from `28e5af7`). **Date**: 2026-11-19. Read-only World Designer re-read; nothing was edited.
+**Result: CONFORMS (0 conflicts, 0 blockers).**
+- **CF-2** applied at all 16 sites: FactoryRun.uxml:46; RunRejectionCopy.cs:17,18; ExpansionPanel.cs:109,127,189; OfflineSummaryPanel.cs:570; PrioritiesPanel.cs:172; SlotVisualModel.cs:110; MachinePanel.uxml:3; RunShellDocument.cs:1305,1330,1387,2113,2117,2121. Old text matches Part 2; new text matches exactly.
+- **CF-3** applied at HubPanel.cs:39 and RunShellDocument.cs:38.
+- **CF-4** applied at RunShellDocument.Hub.cs:81 and HubPanel.cs:428,637.
+- **CF-5** applied at HubPanel.cs:610 and UnlockCopy.cs:111.
+- **B-4** applied: MachineCard.cs:91,92,487,499,529; the tooltip is kept at :531.
+- **B-6** applied: MachineCard.cs:194 ("Close machine card"); RunShellDocument.cs:40,2960 ("Close panel").
+- **Coverage over the diff's added literals:** 1 new player-visible string, "Selected" (BuildCard.cs:18,413; spoken form :412,432). It CONFORMS and is recorded as row N-47, with the N-17 range extended to BuildCard.cs:393-432. All other added literals are class D.
+- **C-71, class D (not player-visible):** FactoryCameraController.cs, GridWorldMapper.cs, StateCueSet.cs (exception messages and key constants) and AttentionMarkerView.cs (GameObject names, exception message, sprite key).
+- **Mismatches:** none.
+- **Still carried, not passed here:** the two-line cause label fit at 200 % per class (UI/UX), and the device-only checks (vein and depot framing, TalkBack reading of the banner, hub name and attention strip) for the final gate.

@@ -288,7 +288,7 @@ The F004 floor pool, its family folder, its atlas and its catalog key are gone; 
 
 **New.** `DeckLayoutTests`, `DeckCompositeProofTests`, `DeckWiringTests` (Edit Mode), `DeckRenderTests`, `ReducedMotionWorldTests`, `TilemapSmokeTests` (Play Mode; the last two carry `[Category("StandalonePlayer")]`).
 
-**Render baselines (T527).** The nine `w003s-*-shell.png` baselines under `Tests/PlayMode/Fixtures/Screenshots/F004-B2/` were regenerated, not edited: `IDLEFACTORY_RENDER_BASELINE_WRITE=1 scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/PlayMode/RenderParityTests.cs` (the harness write mode). Only the hub entry glyph changed (the Contracts glyph became the Office glyph: 125 to 165 pixels per frame, max channel delta 162). No `w004v-*` world frame changed.
+**Render baselines (T527).** The nine `w003s-*-shell.png` baselines under `Tests/PlayMode/Fixtures/Screenshots/F004-B2/` were regenerated, not edited: `IDLEFACTORY_RENDER_BASELINE_WRITE=1 scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/PlayMode/RenderParityTests.cs` (the harness write mode). Only the hub entry glyph changed (the Contracts glyph became the Office glyph: 155 pixels per frame at 1024x768, 1280x720, 1920x1080 and 768x1024, 241 at 360x640, 390x844, 640x360, 640x480 and 844x390, all inside the hub glyph box, max channel delta 162; counts corrected by the parent from the QA and Art Director pixel diffs). No `w004v-*` world frame changed.
 
 **Settings.** No `ProjectSettings` change is committed. `ProjectSettings/ProjectSettings.asset` run noise was restored after every Unity run.
 
@@ -407,3 +407,10 @@ Every hosted control that is soft-disabled has a reason a touch user can reach w
 | shell zoom buttons at a limit | the zoom hint on press |
 
 No site was found without a reachable reason. B-14: `SelectTab` and `OpenTabAtSection` still have production callers (`HubPanel.OpenCard`, `PrestigePresenter`) and 36 test files, so the shim stays.
+
+### T560 fix round (38ff7cc), recorded by the parent after re-QA
+
+| Test | Before | After | Reason |
+|---|---|---|---|
+| `BuildCardTests.TheBuildCardKeepsItsWords...` heading | height at most 2 x font size x 1.8 (about 3 lines at a 1.2 line factor) | measured one-line height; at most 2.05 lines on every compact class, **3.05 lines on 640x360 at 200 %** | Stricter on 360x640 and 844x390, equal or stricter on 640x360. The 256 pt column wraps the title to three lines at 640x360/200 % and the shell never clips text (an ellipsis was tried and rejected by the no-clip assertion). UI/UX-owned exemption; device check D1/D3 at the final gate. |
+| same test, type rows | 2 rows visible OR selected row visible | selected row visible on every class; at least 2 rows only on 844x390 | 360x640 at 200 % shows 1 row (45 % card cap) and 640x360 shows 1; the C-46 scroll-to-selected contract applies there. |

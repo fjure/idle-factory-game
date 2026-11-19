@@ -23,7 +23,7 @@ The state record hashes the factory contents (origin, size, and for each buildin
 
 ## Metric sources that work, and traps
 
-- **Frame pacing:** Unity renders into a `SurfaceView`, so `dumpsys gfxinfo … framestats` stays empty. Use SurfaceFlinger TimeStats instead: enable and clear them (`dumpsys SurfaceFlinger --timestats -enable -clear`) right before the window, and dump and disable them right after it. Read the `SurfaceView[…](BLAST)` layer. Its `present2present` histogram gives frame intervals, and its percentiles are bucket lower bounds (the protocol's `-CaptureFrameTimeStats` switch). (S001)
+- **Frame pacing:** Unity renders into a `SurfaceView`, so `dumpsys gfxinfo … framestats` stays empty. Use SurfaceFlinger TimeStats instead: enable and clear them (`dumpsys SurfaceFlinger --timestats -enable -clear`) right before the window, and dump and disable them right after it. Read the ``SurfaceView[…](BLAST)`` layer. Its `present2present` histogram gives frame intervals, and its percentiles are bucket lower bounds (the protocol's `-CaptureFrameTimeStats` switch). (S001)
 - **CPU:** toybox `top`'s first sample covers only a short interval at the start of the window. That interval falls on the explicit ART GC that the start-boundary `dumpsys meminfo` triggers, so exclude the first sample. (S001)
 - **Memory:** `dumpsys meminfo` PSS/RSS are process snapshots, including translation and shared mappings. They are not an allocation rate. (S001)
 - **Host load:** guest `sys` load and CPU differed markedly between two sessions with the same APK, checkpoint and screen. Compare sets only within one session, and add a same-session control run whenever you want a before/after statement. (S001)

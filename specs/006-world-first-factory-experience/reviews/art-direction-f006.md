@@ -253,6 +253,8 @@ All four lenses recommend ACCEPT, with these conditions.
 | UI/UX | Supports the front-row-only rule (side rows are 1 to 2 px from machine columns). Wall stays provisional until the T527 C8 proof (P1-F5). |
 | Game Designer/PO | Accept, conditional. (1) Run the SC-006 shuffled-order trial at T527. (2) If stages order worse than 9 of 10, add the depot parapet (already in the depot s2 art) and a back-edge treatment only where a keep-out proof allows. (3) Record the front-row-only rule in section 21.4. Cost: it reads as a retaining lip, not an enclosed yard. |
 
+**Owner decision (2026-11-13, recorded by the parent):** ACCEPT, conditional. A front-only wall is the stage-2 "Walled yard" candidate, on the front margin row only. It stays provisional (P1-F5) until T527 shows: the C8 ring proof with zero wall pixels in any ring, the wall not outweighing the front-row machine plates (Art Director E1; otherwise the top band drops to `steel_1`), and the SC-006 shuffled-order trial at 9 of 10 or better (Game Designer/PO). No side or back wall unless a keep-out proof allows it. The front-row-only rule and the iso-diagonal piece layout go into Art Bible §21.4 with the parent's revision. Carried as P2-F23.
+
 ### P2-F9: hub entry glyph for "Office"
 
 The positions differ.
@@ -263,6 +265,10 @@ The positions differ.
 | World Designer | Accept the contracts glyph for now (P3). Condition: the hub chip always shows the word "Office" next to the glyph (never icon alone, per the world-copy self-check), and T535 verifies the hub icon is distinguishable from the Contracts row icon. If confusion shows in the human playtest, commission a distinct icon then. |
 | UI/UX | Accept. The glyph reads as paperwork, which fits "Office"; the visible label plus the tooltip carry the meaning. Avoids a new sprite, review and palette cost. A distinct hub glyph later is a normal 0-to-1 sprite change with an owner decision per 21.2. |
 | Game Designer/PO | Accept for now, with a re-check in T535/T540. Require the text label to show at 200 % text in the compact strip (UI/UX C3). Add the first-run question "what do you expect to find under this button?" to the T535/T540 playtest. Do not draw a new icon now: spend without evidence. |
+
+**Owner decision (2026-11-13, recorded by the parent):** a NEW "Office" glyph, as the Art Director requires. The hub entry gets its own 24 px `ui_text` glyph, authored through the F003 UI-icon pipeline with an Art Director pixel review. This adds one F006-UI sprite under §21.2, so the T523 "0 sprites" count becomes 1. The visible "Office" label stays beside the glyph at every text scale. Carried as P2-F22.
+
+**Art Director pixel review of the new glyph (T554, #752, PR #753, 2026-11-13, fresh session):** APPROVED_WITH_CONDITIONS, no pixel change. `f006-ui-office` (an in-tray with a stack of cards, 24 px `ui_text`) reads as "where everything lands", is distinct from the contracts glyph (silhouette IoU 0.22) and passes every UI-icon check; the 1 px gap at row 3 resolves at 1x and improves at 2x and 3x; keep the middle card band. Conditions: the Art Bible 21.2 UI row leads with the current state (done by the parent on the batch branch) and this verdict is recorded. **U1 is closed.**
 
 Banner and dot plainness: AD, UX and PO recommend plain USS; no owner decision needed unless an ornament is requested.
 

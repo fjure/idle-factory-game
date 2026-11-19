@@ -1,6 +1,6 @@
-# F004 Art Bible v1.1.0
+# F004 Art Bible v1.1.2
 
-**Version**: `F004-PAB v1.1.0` (minor release for F006, signed off by the owner on 2026-11-11, OD-10, T518; sections 2.2a, 5, 6.4, 6.5, 8.5, 9.4a, 12 and 21; owner decisions in section 21.8). It builds on `F004-PAB v1.0.4` (patch of `F004-PAB v1.0`, approved by the owner on 2026-10-30, T426; reviewed content at commit af0ee63; v1.0.1 writes the owner decisions of 2026-11-03 on the T439 review, T467 (#640), precisions only and no style change; v1.0.2 records the owner-confirmed T456 lattice result of 2026-11-04 (section 3.5); v1.0.3 records the owner's APK cap of 150 MB of 2026-11-04 (budget 10, R-3); v1.0.4 extends DEV-2 and DEV-4 to the portrait 720 x 1280 phone at 320 dpi, owner decision of 2026-11-05 on T442 finding F1 (sections 3.2, 4.1, 4.2, 4.3, 8.4); the same v1.0.4 errata also marks the fallback-frame statements superseded after T476 (#670, FR-024 fails closed; sections 0 and 10, see the revision log); see the revision log in section 20)
+**Version**: `F004-PAB v1.1.2` (patch: owner decision 2026-11-19 on T531, section 21.12 confirmed with a worst-case renderer ceiling of 110; v1.1.1: patch of v1.1.0, owner decision 2026-11-19 on T558: sections 4.1 and 4.2, see the revision log; v1.1.0: minor release for F006, signed off by the owner on 2026-11-11, OD-10, T518; sections 2.2a, 5, 6.4, 6.5, 8.5, 9.4a, 12 and 21; owner decisions in section 21.8). It builds on `F004-PAB v1.0.4` (patch of `F004-PAB v1.0`, approved by the owner on 2026-10-30, T426; reviewed content at commit af0ee63; v1.0.1 writes the owner decisions of 2026-11-03 on the T439 review, T467 (#640), precisions only and no style change; v1.0.2 records the owner-confirmed T456 lattice result of 2026-11-04 (section 3.5); v1.0.3 records the owner's APK cap of 150 MB of 2026-11-04 (budget 10, R-3); v1.0.4 extends DEV-2 and DEV-4 to the portrait 720 x 1280 phone at 320 dpi, owner decision of 2026-11-05 on T442 finding F1 (sections 3.2, 4.1, 4.2, 4.3, 8.4); the same v1.0.4 errata also marks the fallback-frame statements superseded after T476 (#670, FR-024 fails closed; sections 0 and 10, see the revision log); see the revision log in section 20)
 
 
 > **v1.1.0 (T516, Issue #690; signed off by the owner on 2026-11-11, OD-10, recorded at T518).** `F004-PAB v1.1.0` is a minor release that adds the F006 world art families on top of v1.0.4 and removes no v1.0.4 rule. It is **not signed off**: the owner signs it at T518 (OD-10). It follows World Bible `F006-WB v0.1` (OD-9a) and the owner direction decision OD-9b (direction A, B's wall as the stage-2 candidate). The amendments are marked "v1.1.0 draft" in sections 2.2, 5, 6.4, 6.5, 8.5, 9.4 and 12; the family, allowance, sprite and stage tables are in section 21; the revision log row is in section 20. Palette unchanged: 48 ids (`palette_definition` check), no new id. Since the OD-10 sign-off (2026-11-11), v1.1.0 governs the F006 P2 art and its briefs. It also contains all v1.0.4 rules for F004 assets unchanged. Owner decisions are in section 21.8.
@@ -94,7 +94,7 @@ Budgets are those of `specs/004-visual-identity/reviews/performance-budgets.md` 
 | 1 to 3: average FPS at least 60, p95 present-interval bucket at most 19 ms, 0 intervals of 50 ms or more | L1: at most 12 extra sprite renderers (all 12 slots running). L2: at most 12 Point lights | T444, W004-V and W003-S with all 12 slots running and lit | all three met with lighting on, in a valid ABA session |
 | 4: Windows host frame ms p95 within the T122 range (0.02 to 0.04 ms) | none expected | T444 | unchanged |
 | 5: 0 steady-state GC allocations per frame | accent frame index comes from the shared clock, lights are static: 0 allocations | T431 (`PresentationAllocationTests`), T442 (600-frame W004-V player run) | 0 samples with accents on and, if L2 is adopted, with lights on |
-| 6 and 7: world-art texture at most 8 MB, atlas pages at most 1024 x 1024 | accents: 4 machines x 6 frames x 80 x 64 x 4 B = 491,520 B (0.47 MB, derived, before padding) | T444 build report | the whole world set within 8 MB; accents are about 6 % of the budget |
+| 6 and 7: world-art texture at most 8 MB, atlas pages at most 512 x 512 RGBA32 (1 MiB; amended after T552, 21.9 item 8) | accents: 4 machines x 6 frames x 80 x 64 x 4 B = 491,520 B (0.47 MB, derived, before padding) | T444 build report | the whole world set within 8 MB; accents are about 6 % of the budget |
 | 8: SetPass per world-camera render on W004-V at most 0.86 (B2 0.78 + 10 %) | L1: same material and atlas family as the body, so no added state change is expected. L2: adds a light pass | T444 (graphical Editor probe, same method as the B2 addendum) | at most 0.86 with lighting on |
 | 9: guest CPU regression at most max(10 %, 2 points) | none expected | T444 | within |
 | 10: APK file size at most 150 MB (owner decision 2026-11-04, replaces "+10 MB against the paired B1") | B2 is 46.3 MB; T440 added +0.09 MB of entries for seven families | T444 (clean build) | within; no longer the tightest budget (risk R-3, section 19) |
@@ -113,7 +113,7 @@ The F006 world layers sit beside the F004 slot sprites and replace the F004 floo
 | World sprite renderers | at most 1 per branch pip + 8 FX + props at most 0.5 per eligible cell + 1 depot + 1 deposit | 12 + 8 + 9 + 1 + 1 = 31 (eligible cells = 30 cells - 12 occupied = 18, props at most 9) |
 | Renderers in the world camera | F004 cap 61 (section 2.2) + 31 + 3 | at most 95, below the 173 single-pass tier of the owner's budget 8 restatement (`wiki/pages/f004-batch-12-final-verification.md`) |
 | SetPass | +1 for the world atlas, net of the removed floor atlas; +1 for the FX atlas while active | budget 8 limit 0.86 on W004-V is re-measured; the Tilemap uses the slot sprite material |
-| Texture | from the section 21.4 table with padding and page rounding | planned 1.25 MiB, worst case 2.50 MiB; each atlas at most one 1024 x 1024 page |
+| Texture | from the section 21.4 table with padding and page rounding | planned 1.25 MiB, worst case 2.50 MiB; every atlas page at most 512 x 512 (1 MiB), a fallback adds a page instead of enlarging one |
 
 The L1 accent budget (at most 12 accent renderers) is unchanged; the FX pool of 8 is separate (3 active + 5 draining tails, R12).
 
@@ -211,12 +211,16 @@ Only whole-number device-pixel scales `n` are allowed, including fit-all; unused
 | Tablet landscape 2048 x 1536, 264 dpi | 1.867 | 2 | 5 | 5 | 4 | 10.9 % |
 | Desktop 1280 x 720 / 1920 x 1080 / 2560 x 1440 | 1 / 1.5 / 2 | 1 / 2 / 2 | 3 / 5 / 6 | 6 / 5 / 5 | 3 / 4 / 5 | 21.2 / 12.4 / 21.2 % |
 
+**v1.1.1 (T558, #771; owner decision 2026-11-19).** The `n_fit` column is the largest whole-number scale at which the 12 slots plus the half-cell margin fit. The shipped fit-all (`CameraScaleModel.ExtentFor`) is the largest whole-number scale n with n ≥ max(1, `n_min`) at which the content plus the depot column (depot sprite, collector and the store-full and shortage marker boxes, not the vein) fits the HUD-aware rectangle; when the content, depot column and vein fit at the content scale, that extent is used; when the depot column cannot fit at n ≥ `n_min`, the content-only extent applies and the depot is reached by panning (AR-4). The table's `n_fit` values are therefore upper bounds: fit-all may sit one scale lower. Measured in the shell rigs (T558): phone portrait 1080 x 2400 fit-all 3 (was 4; equals `n_min`, so "levels at or below fit-all" is **1, fit-all only**, AR-3), tablet landscape 2048 x 1536 fit-all 3 (was 4; zoom-out to 2 remains), desktop 1920 x 1080 fit-all 3. The `SlotGridTests` fit-all rows 664 x 720, 920 x 672 and 1560 x 1032 are re-baselined to the depot-column scale (`reviews/test-rebaseline.md`, T558). The cue-icon rule of section 4.3 holds at `n_min` (23 px at n = 3 on 2.631 px/pt is 26.2 pt).
+
 ### 4.2 Standing accepted risks (S2 Art Director condition 1)
 
 | ID | Risk | Owner of the proof | Status |
 |---|---|---|---|
 | AR-1 | **Fit-all only, no zoom-out** on the phone 720 x 1280 (320 dpi, with the tolerance, v1.0.4), the phone 1280 x 720 (320 dpi, with the tolerance) and the portrait tablet 1536 x 2048. Zoom there goes only in, toward `maxScale`. No zoom-out mechanism is added. | T427 owns the `n_min` tolerance and its HUD-aware Play Mode proof; T442 is the gate that confirms it | accepted; T427 depends on T426 so the proof cannot precede the freeze (owner decision T420) |
 | AR-2 | 1280 x 720 phone and (v1.0.4, T442 F1) portrait 720 x 1280 phone: `n_fit` 2 is below `n_min` 3 without the tolerance (measured portrait `n_fit` 2, T442 section 7a) | T427 (tolerance, negative case with an oversized HUD) | accepted by owner decision 2026-10-28 |
+| AR-3 (v1.1.1) | **Fit-all only, no zoom-out** on the phone portrait 1080 x 2400 (420 dpi): framing the depot column puts fit-all at `n_min` 3. Machines are about 25 % smaller than at the content-only fit (a cell is about 27 pt); zoom goes only in. | T558 (framing), final T543 gate (machine tap area on device) | accepted by owner decision 2026-11-19 |
+| AR-4 (v1.1.1) | **Depot reached by panning** where its column cannot fit at `n_min`: tablet portrait 1536 x 2048 and 200 % text on 360 x 640, 390 x 844 and 640 x 360. The content stays fully in view (OD-9b C1); store-full and shortage states remain visible on the slot badges and the strip chip. | T558; revisit in T542 if the final gate finds it confusing | accepted by owner decision 2026-11-19 |
 
 ### 4.3 The remaining 24 pt gaps at 23 art px (carry-in 2)
 
@@ -302,7 +306,7 @@ None. Alpha is 0 or 255 (`check_alpha`); quantisation to the palette uses CIELAB
 | Cue icon | at least 12 x 12 art px (`check_cue_icon_size`); shipped size 23 x 23 | contract; measured (23 x 23 opaque) |
 | Sprite layers per slot | at most 5 drawn, plus 1 selection frame on one slot; at most 61 per 12-slot factory | derived (section 2.2) |
 | Text in art | locked-plate digits `2` to `5` and tier numerals only; authored 3 x 5 bitmap font | section 8.5 |
-| Atlas | one Sprite Atlas v2 per family, RGBA32, point filter, no mipmaps, padding 2, no rotation, pages at most 1024 x 1024 | research R10, budget 7 |
+| Atlas | one Sprite Atlas v2 per family, RGBA32, point filter, no mipmaps, padding 2, no rotation, pages at most 512 x 512 (1 MiB RGBA32); an atlas may use more than one page (T552) | research R10, budget 7 |
 
 **Amendment (v1.1.0, signed off at OD-10), F006 caps** (`rule`; the measuring tasks are in P2):
 
@@ -312,7 +316,7 @@ None. Alpha is 0 or 255 (`check_alpha`); quantisation to the palette uses CIELAB
 | FX per location | one 250 ms coalescing window; offline arrivals produce no effect (research R12, G-5) |
 | Per-family pace cap | `ActivityPace` of 6, 8 or 10 fps is capped per machine family by its measured flash rate; the Assembler stays at 8 fps or below |
 | Prop height | at most 24 art px (research R06); the concept `prop-crate` (36) and `prop-lamp` (44) are re-drawn to 24 or less |
-| Atlas | the F006 world and FX atlases follow the Atlas row above and the page plan of section 21.4: each at most one 1024 x 1024 page |
+| Atlas | the F006 world and FX atlases follow the Atlas row above and the page plan of section 21.4: each one page of at most 512 x 512 as planned |
 | Colours per sprite | within the family allowance of section 21.2 and at most 12 including `ink_0` |
 
 ## 7. Machine silhouettes
@@ -671,6 +675,8 @@ Conditions of the T425 review that belong to other tasks (referenced, not resolv
 | 1.0.4 | T442 (#560) | patch, 2026-11-05, owner decision on T442 (#560) finding F1 (`reviews/final-test-evidence.md`) and Art Director A-01 (`reviews/final-acceptance.md`): DEV-2 and DEV-4 extend to the portrait 720 x 1280 phone at 320 dpi (`n_min` 2 with the 1 % tolerance, `n_fit` 2, 22.95 pt cue, 14.97 pt digit), accepted deviation; 4.1 portrait row re-stated from the measured values (levels 5 = 2..6 with the tolerance, 4 without, the 1280 x 720 row aligned the same way; margin 32.7 %, real shell, share of the rect not covered by the extent), AR-1 and AR-2 extended, 4.3 table and DEV-2/DEV-4 text, marker and digit figures in 3.2 and 8.4; blind naming at n = 2 on both 320 dpi phones passed (T445 (#563) SC-001 22/22); tablet landscape `n_fit` recorded as measured 4 (precision). Errata (2026-11-05, T447 option D, owner decision on T476 #670): the F003 placeholders were deleted and FR-024 now fails closed, so the statements in section 0 (S2 row) and section 10 (Fallback frames) that F003 placeholders are fallback frames or exempt are superseded; no style change. The 24 pt rule, the 23 px icon set, the tolerance, palette and style do not change. |
 | 1.1.0 draft | T516 (#690) | **draft pending OD-10**, 2026-11-11: minor release proposal for F006 (specs/006-world-first-factory-experience). Amendments to sections 2.2 (2.2a numeric world-layer budget), 5 (background statement superseded, family allowance table), 6.4 (FX sprites on the shared clock), 6.5 (F006 caps), 8.5 (padlock and digit stay on the hatch), 9.4 (9.4a re-run on the new backdrop) and 12 (F006 routes); new section 21 (direction, allowances, sprite and texture table, keep-out proofs, cost per stage). Cites `F006-WB v0.1` and OD-9 (OD-9a, OD-9b). Palette unchanged at 48 ids; no new id. Not signed off. |
 | 1.1.0 | T518 (parent) | **signed off by the owner on 2026-11-11 (OD-10)**, together with OD-12. The draft is adopted as written, with the recommended choices: steel depot slab (A3), `copper_2` lamp head with a `steel_3` cap, `copper_2` pips with an `ink_0` ring, strict ring set R, and the wall as a stage-2 candidate. Flash wording clarified. The trunk is recoloured where it passes the badge band (T517 finding). The A-03 anchor is K4: (59, 33) plus a 4 px pointer tail (OD-12). Section 21.8 is new. No palette change (48 ids). |
+| 1.1.2 | T531 (#704) | patch, owner decision 2026-11-19 on the T531 B4a census: section 21.12 confirmed, worst-case ceiling 110 renderers (enabled sprite renderers + 3 Tilemaps at 12 locations; measured 99/101), 95 kept as the typical-case figure; FX-atlas SetPass note. No palette, style or asset change. |
+| 1.1.1 | T558 (#771) | patch, owner decision 2026-11-19 on the T558 review: section 4.1 fit-all includes the depot column (`n_fit` becomes an upper bound for fit-all) and section 4.2 adds AR-3 (fit-all only on the phone portrait 1080 x 2400) and AR-4 (depot pannable where its column cannot fit at `n_min`); no number, palette, threshold or style change |
 
 ## 21. F006 world art (v1.1.0, signed off at OD-10)
 
@@ -706,7 +712,7 @@ Notation: ids are `f004-palette` 1.0.0 ids. **Ring-safe set R** = the C1 set `A_
 | PROP | in R-only cells inside the Extent, or on the margin ring | margin: `ink_0`, `ink_1`, `steel_0`, `steel_1`, `steel_2`, `steel_3`, `copper_0`, `copper_1`, `copper_2`, `dim_0`, `dim_1`; inside the Extent: R only | at most 24 art px tall (R06). **No `teal_*`, no `lit_*`.** Crate `steel_*` and `copper_*`; lamp post `steel_*` with a `copper_2` head. A prop may sit in a cell only if the C8 proof passes with it drawn |
 | DEPOSIT | margin cell, outside every hit shape and keep-out | `ink_0`, `res_ore_0`, `res_ore_1`, `res_coal`, `floor_1` (patch), `steel_3` (1 px highlight rim) | the `res_*` uses are allowed by id (R17). Scenery only (World Bible section 6) |
 | FX (`fx-*`) | `Effects` layer, over bodies and foundations | pop: `steel_3`, `steel_2`, `ink_0`; pip: `copper_2`, `ink_0`; spark: `copper_2`, `copper_1`, `steel_3`, `ink_0`; steam: `steel_3`, `steel_2`, `ink_0`; build dust: `floor_1`, `steel_1`, `steel_2`, `ink_0`; glint: `steel_3`, `copper_2`, `ink_0`; vein chip: `res_ore_1`, `res_ore_0`, `steel_3`, `ink_0` | **no `lit_*` in any FX**. The concept pop and pip accents used `lit_*`; production recolours them, so the flash check re-runs on the recoloured composites |
-| UI (optional) | only if UI Toolkit cannot express it | `ui` group + `ink_0` | planned count **1 sprite** (`f006-ui-office`, owner decision 2026-11-13 on P2-F9 -> P2-F22, T554 #752; was 0). **T523 (#696) decision, superseded for element (1) only, 2026-11-12: not needed for all three elements; 0 sprites, no `art-source/f006/ui/` output.** (1) Hub entry icon, label "Office" (OD-9b H-02): **not needed**. The entry reuses the existing catalog glyph `F003-UI-ICON-TAB-CONTRACTS` through the existing `PanelIcons`/background-image path (24 art px `ui_text` glyph tinted by tokens, section 11), with the visible text label "Office" and the `.tooltip` accessible name; the 48 dp target (C4) is a USS `min-width`/`min-height` on the button, not art. **The owner rejected the contracts clipboard as the Office metaphor on 2026-11-13 (Art Director U1, Major): the hub entry gets the new glyph `f006-ui-office`, a 24 art px `ui_text` desk in-tray holding a stack of cards, authored through the F003 UI-icon pipeline (`art-source/f006/ui/`) and pending an Art Director pixel review; the Unity import and the `HubPanel` swap follow in T535/T536.** Elements (2) and (3) stay "not needed". (2) Attention indicator (hub dot, strip indicator): **not needed**. A dot is a USS `border-radius: 50%` box with `background-color` and `border` in the F003 tokens (`--warning`/`--accent`) plus a text or shape cue; it is static, so the reduced-motion form (C5) is the same element; no `lit_*`, no new id. (3) Milestone banner frame: **not needed**. A rectangular banner is a USS box (`background-color: --surface-raised`, `border-width`, `border-radius`, `--border`); it needs no 9-slice or ornament, and the 15 %/20 % header chrome limit (C6) favours plain borders. Re-open only with an owner decision if the Art Director review of the F006 banner asks for an ornament. |
+| UI (optional) | only if UI Toolkit cannot express it | `ui` group + `ink_0` | **Current: 1 sprite**, the hub entry glyph `f006-ui-office` (owner decision 2026-11-13 on P2-F9 -> P2-F22; T554 #752, Art Director pixel review APPROVED_WITH_CONDITIONS 2026-11-13, no pixel change). The attention dot and the banner stay plain USS (0 sprites). *History, superseded for element (1) only:* the T523 (#696) decision of 2026-11-12 was "not needed for all three elements; 0 sprites, no `art-source/f006/ui/` output". (1) Hub entry icon, label "Office" (OD-9b H-02), *as decided at T523*: not needed. The entry reuses the existing catalog glyph `F003-UI-ICON-TAB-CONTRACTS` through the existing `PanelIcons`/background-image path (24 art px `ui_text` glyph tinted by tokens, section 11), with the visible text label "Office" and the `.tooltip` accessible name; the 48 dp target (C4) is a USS `min-width`/`min-height` on the button, not art. **The owner rejected the contracts clipboard as the Office metaphor on 2026-11-13 (Art Director U1, Major): the hub entry gets the new glyph `f006-ui-office`, a 24 art px `ui_text` desk in-tray holding a stack of cards, authored through the F003 UI-icon pipeline (`art-source/f006/ui/`) and pending an Art Director pixel review; the Unity import and the `HubPanel` swap follow in T535/T536.** Elements (2) and (3) stay "not needed". (2) Attention indicator (hub dot, strip indicator): **not needed**. A dot is a USS `border-radius: 50%` box with `background-color` and `border` in the F003 tokens (`--warning`/`--accent`) plus a text or shape cue; it is static, so the reduced-motion form (C5) is the same element; no `lit_*`, no new id. (3) Milestone banner frame: **not needed**. A rectangular banner is a USS box (`background-color: --surface-raised`, `border-width`, `border-radius`, `--border`); it needs no 9-slice or ornament, and the 15 %/20 % header chrome limit (C6) favours plain borders. Re-open only with an owner decision if the Art Director review of the F006 banner asks for an ornament. |
 
 ### 21.3 World-layer budget
 
@@ -730,9 +736,9 @@ Packing rule: every frame is counted at (w + 4) x (h + 4) art px, that is 2 px o
 | EDGE | `f006-edge-railing-corner` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1 Open deck |
 | EDGE | `f006-edge-railing-quiet-fl` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1, low-noise variant near badges and depot (F6, A4) |
 | EDGE | `f006-edge-railing-quiet-fr` | 70 x 66 | 1 | 4,620 | 5,180 | stage 1, low-noise variant near badges and depot (F6, A4) |
-| EDGE | `f006-edge-wall-fl` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, candidate pending C8 ring proof |
-| EDGE | `f006-edge-wall-fr` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, candidate pending C8 ring proof |
-| EDGE | `f006-edge-wall-corner` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, candidate pending C8 ring proof |
+| EDGE | `f006-edge-wall-fl` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, C8 ring and keep-out proof passed (T527, 21.10); provisional until SC-006 |
+| EDGE | `f006-edge-wall-fr` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, C8 ring and keep-out proof passed (T527, 21.10); provisional until SC-006 |
+| EDGE | `f006-edge-wall-corner` | 70 x 78 | 1 | 5,460 | 6,068 | stage 2 Walled yard, outer margin only, C8 ring and keep-out proof passed (T527, 21.10); provisional until SC-006 |
 | EDGE | `f006-edge-gantry-fl` | 70 x 84 | 1 | 5,880 | 6,512 | stage 3 Gantry line, new art |
 | EDGE | `f006-edge-gantry-fr` | 70 x 84 | 1 | 5,880 | 6,512 | stage 3 Gantry line, new art |
 | EDGE | `f006-edge-gantry-corner` | 70 x 84 | 1 | 5,880 | 6,512 | stage 3 Gantry line, new art |
@@ -774,7 +780,7 @@ By family:
 | PROP | 4 | 2,016 | 2,808 |
 | DEPOSIT | 4 | 6,528 | 7,904 |
 
-**FX atlas** (animated effects, one shared clock): 42 frames.
+**FX atlas** (animated effects, one shared clock): 43 frames (42 planned at OD-10, plus the completion highlight added after T525, 21.9).
 
 | Family | Sprite id | Canvas (art px) | Frames | Opaque-canvas px | Padded px (w+4)(h+4) | Role |
 |---|---|---|---|---|---|---|
@@ -785,7 +791,8 @@ By family:
 | FX | `f006-fx-build-dust` | 48 x 28 | 6 | 8,064 | 9,984 | one-shot at the foundation |
 | FX | `f006-fx-upgrade-glint` | 24 x 24 | 6 | 3,456 | 4,704 | one-shot on the body |
 | FX | `f006-fx-vein-chip` | 48 x 34 | 6 | 9,792 | 11,856 | manual-mining loop on the deposit (R23) |
-| **Total** | | | 42 | 43,368 | 54,264 | |
+| FX | `f006-fx-completion-highlight` | 68 x 36 | 1 | 2,448 | 2,880 | static reduced-motion form of the completion pop (1 s), not machine-anchored, no flash |
+| **Total** | | | 43 | 45,816 | 57,144 | |
 
 **UI sprite (not in an atlas): 1 frame.** The F006-UI count is 1 (owner decision 2026-11-13). The glyph is a single 24 x 24 `ui_text` icon in the F003 UI-icon route (one colour, tinted by tokens, display multiples 1 to 3, no outline, no @2x), imported like the other F003 icons and not packed into the world or FX atlas, so the page arithmetic below is unchanged.
 
@@ -797,13 +804,13 @@ By family:
 
 | Atlas | Padded px | Planned page | Page px | Fill | Page bytes (RGBA32) | Fallback page if the packer fails | Fallback bytes |
 |---|---|---|---|---|---|---|---|
-| World | 190,956 | 512 x 512 | 262,144 | 72.8 % | 1,048,576 (1.00 MiB) | 1024 x 512 | 2,097,152 (2.00 MiB) |
-| FX | 54,264 | 256 x 256 | 65,536 | 82.8 % | 262,144 (0.25 MiB) | 512 x 256 | 524,288 (0.50 MiB) |
+| World | 190,956 | 512 x 512 | 262,144 | 72.8 % | 1,048,576 (1.00 MiB) | a second 512 x 512 page | 2,097,152 (2.00 MiB, two pages) |
+| FX | 57,144 | 256 x 256 | 65,536 | 87.2 % | 262,144 (0.25 MiB) | 512 x 256 | 524,288 (0.50 MiB) |
 
-- Each atlas has **one page of at most 1024 x 1024** (budget 7); the fallback pages are also within it.
+- Each atlas page is **at most 512 x 512, 1 MiB RGBA32** (budget 7 as amended after T552). The F006 atlases are planned as one page each; the world fallback is a second page, not a larger one.
 - Planned total 1,310,720 B (1.25 MiB); worst case with both fallbacks 2,621,440 B (2.50 MiB, 2.62 MB).
 - Budget 6 (world-art texture at most 8 MB): the F004 measured total is 3.05 MB (`wiki/pages/f004-batch-12-final-verification.md`) **including the floor atlas that F006 removes**, so the F004 + F006 worst case is at most 3.05 + 2.62 = 5.67 MB, margin at least 2.33 MB. The build-report measurement confirms it (a P2 gate, not made here).
-- The planned pages leave 27.2 % (world) and 17.2 % (FX) free; a packer that misses the planned page uses the fallback, which is within budget, so the planned page is not a pass criterion.
+- The planned pages leave 27.2 % (world) and 12.8 % (FX) free; a packer that misses the planned page uses the fallback, which is within budget, so the planned page is not a pass criterion.
 
 ### 21.5 Keep-out proofs (Art Director conditions 2, 3 and 6)
 
@@ -823,13 +830,13 @@ By family:
 | 3 Gantry line | 8 | gantry 3 (**a separate art pass**, new art), depot 4, deposit dressing 1 |
 | Total | 40 | equals the world atlas total of 21.4 |
 
-FX (42 frames) are shared by all stages. Stage 2 and stage 3 art must exist before the progression is accepted (World Designer condition).
+FX (43 frames) are shared by all stages. Stage 2 and stage 3 art must exist before the progression is accepted (World Designer condition).
 
 ### 21.7 Depot visibility and motion rules
 
 - **Depot.** Visible at 640 x 360 and at 200 % text: the hopper opening and the `copper_*` collar show the delivery, and the lamp tip is **inside the sprite canvas with at least 2 art px of headroom** so partial-depot views (phone portrait at 75 %, 640 x 360) do not crop it. Trunks end at the depot (World Designer condition): `link-junction` meets the depot cell and no link joins two machines. Evidence: the direction-sheet classes at those two views.
 - **Vein.** Scenery only; it is drawn legibly on every class where the camera frames it, and a class where it is out of view is **recorded** as out of view (World Designer condition), not hidden by art.
-- **Flash.** The flash rule of 6.4 holds: at most 3 flashes per second, and the F006 composite requirement is at most 2 per second for body + accent + FX (the Assembler is already at 3, R12). Static lamps never flicker.
+- **Flash.** The flash rule of 6.4 holds: at most 3 flashes per second, and the F006 composite requirement is at most 2 per second for body + accent + FX. The F004 spike Assembler measured 3 flashes/s; the production Assembler measures 0 alone and 2 with the completion pop (T522 `check_flash`). Pace caps per family: Miner, Smelter and Press 10 fps; Assembler 8 fps, kept as conservative headroom. The reduced-motion form of the completion pop is `f006-fx-completion-highlight`, a static 1 s highlight. Static lamps never flicker.
 - **Railing noise (UI/UX F6, Art Director A4).** The quiet railing variants are used near badges and the depot; the post pattern does not grow in stage 2 or 3.
 - **Reduced motion (C5).** A static fallback exists for every animation. No FX plays. Machine loops show frame 0. The branch pip is replaced by `link-branch-active`. The completion pop is replaced by the R12 static 1 s highlight on the card or the depot (manifest `stillFrame` 3 of the pop stays as the evidence-sheet still). The vein chip loop shows `deposit-highlight`. Build dust, upgrade glint, spark and steam show nothing. The zero-flash gate holds in every case.
 
@@ -846,7 +853,72 @@ Decided by the owner on 2026-11-11 and recorded by the parent at T518. Inputs: t
    - pips are `copper_2` with an `ink_0` ring and are ring-safe;
    - the C8 ring rule stays strict: no `steel_*` in any ring (set R, OD-9b Art Director condition 2);
    - the wall stays a stage-2 candidate. No wall tile is drawn on an edge that fails the keep-out proof.
-2. **Flash wording (clarifies 21.7).** At most 3 flashes per second overall. F006 FX add at most 2 per second on top of a machine loop. The Assembler loop, already at 3 (R12), keeps its ≤8 fps cap, and no FX may push a composite above 3.
+2. **Flash wording (clarifies 21.7).** At most 3 flashes per second overall. F006 FX add at most 2 per second on top of a machine loop. The Assembler (3 flashes/s in the F004 spike, 0 alone and 2 with the completion pop in production) keeps its ≤8 fps cap, and no FX may push a composite above 3.
 3. **Trunk under the badge band (T517 finding).** The `steel_1` trunk lane of the concept lies inside the C8 ring for every anchor (62 to 120 ring px). Owner decision: **recolour the trunk**. The strict ring rule stands. Where the trunk passes the badge band (art y 16..39 of the row), P2 LINK art (`link-trunk`, `link-junction`) uses only set R tones. The 21.2 LINK row, with lane body `dim_0`, already complies. The C8 re-run of 9.4a proves it for every class.
 4. **OD-12: A-03 badge anchor K4.** The badge keeps its overlay anchor at bottom-centre (59, 33) (cue geometry table in section 3.2) and gains a **4 art px pointer tail** toward its own machine, drawn in `ink_0` and the badge fill, palette-exact. Measured by T517: no regression on any overlap, row-band or ring measure; attribution ratio 1.14, a directional cue; legibility unchanged (23 px at n_min, DEV-2 unchanged). The tail also serves UI/UX C2, linking the card to its machine on landscape and tablet. The T517 tail is a mock. The badge is an F004 cue sprite (b23), so the production tail goes through the cue-sprite pipeline with a brief and an Art Director pixel review in P2. The parent assigns it with the P2 art briefs.
 5. **Notes from QA, no rule change.** Research R12 says lamps "use steel or teal tones"; this Bible governs: `copper_2` head, `steel_3` cap, no `teal_*`. In the 6.5 Atlas row, "one Sprite Atlas v2 per family" means per F006 atlas (world and FX).
+### 21.9 Corrections and owner decisions after T525 (2026-11-13)
+
+Recorded by the F006 MAQA parent from the independent T525 review (`specs/006-world-first-factory-experience/reviews/art-direction-f006.md`) and the owner decisions of 2026-11-13. No style change; corrections, one added FX sprite and two owner decisions.
+
+1. **P2-F2.** `f006-fx-completion-highlight` (68 x 36, 1 frame) is added to the 21.4 FX table and named in 21.7. FX atlas: 43 frames, padded 57,144 px, 87.2 % of the 256 x 256 page; the planned and worst-case byte totals are unchanged. Confirmed in the engine by T526 (`F006AssetContractTests`).
+2. **P2-F3.** The Assembler wording in 21.7 and 21.8 item 2 now cites the measurements: 3 flashes/s in the F004 spike, 0 alone and 2 with the completion pop in production. Caps: Miner, Smelter, Press 10 fps; Assembler 8 fps.
+3. **P2-F4.** Lamps are static, with a `copper_2` head and a `steel_3` cap; no `teal_*`, no `lit_*` (21.2, 21.8 item 5). Research R12's "steel or teal tones" is superseded.
+4. **P2-F1.** GROUND has 3 frames. All edge, corner and quiet art belongs to EDGE (T521); no ground edge, corner or T tiles are owed.
+5. **P2-F7 / P2-F23, owner decision (accept, conditional).** EDGE pieces are placed on the **front margin row only**: `-fl` on the front-left diagonal, `-fr` on the front-right diagonal and `-corner` at the front apex, for every stage. The deck top is `floor_0`, the same as the field, and a seam every 35 px is accepted. The front-only stage-2 wall is the "Walled yard" candidate and stays provisional until T527 proves zero wall pixels in any C8 ring, the wall not outweighing the front-row machine plates (otherwise its top band drops to `steel_1`), and the SC-006 shuffled-order trial at 9 of 10 or better. No side or back wall unless a keep-out proof allows it.
+6. **P2-F9 / P2-F22, owner decision.** The "Office" hub entry gets a NEW 24 px `ui_text` glyph authored through the F003 UI-icon pipeline with an Art Director pixel review. F006-UI changes from 0 to 1 sprite (21.2); the attention dot and the banner stay plain USS. Until the glyph exists, the hub shows the visible word "Office" with the contracts glyph as a temporary fallback.
+7. **P2-F5.** The production K4 tail is in the shipped F004 cue sprites (T526), and `FactoryWorldLayout.KeepOutOf` uses the 23 x 27 badge extent. A full F004 re-import from `art-source/f004` would revert the tails; `F004AssetContractTests` guards this.
+8. **Page cap (T552, #750, PR #754).** An Android GLES3 player stuck on load (`Loading.AsyncRead` at 100 %) whenever a 2 MiB atlas page (the F004 `machines` atlas, 512 x 1024 RGBA32, since T440) was referenced; pages of 1 MiB or less load in about 3 s. The cause inside Unity or the emulator is not identified, so the rule is empirical: every atlas page is at most 512 x 512 RGBA32 (1 MiB), enforced by `F004SpriteAtlasSettings.MaxPageSize`/`MaxPageBytes` and `AtlasPageBudgetTests`. The F004 `machines` atlas now has two pages (1.0 + 0.25 MiB); total bytes fell. Budget 8 (SetPass) must be re-measured, because body and accent frames may sit on different pages (T531, T544).
+
+### 21.10 EDGE placement as built (T527, 2026-11-17)
+
+Recorded by the F006 MAQA parent from the T527 (#700, PR #762) Art Director review, which amended the worker's proposal. No style change.
+
+1. **Placement.** EDGE pieces are placed on the front margin row only, as a V below the content extent: `-fl` and `-fr` step one half cell apart (35 x 17 art px, 2:1), one piece per lattice column each side, from the lattice edge columns to the front apex, with `-corner` at the apex. The upper ends sit at the front margin row pivot or lower so that the opaque pixels clear the content extent and the depot by at least 6 art px (`EdgeClearancePixels`; measured 22 px railing and wall, 9 px gantry). WorldBase carries extra front rows so the V never floats over bare background. Quiet railing variants are used within one lattice cell of the depot. No back, left or right pieces unless a keep-out proof allows them (21.9 item 5). Proofs: `specs/006-world-first-factory-experience/reviews/t527-composite-proofs.md`.
+2. **Wall status.** T527 proved zero wall pixels in any C8 ring or keep-out, and the E1 reading (wall luminance mass 0.58 to 0.59 of the front-row plate-plus-machine mass, under 0.75) passes, so the `steel_1` top-band fallback is not applied. The stage-2 wall stays provisional (P1-F5) until the SC-006 shuffled-order trial reaches 9 of 10 (T546). If that trial or a playtest names the wall as visually heavy, the fallback is a source-art change in a new art task.
+3. **Budget note.** Edge pieces are sprite renderers, `2 x columns + 1` per layout (7 to 11), and are not in the 2.2a / 21.3 sum of 31 world sprites. T531 records the census; the budget line is amended then, or T528 moves the edges into the third Tilemap slot.
+
+
+### 21.11 Cue contrast over the LINK lane (T556, #763, 2026-11-17)
+
+Recorded by the F006 MAQA parent from the T556 Art Director review. No style change and no recolour.
+
+1. **Rule.** Rule C1 (derivation in section 9.4) and section 9.3 are applied to every LINK lane tone (`dim_0`, `ink_1`, `ink_0`, `copper_1`, `copper_2`). A cue fill (`cue_warn`, `cue_alert`, `cue_info`, `cue_neutral`, `cue_dim`, `cue_ok`, `cvd_green`, `cvd_pink`) passes over a tone when the fill OR its 1 px `ink_0` outline reaches 3:1 (`art_pipeline.color.contrast_ratio`, `cue_over_lane_contrast`, `art-source/f006/link/check-report.json`). The fill need not carry by itself: shape is the primary carrier and colour is supplemental (section 8.2), and CVD does not change a luminance ratio.
+2. **Result.** The fill carries over `dim_0`, `ink_1` and `ink_0` (3.52:1 for `cue_alert` over `dim_0`, up to 13.62:1). The outline carries over `copper_1` (3.47:1) and `copper_2` (6.57:1), where every fill is under 3:1 except `cue_neutral` over `copper_1` (3.93:1); the worst fill is `cue_alert` over `copper_1` at 1.49:1. No pair is without a carrier.
+3. **Decision: accepted with an area limit, not recoloured.** The outline-only case is accepted because it covers about 1 px per badge in the ring. Recolouring would change F004 sprites and palette use. Limits, per badge on the densest frame of every layout (K0 and K4):
+   - `copper_1`: at most 12 px under any badge mask (measured 11, outline pixels included) and at most 2 px in the 1 px ring (measured 1). The ring is the visible measure; the mask count guards against a badge landing on a dash run.
+   - `copper_2` (active dashes): 0 px under any badge mask and 0 in the ring.
+   - Any outline-only lane tone not listed here fails the gate.
+4. **Maintenance.** The gate reports the average per badge. A change to a cue, lane, badge anchor or palette that breaks a limit, or that adds an outline-only tone, is re-decided in this section. A per-badge maximum is a later-task upgrade.
+
+### 21.12 World-layer census and depot fill after T528 (#702, 2026-11-18) — confirmed by the owner 2026-11-19 (v1.1.2, T531)
+
+Recorded by the F006 MAQA parent from the T528 Art Director, Technical Artist and Performance review. It corrects the renderer arithmetic that OD-10 signed off in 2.2a and 21.3. The owner confirmed it on 2026-11-19 after the T531 B4a census (#704, PR #779, `specs/006-world-first-factory-experience/reviews/performance-b4.md`): this section supersedes the 2.2a renderer sum. **Worst-case ceiling: 110 renderers in the world camera**, counted as enabled sprite renderers plus the 3 Tilemaps at 12 locations. T531 measured 74 to 82 in typical states and 99 (3 columns) or 101 (4 columns) in the composed worst case (every slot at its overlay cap, 12 pips, 3 FX, 5 draining tails). The signed 95 stays the typical-case figure. The owner chose 110 over the recommended 105 for margin; both are far below the 173 single-pass tier.
+
+1. **Census at 12 locations.** The 2.2a sum omitted the vein chip renderer and the edge pieces.
+   - **World sprite renderers:** at most 41 (39 at 3 columns). They are:
+     - 1 branch pip per location, 12 in total, each enabled only while its machine is Running;
+     - 8 FX;
+     - props, at most 0.5 per eligible cell, so at most 9;
+     - 1 depot;
+     - 2 deposit renderers (the rest sprite and the vein chip);
+     - edge pieces, 2 × columns + 1, which is 7 or 9.
+   - **Renderers in the world camera:** F004 cap 61 + 41 + 3 Tilemaps, at most 105 (103 at 3 columns). This is below the 173 single-pass tier.
+   - **Visible tiles:**
+     - base and deck stay within (columns + 2m) × (rows + 2m) × 2;
+     - link tiles add at most rows × (columns + 1);
+     - that gives at most 76 at 12 locations and 108 at 20 locations in 5 × 4, across 3 Tilemaps;
+     - asserted by `TheVisibleTileCountIncludingTheLinkTilesStaysInsideTheBudgetPlusOneTrunkRunPerRow`.
+2. **Edges and links.** Edge pieces stay sprite renderers (2 × columns + 1, 7 to 11). The third Tilemap carries only link tiles. This supersedes the deferral in 21.10 item 3.
+3. **Draw order.**
+   - Link Tilemap on WorldLinks order 0, deposit rest on order 20, depot on order 100.
+   - Branch pips on Overlay order 100 + location, below every cue (150). The Overdrive marker sits on the branch spine, so a pip passes under it.
+   - Vein chip on Effects order -80.
+4. **Depot fill.** The four depot sprites map as follows, each × stage S1 to S3:
+   - EMPTY at fill 0;
+   - LOW below 50 %;
+   - HIGH from 50 % up to, but excluding, capacity;
+   - FULL only when the store is at capacity or a machine is StorageFull-blocked.
+
+   This supersedes `min(3, floor(4·fill/capacity))` for the depot sprite.
+5. **Re-measured at T531:** Budget 8 (SetPass) and the tile and renderer census. Overlay now holds pips (FX atlas) between cue draws, which may add one SetPass. T531 result: the FX-atlas delta is +0.6 to +3.1 passes, inside the ±1.5 run-to-run noise, so the extra pass is neither shown nor excluded (C-33 closed on that basis). Budget 8 is restated on the player method by the owner on 2026-11-19 (`specs/004-visual-identity/reviews/performance-b3.md` section 12).
