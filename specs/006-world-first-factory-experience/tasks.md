@@ -496,7 +496,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: `scripts/test-art-pipeline.ps1` exits 0 and `scripts/test-unity.ps1` passes.
   - **Resources**: unity.
   - **Covers**: FR-004, FR-044, SC-008; research R06, R17.
-- [ ] T527 [US2] Gameplay Developer (Technical Artist and Performance lenses), after T512 and T526.
+- [X] T527 [US2] Gameplay Developer (Technical Artist and Performance lenses), after T512 and T526.
   - **View**: `Assets/IdleFactory/Unity/Presentation/World/FactoryDeckView.cs`.
     - A **Rectangle** `Grid` with cells of 70×54 art px (cellSize 70/24 × 54/24) and Tilemaps on `WorldBase` and `WorldDeck`.
     - It covers all `DeckCells`: deck or hatch art per unlock, with the padlock and digit on the hatch.
@@ -511,7 +511,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: an Android IL2CPP build check for the tilemap module.
   - **Resources**: unity, emulator.
   - **Covers**: FR-011, FR-012, FR-014, FR-015, FR-037; research R06.
-- [ ] T528 [US2] Gameplay Developer (Technical Artist lens), after T527 and T532, which provides `ActivityPace` and the Running state per machine.
+- [X] T528 [US2] Gameplay Developer (Technical Artist lens), after T527 and T532, which provides `ActivityPace` and the Running state per machine.
   - **Views**: `DepotLinkView.cs` and `DepositView.cs` in `Presentation/World/`.
     - Trunks are static.
     - Branches belong to occupied locations only.
@@ -525,7 +525,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
     - `DepositViewTests` (placement on every test layout, mining-state follow, tap selects nothing).
   - **Resources**: unity.
   - **Covers**: FR-010a, FR-013, FR-015, FR-029; research R07, R23.
-- [ ] T529 [US2] Gameplay Developer (Performance and Test/QA lenses), after T526 and T532.
+- [X] T529 [US2] Gameplay Developer (Performance and Test/QA lenses), after T526 and T532.
   - **Wiring**: wire the pool to the model. `MachinePresentation.CompletionsDelta` spawns a CompletionPop. A baseline reset and offline deltas spawn nothing.
   - **Pool**: `EffectPool.cs` in `Presentation/World/`.
     - 8 renderers: 3 active and 5 draining tails.
@@ -557,7 +557,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Record**: `specs/006-world-first-factory-experience/reviews/performance-b4.md`.
   - **Resources**: unity, emulator, gpu.
   - **Covers**: FR-006, SC-008; research R16.
-- [ ] T556 [US2] Technical Artist (Art Director and Test/QA lenses), after T527. Added 2026-11-17 by the owner decision on the T527 review (`reviews/p3b-followups.md` C-10). Must merge before T542.
+- [X] T556 [US2] Technical Artist (Art Director and Test/QA lenses), after T527. Added 2026-11-17 by the owner decision on the T527 review (`reviews/p3b-followups.md` C-10). Must merge before T542.
   - **Gate**: extend `cue_over_lane_contrast` in `tools/art-pipeline/art_pipeline/f006/link_fx.py` with the cue fill and `ink_0` outline luminance-contrast ratios over every LINK lane tone, `copper_1` included, as measured in `reviews/t527-composite-proofs.md` (fill 3.5 to 13.6:1 over `dim_0`/`ink`, 1.49 to 3.9:1 over `copper_1`; outline 1.2 to 1.5:1 over lane tones, 3.47:1 against `copper_1`).
   - **Thresholds**: the Art Director sets them from the Art Bible C rules. A pair that fails (for example the alert fill over `copper_1`) is either accepted with an explicit pixel-area limit or recoloured; the decision is recorded in a new Art Bible section 21.x.
   - **Regenerate** through the pipeline, never by hand: `art-source/f006/link/check-report.json` and any cue or link record the gate writes; update `tests/test_f006_link_fx.py` expectations. If a sprite changes, re-import through `F006ArtIntegration` and keep the K4 tails (Art Bible 21.9 item 7).
@@ -587,7 +587,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Resources**: unity.
   - **Covers**: FR-025–FR-031; research R08, R09.
 
-- [ ] T557 [US4] Gameplay Developer (UI/UX Reviewer, Art Director and Test/QA lenses), after T532 and T528. Added 2026-11-18 by the owner decision on the T528 review: `AttentionMarkerView` (T532) was never instantiated in the shipped game, so world attention markers never showed and the T528 tap priority (`WorldTapResolver`: icon, then machine, then the 48 pt circle) is inactive in production.
+- [X] T557 [US4] Gameplay Developer (UI/UX Reviewer, Art Director and Test/QA lenses), after T532 and T528. Added 2026-11-18 by the owner decision on the T528 review: `AttentionMarkerView` (T532) was never instantiated in the shipped game, so world attention markers never showed and the T528 tap priority (`WorldTapResolver`: icon, then machine, then the 48 pt circle) is inactive in production.
   - **Wiring**: compose `AttentionMarkerView` in `CoreGameFoundationBootstrap` (configure, bind to the layout, and re-bind on `SlotGridView.LayoutChanged`), present it every frame from `RunShellPresenter.AttentionModel`, and set `RunShellPresenter.MarkerView`. Markers sit on the `Overlay` layer per `contracts/presentation-model.md` §3 and T532 (at most 2 shortage markers plus 1 store-full marker, the production attention marker at the trunk junction or depot, no numbers in the world).
   - **Behaviour**: a marker tap selects the first affected location; a machine tap is never stolen by a marker's touch circle; reduced motion and every screen class keep the markers readable; markers never cover a selected machine (OD-9b C1).
   - **Tests**: a Play Mode test on the real bootstrap scene that a shortage shows a marker and a tap on its icon selects the affected location; the T532 `AttentionDisplayTests` and T528 `WorldTapPriorityTests` stay green; F006AllocationTests covers markers with 0 steady-state allocations.
@@ -678,7 +678,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Re-baseline**: update the panel tests through the T515 helper and record them in `test-rebaseline.md`.
   - **Resources**: unity, emulator.
   - **Covers**: FR-020–FR-022, FR-024; research R11.
-- [ ] T536 [US6] UI/UX Developer (Art Director and Test/QA lenses), after T535.
+- [X] T536 [US6] UI/UX Developer (Art Director and Test/QA lenses), after T535.
   - **Consistency pass on `PanelScaffold`**:
     - Market (inventory, priorities, expansion);
     - Contracts;
@@ -702,7 +702,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 
 **Independent test**: `PersistentLayerTests` on every class, plus the probe measurements against the baseline (SC-001 and SC-010 guidance).
 
-- [ ] T537 [US1] UI/UX Developer (Software Architect and Test/QA lenses), after T535 and T538.
+- [X] T537 [US1] UI/UX Developer (Software Architect and Test/QA lenses), after T535 and T538.
   - **Persistent layer**: slim `Assets/IdleFactory/Unity/UI/FactoryRun.uxml`, `.uss` and `RunShellDocument.cs` per `contracts/ui-surfaces-f006.md` §1.
     - Remove the six-tab bar and the RP caption.
     - Show:
@@ -719,7 +719,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Measure**: run the T502 probe and record before→after in `reviews/baseline.md`.
   - **Resources**: unity, emulator.
   - **Covers**: FR-007–FR-010, FR-008a, SC-001, SC-010; research R11.
-- [ ] T555 [US1] UI/UX Developer (Software Architect and Test/QA lenses), after T536 and T537. Added 2026-11-17 by the owner decision on the T543 batch-B gate (`reviews/uiux-f006-B.md` U-B1, U-B3, U-B5, U-B6, U-B8; `reviews/playtest-agent-f006-B.md` B-F1, B-F8, B-F10).
+- [X] T555 [US1] UI/UX Developer (Software Architect and Test/QA lenses), after T536 and T537. Added 2026-11-17 by the owner decision on the T543 batch-B gate (`reviews/uiux-f006-B.md` U-B1, U-B3, U-B5, U-B6, U-B8; `reviews/playtest-agent-f006-B.md` B-F1, B-F8, B-F10).
   - **U-B1 (owner decision 2026-11-17: keep Cash and Overdrive visible)**: on phone landscape, while the machine card, Details or a sheet (including the hub) is open, a compact Cash (with Store fill) and the Overdrive state stay visible, for example in the card or sheet header or a slim column. The Office entry and the gear may step aside. OD-9b C1 still holds: the whole factory stays in view at fit-all and nothing covers the framed world. Update the "As built" note in `contracts/ui-surfaces-f006.md` §1.
   - **U-B6**: every system view and Details opens scrolled to the top, with its heading, machine name and Status visible, including landscape at 200 % (Details, Industry, Prestige, Market).
   - **U-B3**: the Contracts hub row shows the lock state when Contracts are locked, not "Nothing ready to deliver".
@@ -747,7 +747,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 
 **Independent test**: `BuildCardTests`, `DevelopmentStageTests`, `StageTriptychDeltaTests` and `MilestoneWatcherTests`, plus the SC-006 ordering trial (T546).
 
-- [ ] T539 [US5] UI/UX Developer (Test/QA lens), after T534 and T555.
+- [X] T539 [US5] UI/UX Developer (Test/QA lens), after T534 and T555.
   - **Card**: `Assets/IdleFactory/Unity/UI/Panels/BuildCard.cs`, `.uxml` and `.uss`, built from the `BuildSheetPresenter` data.
     - Docked like the machine card. The two are mutually exclusive.
     - Types are listed with icon, cost and affordability.
@@ -758,7 +758,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Tests**: `BuildCardTests` (enough Cash, not enough Cash, Back cancels, rotation, preview visibility) and the `BuildSheetPanelTests` re-baseline.
   - **Resources**: unity.
   - **Covers**: FR-032, FR-033, FR-034; research R13.
-- [ ] T540 [US5] Gameplay Developer (Game Systems/Economy Low-tier, Art Director and Test/QA lenses), after T527, T528, T533, T536 and T555.
+- [X] T540 [US5] Gameplay Developer (Game Systems/Economy Low-tier, Art Director and Test/QA lenses), after T527, T528, T533, T536 and T555.
   - **Stages**: `DevelopmentStage.cs`: "`t ≤ u0 → Early`; otherwise `clamp(floor(3·(u − u0)/(t − u0)), 0, 2)`" (u0 = level-1 unlocked count; owner decision 2026-11-18 replaced `floor(3·u/t)`), plus the activity and level density bins.
   - **Dressing**: stage-driven deck-lit area, edges, prop weights and depot variant in `FactoryDeckView` and `DepotLinkView`. They reset with prestige; prestige count is never an input.
   - **Milestones**: `MilestoneWatcher.cs` detects a factory-level increase and prestige completion.
@@ -773,14 +773,14 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Resources**: unity.
   - **Covers**: FR-035, FR-036, SC-006; research R14, R15.
 
-- [ ] T558 [US5] UI/UX Developer (Software Architect and Test/QA lenses), after T539 and T540. Added 2026-11-18 by the owner decision on the T543 batch-C gate (`reviews/uiux-f006-C.md` U-C1, U-C4; `reviews/playtest-agent-f006-C.md` C-F1, C-F2, C-F5).
+- [X] T558 [US5] UI/UX Developer (Software Architect and Test/QA lenses), after T539 and T540. Added 2026-11-18 by the owner decision on the T543 batch-C gate (`reviews/uiux-f006-C.md` U-C1, U-C4; `reviews/playtest-agent-f006-C.md` C-F1, C-F2, C-F5).
   - **U-C1 / C-F5 (depot framing)**: with no card or sheet open, the camera fit includes the depot column (`DepotAnchor`), the collector and the attention-marker boxes, in portrait at factory level 2 and on tablet landscape (the depot is not half under the side panel); drop to the next integer scale when the depot would clip. OD-9b C1 still holds and no camera, fit or column assertion is relaxed.
   - **C-F2 (rotation)**: rotating with the build card open and then closing it with Back re-fits the world; the factory never stays off screen until another surface opens. The same for the machine card.
   - **C-F1 / U-C4 (compact banner)**: on compact height or large text the milestone banner shows only its primary line (B-04 and other secondary lines stay in the accessible text and the offline summary), so it does not cover the whole top machine row on 640x360, 844x390 and 360x640 at 200 %.
   - **Tests**: Play Mode cases for the depot and marker boxes inside the camera rectangle per class (portrait level 2, tablet landscape), rotation with a card open then Back, and banner height per class at 200 %.
   - **Resources**: unity, emulator.
   - **Covers**: FR-007, FR-032, FR-035, SC-001; OD-9b C1, C6.
-- [ ] T559 [US1] Gameplay Developer (Software Architect, Security/Privacy and Test/QA lenses), after T538. Added 2026-11-18 by the owner decision on U-B13 (`reviews/playtest-agent-f006-C.md`: a force-stop after about 5 min without leaving the app loses all progress; only backgrounding writes a checkpoint).
+- [X] T559 [US1] Gameplay Developer (Software Architect, Security/Privacy and Test/QA lenses), after T538. Added 2026-11-18 by the owner decision on U-B13 (`reviews/playtest-agent-f006-C.md`: a force-stop after about 5 min without leaving the app loses all progress; only backgrounding writes a checkpoint).
   - **Autosave**: write the run checkpoint periodically while the game runs in the foreground (interval in the run settings, default 30 s), and after a player action that changes the factory (build, upgrade, factory level, prestige, contract), throttled so a write never happens more often than the interval allows except for those actions. Use the existing `IRunCheckpointStore` and `RunPersistence` write path (atomic replace, same format and version); no new save format.
   - **Constraints**: no main-thread hitch above the frame budget and no per-frame allocation on the steady path (SC-008); a failed write keeps the previous checkpoint and reports through the existing failure route; offline progress on return is unchanged.
   - **Tests**: Edit Mode cadence and throttle tests; a Play Mode test that simulates a kill without pause (no `OnApplicationPause`) and restores the last periodic checkpoint; failure-path test; allocation test.
