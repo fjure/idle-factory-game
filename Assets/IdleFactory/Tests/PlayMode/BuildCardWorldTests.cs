@@ -134,8 +134,8 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(grid.BuildPreviewActive, Is.True);
             Assert.That(grid.IsMutedForBuild(0), Is.True, "an occupied location is muted");
-            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Plate).color, Is.EqualTo(SlotRenderers.MutedTint), "its plate is dimmed");
-            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Machine).color.r, Is.EqualTo(SlotRenderers.MutedTint.r).Within(1e-4f), "and its machine");
+            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Plate).color, Is.EqualTo(SlotGridView.MutedTint), "its plate is dimmed");
+            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Machine).color.r, Is.EqualTo(SlotGridView.MutedTint.r).Within(1e-4f), "and its machine");
             Assert.That(grid.IsMutedForBuild(slot), Is.False, "the selected free location is not muted");
             Assert.That(grid.RendererOf(slot, SlotGridView.SlotRendererRole.Plate).color, Is.EqualTo(Color.white));
 

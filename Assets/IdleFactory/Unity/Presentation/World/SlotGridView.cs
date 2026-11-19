@@ -290,6 +290,9 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The alpha of the ghost preview of the selected machine type (frame 0).</summary>
         public const float PreviewAlpha = 0.6f;
 
+        /// <summary>The tint of an occupied or locked location while the build card is open (C-44).</summary>
+        public static Color MutedTint => SlotRenderers.MutedTint;
+
         /// <summary>The alpha of the frame that outlines an available build location; the selected location keeps the full frame.</summary>
         public const float HighlightAlpha = 0.5f;
 
