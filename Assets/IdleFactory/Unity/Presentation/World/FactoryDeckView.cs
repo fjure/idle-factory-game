@@ -38,6 +38,8 @@ namespace IdleFactory.Unity.Presentation
         private FactoryWorldLayout layout;
         private SlotGridView bound;
         private int stage;
+        private int densityBin;
+        private bool dressed;
         private SlotCondition[] conditions = Array.Empty<SlotCondition>();
         private DeckPlan plan;
         private bool dirty;
@@ -49,6 +51,13 @@ namespace IdleFactory.Unity.Presentation
         private TilemapRenderer deckRenderer;
         private Transform propRoot;
         private Transform edgeRoot;
+        private Transform highlightRoot;
+        private readonly List<SpriteRenderer> highlightRenderers = new List<SpriteRenderer>();
+        private int highlightCount;
+        private long highlightStartMs;
+        private bool highlightReduced;
+        private long revealStartMs = long.MinValue;
+        private bool revealActive;
         private Material slotMaterial;
         private readonly Dictionary<string, Tile> tiles = new Dictionary<string, Tile>(StringComparer.Ordinal);
         private readonly List<SpriteRenderer> propRenderers = new List<SpriteRenderer>();
@@ -58,6 +67,30 @@ namespace IdleFactory.Unity.Presentation
         public DeckPlan Plan => plan;
 
         public int Stage => stage;
+
+        /// <summary>The secondary density bins (activity plus level, 0 to 4) the dressing uses.</summary>
+        public int DensityBin => densityBin;
+
+        /// <summary>The foundation highlights that draw now (T540), for tests.</summary>
+        public int ActiveHighlightCount => highlightCount;
+
+        /// <summary>The highlight renderers created so far (enabled while drawn).</summary>
+        public IReadOnlyList<SpriteRenderer> HighlightRenderers => highlightRenderers;
+
+        /// <summary>True while the deck reveal (the lit deck easing up) runs.</summary>
+        public bool RevealActive => revealActive;
+
+        /// <summary>How long the foundation highlight of a new location stays, in milliseconds (T540, R14).</summary>
+        public const long HighlightMilliseconds = 2000;
+
+        /// <summary>How long the deck reveal takes, in milliseconds (normal motion only).</summary>
+        public const long RevealMilliseconds = 600;
+
+        /// <summary>The highlight fades over its last this many milliseconds (normal motion only).</summary>
+        public const long HighlightFadeMilliseconds = 400;
+
+        public const string HighlightKey = "F006-FX-COMPLETION-HIGHLIGHT";
+        public const int HighlightOrder = 120;
 
         public Grid Grid => grid;
         public Tilemap BaseTilemap => baseTilemap;
@@ -153,6 +186,152 @@ namespace IdleFactory.Unity.Presentation
             Refresh();
         }
 
+        /// <summary>
+        /// Sets the whole development value (T540, R15): the stage and the secondary bins. It switches the stage dressing on (the lit ring, props only on deck, the
+        /// bin density). Redraws only when something changed, so calling it every frame allocates nothing.
+        /// </summary>
+        public void SetDevelopment(DevelopmentStageValue value)
+        {
+            var newStage = Mathf.Clamp(value.Stage, 0, WorldCompositionSettings.StageCount - 1);
+            if (dressed && newStage == stage && value.DensityBin == densityBin)
+            {
+                return;
+            }
+
+            dressed = true;
+            stage = newStage;
+            densityBin = value.DensityBin;
+            dirty = true;
+            Refresh();
+        }
+
+        /// <summary>
+        /// A milestone (T540, R14): the locations <paramref name="firstLocation"/> and the following <paramref name="count"/> - 1 get a 2 s foundation highlight, and a
+        /// stage raise eases the lit deck up. Under reduced motion the highlight is static and nothing eases.
+        /// </summary>
+        public void ShowMilestone(int firstLocation, int count, bool stageRaised, long milliseconds, bool reducedMotion)
+        {
+            highlightStartMs = milliseconds;
+            highlightReduced = reducedMotion;
+            for (var i = 0; i < highlightCount; i++)
+            {
+                highlightRenderers[i].enabled = false;
+            }
+
+            highlightCount = 0;
+            if (layout != null && sprites != null && sprites.TryGetEntry(HighlightKey, out var entry) && firstLocation >= 0)
+            {
+                EnsureHighlightRoot();
+                var density = (float)SlotGridLayout.Density;
+                var last = Mathf.Min(layout.LocationCount, firstLocation + Mathf.Max(0, count));
+                for (var location = firstLocation; location < last; location++)
+                {
+                    while (highlightRenderers.Count <= highlightCount)
+                    {
+                        var child = new GameObject("Highlight");
+                        child.transform.SetParent(highlightRoot, false);
+                        var created = child.AddComponent<SpriteRenderer>();
+                        created.sharedMaterial = slotMaterial;
+                        created.sortingLayerID = SortingLayer.NameToID(SlotGridView.OverlaySortingLayer);
+                        created.sortingOrder = HighlightOrder;
+                        created.enabled = false;
+                        highlightRenderers.Add(created);
+                    }
+
+                    var renderer = highlightRenderers[highlightCount++];
+                    var anchor = layout.AnchorOf(new BuildingLocationId(location));
+                    renderer.sprite = entry.Sprite;
+                    renderer.color = Color.white;
+                    renderer.transform.localPosition = new Vector3(Mathf.Round(anchor.x * density) / density, Mathf.Round(anchor.y * density) / density, 0f);
+                    renderer.enabled = true;
+                }
+            }
+
+            if (stageRaised && !reducedMotion && baseTilemap != null)
+            {
+                revealActive = true;
+                revealStartMs = milliseconds;
+                ApplyReveal(0f);
+            }
+        }
+
+        /// <summary>
+        /// One frame of the milestone feedback: expires the highlight after 2 s (fading over its last 0.4 s in normal motion, a plain static stop under reduced motion)
+        /// and eases the lit deck up over 0.6 s. Allocation-free, and a no-op while nothing runs.
+        /// </summary>
+        public void TickFeedback(long milliseconds)
+        {
+            if (highlightCount > 0)
+            {
+                var elapsed = milliseconds - highlightStartMs;
+                if (elapsed >= HighlightMilliseconds)
+                {
+                    for (var i = 0; i < highlightCount; i++)
+                    {
+                        highlightRenderers[i].enabled = false;
+                    }
+
+                    highlightCount = 0;
+                }
+                else if (!highlightReduced && elapsed > HighlightMilliseconds - HighlightFadeMilliseconds)
+                {
+                    var alpha = (HighlightMilliseconds - elapsed) / (float)HighlightFadeMilliseconds;
+                    for (var i = 0; i < highlightCount; i++)
+                    {
+                        highlightRenderers[i].color = new Color(1f, 1f, 1f, alpha);
+                    }
+                }
+            }
+
+            if (revealActive)
+            {
+                var t = (milliseconds - revealStartMs) / (float)RevealMilliseconds;
+                if (t >= 1f)
+                {
+                    revealActive = false;
+                    ApplyReveal(1f);
+                }
+                else
+                {
+                    ApplyReveal(Mathf.Clamp01(t));
+                }
+            }
+        }
+
+        /// <summary>Ends every milestone effect at once (reduced motion switched on, a new run).</summary>
+        public void ClearFeedback()
+        {
+            for (var i = 0; i < highlightCount; i++)
+            {
+                highlightRenderers[i].enabled = false;
+            }
+
+            highlightCount = 0;
+            if (revealActive)
+            {
+                revealActive = false;
+                ApplyReveal(1f);
+            }
+        }
+
+        // The deck eases from 55 % to full brightness: a tint on the two tilemap renderers, no allocation.
+        private void ApplyReveal(float t)
+        {
+            var shade = Mathf.Lerp(0.55f, 1f, t);
+            var color = new Color(shade, shade, shade, 1f);
+            baseTilemap.color = color;
+            deckTilemap.color = color;
+        }
+
+        private void EnsureHighlightRoot()
+        {
+            if (highlightRoot == null)
+            {
+                highlightRoot = new GameObject("Highlights").transform;
+                highlightRoot.SetParent(transform, false);
+            }
+        }
+
         /// <summary>Sets the condition of every location (locked, empty or occupied) and redraws only when one changed.</summary>
         public void SetConditions(IReadOnlyList<SlotCondition> newConditions)
         {
@@ -214,7 +393,7 @@ namespace IdleFactory.Unity.Presentation
             }
 
             dirty = false;
-            plan = DeckPlanner.Build(layout, conditions, stage, settings);
+            plan = DeckPlanner.Build(layout, conditions, stage, settings, dressed ? new DeckDressing(densityBin) : (DeckDressing?)null);
             if (!HasArt)
             {
                 ClearAll();
@@ -318,10 +497,12 @@ namespace IdleFactory.Unity.Presentation
             var hatchTile = TileFor(HatchTileKey);
             var positions = new Vector3Int[plan.BaseCells.Count];
             var baseTiles = new TileBase[positions.Length];
+            // A lit ring cell (stage dressing, R15) shows the deck tile in place of the dark base tile: the same opaque 70 x 54 tile, so the tile count is unchanged.
+            var lit = plan.LitRingCells.Count > 0 ? new HashSet<Vector2Int>(plan.LitRingCells) : null;
             for (var i = 0; i < positions.Length; i++)
             {
                 positions[i] = new Vector3Int(plan.BaseCells[i].x, plan.BaseCells[i].y, 0);
-                baseTiles[i] = baseTile;
+                baseTiles[i] = lit != null && lit.Contains(plan.BaseCells[i]) ? deckTile : baseTile;
             }
 
             baseTilemap.SetTiles(positions, baseTiles);
@@ -418,9 +599,18 @@ namespace IdleFactory.Unity.Presentation
             Unbind();
             foreach (var tile in tiles.Values)
             {
-                if (tile != null)
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                if (Application.isPlaying)
                 {
                     Destroy(tile);
+                }
+                else
+                {
+                    DestroyImmediate(tile);
                 }
             }
 

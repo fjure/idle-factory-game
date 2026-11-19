@@ -135,7 +135,10 @@ namespace IdleFactory.Unity.Presentation
             IReadOnlyList<DeckPropPlacement> props,
             int eligiblePropCells,
             int stage,
-            EdgeRule edgeRule)
+            EdgeRule edgeRule,
+            IReadOnlyList<Vector2Int> litRingCells = null,
+            int deckCellCount = 0,
+            bool dressed = false)
         {
             BaseCells = baseCells;
             LocationCells = locationCells;
@@ -145,6 +148,9 @@ namespace IdleFactory.Unity.Presentation
             EligiblePropCells = eligiblePropCells;
             Stage = stage;
             EdgeRule = edgeRule;
+            LitRingCells = litRingCells ?? Array.Empty<Vector2Int>();
+            DeckCellCount = deckCellCount;
+            Dressed = dressed;
         }
 
         /// <summary>Every lattice cell that carries a base tile: all deck cells plus the extra front rows the edge V needs.</summary>
@@ -168,6 +174,56 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The tiles the two tilemaps hold: base cells plus one deck or hatch tile per location.</summary>
         public int TileCount => BaseCells.Count + LocationCells.Count;
+
+        /// <summary>
+        /// True when the plan carries the stage dressing of T540 (R15): the margin ring is lit stage by stage and props stand only on deck. Without it (tests and
+        /// tools that pass no dressing) the ring stays dark and every ring cell is eligible, as T527 built it.
+        /// </summary>
+        public bool Dressed { get; }
+
+        /// <summary>
+        /// The margin-ring cells that show the lit deck tile at this stage (stage-driven deck-lit area, R15). Each is a base cell whose tile is the deck tile instead
+        /// of the dark base tile, so the tile count does not change. Props stand only on these cells and on empty or locked location cells, so none floats over the
+        /// dark base.
+        /// </summary>
+        public IReadOnlyList<Vector2Int> LitRingCells { get; }
+
+        /// <summary>The cells of the deck rectangle (the lattice plus the margin band), which is what the lit share counts.</summary>
+        public int DeckCellCount { get; }
+
+        /// <summary>The cells that show the lit deck: every unlocked location and every lit ring cell.</summary>
+        public int LitCellCount
+        {
+            get
+            {
+                var lit = LitRingCells.Count;
+                for (var i = 0; i < LocationArt.Count; i++)
+                {
+                    lit += LocationArt[i] == DeckCellArt.Deck ? 1 : 0;
+                }
+
+                return lit;
+            }
+        }
+
+        /// <summary>The deck-lit share of the deck rectangle, in [0, 1] (SC-006, R15: at least 25 percentage points between adjacent stages).</summary>
+        public float LitShare => DeckCellCount <= 0 ? 0f : (float)LitCellCount / DeckCellCount;
+    }
+
+    /// <summary>
+    /// The stage dressing of the deck (T540, R15): the secondary density of the development stage. Passing one to
+    /// <see cref="DeckPlanner.Build(FactoryWorldLayout, IReadOnlyList{SlotCondition}, int, WorldCompositionSettings, DeckDressing?)"/> switches the stage-driven
+    /// lit ring and the dressed prop rules on.
+    /// </summary>
+    public readonly struct DeckDressing
+    {
+        public DeckDressing(int densityBin)
+        {
+            DensityBin = densityBin < 0 ? 0 : densityBin;
+        }
+
+        /// <summary>The activity and level bins together (0 to 4): the stage prop density grows by <see cref="DeckPlanner.DensityStepPerBin"/> per bin.</summary>
+        public int DensityBin { get; }
     }
 
     /// <summary>
@@ -190,6 +246,9 @@ namespace IdleFactory.Unity.Presentation
     {
         /// <summary>The upper bound of props per eligible cell (Art Bible 21.3 world sprite budget).</summary>
         public const float MaxPropsPerEligibleCell = 0.5f;
+
+        /// <summary>The extra prop density each secondary bin (activity, level) adds on top of the stage density (T540). The 0.5 cap still holds.</summary>
+        public const float DensityStepPerBin = 0.03f;
 
         public const int EdgeStepXPixels = 35;
         public const int EdgeStepYPixels = 17;
@@ -252,7 +311,14 @@ namespace IdleFactory.Unity.Presentation
         /// Builds the plan. <paramref name="conditions"/> has one entry per location (a shorter list means the rest are locked, a null list all
         /// locked); <paramref name="settings"/> null means the F004-reproducing defaults, which carry no props.
         /// </summary>
-        public static DeckPlan Build(FactoryWorldLayout layout, IReadOnlyList<SlotCondition> conditions, int stage, WorldCompositionSettings settings)
+        public static DeckPlan Build(FactoryWorldLayout layout, IReadOnlyList<SlotCondition> conditions, int stage, WorldCompositionSettings settings) =>
+            Build(layout, conditions, stage, settings, null);
+
+        /// <summary>
+        /// Builds the plan with the stage dressing of T540 when <paramref name="dressing"/> is set: the margin ring is lit by stage (none at Early, the half
+        /// nearest the depot at Partial, all of it at Established), props stand only on lit deck, and the secondary density bins add prop density.
+        /// </summary>
+        public static DeckPlan Build(FactoryWorldLayout layout, IReadOnlyList<SlotCondition> conditions, int stage, WorldCompositionSettings settings, DeckDressing? dressing)
         {
             if (layout == null)
             {
@@ -284,8 +350,70 @@ namespace IdleFactory.Unity.Presentation
                 art[i] = condition == SlotCondition.Locked ? DeckCellArt.Hatch : DeckCellArt.Deck;
             }
 
-            var props = BuildProps(layout, conditions, stage, settings, edges, baseCells, out var eligible);
-            return new DeckPlan(baseCells, locationCells, art, edges, props, eligible, stage, rule);
+            IReadOnlyList<Vector2Int> litRing = Array.Empty<Vector2Int>();
+            HashSet<Vector2Int> litSet = null;
+            if (dressing.HasValue)
+            {
+                litRing = LitRingCells(layout, stage);
+                litSet = new HashSet<Vector2Int>(litRing);
+            }
+
+            var props = BuildProps(layout, conditions, stage, settings, edges, baseCells, litSet, dressing, out var eligible);
+            return new DeckPlan(baseCells, locationCells, art, edges, props, eligible, stage, rule, litRing, layout.DeckCells.Count, dressing.HasValue);
+        }
+
+        /// <summary>
+        /// The margin-ring cells in the order the lit deck grows (R15): every deck cell that is not a location, the depot cell or the deposit cell, nearest the depot
+        /// first (the yard grows outward from where the trunks end), then by row and column. Deterministic and independent of any state.
+        /// </summary>
+        public static IReadOnlyList<Vector2Int> RingCellsInLightingOrder(FactoryWorldLayout layout)
+        {
+            var locations = new HashSet<Vector2Int>();
+            for (var i = 0; i < layout.LocationCount; i++)
+            {
+                locations.Add(layout.CellOf(new BuildingLocationId(i)));
+            }
+
+            var ring = new List<Vector2Int>();
+            foreach (var cell in layout.DeckCells)
+            {
+                if (cell != layout.DepotCell && cell != layout.DepositCell && !locations.Contains(cell))
+                {
+                    ring.Add(cell);
+                }
+            }
+
+            var depot = layout.DepotCell;
+            ring.Sort((a, b) =>
+            {
+                var da = Mathf.Abs(a.x - depot.x) + Mathf.Abs(a.y - depot.y);
+                var db = Mathf.Abs(b.x - depot.x) + Mathf.Abs(b.y - depot.y);
+                if (da != db)
+                {
+                    return da.CompareTo(db);
+                }
+
+                return a.y != b.y ? a.y.CompareTo(b.y) : a.x.CompareTo(b.x);
+            });
+            return ring;
+        }
+
+        /// <summary>How many of <paramref name="ringCount"/> ring cells are lit at a stage: none at Early, the nearer half (rounded up) at Partial, all at Established.</summary>
+        public static int LitRingCount(int ringCount, int stage) =>
+            stage <= 0 ? 0 : stage == 1 ? (ringCount + 1) / 2 : ringCount;
+
+        /// <summary>The lit ring cells of a stage, in lighting order.</summary>
+        public static IReadOnlyList<Vector2Int> LitRingCells(FactoryWorldLayout layout, int stage)
+        {
+            var ring = RingCellsInLightingOrder(layout);
+            var count = LitRingCount(ring.Count, Mathf.Clamp(stage, 0, WorldCompositionSettings.StageCount - 1));
+            var lit = new Vector2Int[count];
+            for (var i = 0; i < count; i++)
+            {
+                lit[i] = ring[i];
+            }
+
+            return lit;
         }
 
         // ------------------------------------------------------------------------------------------------------------------------------
@@ -360,7 +488,14 @@ namespace IdleFactory.Unity.Presentation
         }
 
         /// <summary>The cells a prop may stand in for the given conditions (cell, whether it is a location cell), in deck order.</summary>
-        public static IReadOnlyList<Vector2Int> EligibleCells(FactoryWorldLayout layout, IReadOnlyList<SlotCondition> conditions)
+        public static IReadOnlyList<Vector2Int> EligibleCells(FactoryWorldLayout layout, IReadOnlyList<SlotCondition> conditions) =>
+            EligibleCells(layout, conditions, null);
+
+        /// <summary>
+        /// The eligible cells when the stage dressing is on: a ring cell is eligible only when it is lit (<paramref name="litRing"/>), so a prop never stands over the
+        /// dark base (T540). A null set keeps the T527 rule (every ring cell is eligible).
+        /// </summary>
+        public static IReadOnlyList<Vector2Int> EligibleCells(FactoryWorldLayout layout, IReadOnlyList<SlotCondition> conditions, ISet<Vector2Int> litRing)
         {
             var result = new List<Vector2Int>();
             foreach (var cell in layout.DeckCells)
@@ -377,6 +512,10 @@ namespace IdleFactory.Unity.Presentation
                     {
                         continue;
                     }
+                }
+                else if (litRing != null && !litRing.Contains(cell))
+                {
+                    continue;
                 }
 
                 result.Add(cell);
@@ -537,10 +676,12 @@ namespace IdleFactory.Unity.Presentation
             WorldCompositionSettings settings,
             IReadOnlyList<DeckEdgePlacement> edges,
             IReadOnlyList<Vector2Int> baseCells,
+            ISet<Vector2Int> litRing,
+            DeckDressing? dressing,
             out int eligibleCount)
         {
             var placements = new List<DeckPropPlacement>();
-            var eligible = EligibleCells(layout, conditions);
+            var eligible = EligibleCells(layout, conditions, litRing);
             eligibleCount = eligible.Count;
             if (settings == null)
             {
@@ -548,6 +689,11 @@ namespace IdleFactory.Unity.Presentation
             }
 
             var density = settings.PropDensityOf(stage);
+            if (dressing.HasValue)
+            {
+                density = Mathf.Min(MaxPropsPerEligibleCell, density + DensityStepPerBin * dressing.Value.DensityBin);
+            }
+
             var weights = settings.PropWeightsOf(stage);
             var totalWeight = 0f;
             foreach (var weight in weights)
@@ -575,7 +721,10 @@ namespace IdleFactory.Unity.Presentation
             }
 
             // At most half an eligible cell on average (Art Bible 21.3): the lowest rolls win, so a denser stage only adds props.
-            var cap = Mathf.FloorToInt(eligible.Count * MaxPropsPerEligibleCell);
+            // With the dressing on, the census cap counts at most the margin ring: 0.5 per ring cell is the 9 props of the 41-sprite budget at 12 locations (Art Bible
+            // 21.12), however many empty location cells are eligible besides.
+            var capBase = dressing.HasValue ? Mathf.Min(eligible.Count, layout.DeckCells.Count - layout.LocationCount) : eligible.Count;
+            var cap = Mathf.FloorToInt(capBase * MaxPropsPerEligibleCell);
             chosen.Sort((a, b) => a.Roll.CompareTo(b.Roll));
             if (chosen.Count > cap)
             {
@@ -593,12 +742,16 @@ namespace IdleFactory.Unity.Presentation
                 }
 
                 var cellRect = CellRect(cell);
+                if (!FitsInCell(cellRect, size))
+                {
+                    // A kind wider or taller than the cell cannot sit inside it: skip it (no modulus by zero or a wrapped negative span).
+                    continue;
+                }
+
                 for (var attempt = 0; attempt < CandidateTries; attempt++)
                 {
-                    var spanX = cellRect.Width - size.Width;
-                    var spanY = cellRect.Height - size.Height;
-                    var x0 = cellRect.X + (int)(Hash(cell.x, cell.y, 0xB100u + (uint)attempt) % (uint)(spanX + 1));
-                    var y0 = cellRect.Y + (int)(Hash(cell.x, cell.y, 0xC200u + (uint)attempt) % (uint)(spanY + 1));
+                    var x0 = cellRect.X + PropOffset(cell, attempt, 0xB100u, cellRect.Width - size.Width);
+                    var y0 = cellRect.Y + PropOffset(cell, attempt, 0xC200u, cellRect.Height - size.Height);
                     var rect = new PixelRect(x0, y0, size.Width, size.Height);
                     if (Blocked(obstacles, rect) || Overlaps(taken, rect))
                     {
@@ -613,6 +766,13 @@ namespace IdleFactory.Unity.Presentation
 
             return placements;
         }
+
+        /// <summary>True when a sprite of <paramref name="size"/> fits inside <paramref name="cellRect"/> (a wider or taller kind is skipped).</summary>
+        public static bool FitsInCell(PixelRect cellRect, DeckSpriteSize size) => size.Width <= cellRect.Width && size.Height <= cellRect.Height;
+
+        /// <summary>The deterministic offset (0 to <paramref name="span"/> inclusive) of a candidate; 0 when the span is not positive (no modulus by 0).</summary>
+        public static int PropOffset(Vector2Int cell, int attempt, uint salt, int span) =>
+            span <= 0 ? 0 : (int)(Hash(cell.x, cell.y, salt + (uint)attempt) % (uint)(span + 1));
 
         private static bool Overlaps(List<PixelRect> taken, PixelRect rect)
         {

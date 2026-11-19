@@ -43,10 +43,10 @@ namespace IdleFactory.Unity.Presentation
         public static ScaleLayout WithView(int pixelWidth, int pixelHeight, float pixelsPerPoint, Rect unobstructedRect, FactoryWorldLayout layout)
         {
             if (layout == null) throw new ArgumentNullException(nameof(layout));
-            return new ScaleLayout(pixelWidth, pixelHeight, pixelsPerPoint, unobstructedRect, layout.LayoutId, layout.Bounds, layout.Margin, layout.ViewBounds);
+            return new ScaleLayout(pixelWidth, pixelHeight, pixelsPerPoint, unobstructedRect, layout.LayoutId, layout.Bounds, layout.Margin, layout.ViewBounds, layout.FitBounds);
         }
 
-        public ScaleLayout(int pixelWidth, int pixelHeight, float pixelsPerPoint, Rect unobstructedRect, string layoutId, Rect bounds, float margin = SlotGridLayout.HalfCellMargin, Rect? viewBounds = null)
+        public ScaleLayout(int pixelWidth, int pixelHeight, float pixelsPerPoint, Rect unobstructedRect, string layoutId, Rect bounds, float margin = SlotGridLayout.HalfCellMargin, Rect? viewBounds = null, Rect? fitBounds = null)
         {
             PixelWidth = pixelWidth;
             PixelHeight = pixelHeight;
@@ -56,6 +56,7 @@ namespace IdleFactory.Unity.Presentation
             Bounds = bounds;
             Margin = margin;
             ViewBounds = viewBounds ?? bounds;
+            FitBounds = fitBounds ?? ViewBounds;
         }
 
         public int PixelWidth { get; }
@@ -73,14 +74,20 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>
         /// The second extent (P1-F2): <see cref="Bounds"/> plus the depot and the deposit. Defaults to <see cref="Bounds"/>. The model fits and pans over
-        /// it for the pan limits always, and for the fit only when that costs no integer scale (see <see cref="CameraScaleModel.ExtentFor"/>).
+        /// it for the pan limits always, and for the fit while the depot column fits at or above the readable floor (T558, see <see cref="CameraScaleModel.ExtentFor"/>).
         /// </summary>
         public Rect ViewBounds { get; }
+
+        /// <summary>
+        /// T558 (U-C1): the extent between <see cref="Bounds"/> and <see cref="ViewBounds"/>: the content plus the depot column (the depot sprite, the collector and the marker boxes) but
+        /// not the vein. Fit-all frames it, stepping down an integer scale if needed, as long as the readable floor holds (see <see cref="CameraScaleModel.ExtentFor"/>). Defaults to <see cref="ViewBounds"/>.
+        /// </summary>
+        public Rect FitBounds { get; }
 
         /// <summary>The identity of a layout for the once-per-layout log: the rectangle changes with a sheet, the screen does not.</summary>
         internal string Key => $"{PixelWidth}x{PixelHeight}@{PixelsPerPoint:0.####}/{LayoutId}";
 
-        internal ScaleLayout WithRect(Rect rect) => new ScaleLayout(PixelWidth, PixelHeight, PixelsPerPoint, rect, LayoutId, Bounds, Margin, ViewBounds);
+        internal ScaleLayout WithRect(Rect rect) => new ScaleLayout(PixelWidth, PixelHeight, PixelsPerPoint, rect, LayoutId, Bounds, Margin, ViewBounds, FitBounds);
     }
 
     /// <summary>What the model did when a bottom sheet opened (rule 7).</summary>
@@ -177,20 +184,31 @@ namespace IdleFactory.Unity.Presentation
         public Rect PanExtent => panExtent;
 
         /// <summary>
-        /// P1-F2: the extent for a rectangle. The view extent (content plus depot and deposit) is used when the largest integer scale that fits
-        /// it is the same as for the content alone and the content itself fits at least once; otherwise the content extent is used, and the
-        /// depot and the vein may be out of view.
+        /// P1-F2, T558 (U-C1): the extent for a rectangle, in three tiers. (1) The view extent (content, depot column and vein) when it fits at the scale the content alone gives.
+        /// (2) Otherwise the fit extent (content plus the depot sprite, the collector and the marker boxes, no vein) when the content itself fits at least once and the fit extent fits
+        /// at a scale that is at least the readable floor <paramref name="minScale"/> (and at least 1): fit-all steps down to the next integer scale that frames the depot column
+        /// instead of clipping it. (3) Only when even that would fall below the floor, the content extent: the depot column may be out of view until the player pans.
         /// </summary>
-        public static Rect ExtentFor(ScaleLayout layout, Rect rect, int artPixelsPerCell)
+        public static Rect ExtentFor(ScaleLayout layout, Rect rect, int artPixelsPerCell, int minScale = 1)
         {
-            if (layout.ViewBounds == layout.Bounds)
+            if (layout.ViewBounds == layout.Bounds && layout.FitBounds == layout.Bounds)
             {
                 return layout.Bounds;
             }
 
             var content = LargestFittingScale(rect, layout.Bounds, artPixelsPerCell, layout.Margin);
-            var view = LargestFittingScale(rect, layout.ViewBounds, artPixelsPerCell, layout.Margin);
-            return content >= 1 && view >= content ? layout.ViewBounds : layout.Bounds;
+            if (content < 1)
+            {
+                return layout.Bounds;
+            }
+
+            if (LargestFittingScale(rect, layout.ViewBounds, artPixelsPerCell, layout.Margin) >= content)
+            {
+                return layout.ViewBounds;
+            }
+
+            var depotColumn = LargestFittingScale(rect, layout.FitBounds, artPixelsPerCell, layout.Margin);
+            return depotColumn >= Math.Max(1, Math.Min(content, minScale)) ? layout.FitBounds : layout.Bounds;
         }
 
         /// <summary>True when the runtime degrade is active: the floor could not be met and n is the largest that fits.</summary>
@@ -313,7 +331,7 @@ namespace IdleFactory.Unity.Presentation
         {
             layout = newLayout;
             hasLayout = true;
-            extent = ExtentFor(newLayout, newLayout.UnobstructedRect, Settings.ArtPixelsPerCell);
+            extent = ExtentFor(newLayout, newLayout.UnobstructedRect, Settings.ArtPixelsPerCell, MinScale(Settings, newLayout.PixelsPerPoint));
             panExtent = newLayout.ViewBounds;
             var minimum = MinScale(Settings, newLayout.PixelsPerPoint);
             var largest = LargestFittingScale(newLayout.UnobstructedRect, extent, Settings.ArtPixelsPerCell, newLayout.Margin);
@@ -599,7 +617,7 @@ namespace IdleFactory.Unity.Presentation
 
             sheetOpen = false;
             layout = layout.WithRect(fullRect);
-            extent = ExtentFor(layout, fullRect, Settings.ArtPixelsPerCell);
+            extent = ExtentFor(layout, fullRect, Settings.ArtPixelsPerCell, MinScale(Settings, layout.PixelsPerPoint));
             panExtent = layout.ViewBounds;
             if (!sheetTouchedByPlayer)
             {

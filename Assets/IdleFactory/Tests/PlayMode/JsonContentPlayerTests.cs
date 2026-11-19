@@ -149,6 +149,8 @@ namespace IdleFactory.Tests.PlayMode
             yield return null;
 
             var scene = SceneManager.GetSceneByPath(ScenePath);
+            // T559: these fixtures use the player's real persistence folder, so the timer-driven autosave stays off.
+            foreach (var lifecycle in UnityEngine.Object.FindObjectsByType<IdleFactory.Unity.Bootstrap.RunLifecycleAdapter>(UnityEngine.FindObjectsInactive.Include)) lifecycle.AutosaveEnabled = false;
             Assert.That(scene.IsValid() && scene.isLoaded, Is.True);
 
             CoreGameFoundationBootstrap bootstrap = null;

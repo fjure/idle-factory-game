@@ -55,6 +55,9 @@ namespace IdleFactory.Unity.Bootstrap
         [Tooltip("T534: the docked machine card (UXML, USS) and the shared PanelScaffold USS it reuses. A missing asset leaves a machine tap on the Details view with a coded diagnostic.")]
         [SerializeField] private VisualTreeAsset machineCardTree;
         [SerializeField] private StyleSheet machineCardStyles;
+        [Tooltip("T539: the docked build card (UXML, USS). Left unassigned, an empty location opens the build sheet as before; assigned, it opens the build card.")]
+        [SerializeField] private VisualTreeAsset buildCardTree;
+        [SerializeField] private StyleSheet buildCardStyles;
         [SerializeField] private StyleSheet panelScaffoldStyles;
         [SerializeField] private VisualTreeAsset hubPanelTree;
         [SerializeField] private StyleSheet hubPanelStyles;
@@ -88,9 +91,7 @@ namespace IdleFactory.Unity.Bootstrap
         private int observedHeight;
         private ScreenOrientation observedOrientation;
         private bool initialized;
-        private ScaleLayout observedLayout;
-        private bool hasObservedLayout;
-        private Rect lastClosedRect;
+        private RunViewportDriver viewportDriver;
         private string cameraLayoutId;
 
         // Feature 003 run composition. The run is null until the cold-start source selection created it.
@@ -109,9 +110,7 @@ namespace IdleFactory.Unity.Bootstrap
         private SlotGridView slotGrid;
         private RunCameraFraming framing;
         private IDisposable dialogRotationRegistration;
-        private bool runFramingPending;
         private int selectedSlot = -1;
-        private bool selectionChanged;
         private bool shellAvailabilityKnown;
         private bool shellAvailable;
 
@@ -208,6 +207,40 @@ namespace IdleFactory.Unity.Bootstrap
         public FactoryDeckView DeckView => deckView;
 
         private FactoryDeckView deckView;
+
+        // T529: the world effect pool, its renderers and the feed that refreshes the world's presentation model and spawns the completion pops.
+        private EffectPool effectPool;
+        private EffectPoolView effectView;
+        private WorldEffectsFeed worldEffects;
+
+        // T528: the depot with its links (the third Tilemap, the branch pips and the depot sprite) and the ore-vein deposit (scenery, never a hit target).
+        private DepotLinkView depotLinkView;
+        private DepotLinkModel depotLinkModel;
+        private DepositView depositView;
+
+        // T557: the production attention markers (Overlay layer). They draw the shell presenter's AttentionModel and are the tap targets of WorldTapResolver.
+        private AttentionMarkerView markerView;
+
+        /// <summary>The attention markers of the world (null until the run shell is composed).</summary>
+        public AttentionMarkerView MarkerView => markerView;
+
+        /// <summary>The depot and link layer of the world (null until the run shell is composed).</summary>
+        public DepotLinkView DepotLinkView => depotLinkView;
+
+        /// <summary>What the link layer and the depot show this frame (null until the run shell is composed).</summary>
+        public DepotLinkModel DepotLinkModel => depotLinkModel;
+
+        /// <summary>The ore-vein deposit of the world (null until the run shell is composed).</summary>
+        public DepositView DepositView => depositView;
+
+        /// <summary>The world effect pool (null until the run shell is composed).</summary>
+        public EffectPool EffectPool => effectPool;
+
+        /// <summary>The 8 effect renderers of the world (null until the run shell is composed).</summary>
+        public EffectPoolView EffectView => effectView;
+
+        /// <summary>The feed of the world effects, which owns the world's machine presentation model (null until the run shell is composed).</summary>
+        public WorldEffectsFeed WorldEffects => worldEffects;
 
         /// <summary>The presenter that binds the run session to the shell and the grid, or null before a run is live.</summary>
         public RunShellPresenter ShellPresenter => shellPresenter;
@@ -568,6 +601,34 @@ namespace IdleFactory.Unity.Bootstrap
                 deckView = deckObject.AddComponent<FactoryDeckView>();
                 deckView.Configure(spriteCatalog, worldCompositionApplied ? worldComposition : null);
                 deckView.Bind(grid);
+                // T529: the effect pool (3 active renderers plus 5 draining tails) draws on the Effects layer above the slots and answers the card's responses.
+                var effectObject = new GameObject("Effect Pool");
+                effectObject.transform.SetParent(transform, false);
+                effectPool = new EffectPool();
+                effectView = effectObject.AddComponent<EffectPoolView>();
+                effectView.Configure(spriteCatalog, effectPool);
+                effectView.Bind(grid);
+                // T528: the links and the depot (links layer, below the machines) and the vein (scenery). Both follow the grid's layout.
+                var linkObject = new GameObject("Depot Link View");
+                linkObject.transform.SetParent(transform, false);
+                depotLinkView = linkObject.AddComponent<DepotLinkView>();
+                depotLinkView.Configure(spriteCatalog);
+                depotLinkView.Bind(grid);
+                depotLinkModel = new DepotLinkModel();
+                var depositObject = new GameObject("Deposit View");
+                depositObject.transform.SetParent(transform, false);
+                depositView = depositObject.AddComponent<DepositView>();
+                depositView.Configure(spriteCatalog);
+                depositView.Bind(grid);
+                // T557: the attention markers (shortage at the trunk junction, store full at the depot), re-bound with the grid's layout.
+                var markerObject = new GameObject("Attention Marker View");
+                markerObject.transform.SetParent(transform, false);
+                markerView = markerObject.AddComponent<AttentionMarkerView>();
+                markerView.Configure(spriteCatalog, ResourceKeyOf);
+                markerView.Bind(grid);
+                worldEffects = new WorldEffectsFeed(runSession, effectPool, worldCompositionApplied ? worldComposition.FamilyFpsCapMap() : null);
+                worldEffects.SessionReplaced += HandleWorldSessionReplaced;
+                UseMachineEffects(effectPool);
                 runShell = shell;
                 slotGrid = grid;
                 RefreshReducedMotion();
@@ -577,6 +638,10 @@ namespace IdleFactory.Unity.Bootstrap
                 dialogRotationRegistration = RegisterTransientAction(runShell.CancelConfirmationForRotation);
                 runShell.LocationRectProvider = LocationScreenRect;
                 shellPresenter = new RunShellPresenter(runSession, runCommands, runShell, slotGrid, PresentationKeyOf);
+                shellPresenter.MarkerView = markerView;
+                // T540: the banner is static under reduced motion; the world adds the deck reveal and the foundation highlight to each milestone.
+                shellPresenter.ReducedMotionProbe = () => animationClock.ReducedMotion;
+                shellPresenter.MilestoneRaised += HandleMilestoneRaised;
                 ComposeRunPanels();
             }
 
@@ -590,6 +655,23 @@ namespace IdleFactory.Unity.Bootstrap
 
         // One shared response policy for the card and the Details view; its sink is late-bound (T529 wires the pool after the panels exist).
         private MachineFeedback machineFeedback;
+
+        // A new run id (prestige, a new run, a restore): the derived models forget what they saw (P2-F12). The attention model is invalidated through
+        // the shell presenter, the card's model baseline and the pool reset in the feed.
+        private void HandleWorldSessionReplaced()
+        {
+            runShell?.ResetCardModels(false);
+            // T540: a prestige keeps the watcher baseline (its milestone is raised from the new run); a restore or a new run re-baselines.
+            shellPresenter?.RebaseMilestonesAfterSessionReplace();
+            shellPresenter?.Invalidate();
+        }
+
+        /// <summary>
+        /// Whether a lifecycle result delivers a loaded or restored state that must not be read as progress (T540): a cold start, and a return that carries no offline summary
+        /// (a restore or a reload). A return with an offline summary reconciles its milestones separately, a rotation and a departure change nothing.
+        /// </summary>
+        public static bool ShouldRebaseMilestones(LifecycleReturnKind kind, bool hasOfflineSummary) =>
+            kind == LifecycleReturnKind.ColdStart || (kind == LifecycleReturnKind.Return && !hasOfflineSummary);
 
         /// <summary>T529 hands the world effect pool here; until then the card answers with the static highlight (FR-034).</summary>
         public void UseMachineEffects(IMachineEffects effects) => MachineResponses.Effects = effects;
@@ -659,6 +741,19 @@ namespace IdleFactory.Unity.Bootstrap
             TryComposePanel(ShellPanelIds.MachineCard,
                 () => new MachineCard(runSession, runCommands, machineCardTree, machineCardStyles, panelScaffoldStyles, icons, machineFeedback,
                     () => slotGrid != null ? slotGrid.Layout : null));
+            if (buildCardTree == null)
+            {
+                // T539: a missing wiring must not go unnoticed again; the build sheet stays the fallback route.
+                Debug.LogWarning("The build card is not wired (buildCardTree is unassigned on the bootstrap): an empty location opens the build sheet.", this);
+            }
+            else
+            {
+                // T539: the build card shares the response policy (the build dust goes through the same sink) and previews through the slot grid.
+                TryComposePanel(ShellPanelIds.BuildCard,
+                    () => new BuildCard(runSession, runCommands, buildCardTree, buildCardStyles, panelScaffoldStyles, icons, machineFeedback,
+                        () => slotGrid, PresentationKeyOf));
+            }
+
             TryComposePanel(ShellPanelIds.Market,
                 () => new MarketPanelHost(runSession, runCommands, runShell, inventoryRatesTree, inventoryRatesStyles,
                     prioritiesTree, prioritiesStyles, expansionTree, expansionStyles, icons, sessionLog),
@@ -944,19 +1039,19 @@ namespace IdleFactory.Unity.Bootstrap
                 model.Settings.ReadableCellPoints != settings.ReadableCellPoints || model.Settings.MaxScale != settings.MaxScale)
             {
                 cameraController.Configure(factoryCamera, settings);
-                hasObservedLayout = false;
-                runFramingPending = true;
+                Viewport.ResetObserved();
+                Viewport.FramingPending = true;
             }
 
             if (worldLayout.LayoutId != cameraLayoutId)
             {
                 cameraLayoutId = worldLayout.LayoutId;
-                runFramingPending = true;
+                Viewport.FramingPending = true;
             }
 
             if (fitAll)
             {
-                runFramingPending = true;
+                Viewport.FramingPending = true;
             }
         }
 
@@ -965,7 +1060,7 @@ namespace IdleFactory.Unity.Bootstrap
             // The sheet that a selection opens leaves a world band after the layout resolves; the viewport step keeps the selected
             // slot in that band on every layout change while the selection lasts (rule 7).
             selectedSlot = slot;
-            selectionChanged = true;
+            Viewport.NotifySelectionChanged();
         }
 
         private static string StartupBlockedMessage(string code)
@@ -1087,6 +1182,18 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void HandleRunLifecycleResultChanged(RunCommandResult<RunPersistenceOutcome> result, LifecycleReturnKind kind)
         {
+            // T540 (R14): a milestone that arose while the player was away is listed in the offline summary and never raises a banner.
+            if (result.IsSuccess && kind == LifecycleReturnKind.Return && result.Value != null && result.Value.OfflineSummary != null && shellPresenter != null &&
+                offlinePanel != null)
+            {
+                offlinePanel.SetOfflineMilestones(shellPresenter.ReconcileOfflineMilestones(), shellPresenter.MilestoneText);
+            }
+
+            if (result.IsSuccess && ShouldRebaseMilestones(kind, result.Value != null && result.Value.OfflineSummary != null))
+            {
+                shellPresenter?.RebaseMilestones();
+            }
+
             // T118: a genuine return opens the offline summary, a return that could not be completed opens the blocked explanation
             // with Retry. A rotation and a departure open nothing (the panel decides by kind, FR-036).
             PresentOfflineReturn(result, kind);
@@ -1109,6 +1216,8 @@ namespace IdleFactory.Unity.Bootstrap
                 {
                     // P2-F12: the first refresh after an offline return reports no completion delta.
                     runShell?.ResetCardModels(true);
+                    worldEffects?.ResetModels(true);
+                    shellPresenter?.Invalidate();
                     LastOfflineSummary = result.Value.OfflineSummary;
                 }
             }
@@ -1283,6 +1392,83 @@ namespace IdleFactory.Unity.Bootstrap
                 UpdateRunShell();
                 ApplyRunViewport();
                 animationClock.Drive((long)(Time.unscaledTimeAsDouble * 1000.0), slotGrid);
+                PresentAttentionMarkers();
+                if (worldEffects != null)
+                {
+                    // T529: one refresh of the world model per frame (P2-F10), the pops of the new completions, and the 8 renderers.
+                    worldEffects.Update(slotGrid.Layout, animationClock.Milliseconds, animationClock.ReducedMotion);
+                    effectView.Present();
+                    PresentDevelopment();
+                    PresentDepotAndDeposit();
+                }
+            }
+        }
+
+        // T540: the development stage (recomputed by the presenter only when the factory snapshot is rebuilt) drives the deck dressing, the depot variant and the
+        // deposit dressing. The setters return at once when nothing changed, so this allocates nothing per frame.
+        private void PresentDevelopment()
+        {
+            if (shellPresenter == null)
+            {
+                return;
+            }
+
+            var development = shellPresenter.Development;
+            deckView?.SetDevelopment(development);
+            depotLinkView?.SetStage(development.Stage);
+            depositView?.SetStage(development.Stage);
+            deckView?.TickFeedback(animationClock.Milliseconds);
+        }
+
+        private void HandleMilestoneRaised(PendingMilestone milestone)
+        {
+            if (deckView == null)
+            {
+                return;
+            }
+
+            if (milestone.Kind == MilestoneKind.PrestigeCompleted)
+            {
+                deckView.ClearFeedback();
+                return;
+            }
+
+            deckView.ShowMilestone(milestone.FirstNewLocation, milestone.NewlyUnlockedCount, milestone.StageRaised, animationClock.Milliseconds, animationClock.ReducedMotion);
+        }
+
+        // T557: the presenter refreshed the attention model in UpdateRunShell (revision-gated and throttled); the view only draws it, once per frame,
+        // and takes the camera's scale for the 48 pt touch circle.
+        private void PresentAttentionMarkers()
+        {
+            if (markerView == null || shellPresenter == null)
+            {
+                return;
+            }
+
+            markerView.SetProjectedPixelsPerCell(CurrentPixelsPerCell);
+            markerView.Render(shellPresenter.AttentionModel);
+        }
+
+        private string ResourceKeyOf(string resourceId) =>
+            runSession != null && runSession.Catalog.Resources.TryGetValue(resourceId, out var resource) ? resource.PresentationKey : null;
+
+        // T528: the live machine rows (this frame, never a snapshot) decide the branch pips, so a pip stops in the frame after its machine stops Running;
+        // the shared store gives the depot fill; the ore-vein hold gives the chip loop. Reduced motion shows the static variants.
+        private void PresentDepotAndDeposit()
+        {
+            if (depotLinkView == null || depotLinkModel == null)
+            {
+                return;
+            }
+
+            var inventory = runSession.State.Inventory;
+            var layout = slotGrid.Layout;
+            depotLinkModel.Refresh(layout.LocationCount, worldEffects.LiveStates, worldEffects.LiveStateCount, worldEffects.Model, inventory.Total, inventory.Capacity);
+            depotLinkView.Present(depotLinkModel, animationClock.Milliseconds, animationClock.ReducedMotion);
+            if (depositView != null)
+            {
+                var oreVein = runShell.OreVein;
+                depositView.Present(oreVein != null && oreVein.IsHolding, animationClock.Milliseconds, animationClock.ReducedMotion);
             }
         }
 
@@ -1389,49 +1575,11 @@ namespace IdleFactory.Unity.Bootstrap
             }
 
             var layout = RunCameraFraming.Layout(factoryCamera, slotGrid.Layout, PixelsPerPoint(), visibleArea);
-            var fit = runFramingPending || !cameraController.HasLayout;
-            var structural = hasObservedLayout && (observedLayout.PixelWidth != layout.PixelWidth || observedLayout.PixelHeight != layout.PixelHeight ||
-                observedLayout.LayoutId != layout.LayoutId || !Mathf.Approximately(observedLayout.PixelsPerPoint, layout.PixelsPerPoint));
-            var changed = !hasObservedLayout || structural || observedLayout.UnobstructedRect != visibleArea;
             var wantSheet = selectedSlot >= 0;
-            var closedNow = false;
-
-            if (fit)
-            {
-                runFramingPending = false;
-                cameraController.Fit(layout);
-                changed = true;
-            }
-            else if (!wantSheet && cameraController.SheetOpen)
-            {
-                // The prior view returns at once; the rectangle that is still the band is not remembered as the closed one.
-                cameraController.CloseSheet(lastClosedRect);
-                closedNow = true;
-            }
-            else if (changed && structural && wantSheet)
-            {
-                // The model's sheet band carries the old screen size: fit again, the selection then reopens its sheet below.
-                cameraController.Fit(layout);
-            }
-            else if (changed && !wantSheet)
-            {
-                cameraController.UpdateLayout(layout);
-            }
-
-            if (wantSheet && (changed || selectionChanged || !cameraController.SheetOpen))
-            {
-                // SC-002: the whole machine (plate and badge band) stays in the band the card or sheet leaves, not only its plate.
-                cameraController.OpenSheet(visibleArea, framing.FrameMachine(selectedSlot, slotGrid.Layout));
-            }
-
-            selectionChanged = false;
-            observedLayout = layout;
-            hasObservedLayout = true;
-            if (!wantSheet && !closedNow && !cameraController.SheetOpen)
-            {
-                lastClosedRect = visibleArea;
-            }
+            Viewport.Apply(layout, visibleArea, wantSheet, wantSheet ? framing.FrameMachine(selectedSlot, slotGrid.Layout) : default);
         }
+
+        private RunViewportDriver Viewport => viewportDriver ?? (viewportDriver = new RunViewportDriver(cameraController));
 
         private void OnApplicationFocus(bool hasFocus)
         {
@@ -1466,6 +1614,11 @@ namespace IdleFactory.Unity.Bootstrap
             {
                 worldCompositionApplied = false;
                 LatticeLayoutBuilder.TryUseSettings(null, out _);
+            }
+
+            if (worldEffects != null)
+            {
+                worldEffects.SessionReplaced -= HandleWorldSessionReplaced;
             }
 
             if (displayPreferences != null)

@@ -106,7 +106,7 @@ namespace IdleFactory.Unity.Presentation
             badge.sortingOrder = SlotGridView.OverlayOrder + row * 4 + 3;
         }
 
-        public void Show(SlotVisual visual, PresentationSpriteCatalog catalog, StateCueSet cues)
+        public void Show(SlotVisual visual, PresentationSpriteCatalog catalog, StateCueSet cues, bool highlighted = false, string previewKey = null)
         {
             var hasRow = cues.TryGetRowForBadgeKey(visual.BadgeKey, out var cueRow);
             var running = hasRow && cueRow.State == MachineVisualState.Running;
@@ -115,7 +115,11 @@ namespace IdleFactory.Unity.Presentation
             // The catalog states per key whether the frames are a canvas layer (the shape of the requirement row they matched), so the
             // placement no longer depends on a sprite-size guess (T440 carry-forward).
             plateCanvas = IsCanvas(Apply(plate, catalog, visual.BaseKey), plate);
-            machineEntry = Apply(machine, catalog, visual.MachineKey);
+            // T539 (FR-033): the build card's ghost is the selected type's body at frame 0 and 60 % alpha on an empty location. It never animates (no cue row,
+            // so `animated` stays false) and never replaces a real machine.
+            var ghost = visual.MachineKey == null && visual.Condition == SlotCondition.Empty && previewKey != null;
+            machineEntry = Apply(machine, catalog, ghost ? previewKey : visual.MachineKey);
+            machine.color = ghost && machineEntry != null ? new Color(1f, 1f, 1f, SlotGridView.PreviewAlpha) : Color.white;
             machineCanvas = IsCanvas(machineEntry, machine);
             accentEntry = running ? Apply(accent, catalog, StateCueSet.AccentKeyFor(visual.MachineKey)) : Apply(accent, catalog, null);
             accentCanvas = IsCanvas(accentEntry, accent);
@@ -123,7 +127,9 @@ namespace IdleFactory.Unity.Presentation
             machineFrame = 0;
             accentFrame = 0;
 
-            frameCanvas = IsCanvas(Apply(frame, catalog, visual.Selected ? StateCueSet.SelectionFrameKey : null), frame);
+            // T539 (FR-033): an available build location carries the selection frame at reduced alpha; the selected (preview) location keeps the full frame.
+            frameCanvas = IsCanvas(Apply(frame, catalog, visual.Selected || highlighted ? StateCueSet.SelectionFrameKey : null), frame);
+            frame.color = visual.Selected || !highlighted ? Color.white : new Color(1f, 1f, 1f, SlotGridView.HighlightAlpha);
             var labelEntry = Apply(label, catalog, StateCueSet.LabelKeyFor(visual.Condition, visual.UnlockLevel));
             hasLabel = labelEntry != null;
             labelCanvas = IsCanvas(labelEntry, label);

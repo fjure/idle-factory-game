@@ -139,7 +139,16 @@ namespace IdleFactory.Unity.UI
 
                 if (focused)
                 {
-                    overdrive.schedule.Execute(() => overdrive.Focus());
+                    // T539 (T555 review A3): the refocus runs a frame later. It is guarded so it never steals focus: it does nothing when the control left the panel
+                    // meanwhile, or when focus already moved elsewhere (the player pressed Tab or opened something in that frame).
+                    overdrive.schedule.Execute(() =>
+                    {
+                        var controller = overdrive.focusController;
+                        if (overdrive.panel != null && (controller == null || controller.focusedElement == null))
+                        {
+                            overdrive.Focus();
+                        }
+                    });
                 }
             }
         }

@@ -1573,3 +1573,34 @@
     flex-direction: column;
     align-items: center;
 }
+
+/* ---------- Milestone banner (T540, FR-035) ----------
+   A transient overlay at the top of the world column, below the strip and the notice bars (RunShellDocument.PlaceMilestoneBanner). It takes no layout space and is not part
+   of the camera rectangle, so it never reframes the camera. At least 44 px high (a dismiss target); the text wraps at every text scale. */
+.run-milestone {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    top: 0;
+    flex-direction: column;
+    min-height: 44px;
+    justify-content: center;
+    padding: 4px 8px 4px 10px;
+    background-color: var(--surface-raised);
+    border-left-width: 4px;
+    border-left-color: var(--accent);
+    display: none;
+}
+
+.run-milestone__text {
+    white-space: normal;
+    margin: 0;
+    padding: 0;
+    color: var(--text-primary);
+    font-size: var(--run-fs-body);
+    -unity-text-align: middle-left;
+}
+
+.run-milestone__text--extra {
+    color: var(--text-muted);
+}

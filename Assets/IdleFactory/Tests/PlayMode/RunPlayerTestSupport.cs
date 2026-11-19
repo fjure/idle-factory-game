@@ -321,8 +321,21 @@ namespace IdleFactory.Tests.PlayMode
             return read.Document;
         }
 
+        /// <summary>The reference catalog plus one standing production offer for Iron Ore (T529: contract progress moves the structure revision on every unit).</summary>
+        public static RunCatalog WithProductionContract(string offerId, long units)
+        {
+            var offers = new[]
+            {
+                new ContractOfferDef(offerId, "plate", "iron.ore", new Curve(units, 1_000_000, "ceil"), null,
+                    new[] { new ContractRewardDef("rp", new Curve(1, 1_000_000, "floor")) }, new UnlockCondition("always"),
+                    objective: "produce", rewardRatioPpm: 1_200_000),
+            };
+            return BuildCatalog(null, 25, 1_080_000, new[] { new SpeedMilestone(10, 2_000_000), new SpeedMilestone(25, 2_000_000) },
+                1_200_000, 100_000_000L, 4_000, offers);
+        }
+
         private static RunCatalog BuildCatalog(long[] level2SpeedPpm, int maxLevel, long growthPpm, IReadOnlyList<SpeedMilestone> milestones,
-            long itemFactorPpm, long maxCombinedSpeedPpm, long storageCapacity)
+            long itemFactorPpm, long maxCombinedSpeedPpm, long storageCapacity, ContractOfferDef[] offers = null)
         {
             var always = new UnlockCondition("always");
             var resources = new[]
@@ -358,7 +371,7 @@ namespace IdleFactory.Tests.PlayMode
             return new RunCatalog(1, resources, recipes, machines,
                 new[] { new StorageLevelDef(1, 1000, 0), new StorageLevelDef(2, storageCapacity, 2500) },
                 new[] { new FactoryLevelDef(1, 12, 0) },
-                new ContractOfferDef[0], items, new ResearchDef[0], new IndustryUpgradeDef[0],
+                offers ?? new ContractOfferDef[0], items, new ResearchDef[0], new IndustryUpgradeDef[0],
                 new OverdriveDef(TenHoursMs, 300_000, 2_000_000, always),
                 new PrestigeDef(10_000_000, "sqrt", 10, 10_000_000),
                 new RunStartDef(25, new[] { "iron.ore", "machine.miner" }, 500_000, 1_000_000,

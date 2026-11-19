@@ -19,7 +19,7 @@ namespace IdleFactory.Tests.EditMode.F006
     public sealed class DeckCompositeProofTests
     {
         // Art Bible 9.4 rule C1 (A_ov), the frame backdrop rule C3 and the OD-9b ring-safe set R (A_ov without steel_*, teal_1, lit_* and the unused res_*).
-        private static readonly string[] AllowedOverlay =
+        internal static readonly string[] AllowedOverlay =
         {
             "ink_0", "ink_1", "steel_1", "steel_2", "steel_3", "copper_1", "copper_2", "teal_1", "dim_0", "lit_0", "lit_1",
             "floor_0", "floor_1", "plate_1", "plate_2", "res_ore_1", "res_coal", "res_crystal", "res_leaf", "res_gold",
@@ -28,7 +28,7 @@ namespace IdleFactory.Tests.EditMode.F006
 
         private static readonly string[] FrameForbidden = { "warn_0", "plate_0", "res_ore_0" };
 
-        private static bool InRingSafeSet(string tone) =>
+        internal static bool InRingSafeSet(string tone) =>
             AllowedOverlay.Contains(tone) && !tone.StartsWith("steel_", StringComparison.Ordinal) && !tone.StartsWith("lit_", StringComparison.Ordinal)
             && tone != "teal_1" && tone != "res_crystal" && tone != "res_leaf" && tone != "res_water";
 

@@ -81,6 +81,42 @@ namespace IdleFactory.Tests.PlayMode.F006
             return key == FactoryDeckView.DeckTileKey ? DeckColour : key == FactoryDeckView.HatchTileKey ? HatchColour : BaseColour;
         }
 
+        private static Color32 LinkColourOf(string key)
+        {
+            if (key.StartsWith("F006-LINK-", StringComparison.Ordinal))
+            {
+                return new Color32(46, 51, 64, 255);
+            }
+
+            if (key.StartsWith("F006-DEPOT-", StringComparison.Ordinal))
+            {
+                return new Color32(120, 130, 150, 255);
+            }
+
+            return key.StartsWith("F006-DEPOSIT-", StringComparison.Ordinal) ? new Color32(150, 110, 70, 255) : new Color32(210, 140, 80, 255);
+        }
+
+        /// <summary>A catalog of 32 x 24 flat-colour icons under <paramref name="keys"/> (the resource icons and the storage-full cue of the attention markers, T557).</summary>
+        public PresentationSpriteCatalog IconCatalog(params string[] keys)
+        {
+            var entries = new List<PresentationSpriteEntry>();
+            var requirements = new List<PresentationSpriteRequirement>();
+            for (var i = 0; i < keys.Length; i++)
+            {
+                entries.Add(new PresentationSpriteEntry(keys[i], new[] { Solid(keys[i], 32, 24, 16, 12, new Color32((byte)(60 + 40 * i), 180, 90, 255)) }, null));
+                requirements.Add(new PresentationSpriteRequirement(keys[i], 32f / D, 1f, 0.5f, 0.5f, 1, 1, false));
+            }
+
+            var result = new PresentationSpriteCatalog();
+            result.Configure(entries, requirements);
+            if (!result.IsValid)
+            {
+                throw new InvalidOperationException(result.Error);
+            }
+
+            return result;
+        }
+
         /// <summary>A catalog with every key the grid and the deck draw: the slot keys, a 6-frame Miner and its accent, the badges and markers, and the placed F006 keys.</summary>
         public PresentationSpriteCatalog Catalog()
         {
@@ -122,6 +158,60 @@ namespace IdleFactory.Tests.PlayMode.F006
                 entries.Add(new PresentationSpriteEntry(key, Solid(key, size.Width, size.Height, size.PivotX, size.PivotY, ColourOf(key))));
                 PresentationSpriteCatalog.TryGetRegistryRequirement(key, out var row);
                 requirements.Add(row);
+            }
+
+            // T528: the link tiles, the depot, the deposit, the branch pip and the vein chip loop (flat colour, the real registry size, pivot and frame count of each key).
+            foreach (var key in PresentationSpriteCatalog.PlacedF006LinkKeys)
+            {
+                if (!PresentationSpriteCatalog.TryGetRegistryRequirement(key, out var row))
+                {
+                    throw new InvalidOperationException("No registry row for " + key);
+                }
+
+                var width = Mathf.RoundToInt(row.WorldWidth * D);
+                var height = Mathf.RoundToInt(row.WorldHeight * D);
+                var tone = LinkColourOf(key);
+                if (row.MinFrames <= 1)
+                {
+                    entries.Add(new PresentationSpriteEntry(key, Solid(key, width, height, row.PivotX * width, row.PivotY * height, tone)));
+                }
+                else
+                {
+                    var frames = Enumerable.Range(0, row.MinFrames)
+                        .Select(f => Solid(key + "-" + f, width, height, row.PivotX * width, row.PivotY * height, new Color32((byte)(80 + 20 * f), tone.g, tone.b, 255)))
+                        .ToArray();
+                    entries.Add(new PresentationSpriteEntry(key, frames, 8f));
+                }
+
+                requirements.Add(row);
+            }
+
+            // T529: the F006 FX frames the effect pool draws (flat colour, the real registry size, pivot and frame count of each effect).
+            foreach (EffectKind kind in Enum.GetValues(typeof(EffectKind)))
+            {
+                var key = EffectPool.SpriteKeyOf(kind);
+                if (!PresentationSpriteCatalog.TryGetRegistryRequirement(key, out var row))
+                {
+                    throw new InvalidOperationException("No registry row for " + key);
+                }
+
+                var width = Mathf.RoundToInt(row.WorldWidth * D);
+                var height = Mathf.RoundToInt(row.WorldHeight * D);
+                var frames = Enumerable.Range(0, row.MinFrames)
+                    .Select(f => Solid(key + "-" + f, width, height, row.PivotX * width, row.PivotY * height, new Color32((byte)(90 + 25 * f), 230, 120, 255)))
+                    .ToArray();
+                entries.Add(new PresentationSpriteEntry(key, frames, 10f));
+                requirements.Add(row);
+            }
+
+            // T540: the static foundation highlight of a milestone (one frame).
+            if (!entries.Any(e => e.Key == FactoryDeckView.HighlightKey))
+            {
+                PresentationSpriteCatalog.TryGetRegistryRequirement(FactoryDeckView.HighlightKey, out var highlightRow);
+                var hw = Mathf.RoundToInt(highlightRow.WorldWidth * D);
+                var hh = Mathf.RoundToInt(highlightRow.WorldHeight * D);
+                entries.Add(new PresentationSpriteEntry(FactoryDeckView.HighlightKey, Solid(FactoryDeckView.HighlightKey, hw, hh, highlightRow.PivotX * hw, highlightRow.PivotY * hh, new Color32(192, 199, 212, 255))));
+                requirements.Add(highlightRow);
             }
 
             var catalog = new PresentationSpriteCatalog();

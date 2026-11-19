@@ -161,7 +161,7 @@ namespace IdleFactory.Unity.UI.Panels
         /// <summary>The last sale's result sits after Auto-sell so the per-row focus order stays step, Sell, Auto-sell.</summary>
         private void AddSellFeedback(Row row)
         {
-            row.SellResult = MarketPanelParts.NewValueButton("inventory-sell-result-" + row.ResourceId, "inv-value");
+            row.SellResult = MarketPanelParts.NewValueButton("inventory-sell-result-" + row.ResourceId, "inv-value", true);
             row.SellResult.AddToClassList("inv-sell__result");
             MarketPanelParts.SetVisible(row.SellResult, false);
             row.Root.Add(row.SellResult);

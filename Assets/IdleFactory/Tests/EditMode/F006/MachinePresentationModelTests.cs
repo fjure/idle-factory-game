@@ -6,6 +6,8 @@ using IdleFactory.Tests.EditMode.Fixtures;
 using IdleFactory.Tests.EditMode.Fixtures.Run;
 using IdleFactory.Unity.Presentation;
 using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
 
 namespace IdleFactory.Tests.EditMode.F006
 {
@@ -426,6 +428,97 @@ namespace IdleFactory.Tests.EditMode.F006
                 }
             });
             Assert.That(allocations, Is.Zero, "the refresh reuses its buffers");
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // P2-F10: reading the buffer twice, every frame
+        // ---------------------------------------------------------------------------------------------------
+
+        [Test]
+        public void TheBufferReadTwiceWithoutARevisionChangeShowsTheSameDeltaAndTheNextRefreshClearsIt()
+        {
+            var model = new MachinePresentationModel();
+            Step(model, 1, 0);
+            Step(model, 2, 1);
+            var generation = model.Generation;
+            Assert.That(model[0].CompletionsDelta, Is.EqualTo(1));
+            Assert.That(model[0].CompletionsDelta, Is.EqualTo(1), "reading does not consume: the buffer holds the delta until the next refresh");
+            Assert.That(model.Generation, Is.EqualTo(generation), "a read never moves the generation");
+
+            var same = PresentationModelSynth.Build(1, 2, new[] { Machine(0, m => m.Completed = 1) });
+            for (var frame = 0; frame < 30; frame++)
+            {
+                model.Refresh(Layout, same.Factory, same.Views, same.Views.Length);
+                Assert.That(model[0].CompletionsDelta, Is.Zero, "a refresh in every frame never shows the same delta twice, frame " + frame);
+            }
+
+            Assert.That(model.Generation, Is.EqualTo(generation), "the skipped refreshes did not rebuild the buffer");
+        }
+
+        [Test]
+        public void EveryRebuildMovesTheGenerationAndASkippedRefreshDoesNot()
+        {
+            var model = new MachinePresentationModel();
+            Assert.That(model.Generation, Is.Zero);
+            Step(model, 1, 0);
+            var first = model.Generation;
+            Assert.That(first, Is.EqualTo(1));
+            Step(model, 1, 0);
+            Assert.That(model.Generation, Is.EqualTo(first), "the same revisions are skipped");
+            Step(model, 2, 0);
+            Assert.That(model.Generation, Is.EqualTo(first + 1));
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // P2-F14: the family cap table is authored data
+        // ---------------------------------------------------------------------------------------------------
+
+        [Test]
+        public void TheFamilyCapTableIsAuthoredInTheCompositionSettingsAndTheModelReadsIt()
+        {
+            var settings = ScriptableObject.CreateInstance<WorldCompositionSettings>();
+            try
+            {
+                Assert.That(settings.FamilyFpsCapMap()["machine.assembler"], Is.EqualTo(8), "the default row of the settings is the measured Assembler cap");
+                Assert.That(MachinePresentationModel.ShippedFamilyFpsCaps["machine.assembler"], Is.EqualTo(8), "the shipped table is the settings default, not a second copy");
+
+                settings.familyFpsCaps = new[] { new FamilyFpsCap(RunCommandFixtures.Miner, 6) };
+                var model = new MachinePresentationModel(settings.FamilyFpsCapMap());
+                var built = PresentationModelSynth.Build(1, 1, new[] { Machine(0, m => m.CycleTicks = 5_000_000), Machine(1, m => { m.MachineId = RunCommandFixtures.Assembler; m.CycleTicks = 5_000_000; }) });
+                model.Refresh(Layout, built.Factory, built.Views, built.Views.Length);
+                Assert.That(model[0].ActivityFps, Is.EqualTo(6), "an authored row caps its family");
+                Assert.That(model[1].ActivityFps, Is.EqualTo(MachinePresentationModel.FastFps), "a family without a row runs at its pace rate");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void TheAuthoredSettingsAssetCarriesTheAssemblerCapAndIsValid()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<WorldCompositionSettings>(WorldCompositionSettings.AssetPath);
+            Assert.That(asset, Is.Not.Null);
+            Assert.That(asset.FamilyFpsCapMap()["machine.assembler"], Is.EqualTo(8));
+            Assert.That(asset.Validate(), Is.Empty);
+        }
+
+        [Test]
+        public void ValidationRejectsAFamilyCapAboveTheFastestLoopOrWithoutAMachineId()
+        {
+            var settings = ScriptableObject.CreateInstance<WorldCompositionSettings>();
+            try
+            {
+                settings.familyFpsCaps = new[] { new FamilyFpsCap("machine.press", 12), new FamilyFpsCap(string.Empty, 8), new FamilyFpsCap("machine.smelter", 0) };
+                Assert.That(settings.Validate().Count(problem => problem.Contains("familyFpsCaps")), Is.EqualTo(3));
+                settings.familyFpsCaps = WorldCompositionSettings.NewDefaultFamilyFpsCaps();
+                Assert.That(settings.Validate().Any(problem => problem.Contains("familyFpsCaps")), Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(settings);
+            }
         }
     }
 }

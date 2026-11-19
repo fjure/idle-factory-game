@@ -593,23 +593,44 @@ def ring_proof(sprites: list[Sprite], palette: Palette) -> ck.CheckResult:
                         on_lane += 1
                         tid = palette.id_of(px[:3]) or "unknown"
                         tones[tid] = tones.get(tid, 0) + 1
-            under_badge = sum(1 for b in badges.values() for q in b if 0 <= q[0] < layer.width and 0 <= q[1] < layer.height and lp[q[0], q[1]][3])
+            under_tones: dict[str, int] = {}
+            for b in badges.values():
+                for q in b:
+                    if 0 <= q[0] < layer.width and 0 <= q[1] < layer.height and lp[q[0], q[1]][3]:
+                        tid = palette.id_of(lp[q[0], q[1]][:3]) or "unknown"
+                        under_tones[tid] = under_tones.get(tid, 0) + 1
+            under_badge = sum(under_tones.values())
             bad = {t: n for t, n in tones.items() if t not in SET_R}
             steel = sum(n for t, n in tones.items() if t.startswith("steel_"))
             passed = not bad and steel == 0
             ok &= passed
             rows.append({"layout": name, "badge": cid, "slots": len(locs), "ringPx": ring_px, "ringPxOnLane": on_lane,
                          "ringTonesOnLane": dict(sorted(tones.items())), "ringPxNotInSetR": sum(bad.values()), "ringSteelPx": steel,
-                         "laneUnderBadgePx": under_badge, "passed": passed})
+                         "laneUnderBadgePx": under_badge, "laneUnderBadgeTones": dict(sorted(under_tones.items())), "passed": passed})
     return ck.CheckResult("c8_ring_link_layer", ok, {"rule": "C8 and Art Bible 21.8 items 1 and 3: set R only, zero steel_* in any ring",
                                                      "layouts": list(TEST_LAYOUTS), "rows": rows})
 
 
-def cue_over_lane_contrast(palette: Palette) -> ck.CheckResult:
-    """P1-F3: badges and markers lie over their own trunk and branch (lanes draw below the overlay layer). For every F004 badge and marker
-    sprite, the composite-mask outline share of section 9.3 (ink OR rim reaching 3:1) against each tone a lane uses, measured on a uniform
-    backdrop of that tone. A tone under 90 % is reported (`failingTones`); it is recorded evidence, not a LINK gate, because the cue sprite
-    and its rule C5 belong to F004 (the badge keeps its own ink_0 outline and fill)."""
+# T556 (Art Bible 21.11, C1). The Art Bible C1 derivation: a tone T carries a badge or marker when
+# `max(ratio(ink_0, T), ratio(fill, T)) >= 3` (WCAG non-text 3:1). The same rule is applied to every LINK lane tone.
+CUE_FILLS = ("cue_warn", "cue_alert", "cue_info", "cue_neutral", "cue_dim", "cue_ok", "cvd_green", "cvd_pink")
+LANE_TONES = ("dim_0", "ink_1", "ink_0", "copper_1", "copper_2")
+NON_TEXT_CONTRAST = 3.0
+# A pair whose FILL is below 3:1 is carried by the 1 px ink_0 outline alone. That is accepted only on a lane tone whose share of the
+# pixels under the badge masks stays within this limit per badge (measured on the densest frames of the five layouts, K0 and K4):
+# copper_1 is the only such tone that occurs under a badge (measured 11 px per badge mask, outline pixels included, and 1 px per badge in the
+# 1 px ring; the limits leave one pixel of headroom); copper_2 (the active dashes) must not occur at all.
+OUTLINE_ONLY_MAX_PX_PER_BADGE = {"copper_1": 12, "copper_2": 0}
+OUTLINE_ONLY_MAX_RING_PX_PER_BADGE = {"copper_1": 2, "copper_2": 0}
+
+
+def cue_over_lane_contrast(palette: Palette, ring: ck.CheckResult | None = None) -> ck.CheckResult:
+    """P1-F3 and T556: badges and markers lie over their own trunk and branch (lanes draw below the overlay layer).
+    (1) Composite-mask outline share of section 9.3 per F004 badge and marker sprite against each lane tone (`sharesByCue`, evidence).
+    (2) Luminance contrast (`art_pipeline.color.contrast_ratio`) of every cue fill and of the `ink_0` outline against every lane tone,
+    including `copper_1` and `copper_2`. A pair passes by rule C1 when fill OR outline reaches 3:1; the carrier is recorded.
+    (3) Pairs whose fill is under 3:1 (outline-carried) are accepted only within the per-badge pixel-area limit
+    `OUTLINE_ONLY_MAX_PX_PER_BADGE`, checked on the pixels under every badge of the densest frames (needs the ring proof rows)."""
     from ..cues_production import uniform_backdrop
     tones = ("dim_0", "ink_1", "ink_0", "copper_1", "copper_2")
     root = REPO / "art-source" / "f004"
@@ -627,9 +648,39 @@ def cue_over_lane_contrast(palette: Palette) -> ck.CheckResult:
     lane_pairs = {f"{a}|{b}": round(contrast_ratio(palette.rgb(a), palette.rgb(b)), 2)
                   for a, b in (("dim_0", "floor_0"), ("dim_0", "floor_1"), ("ink_0", "dim_0"), ("copper_1", "dim_0"), ("copper_2", "dim_0"),
                                ("copper_1", "floor_0"), ("copper_2", "floor_0"))}
-    return ck.CheckResult("cue_over_lane_contrast", not failing, {
+    outline = {t: round(contrast_ratio(palette.rgb("ink_0"), palette.rgb(t)), 2) for t in LANE_TONES}
+    fills, carrier_fail, outline_only = {}, [], {}
+    for fill in CUE_FILLS:
+        row = {}
+        for t in LANE_TONES:
+            r = round(contrast_ratio(palette.rgb(fill), palette.rgb(t)), 2)
+            row[t] = r
+            if max(r, outline[t]) < NON_TEXT_CONTRAST:
+                carrier_fail.append(f"{fill}|{t}")
+            elif r < NON_TEXT_CONTRAST:
+                outline_only.setdefault(t, []).append(fill)
+        fills[fill] = row
+    area, area_ok = {}, True
+    if ring is not None:
+        for t, limit in OUTLINE_ONLY_MAX_PX_PER_BADGE.items():
+            worst = worst_ring = 0.0
+            for row in ring.details["rows"]:
+                worst = max(worst, row["laneUnderBadgeTones"].get(t, 0) / row["slots"])
+                worst_ring = max(worst_ring, row["ringTonesOnLane"].get(t, 0) / row["slots"])
+            rlimit = OUTLINE_ONLY_MAX_RING_PX_PER_BADGE[t]
+            ok_t = worst <= limit and worst_ring <= rlimit
+            area[t] = {"limitMaskPxPerBadge": limit, "worstMaskPxPerBadge": round(worst, 3), "limitRingPxPerBadge": rlimit,
+                       "worstRingPxPerBadge": round(worst_ring, 3), "passed": ok_t}
+            area_ok &= ok_t
+        unlisted = sorted(t for t in outline_only if t not in OUTLINE_ONLY_MAX_PX_PER_BADGE)
+        area_ok &= not unlisted
+    return ck.CheckResult("cue_over_lane_contrast", not failing and not carrier_fail and area_ok, {
         "threshold": v1.SHARE_THRESHOLD, "tones": list(tones), "sharesByCue": table, "failingTones": {k: sorted(set(v)) for k, v in failing.items()},
-        "laneContrastRatios": lane_pairs, "note": "P1-F3 evidence; a failing tone is a finding for the Art Director, see the T522 report"})
+        "laneContrastRatios": lane_pairs,
+        "rule": "T556, Art Bible 21.11 and C1: a cue over a lane tone passes when max(fill, ink_0 outline) reaches 3:1",
+        "nonTextContrast": NON_TEXT_CONTRAST, "fillRatios": fills, "outlineRatios": outline, "pairsWithoutCarrier": carrier_fail,
+        "outlineOnlyFills": {k: sorted(v) for k, v in sorted(outline_only.items())}, "outlineOnlyAreaLimit": area,
+        "note": "P1-F3 evidence; a failing tone is a finding for the Art Director, see the T522 report"})
 
 
 # --------------------------------------------------------------------------------------------------------------------- provenance
@@ -708,7 +759,8 @@ def build_all(palette: Palette | None = None) -> dict:
     link = [s for s in sprites if s.family == "link"]
     fxs = [s for s in sprites if s.family == "fx"]
     evidence = flash_evidence(sprites, p)
-    glob_link = [ck.check_palette_definition(p), ring_proof(sprites, p), cue_over_lane_contrast(p),
+    ring = ring_proof(sprites, p)
+    glob_link = [ck.check_palette_definition(p), ring, cue_over_lane_contrast(p, ring),
                  ck.CheckResult("inventory", [s.sprite_id for s in link] == ["f006-link-trunk", "f006-link-junction", "f006-link-branch",
                                                                              "f006-link-branch-active"], {"tiles": len(link)})]
     glob_fx = [ck.check_palette_definition(p), ck.CheckResult("flash_composite_matrix", evidence["passed"], evidence),

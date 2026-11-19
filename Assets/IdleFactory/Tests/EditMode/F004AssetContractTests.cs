@@ -668,8 +668,8 @@ namespace IdleFactory.Tests.EditMode
             var keys = shipped.entries.Where(entry => !entry.intentionallyEmpty).Select(entry => entry.key).ToArray();
             Assert.That(keys, Has.Length.EqualTo(86), "77 Feature 003 keys with art and the 9 F004-only keys (T527 removed the floor tile)");
 
-            // T527 (A-13): the placed F006 rows (ground, props, edges and the hub glyph) are required too.
-            keys = keys.Concat(PresentationSpriteCatalog.PlacedF006Keys).Append(PresentationSpriteCatalog.OfficeIconKey).ToArray();
+            // T527 (A-13): the placed F006 rows (ground, props, edges and the hub glyph) are required too; T528 adds the links, depot, deposit, pip and vein chip.
+            keys = keys.Concat(PresentationSpriteCatalog.PlacedF006Keys).Concat(PresentationSpriteCatalog.PlacedF006LinkKeys).Append(PresentationSpriteCatalog.OfficeIconKey).ToArray();
             WithSceneCatalog(scene =>
             {
                 var entries = new List<PresentationSpriteEntry>();

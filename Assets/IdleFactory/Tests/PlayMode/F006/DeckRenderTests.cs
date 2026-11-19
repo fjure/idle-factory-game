@@ -216,7 +216,13 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(deck.Plan.BaseCells.Count, Is.GreaterThanOrEqualTo(bootstrap.SlotGrid.Layout.DeckCells.Count));
             Assert.That(DeckTestRig.TileCount(deck.DeckTilemap), Is.EqualTo(12));
             Assert.That(LatticeLayoutBuilder.ActiveSettings, Is.Not.Null, "P1-F1: the authored composition feeds the shipped layouts");
-            Assert.That(deck.Plan.Props, Is.Not.Empty, "the authored stage-1 density places props in the margin ring");
+            // T540 (owner decision 2026-11-18): the first factory is Early with an unlit margin, so the shipped start carries no ring props; the authored density places
+            // them once the ring is lit (stage 1 here, on an all-built factory), and none ever stands over the dark base.
+            Assert.That(deck.Plan.Dressed, Is.True);
+            Assert.That(deck.Plan.Props.All(p => deck.Plan.LitRingCells.Contains(p.Cell) || deck.Plan.LocationCells.Contains(p.Cell)), Is.True);
+            var lit = DeckPlanner.Build(bootstrap.SlotGrid.Layout, Enumerable.Repeat(SlotCondition.Occupied, bootstrap.SlotGrid.Layout.LocationCount).ToArray(), 1,
+                LatticeLayoutBuilder.ActiveSettings, new DeckDressing(0));
+            Assert.That(lit.Props, Is.Not.Empty, "the authored stage-1 density places props in the lit margin ring");
             var slotMaterial = bootstrap.SlotGrid.GetComponentsInChildren<SpriteRenderer>(true).First().sharedMaterial;
             Assert.That(deck.BaseRenderer.sharedMaterial, Is.SameAs(slotMaterial));
         }

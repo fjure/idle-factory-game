@@ -18,6 +18,28 @@ namespace IdleFactory.Unity.Presentation
     }
 
     /// <summary>
+    /// Why a missing-input machine lacks its input, beyond which input it is (A-5, B-4, T528). The card's cause line says which resource is short;
+    /// this says the reason, so the player sees the cause in one tap. Derived from the rates snapshot only; nothing here is saved.
+    /// </summary>
+    public enum MissingInputCause
+    {
+        /// <summary>No specific cause is known (the machine is not missing an input, or no rates were supplied).</summary>
+        None = 0,
+
+        /// <summary>The input is auto-sold: the store sells it as it arrives, so it never accumulates for the machine.</summary>
+        AutoSold = 1,
+
+        /// <summary>No active machine makes the input: nothing upstream supplies it.</summary>
+        NoSource = 2,
+
+        /// <summary>The store is full, so machines that make the input cannot store their output.</summary>
+        StoreFull = 3,
+
+        /// <summary>Something makes the input, but its supply is not keeping up with the demand (the upstream machines are slower, idle or short themselves).</summary>
+        SourceTooSlow = 4,
+    }
+
+    /// <summary>
     /// What the world draws for one building location (F006 data-model "MachinePresentation", contracts/presentation-model.md section 2).
     /// A plain value: the model overwrites its buffer in place on a refresh, so copy a value to keep it.
     /// </summary>
@@ -25,7 +47,8 @@ namespace IdleFactory.Unity.Presentation
     {
         public MachinePresentation(
             BuildingLocationId location, Guid instanceId, string machineId, int machineTypeIndex, int level, MachineVisualState visualState,
-            bool upgradeAvailable, ActivityPace pace, int activityFps, int completionsDelta, string limitingResourceId)
+            bool upgradeAvailable, ActivityPace pace, int activityFps, int completionsDelta, string limitingResourceId,
+            MissingInputCause limitingCause = MissingInputCause.None)
         {
             Location = location;
             IsOccupied = true;
@@ -39,6 +62,7 @@ namespace IdleFactory.Unity.Presentation
             ActivityFps = activityFps;
             CompletionsDelta = completionsDelta;
             LimitingResourceId = limitingResourceId;
+            LimitingCause = limitingCause;
         }
 
         public MachinePresentation(BuildingLocationId location)
@@ -55,6 +79,7 @@ namespace IdleFactory.Unity.Presentation
             ActivityFps = 0;
             CompletionsDelta = 0;
             LimitingResourceId = null;
+            LimitingCause = MissingInputCause.None;
         }
 
         public BuildingLocationId Location { get; }
@@ -92,6 +117,9 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The resource a missing-input machine is short of (its first short input), otherwise null.</summary>
         public string LimitingResourceId { get; }
+
+        /// <summary>Why <see cref="LimitingResourceId"/> is short (auto-sell, no source, a full store, a slow source); <see cref="MissingInputCause.None"/> without rates.</summary>
+        public MissingInputCause LimitingCause { get; }
     }
 
     /// <summary>
@@ -103,9 +131,12 @@ namespace IdleFactory.Unity.Presentation
     /// the save format is unchanged and an observer changes no result (the baseline is derived data).
     /// </para>
     /// <para>
-    /// Caller contract: refresh only when <see cref="NeedsRefresh"/> says so (the snapshots are built on demand and allocate; the model's own
-    /// <see cref="Refresh"/> does not). Call <see cref="ResetBaseline"/> when the session is replaced (restore, prestige, new run), because the
-    /// revisions of a new session may repeat old values. Pass <c>suppressDeltas</c> on the refresh that follows an offline return.
+    /// Caller contract (P2-F10): call <see cref="Refresh"/> every frame. It is cheap and allocation-free: with unchanged revisions it only clears the
+    /// completion deltas of the last rebuild, so the buffer never shows the same delta in two frames. The snapshots it reads are built on demand and
+    /// allocate, so a caller builds a new one only when <see cref="NeedsRefresh"/> says so and passes the cached one otherwise. A caller that skips
+    /// <see cref="Refresh"/> in a frame sees the old deltas again: compare <see cref="Generation"/> with the last one consumed. Call
+    /// <see cref="ResetBaseline"/> when the session is replaced (restore, prestige, new run), because the revisions of a new session may repeat old
+    /// values. Pass <c>suppressDeltas</c> on the refresh that follows an offline return.
     /// </para>
     /// </summary>
     public sealed class MachinePresentationModel
@@ -131,11 +162,9 @@ namespace IdleFactory.Unity.Presentation
 
         private static readonly IReadOnlyDictionary<string, int> NoCaps = new Dictionary<string, int>(0);
 
-        private static readonly IReadOnlyDictionary<string, int> ShippedCaps = new Dictionary<string, int>(StringComparer.Ordinal)
-        {
-            // The Assembler loop already flashes 3 times per second at its measured rate (Art Bible 6.4), so it never runs above 8 fps (R12).
-            { "machine.assembler", NormalFps },
-        };
+        // The shipped table is authored data (P2-F14): the defaults of WorldCompositionSettings, which the authored asset overrides. Nothing is hardcoded here.
+        private static readonly IReadOnlyDictionary<string, int> ShippedCaps =
+            WorldCompositionSettings.BuildFamilyFpsCaps(WorldCompositionSettings.NewDefaultFamilyFpsCaps());
 
         private readonly IReadOnlyDictionary<string, int> familyFpsCaps;
         private MachinePresentation[] buffer = Array.Empty<MachinePresentation>();
@@ -147,18 +176,25 @@ namespace IdleFactory.Unity.Presentation
         private long structureRevision;
         private long quantityRevision;
         private int lastLocationCount = -1;
+        private long generation;
 
-        /// <param name="familyFpsCaps">Machine id to the highest loop rate of that family; null uses <see cref="ShippedFamilyFpsCaps"/>.</param>
+        /// <param name="familyFpsCaps">Machine id to the highest loop rate of that family (<see cref="WorldCompositionSettings.FamilyFpsCapMap"/>); null uses <see cref="ShippedFamilyFpsCaps"/>.</param>
         public MachinePresentationModel(IReadOnlyDictionary<string, int> familyFpsCaps = null)
         {
             this.familyFpsCaps = familyFpsCaps ?? ShippedCaps;
         }
 
-        /// <summary>The per-family loop-rate caps that ship today (the Assembler at 8 fps). The art pass T522 may extend the table.</summary>
+        /// <summary>The per-family loop-rate caps of the default settings (the Assembler at 8 fps). The world feed passes the authored table of the settings asset instead.</summary>
         public static IReadOnlyDictionary<string, int> ShippedFamilyFpsCaps => ShippedCaps;
 
         /// <summary>The model without any family cap, for tests.</summary>
         public static IReadOnlyDictionary<string, int> NoFamilyFpsCaps => NoCaps;
+
+        /// <summary>
+        /// Counts the refreshes that rebuilt the buffer. The deltas of one generation are fresh: a consumer remembers the generation it consumed and
+        /// ignores a buffer it has seen, so reading the buffer twice, or in several frames, never repeats an effect (P2-F10).
+        /// </summary>
+        public long Generation => generation;
 
         /// <summary>The number of locations of the last refresh; the buffer holds one <see cref="MachinePresentation"/> per location id.</summary>
         public int LocationCount => locationCount;
@@ -231,24 +267,27 @@ namespace IdleFactory.Unity.Presentation
         /// order (it carries the completed-cycles counter) and <paramref name="factory"/> the snapshot of the same revisions (next upgrade, cycle time).
         /// <paramref name="rates"/> is optional and only supplies <see cref="MachinePresentation.LimitingResourceId"/>.
         /// </summary>
+        /// <param name="force">Rebuilds although the revisions did not move: the caller saw a completed-cycles counter move (a cycle can complete without a quantity change).</param>
         /// <returns>
         /// False when nothing changed (the revisions and the location count are as before): the buffer then reports no delta. A skipped refresh never
         /// repeats a delta, so a view that reads the buffer every frame spawns an effect once.
         /// </returns>
         public bool Refresh(
-            FactoryWorldLayout layout, RunFactorySnapshot factory, MachineStateView[] views, int viewCount, RatesSnapshot rates = null, bool suppressDeltas = false)
+            FactoryWorldLayout layout, RunFactorySnapshot factory, MachineStateView[] views, int viewCount, RatesSnapshot rates = null, bool suppressDeltas = false,
+            bool force = false)
         {
             if (layout == null) throw new ArgumentNullException(nameof(layout));
             if (factory == null) throw new ArgumentNullException(nameof(factory));
             if (views == null) throw new ArgumentNullException(nameof(views));
             var count = layout.LocationCount;
-            if (!suppressDeltas && !NeedsRefresh(factory.StructureRevision, factory.QuantityRevision, count))
+            if (!suppressDeltas && !force && !NeedsRefresh(factory.StructureRevision, factory.QuantityRevision, count))
             {
                 ClearDeltas();
                 return false;
             }
 
             EnsureCapacity(count);
+            generation++;
             locationCount = count;
             lastLocationCount = count;
             hasRevision = true;
@@ -294,14 +333,17 @@ namespace IdleFactory.Unity.Presentation
                 }
 
                 string limiting = null;
+                var cause = MissingInputCause.None;
                 if (state == MachineVisualState.MissingInput && rateMachines != null && m < rateMachines.Count && rateMachines[m].InstanceId == machine.InstanceId)
                 {
-                    limiting = FirstMissingResource(rateMachines[m]);
+                    var blocker = FirstMissingBlocker(rateMachines[m]);
+                    limiting = blocker != null ? blocker.ResourceId : null;
+                    cause = blocker != null ? CauseOf(blocker, rates) : MissingInputCause.None;
                 }
 
                 buffer[location] = new MachinePresentation(
                     new BuildingLocationId(location), machine.InstanceId, machine.MachineId, machine.TypeIndex, machine.Level, state, upgrade, pace, fps,
-                    delta, limiting);
+                    delta, limiting, cause);
             }
 
             // A location that lost its machine forgets its baseline: a machine built there later starts a new baseline.
@@ -314,6 +356,53 @@ namespace IdleFactory.Unity.Presentation
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// The allocation-free completion path (T529 fix round): computes the delta of every occupied location from <c>views[m].CompletedCycles</c>
+        /// against the baseline, with the logic and the display cap of <see cref="Refresh"/>, and writes a delta above 0 into the buffer. It needs no
+        /// snapshot, so a caller runs it every frame; it requires the buffer of a rebuild (the machines of the last <see cref="Refresh"/>) and a row
+        /// whose <c>SlotIndex</c> is an occupied location of it. A rebuild's own deltas are kept (the baseline already advanced, so nothing is
+        /// counted twice). <see cref="Generation"/> moves only when a delta above 0 was written, so a consumer sees it once.
+        /// </summary>
+        /// <returns>True when at least one location got a delta.</returns>
+        public bool ApplyCompletions(MachineStateView[] views, int viewCount)
+        {
+            if (views == null) throw new ArgumentNullException(nameof(views));
+            if (!hasRevision)
+            {
+                return false;
+            }
+
+            var any = false;
+            var rows = viewCount < views.Length ? viewCount : views.Length;
+            for (var m = 0; m < rows; m++)
+            {
+                var location = views[m].SlotIndex;
+                if (location < 0 || location >= locationCount || !buffer[location].IsOccupied)
+                {
+                    continue;
+                }
+
+                var value = buffer[location];
+                var delta = Advance(location, value.InstanceId, views[m].CompletedCycles, false);
+                if (delta <= 0)
+                {
+                    continue;
+                }
+
+                buffer[location] = new MachinePresentation(
+                    value.Location, value.InstanceId, value.MachineId, value.MachineTypeIndex, value.Level, value.VisualState, value.UpgradeAvailable,
+                    value.Pace, value.ActivityFps, delta, value.LimitingResourceId, value.LimitingCause);
+                any = true;
+            }
+
+            if (any)
+            {
+                generation++;
+            }
+
+            return any;
         }
 
         private int Advance(int location, Guid instance, long counter, bool suppress)
@@ -332,18 +421,59 @@ namespace IdleFactory.Unity.Presentation
             return delta;
         }
 
-        private static string FirstMissingResource(MachineDiagnosis diagnosis)
+        private static MachineBlockerInfo FirstMissingBlocker(MachineDiagnosis diagnosis)
         {
             var blockers = diagnosis.Blockers;
             for (var i = 0; i < blockers.Count; i++)
             {
                 if (blockers[i].Kind == MachineBlocker.MissingInput)
                 {
-                    return blockers[i].ResourceId;
+                    return blockers[i];
                 }
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// The reason an input is short (A-5, B-4): the input is auto-sold; nothing active makes it; the store is full so its makers cannot store; or its makers
+        /// are slower than the demand. Order matters: auto-sell explains an empty stock whatever else is true; a full store only matters when something makes
+        /// the input. Read from the blocker and the rates snapshot, never recomputed from the economy.
+        /// </summary>
+        public static MissingInputCause CauseOf(MachineBlockerInfo blocker, RatesSnapshot rates)
+        {
+            if (blocker == null || blocker.ResourceId == null)
+            {
+                return MissingInputCause.None;
+            }
+
+            if (blocker.AutoSold)
+            {
+                return MissingInputCause.AutoSold;
+            }
+
+            if (rates == null)
+            {
+                return MissingInputCause.None;
+            }
+
+            var resources = rates.Resources;
+            for (var i = 0; i < resources.Count; i++)
+            {
+                if (!string.Equals(resources[i].ResourceId, blocker.ResourceId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (resources[i].ProductionPerMinuteMicro <= 0)
+                {
+                    return MissingInputCause.NoSource;
+                }
+
+                return rates.StoreFree <= 0 ? MissingInputCause.StoreFull : MissingInputCause.SourceTooSlow;
+            }
+
+            return MissingInputCause.NoSource;
         }
 
         private void ClearDeltas()
@@ -355,7 +485,7 @@ namespace IdleFactory.Unity.Presentation
                 {
                     buffer[i] = new MachinePresentation(
                         value.Location, value.InstanceId, value.MachineId, value.MachineTypeIndex, value.Level, value.VisualState, value.UpgradeAvailable,
-                        value.Pace, value.ActivityFps, 0, value.LimitingResourceId);
+                        value.Pace, value.ActivityFps, 0, value.LimitingResourceId, value.LimitingCause);
                 }
             }
         }

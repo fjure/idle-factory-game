@@ -151,6 +151,58 @@ namespace IdleFactory.Unity.Bootstrap
         private void Update()
         {
             ObserveScreenConfiguration();
+            TickAutosave();
+        }
+
+        /// <summary>Turns the timer-driven autosave (T559) off for a deterministic test; on by default.</summary>
+        public bool AutosaveEnabled { get; set; } = true;
+
+        /// <summary>The outcome of the latest timer-driven autosave that was due (T559), or <see cref="AutosaveTickOutcome.NotDue"/> before the first.</summary>
+        public AutosaveTickOutcome LastAutosaveOutcome { get; private set; }
+
+        /// <summary>How many timer-driven autosave writes became durable since start-up (T559); a diagnostic for tests.</summary>
+        public int AutosaveWrites { get; private set; }
+
+        /// <summary>How many timer-driven autosave writes failed since start-up (T559); the failure itself is reported by <see cref="RunPersistence.Status"/>.</summary>
+        public int AutosaveFailures { get; private set; }
+
+        /// <summary>
+        /// T559 (FR-003): one frame of the timer-driven autosave. The cadence and the write are <see cref="RunPersistence.AutosaveWhenDue"/>; this
+        /// only ticks it, so a frame that writes nothing costs one clock read and allocates nothing. The host brings the run up to the
+        /// current time first (the same preparation as the desktop focus-loss checkpoint), only when a write is due. Not while a departure
+        /// is recorded (suspended on a phone, quitting): the departure checkpoint owns the state then. An exception is contained (SEC-9).
+        /// </summary>
+        public void TickAutosave()
+        {
+            if (!configured || !AutosaveEnabled || applicationQuitting || departureRecorded)
+            {
+                return;
+            }
+
+            try
+            {
+                var outcome = persistence.AutosaveWhenDue(prepareForSafetyCheckpoint);
+                if (outcome == AutosaveTickOutcome.NotDue)
+                {
+                    return;
+                }
+
+                LastAutosaveOutcome = outcome;
+                if (outcome == AutosaveTickOutcome.Written)
+                {
+                    AutosaveWrites++;
+                }
+                else
+                {
+                    AutosaveFailures++;
+                }
+            }
+            catch (Exception exception)
+            {
+                AutosaveFailures++;
+                LastAutosaveOutcome = AutosaveTickOutcome.Failed;
+                LogContained("Run autosave failed and was contained", exception);
+            }
         }
 
         /// <summary>Records the screen configuration the running frame used; exposed for lifecycle integration tests.</summary>
@@ -286,8 +338,8 @@ namespace IdleFactory.Unity.Bootstrap
         /// <summary>
         /// T250: the plain checkpoint a desktop player writes when it loses window focus. It is the periodic-autosave command of
         /// <see cref="RunPersistence"/>, not a suspension: the lifecycle stays <see cref="LifecycleState.Running"/>, the host keeps
-        /// simulating, nothing reconciles on regaining focus, and no summary opens. It exists because the run has no timer-driven
-        /// autosave (Feature 001 A-005), so without it an unclean exit would roll the factory back to the last departure or start.
+        /// simulating, nothing reconciles on regaining focus, and no summary opens. It was written because the run had no timer-driven
+        /// autosave (Feature 001 A-005); since T559 <see cref="TickAutosave"/> writes periodically too, and this checkpoint keeps the focus-loss moment itself safe.
         /// The write skips silently while a prestige is pending or the lifecycle is not running, and a failed write changes
         /// nothing but the persistence status. The write is throttled by the minimum interval of
         /// <see cref="RunPersistence.Autosave"/> (T306, FR-033: the outcome then reports

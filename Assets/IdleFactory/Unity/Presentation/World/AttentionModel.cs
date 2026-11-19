@@ -335,6 +335,9 @@ namespace IdleFactory.Unity.Presentation
                     sharedOrder[sharedCount++] = r; // content order
                 }
 
+                // N2 (P2-F15): the demand filter reads the derived consumption. When the derivation overflows, a blocked machine adds no demand, so a real
+                // shortage can read as "no demand" and stay hidden. The overflow path is far outside any shipped run (the run would have to consume more than
+                // the 64-bit rate range); the cost of the alternative, a shortage shown for a resource nobody consumes, is a false alarm (G-2, G-3).
                 if (affectedCount[r] == 0 || !resources[r].HasDemand)
                 {
                     continue;

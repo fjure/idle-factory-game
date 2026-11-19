@@ -297,23 +297,55 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>
         /// The view extent (T534, P1-F2, OD-9b UI/UX C1): <see cref="Bounds"/> plus the depot and the deposit, which sit one lattice cell outside
-        /// the bounds. The camera always pans over it, and it fits over it when that costs no integer scale compared with <see cref="Bounds"/> alone;
-        /// otherwise fit-all frames <see cref="Bounds"/> and the depot or the vein may be out of view until the player pans (recorded per screen
+        /// the bounds. The camera always pans over it, and it fits over it, stepping down to the next integer scale when the depot column would clip (T558, U-C1) as long as the readable floor n_min holds;
+        /// only then fit-all frames <see cref="Bounds"/> and the depot or the vein may be out of view until the player pans (recorded per screen
         /// class, never hidden by art).
         /// </summary>
         public Rect ViewBounds
         {
             get
             {
-                var depot = DepotRect;
                 var deposit = DepositRect;
-                return Rect.MinMaxRect(
-                    Mathf.Min(Bounds.xMin, Mathf.Min(depot.xMin, deposit.xMin)),
-                    Mathf.Min(Bounds.yMin, Mathf.Min(depot.yMin, deposit.yMin)),
-                    Mathf.Max(Bounds.xMax, Mathf.Max(depot.xMax, deposit.xMax)),
-                    Mathf.Max(Bounds.yMax, Mathf.Max(depot.yMax, deposit.yMax)));
+                return Union(FitBounds, deposit);
             }
         }
+
+        /// <summary>
+        /// The fit extent (T558, U-C1): <see cref="Bounds"/> plus the depot column, framed as a whole: the depot sprite, the collector spine along <see cref="DepotAnchor"/>'s column, the
+        /// store-full marker box at the anchor and the shortage marker boxes at the row junctions (the rank-0 shortage marker). It does not include the deposit (the vein is scenery,
+        /// recorded per screen class). Fit-all frames it, stepping down an integer scale when the depot column would clip, while the readable floor holds.
+        /// </summary>
+        public Rect FitBounds
+        {
+            get
+            {
+                var depot = DepotRect;
+                var fit = Union(Bounds, depot);
+                fit = Union(fit, AttentionModel.MarkerBoxAt(DepotAnchor));
+                for (var row = 0; row < rowCount; row++)
+                {
+                    var trunk = TrunkOf(row);
+                    if (trunk.IsEmpty)
+                    {
+                        continue;
+                    }
+
+                    if (trunk.Points.Count < 2)
+                    {
+                        continue;
+                    }
+
+                    var junction = trunk.Points[1];
+                    fit = Union(fit, AttentionModel.MarkerBoxAt(junction));
+                    fit = Union(fit, new Rect(junction.x, Mathf.Min(junction.y, DepotAnchor.y), 0f, Mathf.Abs(junction.y - DepotAnchor.y)));
+                }
+
+                return fit;
+            }
+        }
+
+        private static Rect Union(Rect a, Rect b) =>
+            Rect.MinMaxRect(Mathf.Min(a.xMin, b.xMin), Mathf.Min(a.yMin, b.yMin), Mathf.Max(a.xMax, b.xMax), Mathf.Max(a.yMax, b.yMax));
 
         /// <summary>
         /// The whole visual extent of a location in world units: the plate width, from the plate bottom up to the top of the badge band

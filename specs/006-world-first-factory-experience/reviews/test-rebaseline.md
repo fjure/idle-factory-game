@@ -291,3 +291,70 @@ The F004 floor pool, its family folder, its atlas and its catalog key are gone; 
 **Render baselines (T527).** The nine `w003s-*-shell.png` baselines under `Tests/PlayMode/Fixtures/Screenshots/F004-B2/` were regenerated, not edited: `IDLEFACTORY_RENDER_BASELINE_WRITE=1 scripts/test-unity.ps1 -TestFile Assets/IdleFactory/Tests/PlayMode/RenderParityTests.cs` (the harness write mode). Only the hub entry glyph changed (the Contracts glyph became the Office glyph: 155 pixels per frame at 1024x768, 1280x720, 1920x1080 and 768x1024, 241 at 360x640, 390x844, 640x360, 640x480 and 844x390, all inside the hub glyph box, max channel delta 162; counts corrected by the parent from the QA and Art Director pixel diffs). No `w004v-*` world frame changed.
 
 **Settings.** No `ProjectSettings` change is committed. `ProjectSettings/ProjectSettings.asset` run noise was restored after every Unity run.
+
+## T539 (#711): the docked build card
+
+An empty location in the authored scene now opens the docked build card (`ShellPanelIds.BuildCard`) instead of the build sheet. The sheet stays the route in a shell that registers no card (`BuildSheetPanelTests`, the layout rigs). `CoreGameFoundation.unity` gains exactly two references, `buildCardTree` and `buildCardStyles`, written by `F006SceneWiring -f006WiringSteps buildcard` (SerializedObject, idempotent, touches nothing else).
+
+| File | Old assertion | New assertion | Reason | Expectation changed? |
+|---|---|---|---|---|
+| `SlotGridTests.ATapOpensTheBuildCardForAnEmptySlotAndTheMachineCardForAnOccupiedSlot` (was `...BuildSheetForAnEmptySlot...MachinePanel...`) | `ActivePanelId == Build`, the build sheet root is mounted in `PanelContent` | `IsBuildCardOpen`, `ActivePanelId` is null, the card root is mounted; the sheet panel stays registered; after a build `IsCardOpen` and not `IsBuildCardOpen` | FR-032: an empty location opens the build card | yes |
+| `RunPanelCompositionTests.EverySlotTapOpensTheBuildCardOrTheMachineCardAndNeverThePlaceholder` (was `...BuildSheetOrTheMachinePanel...`) | `AssertPanelShown(Build, "empty slot")` | `IsBuildCardOpen`, no sheet, no placeholder "not available" text | same | yes |
+| `RunPanelCompositionTests` panel id list | 11 registered ids | 12 (adds `build-card`); every count assertion (`EveryPanelIdIsRegistered...`, shell rebuild once-only, failed-panel and blocked-import cases) follows `AllPanelIds.Length` | the card is one more composed panel | yes |
+| `HubPanelTests`, `SettingsSheetTests`, `MachineCardTests` | none | none: their rigs register a test sheet panel and no card, so the sheet route they assert is unchanged | rigs, not the authored scene | no |
+| `PersistentLayerTests` | the U-B1 matrix covered Card, Details, Sheet, Hub | adds `Surface.BuildCard`, with the same fit-all and band assertions | the build card docks like the machine card | new case |
+| `SlotGridTests.AnUnregisteredPanelShowsTheNotAvailableStateInsteadOfNothing` | clears `buildSheetTree` and `prestigeTree`, expects the "build sheet ... not available" placeholder after an empty-slot tap | also clears `buildCardTree` first, same expectations | with the card wired, an empty slot no longer reaches the sheet; clearing the card restores the sheet route this test covers | yes (setup) |
+
+**New.** `BuildCardTests` (72), `BuildCardWorldTests` (2), `RunPanelCompositionTests.InTheAuthoredSceneAnEmptyLocationOpensTheBuildCardAndConfirmBuildsAndHandsOver`, and `BuildSheetPanelTests.WithABuildCardRegisteredAnEmptyLocationOpensTheCardAndNotTheSheet`.
+
+## T540 (#712): development stages and milestones
+
+No existing test assertion was changed. Camera, fit and column assertions are untouched. Additive support changes only:
+
+| File | Old assertion | New assertion | Reason | Expectation changed? |
+|---|---|---|---|---|
+| `DeckComposite` (Edit Mode helper) | every location drawn occupied, the ring always the dark base | optional `conditions` argument (null keeps the old behaviour) and lit ring cells draw the deck tile | the stage triptych composes a factory with a lit ring and unbuilt locations (FR-036) | no |
+| `DeckTestRig.Catalog` (Play Mode helper) | no highlight sprite | adds the one-frame `F006-FX-COMPLETION-HIGHLIGHT` | the milestone foundation highlight (R14) | no |
+| `F006AllocationTests.MeasureEightMinersRunning` | zero allocations per steady frame for the world views | the same assertion now also covers the stage, watcher and deck/depot/deposit stage calls and the feedback tick | SC-008 for a running factory with the watcher active | no (stricter) |
+
+`DeckPlanner.Build` without a dressing argument keeps the T527 behaviour, so every T527 prop, edge and ring test is unchanged.
+
+### T540 fix round (owner decision 2026-11-18 stage offset, and QA items)
+
+Stage rule is now `t <= u0 ? Early : clamp(floor(3 * (u - u0) / (t - u0)), 0, 2)`; these T540 tests (added in the same PR, not yet on main) changed. Reason for all stage rows: owner decision 2026-11-18 stage offset.
+
+| File | Old assertion | New assertion | Reason | Expectation changed? |
+|---|---|---|---|---|
+| `DevelopmentStageTests` | steps at 4 and 8 of 12 (`floor(3u/t)`), shipped 4/6/8/10/12 give 1,1,2,2,2 | steps above 6 and 9 with u0 = 4; shipped 4/6/8/10/12 give 0,0,1,2,2; `t <= u0` gives Early; no prestige input kept | stage offset | yes |
+| `StageTriptychDeltaTests` | unlock counts 0..t, composites at u = 3, 6, 10 | counts u0..t with u0 = a third of the layout; composites at u = 5, 8, 11 of 12 (the first values of each stage reachable with u0 = 4); thresholds unchanged (>= 25 pp lit share, >= 5 % grayscale) | stage offset; u below u0 cannot occur | yes (inputs only) |
+| `StageWiringSceneTests` | start at stage 1 with wall edge; stage 2 at level 3 | start at stage 0 with railing only and no lit ring; stage 1 at level 3 (wall); stage 2 at level 4 (gantry, S3 depot); camera rect and position unchanged around the banner | stage offset; UI/UX U2 | yes |
+| `MilestoneBannerTests` (per class) | banner bottom above the camera rectangle top (the banner was in the camera rectangle) | the camera rectangle is identical before, during and after the banner; banner covers no strip control | the banner is an overlay and never reframes (UI/UX U2, Architect 3) | yes |
+| `MilestoneWatcherTests` | none | adds offset stage-raise, restore/reload/cold-start re-baseline, singular copy B-01s | Architect 1, UI/UX U1 | new |
+| `F006AllocationTests` (T540 lines) | `Evaluate(snapshot)` | `Evaluate(snapshot, u0)`; watcher given u0 | signature | no |
+
+| `DeckRenderTests.TheShippedSceneComposesTheDeckWithTheAuthoredArtAndTheComposition` | the shipped start has props in the margin ring (`deck.Plan.Props` not empty) | the shipped start is a dressed plan whose props (if any) stand on deck; the authored stage-1 density places props in a lit ring (planner on the scene layout, all built) | owner decision 2026-11-18 stage offset: the first factory is Early with an unlit margin, and props stand only on lit deck (no floating props) | yes |
+
+## T558 (#771): gate-C fixes (U-C1, C-F2, C-F1)
+
+Camera: fit-all now frames the depot column (depot sprite, collector, store-full and shortage marker boxes; `FactoryWorldLayout.FitBounds`) and steps down an integer scale when it would clip, while the readable floor n_min holds (`CameraScaleModel.ExtentFor`, three tiers: content plus depot plus vein when that costs no scale, else content plus depot column, else content). `RunCameraFraming.FitAll` uses the same extent, so the controller still equals `FitAll`. C1 (the content fully in view) and every column assertion are untouched. Rotation under an open card: `RunViewportDriver` (extracted from `CoreGameFoundationBootstrap.ApplyRunViewport`) re-fits when the card closes if the remembered closed view belongs to another screen. Banner: primary line only on compact landscape or at 150 % text and above.
+
+| File | Old assertion | New assertion | Reason | Expectation changed? |
+|---|---|---|---|---|
+| `ViewBoundsTests.AViewExtentThatWouldCostAScaleFallsBackToTheContentForTheFitButStaysPannable` | on a tall phone fit-all keeps the content's scale and `Extent == Bounds` | replaced by two tests: where the depot column fits at or above n_min fit-all steps down to it (`Extent == FitBounds`, depot, content and store-full marker box inside, pan extent still the whole view); where it would fall below n_min the old fallback assertions hold unchanged | U-C1: the depot column is part of the fit; the fallback is kept for the floor | yes (spec change) |
+| `SlotGridTests.FitAllReproducesTheArtBibleTableAndStaysAboveTheReadableFloor` | `FitAll == floor(ppc / D)` for the 8 table screens | the `ppc` and floor assertions are unchanged; `FitAll` equals the content scale, or the depot-column scale when that is a step lower and at or above n_min (rows 664x720, 920x672, 1560x1032 drop by one); never above the table scale | U-C1 | yes (3 rows) |
+| `MilestoneBannerTests` (per class, 100 and 200 %) | each label is as tall as its wrapped text | a label with `display: none` is skipped, and only the second line of the compact banner may be hidden | C-F1: primary line only on compact height or large text | yes (narrowed to visible labels) |
+| `RunViewportDriverTests`, `GateCFixTests` | none | new: depot column in the camera rectangle per class and reference device, rotation then Back (build surface and machine card), banner per class | T558 | new |
+
+## T559 (#772): periodic autosave
+
+No existing test assertion changed: both full suites pass on the final commit with every earlier expectation intact (the focus-loss `Autosave()` and its FR-033 interval are unchanged, and the timer-driven autosave is a separate path with its own cadence). One shared fixture changed, additively:
+
+| File | Old content | New content | Reason | Expectation changed? |
+|---|---|---|---|---|
+| `Fixtures/PublicApi/core-public-api.txt` | Core public surface as of T558 | adds `AutosaveTickOutcome` (enum), `IRunCheckpointBackgroundPromoter`, `IPreparedPromotion` and `RunPersistence.AutosaveWhenDue(Action)`; nothing removed or changed | T559 public surface (regenerated with `IDLEFACTORY_REGENERATE_PUBLIC_API=1`, diff reviewed: 10 added lines) | no (additive) |
+
+New tests: Edit Mode `Run/AutosaveTests` (cadence, action throttle, lifecycle gating, failure path, kill and offline accounting, the background write, steady-path allocation) and `Run/AutosaveWriteCostTests` (the measurement); Play Mode `RunAutosaveTests` (kill without a pause callback, action trigger, failing store, allocation, suspended).
+
+### T559 fix round (QA passed 4f5b5ef; Architect and Security notes)
+
+No existing assertion changed. Four existing Play Mode fixtures changed in setup only: `HubPlayerTests`, `MachineCardPlayerTests` and `JsonContentPlayerTests` (they load the scene against the player's real persistence folder) now switch the timer-driven autosave off after the scene loads; `PlayerCheckpointRoundTripTests` adds its diagnostics under a lock because a background write can raise them from a pool thread. `RunAutosaveTests` (new in T559) now drives a second periodic write through the background path and asserts it (`BackgroundWritesStarted`).

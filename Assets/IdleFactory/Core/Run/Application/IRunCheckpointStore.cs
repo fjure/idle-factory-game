@@ -190,4 +190,28 @@ namespace IdleFactory.Run.Application
         /// <summary>Which checkpoint files exist, without reading or validating them. Failure is a typed rejection.</summary>
         CommandResult<RunCheckpointPresence> ProbeFiles();
     }
+
+    /// <summary>
+    /// An optional capability of a store (T559): publish a checkpoint on another thread without changing the protocol. A caller that
+    /// holds a store which does not implement it keeps writing synchronously through <see cref="IRunCheckpointStore.Promote"/>.
+    /// </summary>
+    public interface IRunCheckpointBackgroundPromoter
+    {
+        /// <summary>
+        /// Serializes <paramref name="checkpoint"/> now, on the calling thread (the checkpoint may reference the live run, which only that
+        /// thread may read), and returns the publication of those exact bytes, or null when it cannot be prepared (the caller then writes
+        /// synchronously and gets the typed failure). The checkpoint itself is not touched again after this call returns, except for its
+        /// <see cref="RunCheckpoint.Id"/> and <see cref="RunCheckpoint.Generation"/>.
+        /// </summary>
+        IPreparedPromotion PreparePromotion(RunCheckpoint checkpoint);
+    }
+
+    /// <summary>
+    /// The publication of one serialized checkpoint (T559): the same generation protocol as <see cref="IRunCheckpointStore.Promote"/> (write,
+    /// read back, verify, flip the manifest, read back, serialized with every other operation of the store), safe to call from any thread, once.
+    /// </summary>
+    public interface IPreparedPromotion
+    {
+        CommandResult<CheckpointId> Publish();
+    }
 }

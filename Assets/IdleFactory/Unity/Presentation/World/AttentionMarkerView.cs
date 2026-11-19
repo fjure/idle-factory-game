@@ -28,6 +28,7 @@ namespace IdleFactory.Unity.Presentation
         private BuildingLocationId[] targets = new BuildingLocationId[AttentionModel.MaxMarkers];
         private int visibleCount;
         private float pointsPerCell = 48f;
+        private SlotGridView bound;
 
         /// <summary>The number of markers drawn now.</summary>
         public int VisibleMarkerCount => visibleCount;
@@ -70,6 +71,52 @@ namespace IdleFactory.Unity.Presentation
             visibleCount = 0;
         }
 
+        /// <summary>
+        /// Follows the grid's layout (T557, like <see cref="DepotLinkView"/>): a layout change clears the markers at once, so a stale position is never drawn
+        /// or hit; the attention model recomputes the positions from the new layout and the next <see cref="Render"/> draws them. Binding again replaces the
+        /// previous grid.
+        /// </summary>
+        public void Bind(SlotGridView slotGrid)
+        {
+            Unbind();
+            bound = slotGrid ?? throw new ArgumentNullException(nameof(slotGrid));
+            bound.LayoutChanged += HandleLayoutChanged;
+        }
+
+        private void Unbind()
+        {
+            if (bound == null)
+            {
+                return;
+            }
+
+            bound.LayoutChanged -= HandleLayoutChanged;
+            bound = null;
+        }
+
+        private void HandleLayoutChanged(FactoryWorldLayout newLayout) => Clear();
+
+        /// <summary>Hides every marker (no hit target remains) until the next <see cref="Render"/>.</summary>
+        public void Clear()
+        {
+            visibleCount = 0;
+            if (renderers == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] != null)
+                {
+                    renderers[i].enabled = false;
+                    renderers[i].sprite = null;
+                }
+            }
+        }
+
+        private void OnDestroy() => Unbind();
+
         /// <summary>The projected pixels per cell of the camera, for the hit radius. It changes no drawing.</summary>
         public void SetProjectedPixelsPerCell(float value) => pointsPerCell = Mathf.Max(1f, value);
 
@@ -111,6 +158,26 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The hit radius in world units: half of 48 points at the current scale, never below half the icon box.</summary>
         public float HitRadiusWorld => Mathf.Max(MinimumHitDiameterPoints * 0.5f / pointsPerCell, AttentionModel.MarkerSizePixels * 0.5f / SlotGridLayout.Density);
+
+        /// <summary>
+        /// Resolves a world point inside the visible icon box of a marker (<see cref="AttentionModel.MarkerSizePixels"/> square) to the location it selects.
+        /// The icon wins over a machine shape under it (<see cref="WorldTapResolver"/>). Allocation-free.
+        /// </summary>
+        public bool TryHitIcon(Vector2 world, out BuildingLocationId target)
+        {
+            var half = AttentionModel.MarkerSizePixels * 0.5f / SlotGridLayout.Density;
+            for (var i = visibleCount - 1; i >= 0; i--)
+            {
+                if (Mathf.Abs(world.x - centres[i].x) <= half && Mathf.Abs(world.y - centres[i].y) <= half)
+                {
+                    target = targets[i];
+                    return true;
+                }
+            }
+
+            target = default;
+            return false;
+        }
 
         /// <summary>
         /// Resolves a world point to the location a marker selects: the first affected location of the nearest marker within the hit radius.

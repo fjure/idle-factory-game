@@ -32,6 +32,7 @@ All three pass the forbidden-term rule (no "Systems", no bare "Menu").
 | Id | String | Trigger | Owner | WB | Chars (n=12, k=2) | Fit at 200 % |
 |---|---|---|---|---|---|---|
 | B-01 | Level {n}. {k} new locations open. | Factory level up with unlocks | World Designer | v0.1 | 31 | Two lines. Acceptable for a banner; must not truncate. |
+| B-01s | Level {n}. 1 new location opens. | Factory level up with exactly one new location (provisional, T540 fix round; UI/UX U1; World Designer to confirm in T547) | Developer | draft | 29 | Two lines at most. Fits. |
 | B-02 | Level {n} reached. | Factory level up, no unlock | World Designer | v0.1 | 17 | One line. Fits. |
 | B-03 | New run begins. | Prestige completion (Factory Sale) | World Designer | v0.1 | 15 | One line. Fits. |
 | B-04 | Deck extended. | Stage change (R15), with B-01 or B-02 | World Designer | v0.1 | 14 | One line. Fits. |
