@@ -4,7 +4,7 @@ Runs the reproducible Android emulator journey and the T040 exploratory profile.
 
 .DESCRIPTION
 Automates the adb sequences that T038, T055, T057, T061 and T062 ran by hand on
-AVD Medium_Phone_API_36.0. Results are emulator-only development evidence: they
+AVD IdleFactory_Test_API_36 (the dedicated 8 GB AVD, owner decision 2026-11-17; Medium_Phone_API_36.0 is never used). Results are emulator-only development evidence: they
 make no physical-device, performance-qualification or release claim.
 
 Journey steps (run in the order given by -Steps):
@@ -118,6 +118,39 @@ after a launch (an adb-created IdleFactory/ directory makes the game report pers
                           so without such a build this measures the plain W003-S factory)
   F004LogScan             crash signatures, coded diagnostics and E Unity lines over the collected logcat segments
 
+Hub-entry taps (T541, F006): the bottom bar is gone since F006 T535/T537. Every scenario reaches a system view through the Office hub:
+Open-HubCard taps the persistent layer's hub entry (action bar: bottom row in portrait, right column in landscape; FactoryRun.uxml
+"hub-entry", FactoryRun.uss .run-actions) and then the card row of the hub list (HubPanel, HubCards order Market, Contracts, Items,
+Research, Industry, Overdrive, Prestige, Settings; contracts/ui-surfaces-f006.md section 3). Every tap is a FRACTION of the screen size
+that adb reports for the current rotation (dumpsys window displays, portrait and landscape); there is no fixed pixel coordinate. The
+fractions are derived from the layout code (dp geometry of the action bar, the 48 dp hub rows, the docked card bands) and are
+provisional until T542 calibrates them against the emulator screenshots: every one can be overridden (-HubTaps, -F006SelectTaps,
+-F006UpgradeTaps, -F006EmptySlotTaps, -F006BuildTaps). Default and F004 never tapped the bottom bar (they use HOME, POWER, rotation and
+the Welcome back Continue button, which is a dialog button and not part of the bar); F003 PrestigeConfirmRotation and F005 Market and
+Contracts moved from the bar fractions to the hub entry.
+
+Scenario F006 (-Scenario F006, T541) defaults -Steps to Preflight,Install,Launch,W003Push,F006Start,F006Select,F006Upgrade,F006HubContracts,
+F006Build,F006BuildRotation,F006Zoom,F006LogScan (F006Autosave is added after F006BuildRotation with -AutosaveCheck). The device set is the
+committed w003-s-shipped set (-DeviceSet selects another one); like F004 it is pushed after a launch.
+  F006Start          cold start of the pushed set (accepted reconcile, Welcome back dismissed); the reconciled checkpoint is the baseline
+  F006Select         tap a machine in the world (-F006SelectTaps); the docked machine card appears (card band of the screenshot changes)
+  F006Upgrade        tap Upgrade on the card (-F006UpgradeTaps); evidence: the forced departure checkpoint has a higher sum of machine levels
+  F006HubContracts   hub entry, Contracts card, then Back (-BackInput) to the factory; screenshots of the hub, the view and the factory
+  F006Build          tap an empty location (-F006EmptySlotTaps), then the build card taps (-F006BuildTaps: type row, Confirm); evidence: the
+                     departure checkpoint has more machines
+  F006BuildRotation  open the build card again, rotate to landscape and back with it open (same process, no coded diagnostics), Back closes it
+  F006Zoom           zoom evidence: hub, Settings card, the optional -ZoomPrefTaps (Show zoom buttons), then the zoom-in button; INFO with the
+                     measured world-band change. Pinch stays Play Mode only (adb cannot send two pointers)
+  F006Autosave       C-65, only with -AutosaveCheck (adds about one minute plus a cold start): change the run, wait -AutosaveWaitSeconds (default
+                     35, above the 30 s AutosavePolicy.DefaultIntervalMs), read the checkpoint with no lifecycle event (a higher generation and
+                     level sum prove the periodic checkpoint), am force-stop WITHOUT HOME, relaunch and confirm the restored checkpoint keeps the
+                     change. The probe is the Save V2 checkpoint generation the script already reads; the game logs no autosave line
+  F006LogScan        crash signatures, coded diagnostics and E Unity lines over the collected logcat segments
+
+-ValidateOnly resolves the scenario, steps and tap maps (printing the pixel point of every F006 and hub tap for -DisplaySize, default
+1080x2400 portrait and 2400x1080 landscape) and exits without a lease, adb or emulator. It exits 1 on a tap that falls outside the screen;
+an unknown scenario or step throws before anything else, as always.
+
 The emulator is a single shared resource. Do not run it while another session
 uses the emulator, or while a Unity build or batch test run with Android as the
 active build target is running: those end with "Killing ADB server". The script
@@ -130,6 +163,22 @@ Unity Profiler and are reported as unavailable, never as zero.
 Every step writes screenshots, raw command output and pulled checkpoints below
 -OutDir, plus journey.md (summary table) and journey.json. The script exits 1
 when any step FAILs.
+
+.PARAMETER HubTaps
+T541: overrides for the hub taps as "Name=x,y" items separated by ";" (fractions of the display, values > 1 are pixels). Names: Entry (the
+hub entry), Market, Contracts, Items, Research, Industry, Overdrive, Prestige, Settings (the card rows), Zoom (the zoom-in button). Prefix
+with Landscape. for the landscape layout, for example "Entry=0.14,0.97;Landscape.Entry=0.95,0.07".
+
+.PARAMETER F006SelectTaps
+F006Select taps that select a machine (default: the middle of the world band, portrait). F006UpgradeTaps: the Upgrade button of the docked
+card. F006EmptySlotTaps: an empty unlocked location. F006BuildTaps: the build card's type row and Confirm. ZoomPrefTaps: Settings taps that
+turn on "Show zoom buttons". All use the -BuildTaps format (fractions of the display, "x,y" pairs).
+
+.PARAMETER AutosaveCheck
+F006 C-65: adds the F006Autosave step (wait, force-stop without HOME, relaunch, check the restored state).
+
+.PARAMETER ValidateOnly
+Parse and resolve only: no lease, no adb, no emulator (see the F006 notes above).
 
 .PARAMETER Apk
 APK to install. Build it with IdleFactory.Editor.PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3.
@@ -204,7 +253,7 @@ param(
     [string[]] $Steps = @('Preflight', 'Install', 'Launch', 'Rotation', 'Home', 'Lock', 'ColdRestart', 'LogScan'),
 
     [string] $Package = 'com.DefaultCompany.idlefactorygame',
-    [string] $Avd = 'Medium_Phone_API_36.0',
+    [string] $Avd = 'IdleFactory_Test_API_36',
     [string] $Serial,
     [string] $OutDir,
     [string] $AdbPath = (Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe'),
@@ -244,12 +293,24 @@ param(
     # height, and the minimum share of uniform edge-bearing blocks.
     [ValidateRange(0, 32)] [int] $ArtBlockPx = 0,
     [string] $CrispBand = '0.25,0.6',
-    [ValidateRange(0.5, 1.0)] [double] $CrispMinUniform = 0.95
+    [ValidateRange(0.5, 1.0)] [double] $CrispMinUniform = 0.95,
+
+    # T541 F006: hub-entry tap overrides and the F006 scenario taps (fractions of the current display, see .PARAMETER HubTaps).
+    [string] $HubTaps,
+    [string[]] $F006SelectTaps = @('0.5,0.45'),
+    [string[]] $F006UpgradeTaps = @('0.5,0.84'),
+    [string[]] $F006EmptySlotTaps = @('0.5,0.30'),
+    [string[]] $F006BuildTaps = @('0.5,0.78', '0.72,0.90'),
+    [string[]] $ZoomPrefTaps = @(),
+    [switch] $AutosaveCheck,
+    [ValidateRange(31, 600)] [int] $AutosaveWaitSeconds = 35,
+    [switch] $ValidateOnly,
+    [string] $DisplaySize
 )
 
 $ErrorActionPreference = 'Stop'
 $knownSteps = 'Preflight', 'Install', 'Launch', 'Rotation', 'Home', 'Lock', 'ColdRestart', 'LogScan', 'Profile'
-$knownScenarios = 'Default', 'F003', 'F005', 'F004'
+$knownScenarios = 'Default', 'F003', 'F005', 'F004', 'F006'
 if ($knownScenarios -notcontains $Scenario) {
     throw "Unknown scenario '$Scenario'. Known scenarios: $($knownScenarios -join ', ')."
 }
@@ -271,6 +332,14 @@ if ($Scenario -eq 'F004') {
         $Steps = 'Preflight', 'Install', 'Launch', 'W004VPush', 'F004Restyled', 'F004Crispness', 'Home', 'Lock', 'ColdRestart', 'W004VFps', 'F004LogScan'
     }
 }
+if ($Scenario -eq 'F006') {
+    $knownSteps = @($knownSteps) + @('W003Push', 'F006Start', 'F006Select', 'F006Upgrade', 'F006HubContracts', 'F006Build', 'F006BuildRotation', 'F006Zoom', 'F006Autosave', 'F006LogScan')
+    if (-not $PSBoundParameters.ContainsKey('Steps')) {
+        $Steps = 'Preflight', 'Install', 'Launch', 'W003Push', 'F006Start', 'F006Select', 'F006Upgrade', 'F006HubContracts', 'F006Build', 'F006BuildRotation'
+        if ($AutosaveCheck) { $Steps += 'F006Autosave' }
+        $Steps += 'F006Zoom', 'F006LogScan'
+    }
+}
 $Steps = @($Steps | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($step in $Steps) {
     if ($knownSteps -notcontains $step) {
@@ -281,9 +350,11 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 if (-not $OutDir) {
     $OutDir = Join-Path $repositoryRoot ("test-results/android/journey-" + (Get-Date -Format 'yyyyMMddTHHmmss'))
 }
-New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-$OutDir = (Resolve-Path $OutDir).Path
-if (-not (Test-Path -LiteralPath $AdbPath)) {
+if (-not $ValidateOnly) {
+    New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+    $OutDir = (Resolve-Path $OutDir).Path
+}
+if (-not $ValidateOnly -and -not (Test-Path -LiteralPath $AdbPath)) {
     throw "adb not found at $AdbPath. Pass -AdbPath."
 }
 
@@ -292,6 +363,7 @@ $results = New-Object System.Collections.Generic.List[object]
 $environment = [ordered]@{}
 $script:shotIndex = 0
 $script:adbRestarts = 0
+$script:sizeOverride = $null
 
 # ---------------------------------------------------------------- helpers
 
@@ -956,6 +1028,7 @@ function Get-DeviceCheckpointV2 {
         ReconciledFrom = [string] $d.reconciledFromCheckpointId
         Cash           = [decimal] $d.run.cash
         Machines       = @($d.run.machines).Count
+        LevelSum       = [long] ((@($d.run.machines | ForEach-Object { [long] $_.level }) | Measure-Object -Sum).Sum)
         RunNumber      = [long] $d.run.runNumber
         PrestigeCount  = [long] $d.permanent.prestigeCount
         File           = $best.File
@@ -966,7 +1039,7 @@ function Get-DeviceCheckpointV2 {
 function Format-CheckpointV2 {
     param($Checkpoint)
     if (-not $Checkpoint) { return 'none' }
-    return "gen $($Checkpoint.Generation), id $($Checkpoint.CheckpointId.Substring(0, 8)), run $($Checkpoint.RunNumber), cash $($Checkpoint.Cash), $($Checkpoint.Machines) machine(s), prestige $($Checkpoint.PrestigeCount), data $($Checkpoint.Sha.Substring(0, 12))"
+    return "gen $($Checkpoint.Generation), id $($Checkpoint.CheckpointId.Substring(0, 8)), run $($Checkpoint.RunNumber), cash $($Checkpoint.Cash), $($Checkpoint.Machines) machine(s), levels $($Checkpoint.LevelSum), prestige $($Checkpoint.PrestigeCount), data $($Checkpoint.Sha.Substring(0, 12))"
 }
 
 function Wait-CheckpointV2 {
@@ -1033,7 +1106,7 @@ function ConvertTo-TapPoints {
     # "x,y" items (or "x,y;x,y") are taps; "scroll" and "swipe:x1,y1,x2,y2[,ms]" are swipes. Values <= 1 are fractions of the
     # current display size.
     param([string[]] $Taps)
-    $size = (Get-DisplayState).Size
+    $size = if ($script:sizeOverride) { $script:sizeOverride } else { (Get-DisplayState).Size }
     $w = 0; $h = 0
     if ($size -match '^(\d+)x(\d+)$') { $w = [int] $Matches[1]; $h = [int] $Matches[2] }
     $invariant = [Globalization.CultureInfo]::InvariantCulture
@@ -1159,11 +1232,15 @@ function Invoke-TouchBuild {
 
 function Invoke-ConfirmRotation {
     param([string] $Step, [string[]] $Taps)
+    $hubDefault = $false
     if ($Step -eq 'PrestigeConfirmRotation' -and -not @($Taps).Count) {
         # T247: the sale button is below the fold in portrait, so the step scrolls itself. The cold start from the set shows
         # the Welcome back summary of the 8 h credit; Continue (922,1772 of 1080x2400) dismisses it.
-        $Taps = @('0.854,0.738', '0.917,0.97', 'scroll', 'scroll', '0.181,0.9')
-        Add-Result $Step 'taps' 'INFO' 'default: Continue, Prestige tab, scroll, scroll, Sell the factory (1080x2400 fractions)'
+        # T541: the bottom bar is gone; the Prestige view opens through the hub entry and the Prestige card (taps are computed from the
+        # screen size after the rotation is set to portrait, see below). Continue and Sell the factory keep their 1080x2400 fractions.
+        $hubDefault = $true
+        $Taps = @('0.854,0.738')
+        Add-Result $Step 'taps' 'INFO' 'default: Continue, hub entry, Prestige card, scroll, scroll, Sell the factory (fractions of the display size adb reports)'
     }
     if (-not @($Taps).Count) {
         Add-Result $Step 'confirmation cancelled by rotation' 'INFO' 'skipped: no taps supplied for this confirmation (layout dependent; T124 supplies them)'
@@ -1193,6 +1270,7 @@ function Invoke-ConfirmRotation {
     Add-LogSegment
     Invoke-Adb logcat -c | Out-Null
     $startPid = Get-AppPid
+    if ($hubDefault) { $Taps = @('0.854,0.738') + @(Get-HubCardTaps -Card 'Prestige') + @('scroll', 'scroll', '0.181,0.9') }
     Invoke-Taps -Step $Step -Taps $Taps
     Add-Result $Step 'screenshot confirmation open' 'INFO' (Save-Screenshot "$Step-open")
     Set-Sensor '9.81:0:0'
@@ -1597,11 +1675,9 @@ function Start-F005Run {
 }
 
 function Open-F005Tab {
-    # Tabs of the bottom bar as fractions of the 1080x2400 portrait AVD (T351 screenshots): Market, Contracts.
+    # T541: the bottom tab bar of T351 is gone (F006 T535/T537); Market and Contracts open through the hub entry and their hub card.
     param([string] $Step, [ValidateSet('Market', 'Contracts')] [string] $Tab)
-    $x = if ($Tab -eq 'Market') { '0.25' } else { '0.422' }
-    Invoke-Taps -Taps @("$x,0.984") -Step $Step
-    Start-Sleep -Seconds 2
+    Open-HubCard -Card $Tab -Step $Step
 }
 
 function Get-PrimaryButtonBands {
@@ -1888,9 +1964,15 @@ function Get-CrispBand {
 }
 
 function Start-F004Run {
-    # Cold start of the pushed W003-S set, accepted by the player, Welcome back dismissed. Returns the process id or $null.
     param([string] $Step)
-    $set = Get-W004VSet
+    return Start-SetRun -Step $Step -Set (Get-W004VSet) -Label 'W004-V base set loaded'
+}
+
+function Start-SetRun {
+    # Cold start of a pushed device set, accepted by the player, Welcome back dismissed. Returns the process id or $null; the
+    # reconciled checkpoint stays in $script:lastStartCheckpoint.
+    param([string] $Step, $Set, [string] $Label)
+    $set = $Set
     Invoke-Adb shell am force-stop $Package | Out-Null
     Add-LogSegment
     Invoke-Adb logcat -c | Out-Null
@@ -1901,7 +1983,8 @@ function Start-F004Run {
     $rejected = @(($startLog -split "`n") | Where-Object { $_ -match $blockedPattern })
     $cp = Wait-CheckpointV2 -After ([pscustomobject]@{ Generation = 0 }) -Label "$Step-loaded"
     $ok = [bool] ($ready -and $ready.Loaded -and $rejected.Count -eq 0 -and $cp -and $cp.ReconciledFrom -eq $set.CheckpointId)
-    Assert-Check $Step 'W004-V base set loaded' $ok $(if ($ok) { "reconciled from $($set.CheckpointId) after $($ready.Seconds) s; $(Format-CheckpointV2 $cp)" } elseif ($rejected.Count) { "the player rejected the set: $($rejected[0].Trim())" } else { "no accepted reconcile ($(Format-CheckpointV2 $cp))" })
+    $script:lastStartCheckpoint = $cp
+    Assert-Check $Step $Label $ok $(if ($ok) { "reconciled from $($set.CheckpointId) after $($ready.Seconds) s; $(Format-CheckpointV2 $cp)" } elseif ($rejected.Count) { "the player rejected the set: $($rejected[0].Trim())" } else { "no accepted reconcile ($(Format-CheckpointV2 $cp))" })
     if (-not $ok) { return $null }
     # Welcome back (credited 8 h): Continue (same position as the F005 journey, 1080x2400 portrait AVD).
     Invoke-Taps -Taps @('0.85,0.738') -Step $Step
@@ -1957,6 +2040,346 @@ function Invoke-F004LogScan {
     Invoke-F003LogScan -Step 'F004LogScan'
 }
 
+# ---------------------------------------------------------------- Hub-entry taps and Scenario F006 (T541)
+
+$hubCardOrder = 'Market', 'Contracts', 'Items', 'Research', 'Industry', 'Overdrive', 'Prestige', 'Settings'
+$script:lastStartCheckpoint = $null
+$script:f006Last = $null
+
+function Get-ScreenGeometry {
+    # Display size in pixels as adb reports it for the CURRENT rotation (dumpsys window displays), so a portrait and a landscape
+    # run use the same fractions on their own axes. No device-specific pixel is stored anywhere in this script.
+    $size = if ($script:sizeOverride) { $script:sizeOverride } else { (Get-DisplayState).Size }
+    if ($size -notmatch '^(\d+)x(\d+)$') { throw "Display size '$size' is not WxH." }
+    $w = [int] $Matches[1]; $h = [int] $Matches[2]
+    return [pscustomobject]@{ Width = $w; Height = $h; Landscape = ($w -gt $h); Size = $size }
+}
+
+function Format-Fraction {
+    param([double] $Value)
+    return $Value.ToString('0.###', [Globalization.CultureInfo]::InvariantCulture)
+}
+
+function Get-HubTapMap {
+    # Where the hub entry, the hub cards and the zoom-in button are, as fractions of the display, per orientation. Source of every
+    # number (layout code, not a screenshot of one device; T542 calibrates them on the emulator):
+    #  Entry   persistent layer action bar (FactoryRun.uxml "hub-entry", FactoryRun.uss .run-actions, contracts/ui-surfaces-f006.md
+    #          section 1 "As built (T537)"). Portrait: bottom row, hub entry first and left-aligned, row height about 52 dp, so the
+    #          centre is about 26 dp above the bottom edge (0.972 of a 914 dp tall phone) and 60 dp from the left (0.15 of 411 dp).
+    #          Landscape: right column, hub entry the first child of the action bar: about 50 dp from the right edge of 914 dp wide,
+    #          2 dp padding plus half the 48 dp entry from the top (0.07 of 411 dp).
+    #  Cards   HubPanel list (HubCards order; contracts/ui-surfaces-f006.md section 3): one row per card, 48 dp minimum, in a bottom
+    #          sheet in portrait and a side panel elsewhere. Portrait: first row centre about 0.50 of the height, 0.065 per row.
+    #          Landscape: the panel on the right, first row about 0.22 of the height, 0.10 per row, x 0.80.
+    #  Zoom    the zoom column (FactoryRun.uss .run-zoom, 44 dp buttons): portrait, bottom left of the world column above the action
+    #          bar, "+" the upper button; landscape, in the right column above the gear.
+    # -HubTaps overrides any of them ("Name=x,y;Landscape.Name=x,y").
+    param([bool] $Landscape)
+    $points = [ordered]@{}
+    if ($Landscape) {
+        $points['Entry'] = '0.955,0.07'
+        $points['Zoom'] = '0.955,0.30'
+        $x = 0.80; $first = 0.22; $step = 0.10
+    }
+    else {
+        $points['Entry'] = '0.15,0.972'
+        $points['Zoom'] = '0.063,0.86'
+        $x = 0.5; $first = 0.50; $step = 0.065
+    }
+    $last = 0.92
+    for ($i = 0; $i -lt $hubCardOrder.Count; $i++) {
+        $points[$hubCardOrder[$i]] = '{0},{1}' -f (Format-Fraction $x), (Format-Fraction ($first + $i * $step))
+    }
+    $overridden = @{}
+    foreach ($item in @($HubTaps -split ';' | Where-Object { $_ })) {
+        if ($item -notmatch '^\s*(Landscape\.)?([A-Za-z]+)\s*=\s*(.+?)\s*$') { throw "-HubTaps item '$item' is not [Landscape.]Name=x,y." }
+        if (-not $points.Contains($Matches[2])) { throw "-HubTaps name '$($Matches[2])' is unknown. Known: $($points.Keys -join ', ')." }
+        if ([bool] $Matches[1] -eq $Landscape) { $points[$Matches[2]] = $Matches[3]; $overridden[$Matches[2]] = $true }
+    }
+    return [pscustomobject]@{ Points = $points; Step = $step; Last = $last; Overridden = $overridden; Landscape = $Landscape }
+}
+
+function Get-HubCardTaps {
+    # The taps that open a hub card from the factory: the hub entry, then the card row. A row that the sheet would show below its fold
+    # (y above 0.92 of the display) is reached with a swipe up first and then counted from the bottom row of the list.
+    param([string] $Card, [switch] $RowOnly)
+    if ($hubCardOrder -notcontains $Card) { throw "Unknown hub card '$Card'. Known: $($hubCardOrder -join ', ')." }
+    $g = Get-ScreenGeometry
+    $map = Get-HubTapMap -Landscape $g.Landscape
+    $taps = New-Object System.Collections.Generic.List[string]
+    if (-not $RowOnly) { $taps.Add($map.Points['Entry']) }
+    $row = $map.Points[$Card]
+    $y = [double]::Parse(($row -split ',')[1], [Globalization.CultureInfo]::InvariantCulture)
+    if ($y -gt $map.Last -and -not $map.Overridden.ContainsKey($Card)) {
+        $index = [Array]::IndexOf($hubCardOrder, $Card)
+        $x = ($row -split ',')[0]
+        $taps.Add('swipe:0.5,0.85,0.5,0.55,400')
+        $row = '{0},{1}' -f $x, (Format-Fraction ($map.Last - ($hubCardOrder.Count - 1 - $index) * $map.Step))
+    }
+    $taps.Add($row)
+    return $taps.ToArray()
+}
+
+function Add-TapSource {
+    # Records the coordinate source of a tap list: the fraction, the display size adb reported and the pixel that results.
+    param([string] $Step, [string] $Name, [string[]] $Taps, [string] $Source)
+    $g = Get-ScreenGeometry
+    $points = @(ConvertTo-TapPoints -Taps $Taps)
+    $text = ($points | ForEach-Object { if ($_.Kind -eq 'swipe') { "swipe ($($_.X),$($_.Y))->($($_.X2),$($_.Y2))" } else { "tap ($($_.X),$($_.Y))" } }) -join '; '
+    Add-Result $Step "tap source: $Name" 'INFO' "$($Taps -join ' ') of $($g.Size) -> $text. $Source"
+}
+
+function Open-HubCard {
+    # Hub entry, then the card (Market, Contracts, ..., Settings). Replaces the bottom tab bar taps of T351 (F006 T535/T537).
+    param([string] $Card, [string] $Step)
+    $taps = @(Get-HubCardTaps -Card $Card)
+    Invoke-Taps -Taps @($taps[0]) -Step $Step
+    Start-Sleep -Seconds 1
+    Invoke-Taps -Taps @($taps | Select-Object -Skip 1) -Step $Step
+    Start-Sleep -Seconds 2
+}
+
+function Invoke-BackOnce {
+    # One Android Back (-BackInput) with the display size adb reports now. Only call it while a surface is open: a Back on the bare
+    # factory leaves the app (Invoke-BackGesture records that case).
+    $g = Get-ScreenGeometry
+    Send-BackInput -Width $g.Width -Height $g.Height
+    Start-Sleep -Seconds 2
+}
+
+function Get-SheetRegion {
+    # Screen region (left, top, right, bottom fractions) a docked card or the hub sheet occupies: the bottom band in portrait, the
+    # right column in landscape (contracts/ui-surfaces-f006.md sections 2, 3 and 5).
+    param([bool] $Landscape, [ValidateSet('Card', 'Hub')] [string] $Kind)
+    if ($Landscape) { return @(0.6, 0.15, 0.95, 0.9) }
+    if ($Kind -eq 'Hub') { return @(0.05, 0.45, 0.95, 0.9) }
+    return @(0.05, 0.66, 0.95, 0.92)
+}
+
+function Compare-Shots {
+    param([string] $A, [string] $B, [double[]] $Region)
+    return Get-ScreenshotChange -PathA (Join-Path $OutDir $A) -PathB (Join-Path $OutDir $B) -Region $Region
+}
+
+function Invoke-F006Start {
+    $step = 'F006Start'
+    $runPid = Start-SetRun -Step $step -Set (Get-DeviceSetFor -Step $step) -Label 'device set loaded'
+    $script:f006Last = $script:lastStartCheckpoint
+    if (-not $runPid) { return }
+    Invoke-Adb shell cmd window user-rotation free | Out-Null
+    Set-Sensor '0:9.81:0'
+    $g = Get-ScreenGeometry
+    Assert-Check $step 'portrait for the taps' (-not $g.Landscape) "$($g.Size); the F006 default taps are portrait fractions"
+    Add-Result $step 'screenshot (after Welcome back)' 'INFO' (Save-Screenshot 'f006-start')
+}
+
+function Invoke-F006Select {
+    $step = 'F006Select'
+    $g = Get-ScreenGeometry
+    $before = Save-Screenshot 'f006-select-before'
+    Add-TapSource -Step $step -Name 'select machine' -Taps $F006SelectTaps -Source 'World band middle: between the top strip and the bottom action row of the portrait shell (FactoryRun.uss .run-body); the camera frames the depot column (T558), so the middle row of the factory is near the centre.'
+    Invoke-Taps -Taps $F006SelectTaps -Step $step
+    Start-Sleep -Seconds 2
+    $after = Save-Screenshot 'f006-select-card'
+    $change = Compare-Shots $before $after (Get-SheetRegion -Landscape $g.Landscape -Kind Card)
+    Assert-Check $step 'machine card docked (card band changed)' ($change -ge 0.15) "card band change $change (floor 0.15). Screenshots: $before, $after"
+}
+
+function Invoke-F006Upgrade {
+    $step = 'F006Upgrade'
+    $base = $script:f006Last
+    Add-TapSource -Step $step -Name 'Upgrade' -Taps $F006UpgradeTaps -Source 'Upgrade is the pinned button of the docked card in its first view (contracts/ui-surfaces-f006.md section 2), in the lower part of the bottom band, above the action bar.'
+    Invoke-Taps -Taps $F006UpgradeTaps -Step $step
+    Start-Sleep -Seconds 2
+    Add-Result $step 'screenshot (after Upgrade)' 'INFO' (Save-Screenshot 'f006-upgrade')
+    $dep = Save-DepartureCheckpoint -Label 'f006-upgrade'
+    $after = $dep.Checkpoint
+    $ok = [bool] ($dep.Written -and $after -and $base -and $after.LevelSum -gt $base.LevelSum)
+    Assert-Check $step 'machine level raised (checkpoint level sum)' $ok ("{0} -> {1}" -f (Format-CheckpointV2 $base), (Format-CheckpointV2 $after))
+    if ($dep.Written) { $script:f006Last = $after }
+}
+
+function Invoke-F006HubContracts {
+    $step = 'F006HubContracts'
+    $g = Get-ScreenGeometry
+    $region = Get-SheetRegion -Landscape $g.Landscape -Kind Hub
+    $runPid = Get-AppPid
+    $factory = Save-Screenshot 'f006-hub-0-factory'
+    $entry = @(Get-HubCardTaps -Card 'Contracts' | Select-Object -First 1)
+    Add-TapSource -Step $step -Name 'hub entry' -Taps $entry -Source 'Persistent layer action bar, hub entry (see Get-HubTapMap).'
+    Invoke-Taps -Taps $entry -Step $step
+    Start-Sleep -Seconds 2
+    $hub = Save-Screenshot 'f006-hub-1-open'
+    Assert-Check $step 'hub opened (sheet region changed)' ((Compare-Shots $factory $hub $region) -ge 0.15) "change $(Compare-Shots $factory $hub $region). Screenshots: $factory, $hub"
+    $row = @(Get-HubCardTaps -Card 'Contracts' -RowOnly)
+    Add-TapSource -Step $step -Name 'Contracts card' -Taps $row -Source 'Hub list row 2 (HubCards order), 48 dp rows (Get-HubTapMap).'
+    Invoke-Taps -Taps $row -Step $step
+    Start-Sleep -Seconds 2
+    $contracts = Save-Screenshot 'f006-hub-2-contracts'
+    Assert-Check $step 'Contracts view opened (sheet region changed)' ((Compare-Shots $hub $contracts $region) -ge 0.03) "change $(Compare-Shots $hub $contracts $region). Screenshots: $hub, $contracts"
+    Invoke-BackOnce
+    $back = Save-Screenshot 'f006-hub-3-back'
+    Assert-Check $step 'Back left the Contracts view (sheet region changed)' ((Compare-Shots $contracts $back $region) -ge 0.03) "change $(Compare-Shots $contracts $back $region). Screenshots: $contracts, $back"
+    Add-Result $step 'residual difference to the factory before the hub' 'INFO' "$(Compare-Shots $factory $back $region) in the sheet region (Cash and production tick); the decisive check that the factory is back is the screenshot $back"
+    Assert-Check $step 'same process' ((Get-AppPid) -eq $runPid) "PID $runPid"
+}
+
+function Invoke-F006Build {
+    $step = 'F006Build'
+    $g = Get-ScreenGeometry
+    $base = $script:f006Last
+    $before = Save-Screenshot 'f006-build-0-before'
+    Add-TapSource -Step $step -Name 'empty location' -Taps $F006EmptySlotTaps -Source 'An empty unlocked location of the world band (the build card opens on a tap there, T539); the depot-column framing keeps it in the upper part of the band.'
+    Invoke-Taps -Taps $F006EmptySlotTaps -Step $step
+    Start-Sleep -Seconds 2
+    $card = Save-Screenshot 'f006-build-1-card'
+    Assert-Check $step 'build card docked (card band changed)' ((Compare-Shots $before $card (Get-SheetRegion -Landscape $g.Landscape -Kind Card)) -ge 0.15) "change $(Compare-Shots $before $card (Get-SheetRegion -Landscape $g.Landscape -Kind Card)). Screenshots: $before, $card"
+    Add-TapSource -Step $step -Name 'type row, Confirm' -Taps $F006BuildTaps -Source 'Build card (contracts/ui-surfaces-f006.md section 5): the first type row, then Confirm on the right of the Cancel and Confirm pair at the bottom of the band.'
+    Invoke-Taps -Taps $F006BuildTaps -Step $step
+    Start-Sleep -Seconds 2
+    Add-Result $step 'screenshot (after Confirm)' 'INFO' (Save-Screenshot 'f006-build-2-confirm')
+    $dep = Save-DepartureCheckpoint -Label 'f006-build'
+    $after = $dep.Checkpoint
+    $ok = [bool] ($dep.Written -and $after -and $base -and $after.Machines -gt $base.Machines)
+    Assert-Check $step 'machine built (checkpoint machine count)' $ok ("{0} -> {1}" -f (Format-CheckpointV2 $base), (Format-CheckpointV2 $after))
+    if ($dep.Written) { $script:f006Last = $after }
+}
+
+function Invoke-F006BuildRotation {
+    $step = 'F006BuildRotation'
+    $runPid = Get-AppPid
+    Add-LogSegment
+    Invoke-Adb logcat -c | Out-Null
+    Invoke-Adb shell cmd window user-rotation free | Out-Null
+    Set-Sensor '0:9.81:0'
+    Invoke-Taps -Taps $F006EmptySlotTaps -Step $step
+    Start-Sleep -Seconds 2
+    Add-Result $step 'screenshot (build card open, portrait)' 'INFO' (Save-Screenshot 'f006-buildrot-0-portrait')
+    Set-Sensor '9.81:0:0'
+    $state = Get-DisplayState
+    Assert-Check $step 'rotated to landscape with the card open' ($state.Rotation -eq 'ROTATION_90') "$($state.Rotation) $($state.Size), requested $($state.Requested)"
+    Start-Sleep -Seconds 2
+    Add-Result $step 'screenshot (landscape, card open: docked in the side column, selected location inside the unobstructed rectangle)' 'INFO' (Save-Screenshot 'f006-buildrot-1-landscape')
+    Set-Sensor '0:9.81:0'
+    Start-Sleep -Seconds 2
+    Add-Result $step 'screenshot (back in portrait)' 'INFO' (Save-Screenshot 'f006-buildrot-2-portrait')
+    Assert-Check $step 'same process' ((Get-AppPid) -eq $runPid) "PID $runPid"
+    $log = Invoke-Adb logcat -d
+    Save-Text -Name "$step-logcat.txt" -Text $log | Out-Null
+    Assert-Check $step 'no coded diagnostics during the rotations' (-not ($log -match $blockedPattern)) 'no return.blocked / save.v2.* / persistence diagnostic'
+    # Close the card: Back pops the build card (the stack's step 3); a card that is not open would leave the app, so the process is
+    # re-checked and the app relaunched when it left.
+    Invoke-BackOnce
+    $left = -not (Get-AppPid)
+    if ($left) { Add-Result $step 'Back closed the card' 'INFO' 'the process left: no card was open; relaunching'; $null = Start-App }
+    else { Add-Result $step 'screenshot (after Back: card closed)' 'INFO' (Save-Screenshot 'f006-buildrot-3-closed') }
+    Add-LogSegment
+}
+
+function Invoke-F006Zoom {
+    $step = 'F006Zoom'
+    $g = Get-ScreenGeometry
+    # Settings path: hub entry, Settings card, then the operator-supplied taps that turn on "Show zoom buttons" (display preference,
+    # FR-008a; RunShellDocument.ShowZoomButtonsPreference). On a touch profile the buttons stay hidden until it is on.
+    Open-HubCard -Card 'Settings' -Step $step
+    Add-Result $step 'screenshot (Settings view)' 'INFO' (Save-Screenshot 'f006-zoom-0-settings')
+    $preference = @($ZoomPrefTaps).Count -gt 0
+    if ($preference) {
+        Add-TapSource -Step $step -Name 'Show zoom buttons' -Taps $ZoomPrefTaps -Source 'Supplied by the operator from the Settings screenshot (layout dependent).'
+        Invoke-Taps -Taps $ZoomPrefTaps -Step $step
+        Start-Sleep -Seconds 1
+        Add-Result $step 'screenshot (preference toggled)' 'INFO' (Save-Screenshot 'f006-zoom-1-preference')
+    }
+    else {
+        Add-Result $step 'Show zoom buttons' 'INFO' 'no -ZoomPrefTaps supplied (layout dependent); the preference is left as it is'
+    }
+    Invoke-BackOnce
+    $map = Get-HubTapMap -Landscape $g.Landscape
+    $zoom = @($map.Points['Zoom'])
+    $before = Save-Screenshot 'f006-zoom-2-before'
+    Add-TapSource -Step $step -Name 'zoom-in' -Taps $zoom -Source 'Zoom column, "+" button (FactoryRun.uss .run-zoom; Get-HubTapMap).'
+    Invoke-Taps -Taps $zoom -Step $step
+    Start-Sleep -Seconds 1
+    $after = Save-Screenshot 'f006-zoom-3-after'
+    $band = if ($g.Landscape) { @(0.12, 0.05, 0.9, 0.95) } else { @(0.05, 0.12, 0.95, 0.7) }
+    $change = Compare-Shots $before $after $band
+    if ($preference) {
+        Assert-Check $step 'zoom-in changed the world band' ($change -ge 0.03) "world band change $change (floor 0.03). Screenshots: $before, $after"
+    }
+    else {
+        Add-Result $step 'zoom-in changed the world band' 'INFO' "world band change $change; buttons are hidden on touch without the preference, so 0 is expected. Screenshots: $before, $after. Pinch zoom stays Play Mode only."
+    }
+}
+
+function Invoke-F006Autosave {
+    # C-65 (reviews/p3b-followups.md): confirm a periodic checkpoint on IL2CPP/Android. The Save V2 checkpoint is otherwise written
+    # only by a lifecycle event; after a change with no HOME, POWER or focus loss, a newer generation proves the autosave pool thread
+    # ran. The game logs no autosave line, so the probe is the checkpoint generation and level sum the script already pulls.
+    $step = 'F006Autosave'
+    $runPid = Get-AppPid
+    if (-not $runPid) { Add-Result $step 'process running' 'FAIL' 'no running process'; return }
+    $before = Get-DeviceCheckpointV2 -Label 'f006-autosave-0-before'
+    Invoke-Taps -Taps $F006SelectTaps -Step $step
+    Start-Sleep -Seconds 2
+    Invoke-Taps -Taps $F006UpgradeTaps -Step $step
+    Add-Result $step 'change made' 'INFO' "select and Upgrade taps (same fractions as F006Select and F006Upgrade); waiting $AutosaveWaitSeconds s with no lifecycle event (AutosavePolicy.DefaultIntervalMs 30000)"
+    Start-Sleep -Seconds $AutosaveWaitSeconds
+    $periodic = Get-DeviceCheckpointV2 -Label 'f006-autosave-1-periodic'
+    $newer = [bool] ($periodic -and $before -and $periodic.Generation -gt $before.Generation -and $periodic.LevelSum -gt $before.LevelSum)
+    Assert-Check $step 'periodic checkpoint written without a lifecycle event' $newer ("{0} -> {1}" -f (Format-CheckpointV2 $before), (Format-CheckpointV2 $periodic))
+    Assert-Check $step 'same process while waiting' ((Get-AppPid) -eq $runPid) "PID $runPid"
+    # Force-stop WITHOUT HOME: no departure checkpoint can be written, so the restored state must come from the periodic one.
+    Invoke-Adb shell am force-stop $Package | Out-Null
+    Start-Sleep -Seconds 1
+    Assert-Check $step 'process stopped (no HOME)' (-not (Get-AppPid)) "PID $runPid gone"
+    Add-LogSegment
+    Invoke-Adb logcat -c | Out-Null
+    $newPid = Start-App
+    $ready = if ($newPid) { Wait-UiReady -ProcessId $newPid -RequireLoaded } else { $null }
+    $restored = Wait-CheckpointV2 -After $periodic -Label 'f006-autosave-2-restored' -TimeoutSeconds 45
+    $kept = [bool] ($restored -and $periodic -and $restored.LevelSum -ge $periodic.LevelSum -and $restored.Machines -ge $periodic.Machines)
+    Assert-Check $step 'relaunch restored the autosaved state' ($kept -and $ready -and $ready.Loaded) ("{0} -> {1}" -f (Format-CheckpointV2 $periodic), (Format-CheckpointV2 $restored))
+    if ($newPid) { $null = Wait-UiReady -ProcessId $newPid -TimeoutSeconds 60 }
+    if ($restored) { $script:f006Last = $restored }
+}
+
+if ($ValidateOnly) {
+    # No lease, no adb, no emulator: resolve the scenario, the steps and every tap for the display size(s) and check the bounds.
+    $problems = 0
+    Write-Output "Scenario $Scenario, steps: $($Steps -join ', ')"
+    Write-Output "Avd: $Avd"
+    $sizes = if ($DisplaySize) { @($DisplaySize) } else { @('1080x2400', '2400x1080') }
+    foreach ($size in $sizes) {
+        $script:sizeOverride = $size
+        try {
+            $g = Get-ScreenGeometry
+            $map = Get-HubTapMap -Landscape $g.Landscape
+            $named = [ordered]@{}
+            foreach ($key in $map.Points.Keys) { $named["hub $key"] = @($map.Points[$key]) }
+            foreach ($card in $hubCardOrder) { $named["open $card"] = @(Get-HubCardTaps -Card $card) }
+            $named['F006 select'] = @($F006SelectTaps); $named['F006 upgrade'] = @($F006UpgradeTaps)
+            $named['F006 empty location'] = @($F006EmptySlotTaps); $named['F006 build card'] = @($F006BuildTaps)
+            if (@($ZoomPrefTaps).Count) { $named['F006 zoom preference'] = @($ZoomPrefTaps) }
+            foreach ($name in $named.Keys) {
+                foreach ($point in @(ConvertTo-TapPoints -Taps $named[$name])) {
+                    $inside = $point.X -ge 0 -and $point.X -lt $g.Width -and $point.Y -ge 0 -and $point.Y -lt $g.Height -and ($point.Kind -eq 'tap' -or ($point.X2 -ge 0 -and $point.X2 -lt $g.Width -and $point.Y2 -ge 0 -and $point.Y2 -lt $g.Height))
+                    if (-not $inside) { $problems++ }
+                    $text = if ($point.Kind -eq 'swipe') { "swipe ($($point.X),$($point.Y))->($($point.X2),$($point.Y2))" } else { "tap ($($point.X),$($point.Y))" }
+                    Write-Output ("[{0}] {1} {2}: {3}" -f $(if ($inside) { 'ok' } else { 'OUTSIDE' }), $size, $name, $text)
+                }
+            }
+        }
+        catch {
+            $problems++
+            Write-Output "[FAIL] $size : $($_.Exception.Message)"
+        }
+    }
+    $script:sizeOverride = $null
+    if ($problems) { Write-Output "ValidateOnly: FAIL ($problems problem(s))."; exit 1 }
+    Write-Output 'ValidateOnly: PASS.'
+    exit 0
+}
+
 # ---------------------------------------------------------------- run
 
 $started = Get-Date
@@ -1971,6 +2394,10 @@ if ($Scenario -eq 'F005') {
 if ($Scenario -eq 'F004') {
     # Restyled journey, crispness screenshots, three frame-rate captures and a margin.
     $leaseMinutes += [int] [Math]::Ceiling((2 * ($StartupTimeoutSeconds + 60) + 3 * ($StartupTimeoutSeconds + $WarmupSeconds + $CaptureSeconds + 60)) / 60) + 15
+}
+if ($Scenario -eq 'F006') {
+    # Cold start of the set, the taps, rotations, the optional autosave wait and a margin.
+    $leaseMinutes += [int] [Math]::Ceiling((2 * ($StartupTimeoutSeconds + 60) + $AutosaveWaitSeconds) / 60) + 15
 }
 if ($Scenario -eq 'F003') {
     # Three timing starts, three frame-rate captures, rotation steps and a margin.
@@ -2024,6 +2451,15 @@ foreach ($step in $Steps) {
             'F004Restyled' { Invoke-F004Restyled }
             'F004Crispness' { Invoke-F004Crispness }
             'W004VFps' { Invoke-W004VFps }
+            'F006Start' { Invoke-F006Start }
+            'F006Select' { Invoke-F006Select }
+            'F006Upgrade' { Invoke-F006Upgrade }
+            'F006HubContracts' { Invoke-F006HubContracts }
+            'F006Build' { Invoke-F006Build }
+            'F006BuildRotation' { Invoke-F006BuildRotation }
+            'F006Zoom' { Invoke-F006Zoom }
+            'F006Autosave' { Invoke-F006Autosave }
+            'F006LogScan' { Invoke-F003LogScan -Step 'F006LogScan' }
             'F004LogScan' { Invoke-F004LogScan }
         }
     }
