@@ -742,8 +742,7 @@ namespace IdleFactory.Tests.PlayMode
             var limiting = rates.Resources.Single(r => r.ResourceId == presentation.LimitingResourceId);
             var expected = limiting.AutoSold ? MissingInputCause.AutoSold : MissingInputCause.NoSource;
             Assert.That(presentation.LimitingCause, Is.EqualTo(expected), "no miner is built, so nothing makes the input unless auto-sell reads it first");
-            Assert.That(card.CauseLabel.text, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore") + "
-" + MachineCardCopy.CauseDetail(expected)),
+            Assert.That(card.CauseLabel.text, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore") + "\n" + MachineCardCopy.CauseDetail(expected)),
                 "B-4 (T560): the first line stays category-level, the cause is the visible second line (touch users cannot read a tooltip)");
             Assert.That(card.CauseLabel.tooltip, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore") + ". " + MachineCardCopy.CauseDetail(expected)));
         }
@@ -795,8 +794,7 @@ namespace IdleFactory.Tests.PlayMode
             var expected = limiting.AutoSold ? MissingInputCause.AutoSold : MissingInputCause.SourceTooSlow;
             Assert.That(limiting.ProductionPerMinuteMicro, Is.GreaterThan(0), "the starved smelter is an active maker, so its nominal rate counts");
             Assert.That(presentation.LimitingCause, Is.EqualTo(expected), "the starved smelter still counts as the press's source (never NoSource)");
-            Assert.That(card.CauseLabel.text, Does.EndWith("
-" + MachineCardCopy.CauseDetail(expected)));
+            Assert.That(card.CauseLabel.text, Does.EndWith("\n" + MachineCardCopy.CauseDetail(expected)));
             Assert.That(MachineCardCopy.CauseDetail(MissingInputCause.SourceTooSlow), Is.EqualTo("Makers cannot keep up"));
             Assert.That(MachineCardCopy.CauseDetail(MissingInputCause.StoreFull), Is.EqualTo("Store full, so makers cannot deliver"));
         }

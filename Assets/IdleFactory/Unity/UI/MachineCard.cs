@@ -510,8 +510,7 @@ namespace IdleFactory.Unity.UI
             }
 
             // B-4/C-29 (T560): the visible cause is a second line of the same label, so a touch user reads it without a tooltip.
-            causeLabel.text = text == null ? string.Empty : (detailLine == null ? text : text + "
-" + detailLine);
+            causeLabel.text = text == null ? string.Empty : (detailLine == null ? text : text + "\n" + detailLine);
             // The specific cause (auto-sell, no source, a full store, a slow source) comes from the model and rides in the description; T547 owns the visible copy.
             causeLabel.tooltip = causeDetail ?? text ?? string.Empty;
             causeLabel.style.display = text == null ? DisplayStyle.None : DisplayStyle.Flex;
