@@ -383,7 +383,11 @@ namespace IdleFactory.Unity.UI
             milestoneBanner.Advance(seconds);
             if (milestoneBanner.IsShown)
             {
-                milestoneBanner.PrimaryOnly = BannerPrimaryOnly;
+                if (milestoneBanner.PrimaryOnly != BannerPrimaryOnly)
+                {
+                    milestoneBanner.PrimaryOnly = BannerPrimaryOnly;
+                }
+
                 PlaceMilestoneBanner();
             }
         }

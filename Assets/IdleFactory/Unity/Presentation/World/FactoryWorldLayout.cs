@@ -330,6 +330,11 @@ namespace IdleFactory.Unity.Presentation
                         continue;
                     }
 
+                    if (trunk.Points.Count < 2)
+                    {
+                        continue;
+                    }
+
                     var junction = trunk.Points[1];
                     fit = Union(fit, AttentionModel.MarkerBoxAt(junction));
                     fit = Union(fit, new Rect(junction.x, Mathf.Min(junction.y, DepotAnchor.y), 0f, Mathf.Abs(junction.y - DepotAnchor.y)));

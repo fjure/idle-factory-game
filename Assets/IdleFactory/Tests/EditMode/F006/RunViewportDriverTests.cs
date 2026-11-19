@@ -97,6 +97,63 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(controller.Model.Position.y, Is.EqualTo(fresh.Position.y).Within(1e-3f));
         }
 
+        private static readonly Rect PortraitClosed = new Rect(0f, 520f, 1080f, 1500f);
+        private static readonly Rect PortraitBand = new Rect(0f, 1000f, 1080f, 1020f);
+        private static readonly Rect LandscapeClosed = new Rect(120f, 0f, 2160f, 1000f);
+        private static readonly Rect LandscapeBand = new Rect(120f, 0f, 1300f, 1000f);
+
+        private void AssertIsFreshFit(FactoryCameraController controller, FactoryWorldLayout layout, int w, int h, Rect closed, string where)
+        {
+            Assert.That(controller.SheetOpen, Is.False, where);
+            var fresh = new CameraScaleModel(new RunZoomSettings().ToScaleSettings());
+            fresh.Fit(Screen(w, h, 2.625f, closed, layout));
+            Assert.That(controller.Scale, Is.EqualTo(fresh.Scale), where + ": scale");
+            Assert.That(controller.Model.Position.x, Is.EqualTo(fresh.Position.x).Within(1e-3f), where + ": x");
+            Assert.That(controller.Model.Position.y, Is.EqualTo(fresh.Position.y).Within(1e-3f), where + ": y");
+        }
+
+        [Test]
+        public void ARotationThereAndBackUnderAnOpenCardThenBackIsAFreshFit([Values(0, 5)] int slot)
+        {
+            var controller = NewController();
+            var driver = new RunViewportDriver(controller);
+            var a = LatticeLayoutBuilder.ShippedForColumns(3);
+            var b = LatticeLayoutBuilder.ShippedForColumns(4);
+            driver.FramingPending = true;
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitClosed, a), PortraitClosed, false, default);
+            driver.NotifySelectionChanged();
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitBand, a), PortraitBand, true, a.MachineRectOf(new BuildingLocationId(slot)));
+            driver.FramingPending = true;
+            driver.Apply(Screen(2400, 1080, 2.625f, LandscapeBand, b), LandscapeBand, true, b.MachineRectOf(new BuildingLocationId(slot)));
+            driver.Apply(Screen(2400, 1080, 2.625f, LandscapeBand, b), LandscapeBand, true, b.MachineRectOf(new BuildingLocationId(slot)));
+            driver.FramingPending = true;
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitBand, a), PortraitBand, true, a.MachineRectOf(new BuildingLocationId(slot)));
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitBand, a), PortraitBand, true, a.MachineRectOf(new BuildingLocationId(slot)));
+            driver.NotifySelectionChanged();
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitClosed, a), PortraitClosed, false, default);
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitClosed, a), PortraitClosed, false, default);
+            AssertIsFreshFit(controller, a, 1080, 2400, PortraitClosed, "A to B to A, then Back");
+        }
+
+        [Test]
+        public void AFitAllWhileACardIsOpenThenBackIsAFreshFit()
+        {
+            var controller = NewController();
+            var driver = new RunViewportDriver(controller);
+            var a = LatticeLayoutBuilder.ShippedForColumns(3);
+            driver.FramingPending = true;
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitClosed, a), PortraitClosed, false, default);
+            driver.NotifySelectionChanged();
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitBand, a), PortraitBand, true, a.MachineRectOf(new BuildingLocationId(0)));
+            driver.FramingPending = true; // fitAll or a settings change, same screen
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitBand, a), PortraitBand, true, a.MachineRectOf(new BuildingLocationId(0)));
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitBand, a), PortraitBand, true, a.MachineRectOf(new BuildingLocationId(0)));
+            driver.NotifySelectionChanged();
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitClosed, a), PortraitClosed, false, default);
+            driver.Apply(Screen(1080, 2400, 2.625f, PortraitClosed, a), PortraitClosed, false, default);
+            AssertIsFreshFit(controller, a, 1080, 2400, PortraitClosed, "fitAll under a card, then Back");
+        }
+
         [Test]
         public void BackWithoutARotationStillReturnsThePriorView()
         {

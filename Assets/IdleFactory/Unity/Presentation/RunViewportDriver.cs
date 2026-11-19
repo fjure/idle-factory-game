@@ -50,6 +50,11 @@ namespace IdleFactory.Unity.Presentation
                 FramingPending = false;
                 controller.Fit(layout);
                 changed = true;
+                if (wantSheet)
+                {
+                    // The fit ran on the card's band: the sheet prior view the next OpenSheet stores is band-sized, so the remembered closed view is no longer restorable.
+                    hasLastClosed = false;
+                }
             }
             else if (!wantSheet && controller.SheetOpen)
             {
@@ -73,6 +78,7 @@ namespace IdleFactory.Unity.Presentation
             {
                 // The model's sheet band carries the old screen size: fit again, the selection then reopens its sheet below.
                 controller.Fit(layout);
+                hasLastClosed = false;
             }
             else if (changed && !wantSheet)
             {
