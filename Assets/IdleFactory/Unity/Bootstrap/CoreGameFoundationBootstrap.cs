@@ -1588,6 +1588,11 @@ namespace IdleFactory.Unity.Bootstrap
                 return;
             }
 
+            if (cameraController == null || Viewport == null)
+            {
+                return;
+            }
+
             var layout = RunCameraFraming.Layout(factoryCamera, slotGrid.Layout, PixelsPerPoint(), visibleArea);
             var wantSheet = selectedSlot >= 0;
             Viewport.Apply(layout, visibleArea, wantSheet, wantSheet ? framing.FrameMachine(selectedSlot, slotGrid.Layout) : default);
@@ -1598,6 +1603,12 @@ namespace IdleFactory.Unity.Bootstrap
         {
             get
             {
+                if (cameraController == null)
+                {
+                    // Architect 3d: no controller yet (or any more): keep the old driver, never throw per frame.
+                    return viewportDriver;
+                }
+
                 if (viewportDriver == null || !ReferenceEquals(viewportDriver.Controller, cameraController))
                 {
                     var replaced = viewportDriver != null;

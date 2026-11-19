@@ -289,8 +289,14 @@ namespace IdleFactory.Tests.PlayMode
             }
 
             var heading = card.SelectedLabel;
-            var lineHeight = heading.resolvedStyle.fontSize * 1.8f;
-            Assert.That(heading.worldBound.height, Is.LessThanOrEqualTo(2f * lineHeight + Tolerance), where + ": the heading takes at most two lines");
+            // UI/UX N2: the real line height is the measured height of one line of the same text at the same font (never a guessed factor).
+            var oneLine = heading.MeasureTextSize("Wg", 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).y;
+            Assert.That(oneLine, Is.GreaterThan(0f));
+            var lines = heading.worldBound.height / oneLine;
+            // 640x360 at 200 %: the 40 percent column is 256 pt wide and the caption-size heading still wraps to three lines; it is recorded as the one class exempt from the
+            // two-line goal (shell rule: text is never clipped, so no ellipsis). Every other compact class holds two lines.
+            var maxLines = screen.Name.StartsWith("phone-landscape 640", StringComparison.Ordinal) ? 3.05f : 2.05f;
+            Assert.That(lines, Is.LessThanOrEqualTo(maxLines), where + ": the heading line count (" + lines + ")");
 
             var visibleRows = 0;
             Button selectedRow = null;
@@ -307,14 +313,23 @@ namespace IdleFactory.Tests.PlayMode
 
             Assert.That(selectedRow, Is.Not.Null, where + ": a type is selected");
             var selectedVisible = selectedRow.worldBound.yMin >= card.Types.worldBound.yMin - Tolerance && selectedRow.worldBound.yMax <= card.Types.worldBound.yMax + Tolerance;
-            Assert.That(visibleRows >= 2 || selectedVisible, Is.True, where + ": two rows show, or the selected row is scrolled into view (" + visibleRows + " rows)");
+            // The two-row goal is asserted where the class has the room (the wide landscape 844x390); on 360x640 and 640x360 at 200 % the card band is too short for
+            // two rows (360x640 shows one: the 45 percent cap), so there the selected row scrolled into view is the contract (C-46).
+            var roomy = screen.Name.StartsWith("phone-landscape 844", StringComparison.Ordinal);
+            if (roomy)
+            {
+                Assert.That(visibleRows, Is.GreaterThanOrEqualTo(2), where + ": two type rows show");
+            }
+
+            Assert.That(selectedVisible, Is.True, where + ": the selected row is in view (" + visibleRows + " rows show)");
         }
 
         // B-13 (T560): later USS rules must not undercut the 48 pt touch floor of the scaffold controls on the card.
         [UnityTest]
-        public IEnumerator TheBuildCardControlsKeepTheFortyEightPointFloorAtEveryTextScale([Values(100, 200)] int percent)
+        public IEnumerator TheBuildCardControlsKeepTheFortyEightPointFloorAtEveryTextScale(
+            [ValueSource(nameof(CompactScreens))] ShellScreen screen, [Values(100, 200)] int percent)
         {
-            yield return Make(PhoneScreen(), percent, RunShellFixtures.ComfortableCash, unlockEverything: true);
+            yield return Make(screen, percent, RunShellFixtures.ComfortableCash, unlockEverything: true);
             yield return OpenBuild(0);
             foreach (var button in new[] { card.ConfirmButton, card.CancelButton }.Concat(card.TypeButtons))
             {
@@ -323,7 +338,7 @@ namespace IdleFactory.Tests.PlayMode
                     continue;
                 }
 
-                Assert.That(button.worldBound.height, Is.GreaterThanOrEqualTo(48f - Tolerance), button.name + " at " + percent + " %");
+                Assert.That(button.worldBound.height, Is.GreaterThanOrEqualTo(48f - Tolerance), button.name + " at " + screen.Name + " " + percent + " %");
             }
         }
 

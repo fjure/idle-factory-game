@@ -44,6 +44,10 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>True between a layout change of the bound grid and the first render of a model computed on that layout (C-39): nothing is drawn then.</summary>
         public bool AwaitingModelLayout => pendingLayout != null;
 
+        // The layout id includes the composition identity, so two instances of the same layout (the shell's and the grid's) are the same layout (Architect 1a).
+        private static bool SameLayout(FactoryWorldLayout a, FactoryWorldLayout b) =>
+            a != null && b != null && (ReferenceEquals(a, b) || string.Equals(a.LayoutId, b.LayoutId, System.StringComparison.Ordinal));
+
         /// <summary>The number of markers drawn now.</summary>
         public int VisibleMarkerCount => visibleCount;
 
@@ -150,7 +154,7 @@ namespace IdleFactory.Unity.Presentation
             visibleCount = 0;
             if (pendingLayout != null)
             {
-                if (!ReferenceEquals(model.Layout, pendingLayout) && Time.unscaledTime - pendingSince < PendingLayoutSeconds)
+                if (!SameLayout(model.Layout, pendingLayout) && Time.unscaledTime - pendingSince < PendingLayoutSeconds)
                 {
                     return;
                 }

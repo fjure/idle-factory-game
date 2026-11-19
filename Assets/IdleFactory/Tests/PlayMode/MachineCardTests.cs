@@ -773,6 +773,76 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(allocations, Is.Zero, "the open machine card rebuilds nothing while only quantities change");
         }
 
+        // C-28 (B-5, T560): portrait at 200 % with Details open, a text-scale change must not reframe on the old card band: the card band is pending first, and once it
+        // settles the framed world rectangle ends above the card, so nothing is drawn over the card edge.
+        [UnityTest]
+        public IEnumerator ATextScaleChangeWithDetailsOpenWaitsForTheCardBandAndLeavesTheCardEdgeClear()
+        {
+            var screen = PhoneScreen();
+            yield return Make(screen, 200, RunShellFixtures.ComfortableCash);
+            h.Build(0, "machine.miner");
+            yield return h.OpenCard(0);
+            CardHarness.Press(h.Card.DetailsButton);
+            yield return ShellRig.Settle();
+
+            h.Shell.ApplyTextScale(1.5f);
+            Assert.That(h.Shell.IsCardBandPending, Is.True, "the band is pending after the change (Details sheet open)");
+            Assert.That(h.Shell.TryGetUnobstructedScreenRect(screen.Height, out _), Is.False, "no reframe on the old band");
+
+            for (var frame = 0; frame < 8; frame++)
+            {
+                yield return null;
+            }
+
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.TryGetUnobstructedScreenRect(screen.Height, out var rect), Is.True, "the band settled");
+            var points = h.Shell.Root.panel.scaledPixelsPerPoint;
+            var worldBottomPoints = (screen.Height - rect.yMin) / points;
+            var cardTop = h.Shell.IsSheetOpen ? h.Shell.PanelScroll.worldBound.yMin : h.Shell.CardRoot.worldBound.yMin;
+            Assert.That(worldBottomPoints, Is.LessThanOrEqualTo(cardTop + Tolerance), "the framed world ends above the card edge");
+        }
+
+        // Architect 2d (T560): the machine card twin of the build card's cash-crossing test. With only quantities changing (no structure revision), the Upgrade button
+        // follows Cash across the upgrade price and the card follows a state change of its machine.
+        [UnityTest]
+        public IEnumerator TheCardStillRefreshesWhenCashCrossesTheUpgradePriceAndWhenTheMachineChangesState()
+        {
+            yield return Make(PhoneScreen(), 100, MinerCost);
+            h.Build(0, "machine.miner");
+            yield return h.OpenCard(0);
+            var card = h.Card;
+            var price = h.MachineAt(0).NextUpgrade.Cost;
+            var structure = h.Session.StructureRevision;
+            var short1 = price - 1 - h.Session.ReadCash();
+            Assert.That(short1, Is.GreaterThanOrEqualTo(0L));
+            h.Session.BeginCommand();
+            Assert.That(h.Session.State.TryAddCash(short1), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            Assert.That(h.Session.EndCommand(0, false).IsSuccess, Is.True);
+            h.Shell.RefreshCard();
+            Assert.That(PanelScaffold.IsDisabled(card.UpgradeButton), Is.True, "one short of the price");
+            h.Session.BeginCommand();
+            Assert.That(h.Session.State.TryAddCash(1), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            Assert.That(h.Session.EndCommand(0, false).IsSuccess, Is.True);
+            h.Shell.RefreshCard();
+            Assert.That(PanelScaffold.IsDisabled(card.UpgradeButton), Is.False, "affordable once Cash crosses the price");
+            Assert.That(h.Session.StructureRevision, Is.EqualTo(structure), "no structure change was involved");
+        }
+
+        [UnityTest]
+        public IEnumerator TheCardFollowsAStateChangeWithNoStructureChange()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, level: 2);
+            h.Build(0, "machine.smelter");
+            yield return h.OpenCard(0);
+            var structure = h.Session.StructureRevision;
+            var before = h.Card.VisualState;
+            h.Session.Advance(2_000L * RunSession.TicksPerMs);
+            h.Shell.RefreshCard();
+            Assert.That(h.Session.StructureRevision, Is.EqualTo(structure), "only quantities moved");
+            Assert.That(h.Card.VisualState, Is.EqualTo(MachineVisualState.MissingInput), "the starved smelter now shows its cause (was " + before + ")");
+            Assert.That(h.Card.CauseLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+        }
+
         // C-29 (T560): ProductionPerMinuteMicro is the steady-state rate of the ACTIVE makers assuming their own inputs (RunSnapshots, "a blocked machine still
         // counts"), not an effective delivered rate. A press whose smelter exists but is itself starved therefore reads "Makers cannot keep up", never "No machine
         // makes it": the maker is there and not delivering. NoSource is reserved for an input nothing active makes.

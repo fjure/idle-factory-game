@@ -313,6 +313,27 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(view.AwaitingModelLayout, Is.False, "binding again starts clean");
         }
 
+        // Architect 1a (T560): the pending-layout check compares layout ids. A model computed on another instance of the same layout (the shell's against the grid's) brings
+        // the markers back at once, long before the 0.3 s safety expiry.
+        [UnityTest]
+        public IEnumerator MarkersReturnAtOnceWhenTheModelCarriesAnotherInstanceOfTheSameLayout()
+        {
+            Build(0, Smelter);
+            yield return null;
+            var sameIdOtherInstance = new LatticeLayoutBuilder(LatticeLayoutBuilder.ShippedLocationCount, WorldOrientation.Portrait, null).Build();
+            Assert.That(ReferenceEquals(sameIdOtherInstance, layout), Is.False, "two instances");
+            Assert.That(sameIdOtherInstance.LayoutId, Is.EqualTo(layout.LayoutId), "of the same layout");
+            view.Bind(grid);
+            grid.SetLayout(sameIdOtherInstance);
+            Assert.That(view.AwaitingModelLayout, Is.True);
+            Assert.That(view.VisibleMarkerCount, Is.Zero, "blank right after the layout change");
+            var before = Time.unscaledTime;
+            Show();
+            Assert.That(Time.unscaledTime - before, Is.LessThan(AttentionMarkerView.PendingLayoutSeconds));
+            Assert.That(view.AwaitingModelLayout, Is.False, "a model for the same layout id ends the wait");
+            Assert.That(view.VisibleMarkerCount, Is.GreaterThan(0), "the markers are back at once");
+        }
+
         [UnityTest]
         public IEnumerator AMarkerDisappearsWhenTheShortageIsResolved()
         {

@@ -603,7 +603,7 @@ namespace IdleFactory.Unity.UI
             }
 
             ApplyCardCap();
-            if (cardOpen && previousPercent != ShellTextScale.Percent(textScale))
+            if ((cardOpen || sheetOpen) && previousPercent != ShellTextScale.Percent(textScale))
             {
                 // C-28 (B-5, T560): a text-scale change with the card open (Details too) resizes the card band. The camera waits for the new band exactly as it does
                 // after a resize or rotation; without the guard the Fit branch ran on the old band and the overlays drew over the card edge at portrait 200 percent.
