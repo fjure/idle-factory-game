@@ -441,6 +441,10 @@
   IdleFactory.Run.Application.ActiveEffectSnapshot :: property public System.String ItemId { get }
   IdleFactory.Run.Application.ActiveEffectSnapshot :: property public System.String Label { get }
   IdleFactory.Run.Application.ActiveEffectSnapshot :: property public System.String TargetKey { get }
+  IdleFactory.Run.Application.AutosaveTickOutcome :: field public System.Int32 value__
+  IdleFactory.Run.Application.AutosaveTickOutcome :: field public const IdleFactory.Run.Application.AutosaveTickOutcome Failed = 2
+  IdleFactory.Run.Application.AutosaveTickOutcome :: field public const IdleFactory.Run.Application.AutosaveTickOutcome NotDue = 0
+  IdleFactory.Run.Application.AutosaveTickOutcome :: field public const IdleFactory.Run.Application.AutosaveTickOutcome Written = 1
   IdleFactory.Run.Application.BuildPricing :: method public static System.Boolean TryCurve(IdleFactory.Run.Content.BuildPriceDef def, System.Int64 owned, System.Int64 prestigeCount, out System.Int64 price)
   IdleFactory.Run.Application.BuildPricing :: method public static System.Boolean TryPrice(IdleFactory.Run.Content.RunCatalog catalog, IdleFactory.Run.Simulation.RunModifiers modifiers, IdleFactory.Run.Domain.RunState state, IdleFactory.Run.Domain.PermanentState permanent, IdleFactory.Run.Content.MachineDef def, out System.Int64 price)
   IdleFactory.Run.Application.BuildResult :: ctor public (System.Guid instanceId, System.Int32 slotIndex, System.String machineId, System.Int64 costPaid, IdleFactory.Run.Application.MachineRates rates, System.Int64 nextUpgradeCost)
@@ -562,6 +566,8 @@
   IdleFactory.Run.Application.GoalsTracker :: property public System.Int32 Rebuilds { get }
   IdleFactory.Run.Application.ILegacyCheckpointSource :: method public abstract System.Boolean TryReadActive(out IdleFactory.Core.Application.Checkpoint checkpoint, out IdleFactory.Core.Application.CommandOutcome outcome)
   IdleFactory.Run.Application.ILegacyCheckpointSource :: property public abstract System.String Description { get }
+  IdleFactory.Run.Application.IPreparedPromotion :: method public abstract IdleFactory.Core.Application.CommandResult<IdleFactory.Domain.CheckpointId> Publish()
+  IdleFactory.Run.Application.IRunCheckpointBackgroundPromoter :: method public abstract IdleFactory.Run.Application.IPreparedPromotion PreparePromotion(IdleFactory.Run.Application.RunCheckpoint checkpoint)
   IdleFactory.Run.Application.IRunCheckpointStore :: method public abstract IdleFactory.Core.Application.CommandResult<IdleFactory.Domain.CheckpointId> Promote(IdleFactory.Run.Application.RunCheckpoint checkpoint)
   IdleFactory.Run.Application.IRunCheckpointStore :: method public abstract IdleFactory.Core.Application.CommandResult<IdleFactory.Domain.CheckpointId> RecoverPrevious(IdleFactory.Run.Application.RunCheckpoint recoveryCandidate)
   IdleFactory.Run.Application.IRunCheckpointStore :: method public abstract IdleFactory.Core.Application.CommandResult<IdleFactory.Domain.CheckpointId> SupersedeDamaged(IdleFactory.Run.Application.RunCheckpoint checkpoint)
@@ -1139,6 +1145,7 @@
   IdleFactory.Run.Application.RunOfflineSummary :: property public System.String ContractDropCode { get }
   IdleFactory.Run.Application.RunPersistence :: ctor public (IdleFactory.Run.Application.RunSession session, IdleFactory.Run.Application.IRunCheckpointStore store, IdleFactory.Core.Application.IUtcClock clock)
   IdleFactory.Run.Application.RunPersistence :: ctor public (IdleFactory.Run.Application.RunSession session, IdleFactory.Run.Application.IRunCheckpointStore store, IdleFactory.Core.Application.IUtcClock clock, IdleFactory.Core.Application.ICheckpointIdSource checkpointIds, IdleFactory.Run.Application.IRunReturnReconciler reconciler)
+  IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.AutosaveTickOutcome AutosaveWhenDue(System.Action beforeWrite = null)
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> Autosave()
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> ColdStart(IdleFactory.Run.Application.ILegacyCheckpointSource legacySource)
   IdleFactory.Run.Application.RunPersistence :: method public IdleFactory.Run.Application.RunCommandResult<IdleFactory.Run.Application.RunPersistenceOutcome> CommitPendingTransition()
@@ -1841,6 +1848,7 @@ type enum IdleFactory.Domain.BufferOperationResult : System.IComparable, System.
 type enum IdleFactory.Domain.BufferRole : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Domain.PlacementOutcome : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Domain.ProductionBlockerKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
+type enum IdleFactory.Run.Application.AutosaveTickOutcome : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.CompletionLimitKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.CorrectiveActionKind : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
 type enum IdleFactory.Run.Application.MachineBlocker : System.IComparable, System.IConvertible, System.IFormattable, System.Int32
@@ -1867,6 +1875,8 @@ type interface IdleFactory.Core.Application.ICheckpointIdSource
 type interface IdleFactory.Core.Application.ICheckpointStore
 type interface IdleFactory.Core.Application.IUtcClock
 type interface IdleFactory.Run.Application.ILegacyCheckpointSource
+type interface IdleFactory.Run.Application.IPreparedPromotion
+type interface IdleFactory.Run.Application.IRunCheckpointBackgroundPromoter
 type interface IdleFactory.Run.Application.IRunCheckpointStore
 type interface IdleFactory.Run.Application.IRunEventSink
 type interface IdleFactory.Run.Application.IRunLogRecordingState

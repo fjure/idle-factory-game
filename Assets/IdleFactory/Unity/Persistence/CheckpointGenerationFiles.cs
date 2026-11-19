@@ -753,11 +753,52 @@ namespace IdleFactory.Unity.Persistence
             }
         }
 
-        private CommandResult<CheckpointId> Publish(TCheckpoint checkpoint, bool recovery)
+        /// <summary>
+        /// Serializes <paramref name="checkpoint"/> on the calling thread and returns its publication, or null when it cannot be
+        /// serialized (T559). The publication runs the same <see cref="Publish(TCheckpoint, bool, byte[])"/> protocol under the same
+        /// operation gate as <see cref="Promote"/>, so it is safe on any thread and orders with every other operation of the store.
+        /// </summary>
+        public PreparedPromotion Prepare(TCheckpoint checkpoint)
+        {
+            if (checkpoint == null) return null;
+            var serialized = codec.Serialize(checkpoint);
+            if (!serialized.Succeeded)
+            {
+                CheckpointDiagnostics.Report("Publish", "Serialize");
+                return null;
+            }
+
+            return new PreparedPromotion(this, checkpoint, serialized.Value);
+        }
+
+        /// <summary>One serialized checkpoint, ready to publish from any thread (T559).</summary>
+        public sealed class PreparedPromotion
+        {
+            private readonly CheckpointGenerationFiles<TCheckpoint> owner;
+            private readonly TCheckpoint checkpoint;
+            private readonly byte[] serialized;
+
+            internal PreparedPromotion(CheckpointGenerationFiles<TCheckpoint> owner, TCheckpoint checkpoint, byte[] serialized)
+            {
+                this.owner = owner;
+                this.checkpoint = checkpoint;
+                this.serialized = serialized;
+            }
+
+            public CommandResult<CheckpointId> Publish()
+            {
+                lock (owner.reader.OperationGate)
+                {
+                    return owner.Publish(checkpoint, false, serialized);
+                }
+            }
+        }
+
+        private CommandResult<CheckpointId> Publish(TCheckpoint checkpoint, bool recovery, byte[] preSerialized = null)
         {
             var checkpointId = codec.GetId(checkpoint);
             var checkpointGeneration = codec.GetGeneration(checkpoint);
-            var serialized = codec.Serialize(checkpoint);
+            var serialized = preSerialized != null ? CommandResult<byte[]>.Success(preSerialized) : codec.Serialize(checkpoint);
             if (!serialized.Succeeded)
             {
                 CheckpointDiagnostics.Report("Publish", "Serialize");

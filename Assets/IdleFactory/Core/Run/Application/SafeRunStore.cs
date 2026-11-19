@@ -19,14 +19,39 @@ namespace IdleFactory.Run.Application
         internal const string StorageMessage = "Checkpoint storage is unavailable.";
 
         private readonly IRunCheckpointStore store;
+        private readonly Action beforeAccess;
 
-        public SafeRunStore(IRunCheckpointStore store) => this.store = store;
+        /// <param name="beforeAccess">
+        /// Runs before every access from the owning thread (T559): <see cref="RunPersistence"/> joins an autosave in flight there, so
+        /// no command reads or writes the store with a background write of the same process still outstanding and unapplied.
+        /// </param>
+        public SafeRunStore(IRunCheckpointStore store, Action beforeAccess = null)
+        {
+            this.store = store;
+            this.beforeAccess = beforeAccess;
+        }
 
-        public RunCheckpointReadResult ReadActive() => SafeRead(() => store.ReadActive());
+        /// <summary>The background capability of the wrapped store, or null (T559).</summary>
+        public bool SupportsBackgroundPromotion => store is IRunCheckpointBackgroundPromoter;
 
-        public RunCheckpointReadResult ReadPrevious() => SafeRead(() => store.ReadPrevious());
+        /// <summary>Serializes the checkpoint for a background publication, or null when the store cannot or the serialization failed (T559).</summary>
+        public IPreparedPromotion TryPreparePromotion(RunCheckpoint checkpoint)
+        {
+            try
+            {
+                return (store as IRunCheckpointBackgroundPromoter)?.PreparePromotion(checkpoint);
+            }
+            catch (Exception exception) when (IsExpectedInfrastructureFailure(exception))
+            {
+                return null;
+            }
+        }
 
-        public RunCheckpointReadResult Read(CheckpointId id) => SafeRead(() => store.Read(id));
+        public RunCheckpointReadResult ReadActive() => SafeRead(() => { beforeAccess?.Invoke(); return store.ReadActive(); });
+
+        public RunCheckpointReadResult ReadPrevious() => SafeRead(() => { beforeAccess?.Invoke(); return store.ReadPrevious(); });
+
+        public RunCheckpointReadResult Read(CheckpointId id) => SafeRead(() => { beforeAccess?.Invoke(); return store.Read(id); });
 
         private static RunCheckpointReadResult SafeRead(Func<RunCheckpointReadResult> read)
         {
@@ -44,6 +69,7 @@ namespace IdleFactory.Run.Application
         {
             try
             {
+                beforeAccess?.Invoke();
                 return store.Promote(checkpoint) ?? CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
             }
             catch (Exception exception) when (IsExpectedInfrastructureFailure(exception))
@@ -56,6 +82,7 @@ namespace IdleFactory.Run.Application
         {
             try
             {
+                beforeAccess?.Invoke();
                 return store.NextSupersedeGeneration() ?? CommandResult<long>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
             }
             catch (Exception exception) when (IsExpectedInfrastructureFailure(exception))
@@ -68,6 +95,7 @@ namespace IdleFactory.Run.Application
         {
             try
             {
+                beforeAccess?.Invoke();
                 return store.SupersedeDamaged(checkpoint) ??
                        CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
             }
@@ -81,6 +109,7 @@ namespace IdleFactory.Run.Application
         {
             try
             {
+                beforeAccess?.Invoke();
                 return store.RecoverPrevious(checkpoint) ??
                        CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
             }
@@ -94,6 +123,7 @@ namespace IdleFactory.Run.Application
         {
             try
             {
+                beforeAccess?.Invoke();
                 return store.ProbeFiles() ??
                        CommandResult<RunCheckpointPresence>.Rejected(CommandOutcome.PersistenceFailed, StorageMessage);
             }

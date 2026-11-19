@@ -123,7 +123,7 @@ namespace IdleFactory.Run.Application
             IRunReturnReconciler reconciler)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
-            this.store = new SafeRunStore(store ?? throw new ArgumentNullException(nameof(store)));
+            this.store = new SafeRunStore(store ?? throw new ArgumentNullException(nameof(store)), JoinAutosave);
             this.clock = clock ?? throw new ArgumentNullException(nameof(clock));
             this.checkpointIds = checkpointIds ?? throw new ArgumentNullException(nameof(checkpointIds));
             this.reconciler = reconciler ?? throw new ArgumentNullException(nameof(reconciler));
@@ -640,6 +640,7 @@ namespace IdleFactory.Run.Application
 
             lastActiveCheckpointId = checkpoint.Id;
             lastCheckpointUtcMs = clockMs;
+            NoteDurable(checkpoint);
             SetStatus(PersistenceStatusKind.Ready, checkpoint.Id, active != null || previous != null, "Factory saved.");
             return Succeeded(checkpoint.Id, checkpoint.Generation, false, false, false, false);
         }
@@ -833,7 +834,9 @@ namespace IdleFactory.Run.Application
             }
 
             session.BeginCommand();
-            return session.EndCommand(true, true).IsSuccess;
+            bool settled = session.EndCommand(true, true).IsSuccess;
+            if (settled) NoteDurable(durable);
+            return settled;
         }
 
         // ---------------------------------------------------------------------------------------------------
@@ -842,6 +845,7 @@ namespace IdleFactory.Run.Application
 
         private string Admit(ApplicationOperation operation)
         {
+            JoinAutosave(); // T559: a command never runs with a background autosave of this process outstanding and unapplied
             if (operation == ApplicationOperation.StatusQuery) return null;
             if (operation == ApplicationOperation.RecoverPreviousCheckpoint)
             {

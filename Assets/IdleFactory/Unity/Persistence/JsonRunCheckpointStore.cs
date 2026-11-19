@@ -146,7 +146,7 @@ namespace IdleFactory.Unity.Persistence
     /// <c>schemaVersion</c> 2 and 3 from the same <c>v2/</c> slots and writes 3; the first write after a V2 load upgrades the
     /// file, and the retained previous generation stays the V2 file until the protocol replaces it.
     /// </summary>
-    public sealed class JsonRunCheckpointStore : IRunCheckpointStore
+    public sealed class JsonRunCheckpointStore : IRunCheckpointStore, IRunCheckpointBackgroundPromoter
     {
         public const string DataAFileName = SaveV2CheckpointFiles.DataAFileName;
         public const string DataBFileName = SaveV2CheckpointFiles.DataBFileName;
@@ -200,6 +200,22 @@ namespace IdleFactory.Unity.Persistence
         public RunCheckpointReadResult Read(CheckpointId checkpointId) => ToReadResult(files.Read(checkpointId));
 
         public CommandResult<CheckpointId> Promote(RunCheckpoint checkpoint) => files.Promote(checkpoint);
+
+        /// <summary>T559: serializes on the calling thread; the returned publication runs the same generation protocol on any thread.</summary>
+        public IPreparedPromotion PreparePromotion(RunCheckpoint checkpoint)
+        {
+            var prepared = files.Prepare(checkpoint);
+            return prepared == null ? null : new PreparedRunPromotion(prepared);
+        }
+
+        private sealed class PreparedRunPromotion : IPreparedPromotion
+        {
+            private readonly CheckpointGenerationFiles<RunCheckpoint>.PreparedPromotion prepared;
+
+            public PreparedRunPromotion(CheckpointGenerationFiles<RunCheckpoint>.PreparedPromotion prepared) => this.prepared = prepared;
+
+            public CommandResult<CheckpointId> Publish() => prepared.Publish();
+        }
 
         public CommandResult<CheckpointId> RecoverPrevious(RunCheckpoint recoveryCandidate) =>
             files.RecoverPrevious(recoveryCandidate, IsValidRecoveryCandidate);
