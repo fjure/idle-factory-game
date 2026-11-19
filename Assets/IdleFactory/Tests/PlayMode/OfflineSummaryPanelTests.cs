@@ -127,7 +127,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(panel.Line("offline-contract").text, Does.StartWith("Contract expired: deliver 100 ").And.EndWith("No reward, no penalty."));
             Assert.That(panel.Line("offline-limit-cap").text, Is.EqualTo("Offline credit is capped at 8 h; time beyond the cap earned nothing."));
             Assert.That(panel.Line("offline-limit-partial").text, Does.StartWith("3 cycle(s) made fewer units than a full batch"));
-            Assert.That(panel.Line("offline-limit-blocked-0").text, Is.EqualTo("Slot 2 " + catalog.Machines["machine.smelter"].Label + " is waiting: an input is missing."));
+            Assert.That(panel.Line("offline-limit-blocked-0").text, Is.EqualTo("Location 2 " + catalog.Machines["machine.smelter"].Label + " is waiting: an input is missing."));
             Assert.That(panel.Line("offline-headline").text, Does.Not.Contain("No production"));
 
             Assert.That(Focused(rig.Root), Is.SameAs(panel.ContinueButton), "the surface opens with focus on Continue");

@@ -35,7 +35,9 @@ namespace IdleFactory.Unity.UI
         /// <summary>How long a transient notice stays before it clears on its own (T192, F-1).</summary>
         public const float DefaultNoticeSeconds = 6f;
 
-        private static readonly string[] TabNames = { "Factory", "Market", "Contracts", "Items", "Research", "Prestige" };
+        private static readonly string[] TabNames = { "Factory", "Market", "Contracts", "Items", "Research", "Factory Sale" };
+        /// <summary>Accessible name of the sheet Close button (B-6, T560); the visible text stays "Close".</summary>
+        public const string CloseSheetName = "Close panel";
 
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private VisualTreeAsset visualTree;
@@ -1285,7 +1287,7 @@ namespace IdleFactory.Unity.UI
 
             if (condition == SlotCondition.Locked)
             {
-                ShowNotice("Slot " + (slot + 1) + " unlocks at factory level " + unlockLevel + ".", ShellNoticeKind.Lock);
+                ShowNotice("Location " + (slot + 1) + " unlocks at factory level " + unlockLevel + ".", ShellNoticeKind.Lock);
                 lockNoticeSlot = slot;
                 return false;
             }
@@ -1310,7 +1312,7 @@ namespace IdleFactory.Unity.UI
             SetSelectedSlot(slot);
             ShowPanel(
                 condition == SlotCondition.Empty ? ShellPanelIds.Build : ShellPanelIds.Machine,
-                (condition == SlotCondition.Empty ? "Build" : "Machine") + " · Slot " + (slot + 1),
+                (condition == SlotCondition.Empty ? "Build" : "Machine") + " · Location " + (slot + 1),
                 slot);
             UpdateSheetState();
             return true;
@@ -1367,7 +1369,7 @@ namespace IdleFactory.Unity.UI
             if (id != activePanelId)
             {
                 detailsFromCard = false;
-                ShowPanel(id, (condition == SlotCondition.Empty ? "Build" : "Machine") + " · Slot " + (slot + 1), slot);
+                ShowPanel(id, (condition == SlotCondition.Empty ? "Build" : "Machine") + " · Location " + (slot + 1), slot);
             }
         }
 
@@ -2090,15 +2092,15 @@ namespace IdleFactory.Unity.UI
             }
             else if (activePanelId == null)
             {
-                text = "Tap an empty slot to build, or a machine to inspect it.";
+                text = "Tap an empty location to build, or a machine to inspect it.";
             }
             else if (activePanelId == ShellPanelIds.Build)
             {
-                text = "The build sheet for slot " + (selectedSlot + 1) + " is not available yet.";
+                text = "The build sheet for location " + (selectedSlot + 1) + " is not available yet.";
             }
             else if (activePanelId == ShellPanelIds.Machine)
             {
-                text = "The machine panel for slot " + (selectedSlot + 1) + " is not available yet.";
+                text = "The machine panel for location " + (selectedSlot + 1) + " is not available yet.";
             }
             else
             {
@@ -2932,7 +2934,7 @@ namespace IdleFactory.Unity.UI
         private void BindCallbacks()
         {
             CloseButton.clicked += () => CloseSheetOrDetails();
-            CloseButton.tooltip = "Close";
+            CloseButton.tooltip = CloseSheetName;
             ZoomInButton.clicked += () => OnZoomClicked(1);
             ZoomOutButton.clicked += () => OnZoomClicked(-1);
             OverdriveButton.clicked += OnOverdriveClicked;

@@ -217,7 +217,7 @@ namespace IdleFactory.Tests.PlayMode
 
             panel.FactoryValue.Focus();
             yield return ShellRig.Settle();
-            Assert.That(shell.DetailText, Is.EqualTo("Slots " + QuantityFormatter.FormatExact(RunShellFixtures.FactorySlots(1)) + " slots, next level " + QuantityFormatter.FormatExact(RunShellFixtures.FactorySlots(2)) + " slots"));
+            Assert.That(shell.DetailText, Is.EqualTo("Locations " + QuantityFormatter.FormatExact(RunShellFixtures.FactorySlots(1)) + " locations, next level " + QuantityFormatter.FormatExact(RunShellFixtures.FactorySlots(2)) + " locations"));
         }
 
         [UnityTest]

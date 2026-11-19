@@ -108,7 +108,7 @@ namespace IdleFactory.Unity.UI
                 condition = def.Unlock;
             }
 
-            return condition == null ? "Locked: not unlocked yet." : "Locked: unlocks after " + After(catalog, condition) + ".";
+            return condition == null ? "Locked." : "Locked: unlocks after " + After(catalog, condition) + ".";
         }
 
         private static string ResourceLabel(RunCatalog catalog, string resourceId) =>

@@ -107,7 +107,7 @@ namespace IdleFactory.Unity.Presentation
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
             if (presentationKeyOf == null) throw new ArgumentNullException(nameof(presentationKeyOf));
             var selected = index == selectedSlot;
-            var label = "Slot " + (index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var label = "Location " + (index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
             if (index < 0 || index >= snapshot.Slots.Count)
             {
                 return new SlotVisual(index, SlotCondition.Locked, LockedKey(5), null, null, null, false, false, false, 5, label + ", locked");

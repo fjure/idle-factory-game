@@ -75,6 +75,7 @@ namespace IdleFactory.Unity.UI
         public const string Gone = "That machine is gone.";
         public const string MaxLevel = "Maximum level";
         public const string CloseName = "Close";
+        public const string CloseAccessibleName = "Close machine card";
         public const string DetailsName = "Details";
 
         /// <summary>
@@ -87,8 +88,8 @@ namespace IdleFactory.Unity.UI
             {
                 case MissingInputCause.AutoSold: return "Auto-sell is selling it";
                 case MissingInputCause.NoSource: return "No machine makes it";
-                case MissingInputCause.StoreFull: return "The store is full, so its makers cannot deliver";
-                case MissingInputCause.SourceTooSlow: return "Its makers are not keeping up";
+                case MissingInputCause.StoreFull: return "Store full, so makers cannot deliver";
+                case MissingInputCause.SourceTooSlow: return "Makers cannot keep up";
                 default: return null;
             }
         }
@@ -190,7 +191,7 @@ namespace IdleFactory.Unity.UI
             DetailsButton.clicked += OnDetailsClicked;
             CloseButton.clicked += OnCloseClicked;
             DetailsButton.tooltip = MachineCardCopy.DetailsName;
-            CloseButton.tooltip = MachineCardCopy.CloseName;
+            CloseButton.tooltip = MachineCardCopy.CloseAccessibleName;
             var closeSprite = icons != null ? icons("F003-UI-ICON-CLOSE") : null;
             if (closeSprite != null)
             {
@@ -412,6 +413,7 @@ namespace IdleFactory.Unity.UI
             string iconKey = null;
             var resourceIcon = false;
             string causeDetail = null;
+            string detailLine = null;
             switch (state)
             {
                 case MachineVisualState.MissingInput:
@@ -423,6 +425,7 @@ namespace IdleFactory.Unity.UI
                         text = AttentionModel.ShortOnCopy(SlotSheetText.ResourceLabel(session, resource));
                         var detail = MachineCardCopy.CauseDetail(presentation.LimitingCause);
                         causeDetail = detail == null ? text : text + ". " + detail;
+                        detailLine = detail;
                         if (session.Catalog.Resources.TryGetValue(resource, out var def))
                         {
                             iconKey = def.PresentationKey;
@@ -451,7 +454,9 @@ namespace IdleFactory.Unity.UI
                     break;
             }
 
-            causeLabel.text = text ?? string.Empty;
+            // B-4/C-29 (T560): the visible cause is a second line of the same label, so a touch user reads it without a tooltip.
+            causeLabel.text = text == null ? string.Empty : (detailLine == null ? text : text + "
+" + detailLine);
             // The specific cause (auto-sell, no source, a full store, a slow source) comes from the model and rides in the description; T547 owns the visible copy.
             causeLabel.tooltip = causeDetail ?? text ?? string.Empty;
             causeLabel.style.display = text == null ? DisplayStyle.None : DisplayStyle.Flex;

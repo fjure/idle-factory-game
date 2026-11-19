@@ -43,7 +43,7 @@
                     </ui:VisualElement>
                     <ui:VisualElement name="world-hint" class="run-world-hint" picking-mode="Ignore">
                         <ui:VisualElement name="world-hint-icon" class="run-icon run-icon--tint-accent" picking-mode="Ignore" />
-                        <ui:Label name="world-hint-text" text="Build a Miner: tap an empty slot." class="run-bar-text" picking-mode="Ignore" />
+                        <ui:Label name="world-hint-text" text="Build a Miner: tap an empty location." class="run-bar-text" picking-mode="Ignore" />
                     </ui:VisualElement>
                     <ui:VisualElement name="world-spacer" class="run-spacer" picking-mode="Ignore" />
                     <ui:VisualElement name="zoom-column" class="run-zoom" picking-mode="Ignore">

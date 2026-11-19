@@ -180,7 +180,7 @@ namespace IdleFactory.Tests.PlayMode
             h.Shell.Attention.Set(HubCard.Overdrive, true);
             h.Shell.Attention.Set(HubCard.Market, true);
             Assert.That(h.Shell.IsHubDotShown, Is.True, "the entry dot shows with the hub closed");
-            Assert.That(h.Shell.HubEntryButton.tooltip, Does.Contain("4 systems need attention"));
+            Assert.That(h.Shell.HubEntryButton.tooltip, Does.Contain("4 need attention"));
             Assert.That(h.Shell.Attention.ContractsDeliverable, Is.EqualTo(2), "the deliverable count lives in the hub attention (the tab badge went with the tab bar, T537)");
 
             h.Shell.OpenHub();
@@ -272,6 +272,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(HubCards.EntryIconKey, Is.Not.Empty);
             Assert.That(HubCards.HubLabel, Is.EqualTo("Office"));
             Assert.That(HubCards.TitleOf(HubCard.Contracts), Is.EqualTo("Contracts"));
+            Assert.That(HubCards.TitleOf(HubCard.Prestige), Is.EqualTo("Factory Sale"), "CF-3: the card carries the panel's name, not the enum name");
         }
 
         // ---------------------------------------------------------------------------------------------------

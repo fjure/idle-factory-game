@@ -78,7 +78,7 @@ namespace IdleFactory.Unity.UI
             hubEntryDot.text = any ? DotGlyph : string.Empty;
             hubEntryDot.style.display = any ? DisplayStyle.Flex : DisplayStyle.None;
             HubEntryButton.tooltip = any
-                ? HubCards.HubLabel + ", " + Attention.Count + (Attention.Count == 1 ? " system needs attention" : " systems need attention")
+                ? HubCards.HubLabel + ", " + Attention.Count + (Attention.Count == 1 ? " needs attention" : " need attention")
                 : HubCards.HubLabel;
         }
 

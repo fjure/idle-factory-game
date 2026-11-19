@@ -120,7 +120,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(close.resolvedStyle.display, Is.Not.EqualTo(DisplayStyle.None), context + ": Close is shown on a phone");
             Assert.That(close.worldBound.width, Is.GreaterThanOrEqualTo(MinTouch - RunShellLayoutAssertions.Tolerance), context + ": Close is at least 44 pt wide");
             Assert.That(close.worldBound.height, Is.GreaterThanOrEqualTo(MinTouch - RunShellLayoutAssertions.Tolerance), context + ": Close is at least 44 pt tall");
-            Assert.That(close.tooltip, Is.EqualTo("Close"), context + ": Close has an accessible name even when its label is hidden");
+            Assert.That(close.tooltip, Is.EqualTo("Close panel"), context + ": Close has an accessible name even when its label is hidden");
         }
     }
 }

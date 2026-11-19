@@ -96,7 +96,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(card.Root.Q<VisualElement>("machine-remove"), Is.Null, "Remove is not on the card (FR-019)");
             Assert.That(card.Root.Query<Button>().ToList().Any(button => button.text == "Remove"), Is.False);
             Assert.That(card.DetailsButton.text, Does.StartWith("Details"));
-            Assert.That(card.CloseButton.tooltip, Is.EqualTo("Close"), "the icon-only close has its accessible name");
+            Assert.That(card.CloseButton.tooltip, Is.EqualTo("Close machine card"), "the icon-only close has its accessible name");
         }
 
         [UnityTest]
@@ -136,7 +136,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(card.StateLabel.text, Is.EqualTo("Paused"));
             var presentation = card.Model.Get(new BuildingLocationId(0));
             Assert.That(presentation.LimitingResourceId, Is.Not.Null, "the limiting resource comes from the presentation model (P2-F13)");
-            Assert.That(card.CauseLabel.text, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore")), "the copy comes from the attention model, not derived again");
+            Assert.That(card.CauseLabel.text, Does.StartWith(AttentionModel.ShortOnCopy("Iron Ore")), "the copy comes from the attention model, not derived again");
             var iconKey = h.Session.Catalog.Resources[presentation.LimitingResourceId].PresentationKey;
             if (ContractsPanelTestSupport.Icon(iconKey) != null)
             {
@@ -742,8 +742,37 @@ namespace IdleFactory.Tests.PlayMode
             var limiting = rates.Resources.Single(r => r.ResourceId == presentation.LimitingResourceId);
             var expected = limiting.AutoSold ? MissingInputCause.AutoSold : MissingInputCause.NoSource;
             Assert.That(presentation.LimitingCause, Is.EqualTo(expected), "no miner is built, so nothing makes the input unless auto-sell reads it first");
-            Assert.That(card.CauseLabel.text, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore")), "the visible line is unchanged (copy follows in T547)");
+            Assert.That(card.CauseLabel.text, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore") + "
+" + MachineCardCopy.CauseDetail(expected)),
+                "B-4 (T560): the first line stays category-level, the cause is the visible second line (touch users cannot read a tooltip)");
             Assert.That(card.CauseLabel.tooltip, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore") + ". " + MachineCardCopy.CauseDetail(expected)));
+        }
+
+        // C-29 (T560): ProductionPerMinuteMicro is the steady-state rate of the ACTIVE makers assuming their own inputs (RunSnapshots, "a blocked machine still
+        // counts"), not an effective delivered rate. A press whose smelter exists but is itself starved therefore reads "Makers cannot keep up", never "No machine
+        // makes it": the maker is there and not delivering. NoSource is reserved for an input nothing active makes.
+        [UnityTest]
+        public IEnumerator ABlockedMakerStillCountsAsASourceSoTheCauseIsMakersCannotKeepUp()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, level: 3);
+            h.Build(0, "machine.smelter");
+            h.Build(1, "machine.press");
+            yield return h.OpenCard(1);
+            h.Session.Advance(2_000L * RunSession.TicksPerMs);
+            h.Shell.RefreshCard();
+            yield return ShellRig.Settle();
+
+            var card = h.Card;
+            var presentation = card.Model.Get(new BuildingLocationId(1));
+            Assert.That(card.VisualState, Is.EqualTo(MachineVisualState.MissingInput));
+            var limiting = RunSnapshots.Rates(h.Session).Resources.Single(r => r.ResourceId == presentation.LimitingResourceId);
+            var expected = limiting.AutoSold ? MissingInputCause.AutoSold : MissingInputCause.SourceTooSlow;
+            Assert.That(limiting.ProductionPerMinuteMicro, Is.GreaterThan(0), "the starved smelter is an active maker, so its nominal rate counts");
+            Assert.That(presentation.LimitingCause, Is.EqualTo(expected), "the starved smelter still counts as the press's source (never NoSource)");
+            Assert.That(card.CauseLabel.text, Does.EndWith("
+" + MachineCardCopy.CauseDetail(expected)));
+            Assert.That(MachineCardCopy.CauseDetail(MissingInputCause.SourceTooSlow), Is.EqualTo("Makers cannot keep up"));
+            Assert.That(MachineCardCopy.CauseDetail(MissingInputCause.StoreFull), Is.EqualTo("Store full, so makers cannot deliver"));
         }
 
         // P2-F13 (T528): the tap priority between an attention marker and a machine shape, through the real presenter. The marker icon never overlaps a machine

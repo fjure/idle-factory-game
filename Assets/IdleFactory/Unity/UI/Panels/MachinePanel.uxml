@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:VisualElement name="machine-panel" class="mpanel">
-        <ui:Label name="machine-empty" text="There is no machine in this slot." class="mpanel__text" />
+        <ui:Label name="machine-empty" text="There is no machine at this location." class="mpanel__text" />
         <ui:VisualElement name="machine-body" class="mpanel__body">
             <ui:Label name="machine-name" text="" class="mpanel__name" />
             <ui:Label name="machine-status" text="" class="mpanel__text" />

@@ -567,7 +567,7 @@ namespace IdleFactory.Unity.UI.Panels
                     var reason = blocked.Blocker == MachineBlocker.StorageFull ? "the store is full" : "an input is missing";
                     texts.Add(new KeyValuePair<string, string>(
                         "offline-limit-blocked-" + i.ToString(CultureInfo.InvariantCulture),
-                        "Slot " + (blocked.SlotIndex + 1).ToString(CultureInfo.InvariantCulture) + " " + MachineLabel(blocked.MachineId) + " is waiting: " + reason + "."));
+                        "Location " + (blocked.SlotIndex + 1).ToString(CultureInfo.InvariantCulture) + " " + MachineLabel(blocked.MachineId) + " is waiting: " + reason + "."));
                 }
             }
 
