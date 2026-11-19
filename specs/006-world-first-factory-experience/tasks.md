@@ -545,7 +545,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units; 61 afte
   - **Timed trial**: the owner runs the trial with `tools/art-pipeline/trials/timed_trial.py` using committed seeds and the oracle.
   - **Record**: `specs/006-world-first-factory-experience/reviews/readability-f006.md`.
   - **Covers**: SC-005; research R18.
-- [ ] T531 [US2] Performance Engineer, after T527–T529.
+- [X] T531 [US2] Performance Engineer, after T527–T529.
   - **Workload**: define the W006-V fixture under `Assets/IdleFactory/Tests/PlayMode/Fixtures/W006V/`:
     - W004-V;
     - the established-stage deck;
@@ -791,7 +791,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units; 61 afte
 
 ## Phase 10: Verification and evidence (phase P4)
 
-- [ ] T541 [P] DevOps/Operations (Test/QA lens), after T537.
+- [X] T541 [P] DevOps/Operations (Test/QA lens), after T537.
   - **Retarget**: in `scripts/android-emulator-journey.ps1`, move the `Default`, `F003`, `F004` and `F005` scenarios from bottom-bar fraction taps to a hub-entry tap helper.
   - **New scenario**: add `F006` to `$knownScenarios`: select, upgrade, hub → Contracts → back, build, rotation with the card open.
   - **Zoom evidence**: through the button or settings path. Pinch stays Play Mode only.
@@ -833,12 +833,12 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units; 61 afte
   - **SC-005 final** (binding): repeat the blind naming in grayscale and three CVD filters, and the owner's timed cue trial, on the shipped build. Include the P3 cues: upgrade marker, production-attention markers, ghost preview, hub dot, and the card next to its machine.
   - **Record**: in `reviews/readability-f006.md`, with the guidance results stated against the baseline.
   - **Covers**: SC-004, SC-006.
-- [ ] T547 World Designer (read-only conformance), after T540 and T537.
+- [X] T547 World Designer (read-only conformance), after T540 and T537.
   - **Check**: the final World Bible checklist covering deck, depot, links, props, vein, stage dressing and every world-facing string in the shipped build.
   - **Record**: `reviews/world-bible-conformance.md` (final): zero conflicts and no unowned string.
   - **Resources**: none.
   - **Covers**: FR-047, SC-013.
-- [ ] T560 UI/UX Developer with Gameplay Developer (Software Architect and Test/QA lenses), after T547, T558 and T559. Added 2026-11-19 by the owner decision on the batch-6 scope: the carries named for T542 (Test/QA) and T547 (read-only World Designer) need an implementer, so T542 only verifies.
+- [X] T560 UI/UX Developer with Gameplay Developer (Software Architect and Test/QA lenses), after T547, T558 and T559. Added 2026-11-19 by the owner decision on the batch-6 scope: the carries named for T542 (Test/QA) and T547 (read-only World Designer) need an implementer, so T542 only verifies.
   - **Copy**: apply every string change that the T547 conformance record (Part 2) proposes, including B-4/C-29 cause lines, B-11 Overdrive locked copy, C-56 B-01s and the B-6 Close accessible name.
   - **Carries**: the code items in `reviews/p3b-followups.md` carried by T542 or T547 that are fixes rather than verification, among them B-1, B-13, B-14, B-15, B-16, C-4, C-7, C-22, C-30, C-39, C-40, C-41, C-47, C-48, C-52, C-53, C-54, C-57, C-58, C-59, C-60 and C-64. The parent assignment lists the final set; an item left out is recorded with a reason.
   - **Constraints**: no camera, fit or column assertion is relaxed (OD-9b C1); no per-frame allocation on the steady path (SC-008); scenes change only through Unity tooling, with a real-scene test for anything wired.
