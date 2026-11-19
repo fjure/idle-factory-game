@@ -1,0 +1,217 @@
+// T531 (B4a) device measurement probe. NOT part of the game: scripts copy it (and B4Probe.asmdef.txt as B4Probe.asmdef) into a throwaway Assets/TempB4Probe/ folder for one
+// development build and remove it afterwards. It does nothing unless the file <persistentDataPath>/b4probe.flag exists (adb push), so the same APK also serves the plain
+// FPS captures of scripts/android-emulator-journey.ps1. It does what a player does: dismisses Welcome back (Back), holds the ore vein, opens the machine card and the build
+// card, and removes one machine to free a location (like the Windows player case W006VRealScenePlayerTests).
+// Output: one `B4PROBE ...` log line per measurement (adb logcat -s Unity).
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using IdleFactory.Unity.Bootstrap;
+using IdleFactory.Unity.Presentation;
+using Unity.Profiling;
+using UnityEngine;
+using UnityEngine.Profiling;
+using UnityEngine.Tilemaps;
+using UnityEngine.UIElements;
+
+namespace IdleFactory.B4Probe
+{
+    public static class B4ProbeBoot
+    {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Start()
+        {
+            if (!File.Exists(Path.Combine(Application.persistentDataPath, "b4probe.flag"))) return;
+            var go = new GameObject("B4Probe");
+            UnityEngine.Object.DontDestroyOnLoad(go);
+            go.AddComponent<B4ProbeRunner>();
+        }
+    }
+
+    public sealed class B4ProbeRunner : MonoBehaviour
+    {
+        private const int Frames = 600;
+        private const int Renders = 20;
+        private const int SetPassFrames = 40;
+        private static string Num(double v, string f = "F3") => v.ToString(f, CultureInfo.InvariantCulture);
+        private static void Log(string s) => Debug.Log("B4PROBE " + s);
+
+        private static double Pct(List<double> v, double p)
+        {
+            if (v.Count == 0) return 0;
+            var s = v.OrderBy(x => x).ToList();
+            return s[Math.Min(s.Count - 1, (int)Math.Floor(p * (s.Count - 1) + 0.5))];
+        }
+
+        private static Texture TextureOfTilemap(Tilemap tilemap)
+        {
+            foreach (var position in tilemap.cellBounds.allPositionsWithin)
+            {
+                var sprite = tilemap.GetSprite(position);
+                if (sprite != null) return sprite.texture;
+            }
+
+            return null;
+        }
+
+        private IEnumerator Start()
+        {
+            CoreGameFoundationBootstrap bootstrap = null;
+            for (var i = 0; i < 6000 && bootstrap == null; i++)
+            {
+                bootstrap = FindFirstObjectByType<CoreGameFoundationBootstrap>();
+                yield return null;
+            }
+
+            for (var i = 0; i < 6000 && !(bootstrap != null && bootstrap.IsInitialized && bootstrap.RunShell != null && bootstrap.RunShell.IsReady && bootstrap.ShellPresenter != null && bootstrap.WorldEffects != null); i++)
+                yield return null;
+            var shell = bootstrap.RunShell;
+            for (var i = 0; i < 300; i++) yield return null;
+            for (var back = 0; back < 6 && (shell.IsSheetOpen || shell.IsCardOpen); back++) { shell.HandleBack(); yield return null; yield return null; }
+            for (var i = 0; i < 300; i++) yield return null;
+            var session = bootstrap.RunSession;
+            var presenter = bootstrap.ShellPresenter;
+            var vein = shell.OreVein;
+            var grid = bootstrap.SlotGrid;
+            var pool = bootstrap.EffectPool;
+            Log("state machines=" + session.State.Machines.Count + " stage=" + presenter.Development.Stage + " screen=" + Screen.width + "x" + Screen.height + " dpi=" + Num(Screen.dpi, "F0") +
+                " gfx=" + SystemInfo.graphicsDeviceType + " renderer=" + SystemInfo.graphicsDeviceName + " cameraPixelRect=" + bootstrap.FactoryCamera.pixelRect + " ortho=" + Num(bootstrap.FactoryCamera.orthographicSize) +
+                " dev=" + Debug.isDebugBuild + " fpsTarget=" + Application.targetFrameRate + " unity=" + Application.unityVersion);
+
+            void HoldVein()
+            {
+                if (vein == null || vein.IsHolding || vein.IsHidden || !vein.IsBound) return;
+                using (var down = KeyDownEvent.GetPooled('\0', KeyCode.Space, EventModifiers.None)) { down.target = vein.Root; vein.Root.SendEvent(down); }
+            }
+
+            void Pops()
+            {
+                var n = grid.Layout.LocationCount;
+                pool.TrySpawn(EffectKind.CompletionPop, 0);
+                pool.TrySpawn(EffectKind.CompletionPop, n / 3);
+                pool.TrySpawn(EffectKind.CompletionPop, 2 * n / 3);
+            }
+
+            HoldVein();
+            for (var i = 0; i < 30; i++) { HoldVein(); yield return null; }
+            yield return Phase("card-closed", bootstrap, HoldVein, Pops);
+
+            presenter.OpenSlot(0);
+            for (var i = 0; i < 60; i++) yield return null;
+            Log("card open=" + shell.IsCardOpen + " slot=" + shell.CardSlot + " veinHidden=" + (vein != null && vein.IsHidden));
+            yield return Phase("machine-card-open", bootstrap, null, Pops);
+            shell.HandleBack();
+            for (var i = 0; i < 60; i++) yield return null;
+
+            var last = session.State.Machines.OrderBy(m => m.SlotIndex).Last();
+            var free = last.SlotIndex;
+            Log("remove machine slot=" + free + " ok=" + bootstrap.RunCommands.Remove(last.InstanceId, true).IsSuccess);
+            for (var i = 0; i < 60; i++) yield return null;
+            presenter.OpenSlot(free);
+            for (var i = 0; i < 60; i++) yield return null;
+            Log("build card open=" + shell.IsBuildCardOpen + " machines=" + session.State.Machines.Count);
+            yield return Phase("build-card-open-11-machines", bootstrap, null, Pops);
+            shell.HandleBack();
+            Log("done");
+        }
+
+        private IEnumerator Phase(string label, CoreGameFoundationBootstrap bootstrap, Action hold, Action pops)
+        {
+            // 1. Frame time, SetPass of the whole frame, GC.Alloc samples of the main thread, main-thread CPU time: 600 frames.
+            var setPass = ProfilerRecorder.StartNew(ProfilerCategory.Render, "SetPass Calls Count", 1);
+            var main = ProfilerRecorder.StartNew(ProfilerCategory.Internal, "Main Thread", 1);
+            var gc = Recorder.Get("GC.Alloc");
+            var dt = new List<double>();
+            var sp = new List<double>();
+            var mt = new List<double>();
+            long allocs = 0; var allocFrames = 0;
+            var presenter = bootstrap.ShellPresenter;
+            var feed = bootstrap.WorldEffects;
+            var snap = presenter.Snapshot; var feedRebuilds = feed.Rebuilds; var presenterRebuilds = 0; var structural = 0; long structuralAllocs = 0;
+            for (var i = 0; i < Frames; i++)
+            {
+                gc.enabled = false; gc.FilterToCurrentThread(); gc.enabled = true;
+                hold?.Invoke(); pops?.Invoke();
+                yield return null;
+                gc.enabled = false; gc.CollectFromAllThreads();
+                var c = gc.sampleBlockCount; allocs += c; allocFrames += c > 0 ? 1 : 0;
+                var isStructural = false;
+                if (!ReferenceEquals(presenter.Snapshot, snap)) { snap = presenter.Snapshot; presenterRebuilds++; isStructural = true; }
+                if (feed.Rebuilds != feedRebuilds) { feedRebuilds = feed.Rebuilds; isStructural = true; }
+                if (isStructural) { structural++; structuralAllocs += c; }
+                dt.Add(Time.unscaledDeltaTime * 1000.0);
+                if (setPass.Valid) sp.Add(setPass.LastValue);
+                if (main.Valid && main.LastValue > 0) mt.Add(main.LastValue / 1e6);
+            }
+
+            var mean = dt.Average();
+            Log("frames label=" + label + " n=" + dt.Count + " deltaMs mean/p50/p95/p99/max=" + Num(mean) + "/" + Num(Pct(dt, .5)) + "/" + Num(Pct(dt, .95)) + "/" + Num(Pct(dt, .99)) + "/" + Num(dt.Max()) +
+                " fps=" + Num(1000.0 / mean, "F1") + " over50ms=" + dt.Count(x => x >= 50) + " setPassFrame mean/min/max=" + Num(sp.Count == 0 ? 0 : sp.Average(), "F1") + "/" + Num(sp.Count == 0 ? 0 : sp.Min(), "F0") + "/" + Num(sp.Count == 0 ? 0 : sp.Max(), "F0") +
+                " mainThreadMs mean/p95/max=" + Num(mt.Count == 0 ? 0 : mt.Average()) + "/" + Num(Pct(mt, .95)) + "/" + Num(mt.Count == 0 ? 0 : mt.Max()) +
+                " gcAllocSamples=" + allocs + " framesWithAlloc=" + allocFrames + " structuralFrames=" + structural + " structuralAllocs=" + structuralAllocs + " presenterRebuilds=" + presenterRebuilds);
+
+            // 2. Census and SetPass per world-camera render, total and per atlas texture.
+            var sprites = FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Exclude).Where(r => r.enabled && r.sprite != null).ToList();
+            var tilemaps = FindObjectsByType<TilemapRenderer>(FindObjectsInactive.Exclude).Where(r => r.enabled && r.GetComponent<Tilemap>() != null && TextureOfTilemap(r.GetComponent<Tilemap>()) != null).ToList();
+            var groups = new Dictionary<Texture, List<Renderer>>();
+            foreach (var r in sprites.Cast<Renderer>().Concat(tilemaps.Cast<Renderer>()))
+            {
+                var t = r is SpriteRenderer sr ? sr.sprite.texture : TextureOfTilemap(r.GetComponent<Tilemap>());
+                if (t == null) continue;
+                if (!groups.TryGetValue(t, out var list)) { list = new List<Renderer>(); groups[t] = list; }
+                list.Add(r);
+            }
+
+            Log("census label=" + label + " renderers=" + (sprites.Count + tilemaps.Count) + " sprites=" + sprites.Count + " tilemapRenderers=" + tilemaps.Count + " vsSigned95=" + (sprites.Count + tilemaps.Count - 95) + " vsDraft105=" + (sprites.Count + tilemaps.Count - 105) +
+                " perTexture=" + string.Join(";", groups.Select(g => g.Key.name + "(" + g.Key.width + "x" + g.Key.height + ")=" + g.Value.Count)));
+            long total = 0;
+            foreach (var g in groups)
+            {
+                var b = Profiler.GetRuntimeMemorySizeLong(g.Key); total += b;
+                Log("texture label=" + label + " name=" + g.Key.name + " size=" + g.Key.width + "x" + g.Key.height + " format=" + (g.Key is Texture2D t2 ? t2.format.ToString() : "?") + " runtimeBytes=" + b);
+            }
+
+            Log("textureTotal label=" + label + " pages=" + groups.Count + " runtimeBytes=" + total + " mib=" + Num(total / 1048576.0, "F2"));
+
+            if (setPass.Valid)
+            {
+                var camera = bootstrap.FactoryCamera;
+                var prev = camera.targetTexture;
+                var rt = new RenderTexture(Mathf.Max(16, (int)camera.pixelWidth), Mathf.Max(16, (int)camera.pixelHeight), 24);
+                var configs = new List<KeyValuePair<Texture, List<Renderer>>> { new KeyValuePair<Texture, List<Renderer>>(null, null) };
+                configs.AddRange(groups);
+                var per = new Dictionary<string, double>();
+                foreach (var cfg in configs)
+                {
+                    var with = new List<double>(); var without = new List<double>(); var prevWith = false; var started = false;
+                    for (var f = 0; f < SetPassFrames * 2 + 6; f++)
+                    {
+                        if (started) (prevWith ? with : without).Add(setPass.LastValue);
+                        hold?.Invoke(); pops?.Invoke();
+                        if (cfg.Value != null) foreach (var r in cfg.Value) if (r != null) r.enabled = false;
+                        var w = f % 2 == 1;
+                        if (w) { camera.targetTexture = rt; for (var i = 0; i < Renders; i++) camera.Render(); camera.targetTexture = prev; }
+                        prevWith = w; started = f >= 5;
+                        yield return null;
+                    }
+
+                    var name = cfg.Key == null ? "all" : "without " + cfg.Key.name;
+                    per[name] = (with.Average() - without.Average()) / Renders;
+                    Log("setpass label=" + label + " config=\"" + name + "\" perRenderMean=" + Num(per[name], "F2") + " passesPerRenderMinMedian=" + Num((with.Min() - Pct(without, .5)) / Renders, "F2") +
+                        " frameWithMean=" + Num(with.Average(), "F1") + " frameWithoutMean=" + Num(without.Average(), "F1"));
+                    if (cfg.Value != null) foreach (var r in cfg.Value) if (r != null) r.enabled = true;
+                }
+
+                foreach (var g in groups) Log("setpassAtlas label=" + label + " atlas=" + g.Key.name + " renderers=" + g.Value.Count + " deltaPassesPerRender=" + Num(per["all"] - per["without " + g.Key.name], "F2"));
+                camera.targetTexture = prev; Destroy(rt);
+                foreach (var r in FindObjectsByType<TilemapRenderer>(FindObjectsInactive.Exclude)) r.enabled = true;
+            }
+            else Log("setpass label=" + label + " recorder=unavailable");
+
+            setPass.Dispose(); main.Dispose();
+        }
+    }
+}
