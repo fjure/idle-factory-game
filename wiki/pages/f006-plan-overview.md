@@ -1,13 +1,13 @@
 ---
 title: Feature 006 plan overview (planned)
 type: decision
-sources: [S056, S057, S058, S059, S060]
-updated: 2026-11-13
+sources: [S056, S057, S058, S059, S060, S061]
+updated: 2026-11-19
 ---
 
 # Feature 006 plan overview (planned, not implemented)
 
-F006 "World-First Factory Experience" makes the factory the screen. Gameplay, content and saves stay unchanged; the plan (revision 2) passed seven review lenses including the new World Designer. Status: planning complete; batch P0 (T502-T508) merged (see [baseline](./f006-p0-baseline.md)); batch P1, the enabling refactor (T510-T518), merged on 2026-11-12 (see [P1](./f006-batch-p1-enabling-refactor.md)); batch P2, art families plus T532, T533 and T538, merged on 2026-11-13 (see [P2](./f006-batch-p2-art-and-presentation.md)). (S056, S057, S058, S059)
+F006 "World-First Factory Experience" makes the factory the screen. Gameplay, content and saves stay unchanged; the plan (revision 2) passed seven review lenses including the new World Designer. Status: planning complete; batch P0 (T502-T508) merged (see [baseline](./f006-p0-baseline.md)); batch P1, the enabling refactor (T510-T518), merged on 2026-11-12 (see [P1](./f006-batch-p1-enabling-refactor.md)); batch P2, art families plus T532, T533 and T538, merged on 2026-11-13 (see [P2](./f006-batch-p2-art-and-presentation.md)). Batch 5 (T527-T529, T536, T537, T539, T540, T555-T559) merged by 2026-11-18, with gates B and C accepted; its owner decisions (U-B1, C-10, markers, stage offset u0, T558 and T559, AR-3 and AR-4 with Art Bible v1.1.1) are in [batch 5 gates](./f006-batch-5-gate-and-owner-decisions.md). (S056, S057, S058, S059, S061)
 
 ## Phases and gates
 

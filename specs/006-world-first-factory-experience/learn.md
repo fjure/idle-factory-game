@@ -1,9 +1,9 @@
 # What I Learned: World-First Factory Experience (F006)
 
 **Feature**: Make the factory the screen: a world deck, depot and labelled hub in place of the six-tab bar. Gameplay, content and saves stay unchanged.
-**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch; P3 batch A, see the last section)
-**Scope**: Phases P0 (T500-T509), P1 (T510-T518), the first P2 batch (T519-T524, T532, T533, T538) and P3 batch A (T525, T526, T534, T535, T552-T554)
-**Implementation status**: 35 of 55 listed tasks are checked (T525, T526, T534, T535, T552-T554 merged in P3 batch A, main 6a26a12); T527-T531, T536-T541 and later phases are open. P0, P1, the first P2 batch and P3 batch A are merged.
+**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch; P3 batch A); 2026-11-19 (batch 5, see the last section)
+**Scope**: Phases P0 (T500-T509), P1 (T510-T518), the first P2 batch (T519-T524, T532, T533, T538), P3 batch A (T525, T526, T534, T535, T552-T554) and batch 5 (T527-T529, T536, T537, T539, T540, T555-T559)
+**Implementation status**: 47 of 60 listed tasks are checked (batch 5 merged on 2026-11-18, main b44b87d5, gates B and C accepted). Open: T530, T531, T541 to T551. P0, P1, the first P2 batch, P3 batch A and batch 5 are merged.
 
 ---
 
@@ -325,3 +325,118 @@ A reviewer's `git checkout --detach` hit a worktree QA was using, and `git workt
 - **Details view**: the machine panel, reached from the docked card's `Details ›`.
 - **ViewBounds**: the camera extent covering content, depot and deposit, used for pan limits.
 - **Atlas page cap**: at most 512 x 512 RGBA32 (1 MiB) per page.
+
+---
+
+# Batch 5: persistent layer, world deck, effects, build card, stages, gates B and C (T527-T529, T536, T537, T539, T540, T555-T559)
+
+## Batch 5: Key Decisions
+
+### 16. Never relax a binding owner condition to make a fix pass (T537)
+
+**What we did**: The first T537 commit relaxed the OD-9b C1 assertion (the whole factory in view at fit-all) for 640x360 at 200 % text. QA passed with a warning and the parent sent a fix round instead of waiving it. The zoom column folded into the action column, and the world share rose from 27.7 % to 36.0 %.
+
+**Why**: A binding condition belongs to the owner. A parent can change the design to meet it, not the test to hide a miss.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep the relaxed assertion and record it | It silently changes an owner decision |
+| Ask the owner to waive | The layout could meet the condition at modest cost |
+
+**When you'd choose differently**: If no layout can meet the condition, escalate it as an owner decision with numbers.
+
+---
+
+### 17. Change the stage formula when the data says a state is unreachable (T540)
+
+**What we did**: Review showed that `floor(3u/t)` never gave Early on Iron, which opens 4 of 12 locations at level 1. The owner chose an offset by the start: `stage = clamp(floor(3(u-u0)/(t-u0)), 0, 2)`, with u0 the level-1 location count. Iron now runs Early, Early, Partial, Established, Established.
+
+**Why**: A stage the player can never see is dead art. The offset keeps the formula content-driven, with no per-industry table.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep the formula, accept no Early on Iron | The Early deck art would never show |
+| Level thresholds 6 and 10 | A second table that content authors must keep in step |
+
+**When you'd choose differently**: If industries needed unequal stage pacing, a per-industry table would be justified.
+
+---
+
+### 18. Fix the framing, then accept what cannot fit, and write it down (T558)
+
+**What we did**: Gate C showed the closed camera clipping the depot at level 2 in portrait and on tablets, and a stale view after rotating under a card. T558 put the depot column into the fit extent and re-fits when a card closes on another screen. Where the depot cannot fit at the minimum scale it stays reachable by panning (AR-4), and the phone portrait 1080x2400 fit-all sits at the minimum scale (AR-3). The owner accepted both on 2026-11-19 and Art Bible v1.1.1 records them.
+
+**Why**: A documented accepted risk with a measured scope is better than a framing rule that quietly breaks the pixel grid.
+
+**When you'd choose differently**: If the final gate finds players do not discover the depot, revisit AR-4 in T542 with an off-screen indicator.
+
+---
+
+### 19. Build the observable path, not just the unit (T539, T557)
+
+**What we did**: The T539 build card passed its unit tests but was inert in the shipped scene because its SerializeFields were unwired. The marker view from T532 was never instantiated, so world attention markers never showed until T557. Both now have real-scene tests.
+
+**Why**: A test that builds the object itself cannot see that production never builds it.
+
+**When you'd choose differently**: For a pure domain type, a unit test is enough; for anything a scene must own, test the scene.
+
+---
+
+### 20. Key rebuilds on what changed, and test the busiest producer (T529)
+
+**What we did**: The world feed first rebuilt the whole factory snapshot up to 10 times a second. After a fix it still rebuilt every frame because an active contract bumps `Contracts.Version` on every produced unit, and that moves `StructureRevision`. Final rule: rebuild at once only on machine identity, layout, offline return and session replace; otherwise at most once per second. Two 600-frame zero-allocation tests pin it.
+
+**Why**: A revision counter that moves with production is not a structure signal.
+
+**When you'd choose differently**: If a counter changed only on player actions, it could drive the rebuild directly.
+
+---
+
+### 21. Close a safety gap with a bounded background write (T559)
+
+**What we did**: Gate C found that a force-stop lost the whole run because nothing saved on a timer. T559 adds `AutosavePolicy` (30 s, 2 s spacing after a structural change, backoff after a failure). The main thread captures and serializes (about 0.12 ms); a pool thread publishes the file (about 30 ms) under the store's operation gate, with one write in flight and every other persistence access joining it first.
+
+**Why**: Serialization is cheap and file IO is not. Moving only the IO keeps the frame time and the Save V3 format unchanged.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Synchronous write on the main thread (33 ms) | A visible hitch twice a minute |
+| A new save format for deltas | A migration for a problem the generation protocol already solves |
+
+**When you'd choose differently**: If the write rate proves too high on the emulator (C-66), lengthen the interval or write only on structural change.
+
+---
+
+## Batch 5: Concepts to Know
+
+### A tester can be wrong, and the device decides
+
+C-F3 (store-full markers per machine, uncapped) and C-F4 (the marker icon selects nothing) were refuted by UI/UX: the per-machine pins were slot badges, not markers, and the badge was never a tap target. A gate finding is a claim to verify against the code and the device.
+
+### A transient overlay must not change the layout
+
+A milestone banner placed inside the unobstructed rectangle reframed the camera and covered the top machine row. Draw it as an absolute overlay and show only the main line on compact screens.
+
+### Gate evidence without host input
+
+Owner decision 2026-11-17: gate agents never drive the host mouse or keyboard. Player sessions run on a dedicated emulator through `adb`, and what could not be run is marked "not covered" (Windows player, TalkBack).
+
+### A locked input gives no shortage (R09, C-25)
+
+A resource the player cannot yet obtain raises no "Short on" signal. The wiki records the note because `research.md` is a source and the ingest does not edit it.
+
+## Batch 5: carried follow-ups
+
+`reviews/p3b-followups.md`: B-1 to B-17 and C-1 to C-67. Open for the owner: Art Bible 21.12 (the renderer census of 105 against the 95 signed off), C-61 the hard deck edge, C-67 the autosave interval as a run setting. Later tasks: T542 (soft-disabled audit, presenter tests, marker invalidation on layout change, C-63 hit area), T544 (autosave write rate on the emulator), T546 (shuffled trial, stage props), T547 (cause copy, accessibility record, bootstrap size).
+
+## Batch 5: Glossary additions
+
+- **u0**: the number of unlocked locations at factory level 1, the offset in the stage formula.
+- **Status band**: the one-row strip at the top of the world column in phone landscape while a card or sheet is open, keeping Cash and Overdrive visible.
+- **AR-3 / AR-4**: accepted risks in Art Bible v1.1.1 (no zoom-out on phone portrait 1080x2400; the depot reached by panning where its column cannot fit).
+- **AutosavePolicy**: the Application-layer rule for periodic checkpoints (30 s interval, 2 s spacing, failure backoff).
+- **IRunCheckpointBackgroundPromoter**: the optional port that lets the store publish a checkpoint on a pool thread.
+- **StructureRevision**: the revision that triggers a world-feed rebuild; it must not move with production.

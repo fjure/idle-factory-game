@@ -1,8 +1,8 @@
 ---
 title: Run persistence
 type: component
-sources: [S018, S022]
-updated: 2026-11-06
+sources: [S018, S022, S061]
+updated: 2026-11-19
 ---
 
 # Run persistence
@@ -34,7 +34,7 @@ A data or manifest file without a valid active checkpoint takes the recovery pat
 - Session and store must share the same `RunCatalog` instance; a mismatch blocks every return as an invalid checkpoint. (S018)
 - The W003-S device set under `Fixtures/SaveV2/device/w003-s/` is built from the test W003 catalog. Its IDs do not exist in production content, so T123 must rebuild or verify it before the emulator run. T124 confirmed it: the player rejected the set (`save.v2.invariant`). T245 added shipped-catalog sets `w003-s-shipped` and `prestige-ready`, which device runs must use. (S018)
 - Safety-checkpoint advisories F-1 to F-6 are in [F003 security review](./f003-security-review.md). (S018)
-- Each autosave reads both generations to pick the next number before the promote IO; measure it on the device. (S018)
+- Each write (the focus-loss `Autosave` and, since T559, the periodic one) reads both generations to pick the next number before the promote IO; measure it on the device. Not yet measured on the emulator (C-65, C-66). (S018, S061)
 
 ## F005 layout (T302-T304, merged)
 
@@ -49,3 +49,12 @@ Shipped in F005 batch B (T334-T337, see [Save V3 drift](./f005-batch-b-save-v3-d
 ## Autosave interval (F005 T306, merged)
 
 `RunPersistence.Autosave` (desktop focus-loss safety checkpoint) has a minimum interval equal to `runStart.liveGapThresholdMs`, with a 60,000 ms fallback when null. It is measured on `IUtcClock`; a throttled call returns the no-op `AutosaveThrottled`, and a backwards or unreadable clock never throttles. Quit (`RecordSuspension`), `SaveNow` and prestige bypass the interval and restart it; a failed write does not. `RunLifecycleAdapter` catches every exception in the focus, pause and quit callbacks and the checkpoint write, so the run stays live and the next save succeeds. (S022)
+
+## Periodic autosave (F006 T559, merged 2026-11-18)
+
+Gate C (U-B13) found there was no timer-driven autosave: a force-stop without a pause callback lost the whole run. The owner made it a fix before batch D. As built (S061):
+
+- `AutosavePolicy` (Application layer): 30 s interval, 2 s spacing after a structural change, a full-interval backoff after a failure. The interval is a code default (`AutosavePolicy.DefaultIntervalMs`), not a run setting; the Product Owner is to confirm (C-67).
+- `RunPersistence.AutosaveWhenDue` writes only while Running with no pending prestige. The main thread captures and serializes (about 0.12 ms on the dev host); a pool thread publishes through the optional `IRunCheckpointBackgroundPromoter` under the store's operation gate (about 30 ms of file IO). One write is in flight; every other persistence access joins it first. Same Save V3 format and generation protocol.
+- A kill without a pause callback restores the last periodic checkpoint and credits the absence once.
+- Review: Architect (High tier, concurrency) and Security ACCEPT_WITH_NOTES. The fix round added a PlayMode test of the background path (all first writes were synchronous), `job.Complete` in a `finally`, a join at the top of `Autosave()` and `durableKnown=false` on a synchronous failure. Open: the gate is held for about 30 ms so a command in that window waits; diagnostics listeners can run on a pool thread; no IL2CPP or emulator coverage yet (C-65); write rate up to about 30 per minute in build bursts and flash wear (C-66). Details: [batch 5 gates](./f006-batch-5-gate-and-owner-decisions.md).

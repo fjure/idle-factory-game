@@ -227,6 +227,8 @@
    - Per-machine badges stay as in F004.
 5. **Review.** Game Systems reviewed the derivation (Low tier) and accepted it with these conditions applied.
 
+**Note (C-25, T529 review, 2026-11-18).** An input that is locked (its producer type not yet unlocked) is not a shortage: the "short on" signal and the shared cause name only inputs the player can already produce; a locked input surfaces as the unlock reason, never as "Short on".
+
 ## R10 — Contextual machine card and details (US3)
 
 **Decision.**
