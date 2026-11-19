@@ -3,8 +3,11 @@ namespace IdleFactory.Unity.UI
     /// <summary>What <see cref="ShellNavigationStack"/> asks of the shell: which back frames exist and how to pop each one.</summary>
     internal interface IShellBackFrames
     {
-        /// <summary>T540: a milestone banner is showing. It is the lightest frame: Back dismisses it first and touches nothing else, so no focus moves. Defaults to false.</summary>
+        /// <summary>T540: a milestone banner is showing. It is the lightest frame: Back dismisses it first; a dialog, pin or the settings stay for the next Back, a sheet or card closes with it (C-60). Defaults to false.</summary>
         bool HasBanner => false;
+        // C-52 (T560, decision: document): the banner pops before an open confirm dialog. It is a transient overlay that never takes focus, so the first Back
+        // clears the lightest thing on screen and leaves the dialog (and its focus) alone; the second Back answers the dialog. Pinned by
+        // MilestoneBannerTests.BackDismissesOnlyTheBannerAndLeavesAnOpenDialogAlone.
 
         void PopBanner()
         {
@@ -59,6 +62,20 @@ namespace IdleFactory.Unity.UI
             {
                 frames.PopBanner();
                 consumed = true;
+                // C-60 (T560, U-C8): the banner announces what just happened on the open surface (Expand factory in Market), so the one Back that clears it also
+                // takes the sheet or card under it; otherwise the first Back "did nothing" and Market stayed open. A dialog, a pinned value or the settings
+                // stay: they hold focus and a decision, so the banner alone pops there (C-52).
+                if (!frames.HasDialog && !frames.HasPinnedValue && !frames.IsSettingsOpen)
+                {
+                    if (frames.HasClosableSheet)
+                    {
+                        frames.PopSheet();
+                    }
+                    else if (frames.HasCard)
+                    {
+                        frames.PopCard();
+                    }
+                }
             }
             else if (frames.HasDialog)
             {

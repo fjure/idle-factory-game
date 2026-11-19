@@ -183,6 +183,9 @@ namespace IdleFactory.Unity.Presentation
 
         public bool StoreFull => storeFullCount > 0;
 
+        /// <summary>The layout the marker positions were computed from (null before the first refresh). A view compares it with the layout it draws on (C-39).</summary>
+        public FactoryWorldLayout Layout => lastLayout;
+
         /// <summary>The system flags of the last refresh.</summary>
         public SystemAttentionFlags SystemFlags => system;
 

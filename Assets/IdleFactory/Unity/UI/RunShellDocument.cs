@@ -349,6 +349,8 @@ namespace IdleFactory.Unity.UI
         // The banner is an overlay (position absolute): it takes no space in the world column and is NOT part of TryGetUnobstructedScreenRect, so showing or hiding it never
         // reframes the camera (T540 fix, UI/UX U2, Architect 3). It sits right below the strip (when the strip is inside the world column: tablet, desktop, the landscape status
         // band) and below the detail line, notice and hint bars, so it never covers Cash, Overdrive or the status band.
+        private readonly VisualElement[] bannerBars = new VisualElement[3];
+
         private void PlaceMilestoneBanner()
         {
             if (milestoneBanner == null || worldColumn == null)
@@ -363,8 +365,14 @@ namespace IdleFactory.Unity.UI
                 top = Mathf.Max(top, topStrip.worldBound.yMax - column.yMin);
             }
 
-            foreach (var bar in new[] { detailLine, noticeBar, worldHint })
+            // C-54 (T560): the three bars are read through one reused array, never a new one per tick while the banner shows.
+            var bars = bannerBars;
+            bars[0] = detailLine;
+            bars[1] = noticeBar;
+            bars[2] = worldHint;
+            for (var i = 0; i < bars.Length; i++)
             {
+                var bar = bars[i];
                 if (bar != null && bar.resolvedStyle.display != DisplayStyle.None && bar.worldBound.height > 0f && !float.IsNaN(bar.worldBound.yMax))
                 {
                     top = Mathf.Max(top, bar.worldBound.yMax - column.yMin);
@@ -580,6 +588,7 @@ namespace IdleFactory.Unity.UI
         /// </summary>
         public void ApplyTextScale(float factor)
         {
+            var previousPercent = ShellTextScale.Percent(textScale);
             textScale = ShellTextScale.Clamp(factor);
             if (root == null)
             {
@@ -594,6 +603,12 @@ namespace IdleFactory.Unity.UI
             }
 
             ApplyCardCap();
+            if (cardOpen && previousPercent != ShellTextScale.Percent(textScale))
+            {
+                // C-28 (B-5, T560): a text-scale change with the card open (Details too) resizes the card band. The camera waits for the new band exactly as it does
+                // after a resize or rotation; without the guard the Fit branch ran on the old band and the overlays drew over the card edge at portrait 200 percent.
+                MarkCardBandPending();
+            }
         }
 
         private void ProbeNow(bool includeFontScale)

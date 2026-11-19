@@ -221,6 +221,48 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(h.Card.IsHighlighted, Is.True, "the static response is the one-second highlight of the new machine's card");
         }
 
+        // C-41 (T560, SC-008): production changes the quantity revision every frame, but the card shows only what Cash decides (affordability, the shortfall), so the
+        // open card must not rebuild RunSnapshots.Factory then. 600 frames of a running factory with the card open allocate nothing.
+        [UnityTest]
+        public IEnumerator ARunningFactoryWithTheBuildCardOpenAllocatesNothingOver600Frames()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, factoryLevel: 2);
+            h.Build(1, "machine.miner");
+            h.Build(2, "machine.miner");
+            yield return OpenBuild(0);
+            for (var warm = 0; warm < 30; warm++)
+            {
+                h.Session.Advance(100L * RunSession.TicksPerMs);
+                card.Refresh();
+            }
+
+            var revisionBefore = h.Session.QuantityRevision;
+            var allocations = 0;
+            for (var frame = 0; frame < 600; frame++)
+            {
+                h.Session.Advance(100L * RunSession.TicksPerMs);
+                allocations += GcAllocationCounter.Count(() => card.Refresh());
+            }
+
+            Assert.That(h.Session.QuantityRevision, Is.GreaterThan(revisionBefore), "the quantities changed during the window");
+            Assert.That(allocations, Is.Zero, "the open build card rebuilds nothing while only quantities change");
+            Assert.That(IsDisplayed(card.Root), Is.True);
+        }
+
+        // C-41: the card still follows Cash where it shows it: crossing the price of the selected type enables Confirm without a structural change.
+        [UnityTest]
+        public IEnumerator TheCardStillRefreshesWhenCashCrossesThePriceOfTheSelectedType()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.MinerCost - 1, withEffects: true);
+            yield return OpenBuild(0);
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.True, "one short of the price");
+            h.Session.BeginCommand();
+            Assert.That(h.Session.State.TryAddCash(1), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            Assert.That(h.Session.EndCommand(0, false).IsSuccess, Is.True);
+            card.Refresh();
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.False, "affordable now, with no structural change");
+        }
+
         [UnityTest]
         public IEnumerator WithoutEnoughCashConfirmIsDisabledAndTheCardSaysHowMuchIsMissing()
         {

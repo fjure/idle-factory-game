@@ -29,6 +29,7 @@ namespace IdleFactory.Unity.Presentation
         private int visibleCount;
         private float pointsPerCell = 48f;
         private SlotGridView bound;
+        private FactoryWorldLayout pendingLayout;
 
         /// <summary>The number of markers drawn now.</summary>
         public int VisibleMarkerCount => visibleCount;
@@ -80,6 +81,7 @@ namespace IdleFactory.Unity.Presentation
         {
             Unbind();
             bound = slotGrid ?? throw new ArgumentNullException(nameof(slotGrid));
+            pendingLayout = null;
             bound.LayoutChanged += HandleLayoutChanged;
         }
 
@@ -94,7 +96,13 @@ namespace IdleFactory.Unity.Presentation
             bound = null;
         }
 
-        private void HandleLayoutChanged(FactoryWorldLayout newLayout) => Clear();
+        private void HandleLayoutChanged(FactoryWorldLayout newLayout)
+        {
+            // C-39 (T560): the model recomputes its positions only on its next refresh (up to 0.25 s). Until it carries this layout, Render draws nothing, so
+            // a stale marker is neither drawn nor hit.
+            pendingLayout = newLayout;
+            Clear();
+        }
 
         /// <summary>Hides every marker (no hit target remains) until the next <see cref="Render"/>.</summary>
         public void Clear()
@@ -126,6 +134,16 @@ namespace IdleFactory.Unity.Presentation
             if (model == null) throw new ArgumentNullException(nameof(model));
             if (renderers == null) throw new InvalidOperationException("Configure the view first.");
             visibleCount = 0;
+            if (pendingLayout != null)
+            {
+                if (!ReferenceEquals(model.Layout, pendingLayout))
+                {
+                    return;
+                }
+
+                pendingLayout = null;
+            }
+
             var box = AttentionModel.MarkerSizePixels / (float)SlotGridLayout.Density;
             for (var i = 0; i < model.MarkerCount && i < renderers.Length; i++)
             {

@@ -228,16 +228,64 @@ namespace IdleFactory.Unity.UI
                 return;
             }
 
-            if (!dirty && structureRevision == session.StructureRevision && quantityRevision == session.QuantityRevision)
+            if (!dirty && structureRevision == session.StructureRevision)
             {
-                return;
+                if (quantityRevision == session.QuantityRevision)
+                {
+                    return;
+                }
+
+                // C-41 (T560): a quantity change (production, a sale) is not a reason to rebuild the whole factory snapshot. The card shows only what Cash decides:
+                // which types are affordable and the shortfall text. Rebuild only when that display would change; the check is arithmetic and allocates nothing.
+                quantityRevision = session.QuantityRevision;
+                if (factory != null && DisplayKey(session.ReadCash()) == displayKey)
+                {
+                    return;
+                }
             }
 
             dirty = false;
             structureRevision = session.StructureRevision;
             quantityRevision = session.QuantityRevision;
             factory = RunSnapshots.Factory(session);
+            displayKey = DisplayKey(factory.Cash);
             Render();
+        }
+
+        private ulong displayKey;
+
+        /// <summary>
+        /// A hash of everything the card derives from Cash: per machine type, the shortfall at four significant digits (finer than the shown "Need $X more"), zero
+        /// once the type is affordable. Equal keys mean an identical card, so the snapshot is not rebuilt (C-41).
+        /// </summary>
+        private ulong DisplayKey(long cash)
+        {
+            unchecked
+            {
+                var key = 14695981039346656037UL;
+                var types = factory.MachineTypes;
+                for (var i = 0; i < types.Count; i++)
+                {
+                    var need = types[i].BuildCost - cash;
+                    ulong part = 0;
+                    if (need > 0)
+                    {
+                        long step = 1;
+                        ulong exponent = 1;
+                        while (need / step >= 10000)
+                        {
+                            step *= 10;
+                            exponent++;
+                        }
+
+                        part = (ulong)(need / step) * 64UL + exponent;
+                    }
+
+                    key = (key ^ part) * 1099511628211UL;
+                }
+
+                return key;
+            }
         }
 
         private void Render()
