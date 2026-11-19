@@ -916,7 +916,7 @@ namespace IdleFactory.Tests.PlayMode
             AssertWithin(safe, hint, context + ": the hint stays on screen");
             if (shell.ActionBar.Contains(shell.ZoomInButton))
             {
-                Assert.That(hint.xMax, Is.LessThanOrEqualTo(shell.ZoomOutButton.worldBound.xMin + 0.5f).Or.LessThanOrEqualTo(shell.ZoomInButton.worldBound.xMin + 0.5f), context + ": the hint opens to the left of the right column");
+                Assert.That(hint.xMax, Is.LessThanOrEqualTo(Mathf.Min(shell.ZoomOutButton.worldBound.xMin, shell.ZoomInButton.worldBound.xMin) + 0.5f), context + ": the hint opens to the left of the whole right column (both buttons, B-15)");
             }
             else
             {

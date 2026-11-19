@@ -130,22 +130,31 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(markers.VisibleMarkerCount, Is.GreaterThan(0));
             var layout = bootstrap.SlotGrid.Layout;
 
-            // A machine tap shape wins over the invisible padding of the marker (T528): the centre of every other location resolves to that machine.
+            // A machine tap shape wins over the invisible padding of the marker (T528): the centre of every other location resolves to that machine. C-40 (T560): no
+            // location is skipped silently. A point under the icon must resolve to the icon, a point on no machine shape to nothing, and at least one machine must be proved.
+            var proved = 0;
             for (var i = 0; i < layout.LocationCount; i++)
             {
                 var point = layout.PlateCentreOf(new BuildingLocationId(i));
                 if (markers.TryHitIcon(point, out _))
                 {
+                    Assert.That(WorldTapResolver.Resolve(layout, markers, point, out _), Is.EqualTo(WorldTapSource.MarkerIcon), "the icon itself wins over what lies under it, location " + i);
                     continue;
                 }
 
-                if (WorldTapResolver.Resolve(layout, markers, point, out var target) == WorldTapSource.None)
+                var source = WorldTapResolver.Resolve(layout, markers, point, out var target);
+                if (source == WorldTapSource.None)
                 {
+                    Assert.That(layout.TryHit(point, out _), Is.False, "nothing resolves only where no machine shape is, location " + i);
                     continue;
                 }
 
+                Assert.That(source, Is.EqualTo(WorldTapSource.Machine), "the machine at " + i + " wins over the touch circle");
                 Assert.That(target, Is.EqualTo(new BuildingLocationId(i)), "a tap on the machine at " + i + " selects that machine, never the marker's target");
+                proved++;
             }
+
+            Assert.That(proved, Is.GreaterThan(0), "at least one machine shape was proved against the marker touch circle");
 
             // Reduced motion changes nothing about the markers: they are static sprites and stay shown.
             var spriteBefore = markers.RendererOf(0).sprite;

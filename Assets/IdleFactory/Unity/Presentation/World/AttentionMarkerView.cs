@@ -21,6 +21,12 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The marker draws after every slot overlay: the slot overlays use orders up to <c>OverlayOrder + 4 * rows + 3</c>.</summary>
         public const int MarkerOrderOffset = 200;
 
+        /// <summary>
+        /// C-57 (U-C2, T560): the store-full marker uses the 24 x 24 storage icon the Store pill and the card cause line use, a glyph of the marker's own size, so it is not
+        /// mistaken for the per-machine store-full badge (<see cref="SlotGridModel.BadgeStorageFullKey"/>, 72 x 64). No new art; the badge stays the fallback.
+        /// </summary>
+        public const string StoreFullMarkerKey = "F003-UI-ICON-STORAGE";
+
         private PresentationSpriteCatalog sprites;
         private Func<string, string> resourceKeyOf;
         private SpriteRenderer[] renderers;
@@ -30,6 +36,9 @@ namespace IdleFactory.Unity.Presentation
         private float pointsPerCell = 48f;
         private SlotGridView bound;
         private FactoryWorldLayout pendingLayout;
+
+        /// <summary>True between a layout change of the bound grid and the first render of a model computed on that layout (C-39): nothing is drawn then.</summary>
+        public bool AwaitingModelLayout => pendingLayout != null;
 
         /// <summary>The number of markers drawn now.</summary>
         public int VisibleMarkerCount => visibleCount;
@@ -148,7 +157,13 @@ namespace IdleFactory.Unity.Presentation
             for (var i = 0; i < model.MarkerCount && i < renderers.Length; i++)
             {
                 var marker = model.GetMarker(i);
-                var key = marker.Kind == AttentionKind.StoreFull ? SlotGridModel.BadgeStorageFullKey : resourceKeyOf(marker.ResourceId);
+                var key = marker.Kind == AttentionKind.StoreFull ? StoreFullMarkerKey : resourceKeyOf(marker.ResourceId);
+                if (marker.Kind == AttentionKind.StoreFull && (!sprites.TryGetEntry(key, out var markerEntry) || markerEntry.Sprite == null))
+                {
+                    // C-57 (T560): without the marker-sized icon the store-full marker falls back to the machine badge sprite (the old behaviour) rather than draw nothing.
+                    key = SlotGridModel.BadgeStorageFullKey;
+                }
+
                 var renderer = renderers[visibleCount];
                 if (key == null || !sprites.TryGetEntry(key, out var entry) || entry.Sprite == null)
                 {

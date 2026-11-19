@@ -2083,6 +2083,9 @@ namespace IdleFactory.Unity.UI
         private bool panelTopHold;
         private int programmaticFocus;
 
+        /// <summary>True while a freshly opened view is held at its top (T555 U-B6); a test reads it for the A3 and A6 assertions of T560 (C-48).</summary>
+        public bool IsPanelTopHeld => panelTopHold;
+
         private void HoldPanelAtTop()
         {
             panelTopHold = true;

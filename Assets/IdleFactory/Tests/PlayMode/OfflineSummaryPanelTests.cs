@@ -7,6 +7,7 @@ using IdleFactory.Run.Application;
 using IdleFactory.Run.Content;
 using IdleFactory.Run.Simulation;
 using IdleFactory.Unity.Bootstrap;
+using IdleFactory.Unity.Presentation;
 using IdleFactory.Unity.UI;
 using IdleFactory.Unity.UI.Panels;
 using NUnit.Framework;
@@ -99,6 +100,31 @@ namespace IdleFactory.Tests.PlayMode
         // ---------------------------------------------------------------------------------------------------
         // Normal
         // ---------------------------------------------------------------------------------------------------
+
+        // C-55 and C-64 (T560): a real offline return through the real watcher and the real panel. The milestones the absence caused are returned for the summary,
+        // never queued for the banner, and the second line of the milestone (B-04, "Deck extended.") reaches the summary text.
+        [UnityTest]
+        public IEnumerator AnOfflineReturnThatRaisedTheStageShowsTheMilestoneWithDeckExtendedInTheSummaryAndQueuesNoBanner()
+        {
+            yield return OpenShell(ShellScreens.All().First(item => item.Name.StartsWith("phone-portrait 390", StringComparison.Ordinal)));
+            var runId = Guid.NewGuid();
+            var watcher = new MilestoneWatcher();
+            watcher.Observe(1, 4, 12, runId);
+            var found = watcher.ReconcileOffline(5, 12, 12, runId);
+            Assert.That(found, Has.Count.EqualTo(1), "the absence raised one milestone");
+            Assert.That(found[0].ArisenOffline, Is.True);
+            Assert.That(found[0].StageRaised, Is.True, "a jump to the full factory raises the stage");
+            Assert.That(watcher.PendingCount, Is.Zero, "an offline milestone is never queued for the banner");
+
+            var copy = new MilestoneCopy();
+            panel.SetOfflineMilestones(found, copy);
+            panel.ShowSummary(NormalReturn());
+            yield return Frames();
+
+            var line = panel.Line("offline-milestone-0").text;
+            Assert.That(line, Is.EqualTo(copy.Full(found[0])), "the summary line is the banner's full text");
+            Assert.That(line, Does.Contain("Deck extended."), "B-04 reaches the offline summary");
+        }
 
         [UnityTest]
         public IEnumerator TheSummaryListsDurationsCashStockSalesEffectsContractAndLimits([ValueSource(nameof(Representative))] ShellScreen screen)

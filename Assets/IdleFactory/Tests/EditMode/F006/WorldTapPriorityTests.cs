@@ -69,6 +69,34 @@ namespace IdleFactory.Tests.EditMode.F006
             Assert.That(WorldTapResolver.Resolve(layout, null, layout.DepotAnchor, out _), Is.EqualTo(WorldTapSource.None), "the depot is never a hit target");
         }
 
+        // C-40 (T560): binding a second grid replaces the first (no double subscription, no stale handler), and the replaced grid no longer drives the view.
+        [Test]
+        public void BindingTheViewTwiceFollowsOnlyTheLastGrid()
+        {
+            var host = new GameObject("tap-priority-bind");
+            owned.Add(host);
+            var catalog = new PresentationSpriteCatalog();
+            var view = host.AddComponent<AttentionMarkerView>();
+            view.Configure(catalog, id => null);
+            var hostA = new GameObject("tap-priority-grid-a");
+            var hostB = new GameObject("tap-priority-grid-b");
+            owned.Add(hostA);
+            owned.Add(hostB);
+            var gridA = hostA.AddComponent<SlotGridView>();
+            var gridB = hostB.AddComponent<SlotGridView>();
+            gridA.Configure(catalog);
+            gridB.Configure(catalog);
+
+            view.Bind(gridA);
+            view.Bind(gridB);
+            gridA.SetLayout(TestLayouts.Six());
+            Assert.That(view.AwaitingModelLayout, Is.False, "the replaced grid no longer drives the view");
+            gridB.SetLayout(TestLayouts.Six());
+            Assert.That(view.AwaitingModelLayout, Is.True, "the last grid does");
+            view.Bind(gridB);
+            Assert.That(view.AwaitingModelLayout, Is.False, "binding again starts clean");
+        }
+
         [Test]
         public void AMarkerViewWithoutVisibleMarkersCatchesNothing()
         {

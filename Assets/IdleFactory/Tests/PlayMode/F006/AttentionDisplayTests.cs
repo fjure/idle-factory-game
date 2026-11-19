@@ -125,8 +125,8 @@ namespace IdleFactory.Tests.PlayMode.F006
         {
             var entries = new List<PresentationSpriteEntry>();
             var requirements = new List<PresentationSpriteRequirement>();
-            var tones = new[] { Color.red, Color.green, Color.blue, Color.yellow, Color.magenta };
-            var keys = new[] { "F003-RES-IRON-ORE", "F003-RES-IRON-BAR", "F003-RES-IRON-PLATE", "F003-RES-GEAR", SlotGridModel.BadgeStorageFullKey };
+            var tones = new[] { Color.red, Color.green, Color.blue, Color.yellow, Color.magenta, Color.cyan };
+            var keys = new[] { "F003-RES-IRON-ORE", "F003-RES-IRON-BAR", "F003-RES-IRON-PLATE", "F003-RES-GEAR", SlotGridModel.BadgeStorageFullKey, AttentionMarkerView.StoreFullMarkerKey };
             for (var i = 0; i < keys.Length; i++)
             {
                 entries.Add(new PresentationSpriteEntry(keys[i], new[] { Icon(keys[i], tones[i]) }, null));
@@ -289,7 +289,8 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(model.StoreFull, Is.True);
             Assert.That(view.VisibleMarkerCount, Is.EqualTo(1));
             var renderer = view.RendererOf(0);
-            Assert.That(renderer.sprite, Is.SameAs(iconByKey[SlotGridModel.BadgeStorageFullKey]));
+            Assert.That(renderer.sprite, Is.SameAs(iconByKey[AttentionMarkerView.StoreFullMarkerKey]), "C-57: the marker-sized storage icon, not the machine badge sprite");
+            Assert.That(renderer.sprite, Is.Not.SameAs(iconByKey[SlotGridModel.BadgeStorageFullKey]));
             Assert.That(renderer.transform.position.x, Is.EqualTo(layout.DepotAnchor.x).Within(1e-4f));
             Assert.That(renderer.transform.position.y, Is.EqualTo(layout.DepotAnchor.y).Within(1e-4f));
         }
