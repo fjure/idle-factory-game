@@ -52,6 +52,8 @@ page files, not here.
 - [F006 batch 4 art reviews, import and Office glyph](pages/f006-batch-p3a-art-review-and-import.md) — T525 verdicts, Art Bible 21.9, T526 atlases and K4 tail, T554 glyph.
 - [F006 batch 5 shell, build card, stages and camera framing](pages/f006-batch-5-shell-card-and-stages.md) — T536/T537/T555 persistent layer and U-B1 band, T539 build card, T540 stages with offset u0, T558 depot framing (AR-3, AR-4).
 - [F006 batch 5 world deck, depot, effects pool and markers](pages/f006-batch-5-world-and-effects.md) — T527 edges, T556 cue contrast, T529 allocation-free effect pool, T528 depot census, T557 marker wiring.
+- [F006 batch 6 verification and polish](pages/f006-batch-6-verification-and-polish.md) — T531 B4a numbers, budget 8 restatement, census ceiling 110, T541 journey.
+- [F006 batch 6 copy conformance and polish](pages/f006-batch-6-copy-conformance-and-polish.md) — T547 CF-1..CF-5, World Bible v0.2 Store/Depot, T560 fixes and carries C-72..C-76.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 - [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
@@ -136,6 +138,7 @@ page files, not here.
 - [F006 batch P2 workflow pitfalls](pages/f006-batch-p2-workflow-pitfalls.md) — File.Replace 0x80070497 host failure and test strategy, headless Blender, worker and branch housekeeping.
 - [F006 batch 4 workflow pitfalls](pages/f006-batch-p3a-workflow-pitfalls.md) — Limit resumes, gate order, reviewer checkout, synthetic Escape, APK repack, Library move.
 - [F006 batch 5 workflow pitfalls](pages/f006-batch-5-workflow-pitfalls.md) — Unwired scene fields, uninstantiated marker view, revision-driven rebuilds, Bee paths, gate APK hang.
+- [F006 batch 6 workflow pitfalls](pages/f006-batch-6-workflow-pitfalls.md) — Carries for read-only roles, limit resumes, destruction flags, string coverage proof, gpu lease release.
 - [F004 batch 1 workflow pitfalls](pages/f004-batch-1-workflow-pitfalls.md) — Usage-limit resumes, no ExecutionPolicy Bypass, Blender metadata, tool version drift.
 - [F004 batch 2 workflow pitfalls](pages/f004-batch-2-workflow-pitfalls.md) — Limit resume, generated-file cleanup, Play Mode timeout, T411 comparator decision.
 - [F004 batch 3 workflow pitfalls](pages/f004-batch-3-workflow-pitfalls.md) — Play Mode timeout, disk space, review fidelity, deferred B2.

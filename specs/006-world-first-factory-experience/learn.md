@@ -1,9 +1,9 @@
 # What I Learned: World-First Factory Experience (F006)
 
 **Feature**: Make the factory the screen: a world deck, depot and labelled hub in place of the six-tab bar. Gameplay, content and saves stay unchanged.
-**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch; P3 batch A); 2026-11-19 (batch 5, see the last section)
-**Scope**: Phases P0 (T500-T509), P1 (T510-T518), the first P2 batch (T519-T524, T532, T533, T538), P3 batch A (T525, T526, T534, T535, T552-T554) and batch 5 (T527-T529, T536, T537, T539, T540, T555-T559)
-**Implementation status**: 47 of 60 listed tasks are checked (batch 5 merged on 2026-11-18, main b44b87d5, gates B and C accepted). Open: T530, T531, T541 to T551. P0, P1, the first P2 batch, P3 batch A and batch 5 are merged.
+**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch; P3 batch A); 2026-11-19 (batch 5 and batch 6 part A, see the last sections)
+**Scope**: Phases P0 (T500-T509), P1 (T510-T518), the first P2 batch (T519-T524, T532, T533, T538), P3 batch A (T525, T526, T534, T535, T552-T554) batch 5 (T527-T529, T536, T537, T539, T540, T555-T559) and batch 6 part A (T531, T541, T547, T560)
+**Implementation status**: 51 of 61 listed tasks are checked (batch 6 part A merged on 2026-11-19, main 38cc418; T560 was added by the owner). Open: T542 to T545, T548 to T551 and the final T543. P0, P1, the first P2 batch, P3 batch A, batch 5 and batch 6 part A are merged.
 
 ---
 
@@ -440,3 +440,66 @@ A resource the player cannot yet obtain raises no "Short on" signal. The wiki re
 - **AutosavePolicy**: the Application-layer rule for periodic checkpoints (30 s interval, 2 s spacing, failure backoff).
 - **IRunCheckpointBackgroundPromoter**: the optional port that lets the store publish a checkpoint on a pool thread.
 - **StructureRevision**: the revision that triggers a world-feed rebuild; it must not move with production.
+
+---
+
+# Batch 6 part A: verification and polish (T531, T541, T547, T560)
+
+## Batch 6: Key Decisions
+
+### 22. Withdraw a budget reading when its method turns out to be the artifact (T531)
+
+**What we did**: The B3 "one SetPass per render" reading came from an Editor probe whose batch counters read 0. The player method reads 28 to 34 passes for F004 pages alone, 42 to 44 with F006. The owner restated budget 8 as a delta: F006 adds at most +12 passes over the F004-only 34, with the `camera.Render()` CPU bound still binding.
+
+**Why**: A gate that cannot be read in the real runtime gives false assurance. The delta isolates what this feature adds and is measurable in the same method.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Keep "at most one pass per render" | The player cannot meet it for F004 alone; it would fail on the method, not on F006. |
+| Sort sprites by atlas per layer | Big gain, but changes per-location y-order and needs an owner decision. |
+
+**When you'd choose differently**: If device GPU time, not CPU, is the limit, optimise the absolute pass count.
+
+---
+
+### 23. Give carried code fixes an implementation task before the verifier runs (T560)
+
+**What we did**: Carries named for T542 (Test/QA) and T547 (World Designer) were code or copy fixes. Both roles are read-only, so the owner added T560 with copy fixes CF-2..CF-5, the cause line, card refresh gating and marker checks. T542 only verifies afterwards.
+
+**Why**: A verifier that repairs what it verifies is no longer independent.
+
+**When you'd choose differently**: Trivial one-line fixes can ride in the review's own fix round when the reviewer is not the implementer.
+
+---
+
+### 24. Resolve a vocabulary conflict by a MINOR version, not by renaming strings (CF-1)
+
+**What we did**: World Bible v0.1 said the capacity is never "store", but the shipped game says "Store" everywhere. v0.2 makes "Store" the capacity term and "Depot" the structure; no string changed.
+
+**Why**: Renaming about 20 strings and their tests costs more than a precise definition, and the two words name two things.
+
+**When you'd choose differently**: If players confused the two words in playtests, rename the capacity instead.
+
+---
+
+## Batch 6: Concepts to Know
+
+### Mechanical coverage proof
+Keyword sweeps missed player strings twice. The accepted proof counts every literal line (888 in 72 files) against a cited row; the limit of the extraction is stated, and the script is not yet committed (C-71).
+
+### Gate refresh on the changed key
+Both cards refreshed on every `QuantityRevision` change, about 400 allocations per frame. T560 refreshes on a structure, dirty or quantity key with 600-frame zero-allocation tests. A remaining weakness: a rate-only change can lag (C-76).
+
+### Workflow
+Usage limits killed workers and reviewers mid-run; resuming the same agent worked. The merge script does not release the `gpu` lease. See the wiki page on batch 6 pitfalls.
+
+## Batch 6: carried follow-ups
+
+C-68..C-76 in `reviews/p3b-followups.md`: the card-closed 21 allocations per frame deep profile (separate Issue after P4 gates), report text for T544, journey tap calibration (T542), class D names and the extraction script, the potential-versus-effective production rate, two text clips at 200 %, a 120 px recentre, the two-write autosave player test, a 22 px store-full marker sprite and the dim tint level, and stale cause or rate text on rate-only changes.
+
+## Batch 6: Glossary additions
+
+- **F006-WB v0.2**: the World Bible after owner decision CF-1; Store is the capacity term, Depot the structure.
+- **Delta cap**: the restated budget 8, F006 adds at most +12 SetPass per render over the F004-only 34.
+- **Class D string**: a literal that is not player-visible (exception messages, keys, object names).

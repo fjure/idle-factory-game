@@ -1,7 +1,7 @@
 ---
 title: Android emulator validation
 type: howto
-sources: [S001, S008, S018, S022, S037, S060, S061]
+sources: [S001, S008, S018, S022, S037, S060, S061, S062]
 updated: 2026-11-19
 ---
 
@@ -71,3 +71,4 @@ Script fixes from T245: R20 assertion corrected, forced departure checkpoint, bl
 
 - F006 batch 5 (owner decisions 2026-11-17): gate device runs use only the dedicated AVD `IdleFactory_Test_API_36` (8 GB `/data`, PlayStore off, hardware copied from Medium_Phone), never `Medium_Phone_API_36.0`; an in-place resize of the old AVD failed and was reverted. Boot headless, which serves as `emulator-5554`; `scripts/android-emulator-journey.ps1` needs `-Avd IdleFactory_Test_API_36`. Input only by `adb shell input`, screenshots by `adb exec-out screencap`, never host mouse or keyboard. Gate APKs need `Library/Bee/Android` deleted first. A full `/data` got one `pm trim-caches` with owner approval. See [batch 5 pitfalls](./f006-batch-5-workflow-pitfalls.md). (S061)
 - F006 T552: an atlas page of 2 MiB hung the Android load; cap every page at 512 x 512 (1 MiB), and uninstall only the game when `/data` is full. See [Android load hang](./f006-android-load-hang-atlas-page-cap.md) and [batch 4 pitfalls](./f006-batch-p3a-workflow-pitfalls.md). (S060)
+- F006 T541 (merged 2026-11-19): the journey script targets the Office hub, has an F006 scenario, `-ValidateOnly`, the default AVD `IdleFactory_Test_API_36` and an `F006Autosave` check. All tap fractions are provisional until T542 calibrates them; the autosave restore check can pass against an unchanged periodic file and should require a newer generation (C-70). See [F006 batch 6](./f006-batch-6-verification-and-polish.md). (S062)
