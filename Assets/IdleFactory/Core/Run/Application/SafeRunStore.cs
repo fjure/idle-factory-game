@@ -31,7 +31,7 @@ namespace IdleFactory.Run.Application
             this.beforeAccess = beforeAccess;
         }
 
-        /// <summary>The background capability of the wrapped store, or null (T559).</summary>
+        /// <summary>True when the wrapped store offers the background capability (T559).</summary>
         public bool SupportsBackgroundPromotion => store is IRunCheckpointBackgroundPromoter;
 
         /// <summary>Serializes the checkpoint for a background publication, or null when the store cannot or the serialization failed (T559).</summary>

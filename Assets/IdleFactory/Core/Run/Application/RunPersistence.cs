@@ -180,6 +180,7 @@ namespace IdleFactory.Run.Application
         /// </summary>
         public RunCommandResult<RunPersistenceOutcome> Autosave()
         {
+            JoinAutosave(); // T559: the interval check must see a background write in flight
             if (session.PendingTransition != null || lifecycle != LifecycleState.Running)
                 return Succeeded(null, null, false, true, false, false);
             if (IsWithinAutosaveInterval())
@@ -632,6 +633,7 @@ namespace IdleFactory.Run.Application
             var promoted = store.Promote(checkpoint);
             if (!promoted.Succeeded || promoted.Value != checkpoint.Id)
             {
+                durableKnown = false; // T559: the failed promote may have landed; the next background write reads the store again
                 var activeNow = store.ReadActive();
                 CheckpointId? activeId = activeNow.Succeeded ? activeNow.Checkpoint.Id : active?.Id ?? lastActiveCheckpointId;
                 SetStatus(PersistenceStatusKind.Failure, activeId, active != null || previous != null, SaveFailureMessage);

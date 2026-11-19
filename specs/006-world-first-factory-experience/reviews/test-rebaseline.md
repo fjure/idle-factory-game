@@ -354,3 +354,7 @@ No existing test assertion changed: both full suites pass on the final commit wi
 | `Fixtures/PublicApi/core-public-api.txt` | Core public surface as of T558 | adds `AutosaveTickOutcome` (enum), `IRunCheckpointBackgroundPromoter`, `IPreparedPromotion` and `RunPersistence.AutosaveWhenDue(Action)`; nothing removed or changed | T559 public surface (regenerated with `IDLEFACTORY_REGENERATE_PUBLIC_API=1`, diff reviewed: 10 added lines) | no (additive) |
 
 New tests: Edit Mode `Run/AutosaveTests` (cadence, action throttle, lifecycle gating, failure path, kill and offline accounting, the background write, steady-path allocation) and `Run/AutosaveWriteCostTests` (the measurement); Play Mode `RunAutosaveTests` (kill without a pause callback, action trigger, failing store, allocation, suspended).
+
+### T559 fix round (QA passed 4f5b5ef; Architect and Security notes)
+
+No existing assertion changed. Four existing Play Mode fixtures changed in setup only: `HubPlayerTests`, `MachineCardPlayerTests` and `JsonContentPlayerTests` (they load the scene against the player's real persistence folder) now switch the timer-driven autosave off after the scene loads; `PlayerCheckpointRoundTripTests` adds its diagnostics under a lock because a background write can raise them from a pool thread. `RunAutosaveTests` (new in T559) now drives a second periodic write through the background path and asserts it (`BackgroundWritesStarted`).

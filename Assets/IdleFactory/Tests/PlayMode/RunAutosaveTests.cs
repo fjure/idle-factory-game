@@ -75,11 +75,29 @@ namespace IdleFactory.Tests.PlayMode
             var oreAtCheckpoint = Ore;
             Assert.That(oreAtCheckpoint, Is.GreaterThan(0L), "the flush before the write brought the run up to date");
 
+            // The second write continues from the generation the first one made, so it takes the background path: the main thread only
+            // captures and serializes, a pool thread publishes, a later frame applies the result.
+            Assert.That(Persistence.BackgroundWritesStarted, Is.Zero, "the first write of a fresh run is the synchronous one");
+            Elapse(AutosavePolicy.DefaultIntervalMs);
+            clock.CumulativeActiveSeconds = 61d;
+            yield return null;
+            var inFlightFrames = Persistence.AutosaveInFlight ? 1 : 0;
+            yield return WaitForWrites(2);
+            Assert.That(Adapter.AutosaveWrites, Is.EqualTo(2), "the second periodic checkpoint was written");
+            Assert.That(Persistence.BackgroundWritesStarted, Is.EqualTo(1), "and it went through the background path (in flight at the first look: " + inFlightFrames + ")");
+            Assert.That(Persistence.AutosaveInFlight, Is.False);
+            written = new JsonRunCheckpointStore(root, Bootstrap.RunCatalog).ReadActive();
+            Assert.That(written.Succeeded, Is.True, written.Message);
+            Assert.That(written.Checkpoint.Id, Is.EqualTo(Persistence.Status.ActiveCheckpointId));
+            Assert.That(written.Checkpoint.DepartureUtcMs, Is.GreaterThan(departure));
+            departure = written.Checkpoint.DepartureUtcMs;
+            oreAtCheckpoint = Ore;
+
             // Five more seconds are played and lost with the process: the next write is not due yet.
             Elapse(5_000);
-            clock.CumulativeActiveSeconds = 36d;
+            clock.CumulativeActiveSeconds = 66d;
             yield return null;
-            Assert.That(Adapter.AutosaveWrites, Is.EqualTo(1));
+            Assert.That(Adapter.AutosaveWrites, Is.EqualTo(2));
 
             // The kill: no OnApplicationPause, no OnApplicationFocus, no OnApplicationQuit.
             yield return run.Stop();
@@ -90,7 +108,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(Bootstrap.IsInitialized, Is.True, Bootstrap.InitializationError);
             var summary = Bootstrap.LastOfflineSummary;
             Assert.That(summary, Is.Not.Null, "the absence is credited as an offline return");
-            Assert.That(summary.DepartureUtcMs, Is.EqualTo(departure), "from the last periodic checkpoint");
+            Assert.That(summary.DepartureUtcMs, Is.EqualTo(departure), "from the last (second, background) periodic checkpoint");
             Assert.That(summary.MeasuredMs, Is.EqualTo(returnMs - departure), "the unsaved five seconds are inside the credited absence");
             var oreAfterStart = Ore;
             Assert.That(oreAfterStart, Is.GreaterThan(oreAtCheckpoint));
@@ -225,7 +243,8 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(run.Bootstrap.IsInitialized, Is.True, run.Bootstrap.InitializationError);
         }
 
-        // The file IO of an autosave runs on a pool thread; its result is applied by a later frame's tick.
+        // Waits for the result of an autosave write to be applied: the first write of a run is synchronous, later ones run their file IO on a
+        // pool thread and a later frame's tick applies the result.
         private IEnumerator WaitForWrites(int expected)
         {
             var deadline = UnityEngine.Time.realtimeSinceStartup + 10f;

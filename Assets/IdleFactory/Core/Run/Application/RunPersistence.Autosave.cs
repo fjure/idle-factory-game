@@ -50,6 +50,9 @@ namespace IdleFactory.Run.Application
 
         private AutosaveJob inFlight;
 
+        /// <summary>How many autosave writes were handed to the background executor since construction; a diagnostic for tests.</summary>
+        internal int BackgroundWritesStarted { get; private set; }
+
         internal AutosavePolicy AutosaveCadence { get; set; } = new AutosavePolicy();
 
         /// <summary>Runs the file IO of a background write; the default is the thread pool. A test replaces it to control completion.</summary>
@@ -188,6 +191,8 @@ namespace IdleFactory.Run.Application
             }
 
             public void Wait() => done.Wait();
+
+            public void Dispose() => done.Dispose();
         }
 
         // Captures the run on this thread, serializes it, and hands the file IO to the executor. False when the write must be synchronous.
@@ -233,24 +238,26 @@ namespace IdleFactory.Run.Application
                 return false;
             }
 
+            BackgroundWritesStarted++;
             return true;
         }
 
         // On the worker: only the prepared bytes and the store's own operation gate are touched, never the session or this object's state.
         private static void RunBackgroundWrite(IPreparedPromotion prepared, AutosaveJob job)
         {
-            CommandResult<CheckpointId> result;
+            CommandResult<CheckpointId> result = CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, SafeRunStore.StorageMessage);
             try
             {
-                result = prepared.Publish() ?? CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, SafeRunStore.StorageMessage);
+                result = prepared.Publish() ?? result;
             }
             catch (Exception)
             {
-                // Nothing may escape a pool thread: an uncaught exception there ends the process.
-                result = CommandResult<CheckpointId>.Rejected(CommandOutcome.PersistenceFailed, SafeRunStore.StorageMessage);
+                // Nothing may escape a pool thread: an uncaught exception there ends the process. The rejection above stands.
             }
-
-            job.Complete(result);
+            finally
+            {
+                job.Complete(result); // always, so a later Wait() can never block forever (thread abort, domain unload)
+            }
         }
 
         /// <summary>
@@ -271,6 +278,7 @@ namespace IdleFactory.Run.Application
             if (job == null) return AutosaveTickOutcome.NotDue;
             inFlight = null;
             CommandResult<CheckpointId> result = job.Result;
+            job.Dispose();
             RunCheckpoint checkpoint = job.Checkpoint;
             if (result != null && result.Succeeded && result.Value == checkpoint.Id)
             {
