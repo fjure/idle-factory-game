@@ -358,3 +358,52 @@ New tests: Edit Mode `Run/AutosaveTests` (cadence, action throttle, lifecycle ga
 ### T559 fix round (QA passed 4f5b5ef; Architect and Security notes)
 
 No existing assertion changed. Four existing Play Mode fixtures changed in setup only: `HubPlayerTests`, `MachineCardPlayerTests` and `JsonContentPlayerTests` (they load the scene against the player's real persistence folder) now switch the timer-driven autosave off after the scene loads; `PlayerCheckpointRoundTripTests` adds its diagnostics under a lock because a background write can raise them from a pool thread. `RunAutosaveTests` (new in T559) now drives a second periodic write through the background path and asserts it (`BackgroundWritesStarted`).
+
+## T560 (#776): pre-T542 polish (copy conformance, behaviour fixes, hardening)
+
+Applies CF-2 to CF-5, B-4 and B-6 of `world-bible-conformance.md` Part 2 and the T542 code carries. Only rows whose assertion changed are listed; new tests are listed after them.
+
+| File | Old assertion | New assertion | Reason | Expectation changed? |
+|---|---|---|---|---|
+| `ContractsAutoDeliverPanelTests`, `RunKeyboardFocusTests` | hub accessible name `Office, 1 system needs attention` | `Office, 1 needs attention` | CF-4 | yes (copy) |
+| `HubPanelTests` | `... Does.Contain("4 systems need attention")` | `Does.Contain("4 need attention")`; adds `TitleOf(HubCard.Prestige) == "Factory Sale"` | CF-4, CF-3 | yes (copy) |
+| `MachineCardTests` (close) | close tooltip `Close` | `Close machine card` | B-6 | yes (accessible name) |
+| `TextScaleLayoutTests.AssertCloseUsable` | sheet close tooltip `Close` | `Close panel` | B-6 | yes (accessible name) |
+| `MachinePanelTests` | `There is no machine in this slot.` | `There is no machine at this location.` | CF-2 | yes (copy) |
+| `OfflineSummaryPanelTests` | `Slot 2 <machine> is waiting: ...` | `Location 2 <machine> is waiting: ...` | CF-2 | yes (copy) |
+| `SlotGridTests` | placeholder `build sheet for slot 1 is not available yet` | `build sheet for location 1 ...` | CF-2 | yes (copy) |
+| `ExpansionPanelTests` | detail `Slots N slots, next level M slots` | `Locations N locations, next level M locations` | CF-2 | yes (copy) |
+| `MachineCardTests` (cause) | cause label equals `Short on <resource>`; tooltip `Short on X. <detail>` | label starts with `Short on <resource>` and ends with a second line `\n<detail>`; tooltip unchanged | B-4 visible cause | yes (spec change) |
+| `BuildCardTests` (unaffordable) | the selected row's status line says `Need $1 more` | the selected row says `Selected`; the shortfall shows once as text, in the reason line below Confirm | C-47 | yes (spec change) |
+| `AttentionDisplayTests.AStoreFull...` | store-full marker uses the badge sprite `F003-BADGE-STORAGE-FULL` | the marker-sized storage icon `F003-UI-ICON-STORAGE`, and not the badge sprite (the badge stays the fallback) | C-57 | yes (spec change) |
+| `AttentionMarkerSceneTests.AMachineTapStillWins...` | skipped locations silently | asserts the icon, none and machine cases and requires one proved machine | C-40 | strengthened |
+| `RunHudLayoutTests` zoom hint | `.Or` over either zoom button | left of the whole right column (the smaller xMin of both buttons) | B-15 | strengthened |
+| `ScreenClassScalePlayTests.The1280x720PhoneAt320Dpi...` | duplicated the earlier `n_fit >= n_min` line | shrinks the band to n = 2 and asserts it passes only with the 1 % tolerance and would fail the exact ceiling 3 | B-15 | strengthened |
+
+New tests: `AttentionMarkerSceneTests.NoMarkerIsDrawnFromAModelThatStillCarriesTheOldLayout` (C-39), `WorldTapPriorityTests.BindingTheViewTwiceFollowsOnlyTheLastGrid` (C-40), `AttentionModelTests.EveryMarkerBoxOfEveryShippedLayoutAvoidsEveryMachineCellAndKeepOut` (C-35), `BuildCardTests` (C-41 allocation, C-41 cash crossing, C-48 not-available state and contrast, B-13 48 pt floor, C-59 and C-46 compact geometry), `BuildCardWorldTests` (C-44 muted locations, C-48 T555 A3/A6, B-3 and C-51 presenter milestone queue), `MachineCardTests.ABlockedMakerStillCountsAsASource...` (C-29), `ShellNavigationStackTests` (C-60 back order), `PersistentLayerTests` (B-16), `OfflineSummaryPanelTests` (C-55, C-64 B-04 in the offline summary).
+
+### B-1 audit of the `SetSoftDisabled` call sites (T560)
+
+Every hosted control that is soft-disabled has a reason a touch user can reach without hover: visible text next to it, or the answer of the press (the control stays focusable and activating it shows the reason).
+
+| Site | Reason a touch user reaches |
+|---|---|
+| `OreVeinControl` (dialog open, unavailable) | the control's own reason label (`OreVeinCopy`) |
+| `BuildCard` type row (locked) | the row status line and the error line on press |
+| `BuildSheetPresenter` build button | the card's reason label |
+| `ContractsPanel` Deliver, Accept | the missing line and the offer reason label |
+| `ExpansionPanel` upgrade | the track's reason label |
+| `IndustryPanel` Buy | the card's reason label |
+| `InventoryRatesPanel` Auto-sell (locked resource) | the answer of the press in the row reason line |
+| `InventoryRatesPanel.Sell` | the sell hint under the row |
+| `ItemsPanel` Activate and targets | the reason labels |
+| `MachinePanelPresenter` Upgrade | the upgrade reason line |
+| `MachineCard` (Upgrade) | the shortfall inside the button, and the inline answer |
+| `OverdriveControl`, shell Overdrive | the caption and the press answer (notice) |
+| `PrestigePresenter` Confirm, Retry, Cancel | the missing-Factory-Value line, the saving and failure cards |
+| `PrioritiesPanel` move up and down at the ends | the status line on press ("already first" or "already last") |
+| `ResearchPanel` node | the status text inside the node |
+| `SessionLogPanel` | the visible unavailable line |
+| shell zoom buttons at a limit | the zoom hint on press |
+
+No site was found without a reachable reason. B-14: `SelectTab` and `OpenTabAtSection` still have production callers (`HubPanel.OpenCard`, `PrestigePresenter`) and 36 test files, so the shim stays.

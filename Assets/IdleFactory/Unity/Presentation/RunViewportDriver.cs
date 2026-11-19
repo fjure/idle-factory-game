@@ -28,6 +28,9 @@ namespace IdleFactory.Unity.Presentation
             this.controller = controller ?? throw new ArgumentNullException(nameof(controller));
         }
 
+        /// <summary>The camera controller this driver was created for (C-64): the owner recreates the driver when its controller is replaced.</summary>
+        public FactoryCameraController Controller => controller;
+
         /// <summary>True while the next <see cref="Apply"/> fits the whole world again (first rectangle, rotation, a new world layout, new settings).</summary>
         public bool FramingPending { get; set; }
 

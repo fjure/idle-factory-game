@@ -594,6 +594,23 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(IsDisplayed(shell.ZoomInButton), Is.False, context + ": a single-level range hides them");
         }
+
+        // B-16 (T560): the layout suites run with the preference on, the worst case. The default touch player has it off: one layout case per class at 200 % with the
+        // worst-case content (FillWorstCase) and the zoom column absent, through the shared shell layout assertions.
+        [UnityTest]
+        public IEnumerator ADefaultTouchPlayerWithTheZoomPreferenceOffKeepsTheWorstCaseLayoutWithinTheShellAssertions([ValueSource(nameof(ZoomScreens))] ShellScreen screen)
+        {
+            var profile = ShellDeviceProfile.Touch(screen.Width, screen.Height, 0f);
+            yield return Open(screen, 200, profile);
+            var shell = rig.Shell;
+            shell.ShowZoomButtonsPreference = false;
+            shell.SetZoomButtonStates(true, false, true, false);
+            yield return FillWorstCase(shell);
+            var context = $"{screen} @200% touch, zoom preference off";
+            Assert.That(shell.ZoomButtonsAllowed, Is.False, context);
+            Assert.That(IsDisplayed(shell.ZoomInButton), Is.False, context + ": no zoom control");
+            AssertShellLayout(rig, context);
+        }
     }
 }
 #endif

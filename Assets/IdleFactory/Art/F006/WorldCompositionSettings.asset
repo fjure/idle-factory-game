@@ -56,5 +56,8 @@ MonoBehaviour:
   - 0.3
   - 0.4
   maxPropHeightArtPx: 24
+  familyFpsCaps:
+  - machineId: machine.assembler
+    maxFps: 8
   hatchRule: 0
   edgeRulePerStage: 000000000100000002000000i

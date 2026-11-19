@@ -169,7 +169,7 @@ namespace IdleFactory.Unity.UI.Panels
                 var row = new VisualElement { name = "priority-row-" + key };
                 row.AddToClassList("prio-row");
                 row.Add(MarketPanelParts.NewLabel("priority-title-" + key, "prio-row__title", (i + 1) + ". " + line.Label));
-                row.Add(MarketPanelParts.NewLabel("priority-detail-" + key, "prio-row__detail", "Slot " + (line.Slot + 1) + " · Level " + line.Level));
+                row.Add(MarketPanelParts.NewLabel("priority-detail-" + key, "prio-row__detail", "Location " + (line.Slot + 1) + " · Level " + line.Level));
 
                 var actions = new VisualElement { name = "priority-actions-" + key };
                 actions.AddToClassList("prio-actions");

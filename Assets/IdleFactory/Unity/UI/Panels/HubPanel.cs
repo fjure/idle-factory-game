@@ -36,7 +36,7 @@ namespace IdleFactory.Unity.UI.Panels
         /// </summary>
         public const string EntryIconKey = "F006-UI-OFFICE";
 
-        public static string TitleOf(HubCard card) => card.ToString();
+        public static string TitleOf(HubCard card) => card == HubCard.Prestige ? "Factory Sale" : card.ToString();
 
         public static string IconKeyOf(HubCard card)
         {
@@ -425,7 +425,7 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 stateMark.text = "i";
                 stateTitle.text = "Nothing here yet";
-                stateMessage.text = "No system is available right now.";
+                stateMessage.text = "Nothing is available in the Office right now.";
                 stateRetry.style.display = DisplayStyle.None;
                 stateRetry.focusable = false;
             }
@@ -607,7 +607,7 @@ namespace IdleFactory.Unity.UI.Panels
                                 status = "Locked";
                                 // T537 (T536 copy): content without an unlock condition says so instead of "unlocks after it unlocks".
                                 reason = overdrive.Unlock == null
-                                    ? "Overdrive is not unlocked yet"
+                                    ? "Overdrive is locked."
                                     : "Overdrive unlocks after " + UnlockCopy.After(session.Catalog, overdrive.Unlock) + ".";
                                 break;
                         }
@@ -634,7 +634,7 @@ namespace IdleFactory.Unity.UI.Panels
                 if (!registered)
                 {
                     status = "Not available right now";
-                    reason = "This system could not be opened";
+                    reason = "That could not be opened";
                 }
 
                 Status.text = status;

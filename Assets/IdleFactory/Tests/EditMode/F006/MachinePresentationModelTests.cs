@@ -473,6 +473,15 @@ namespace IdleFactory.Tests.EditMode.F006
         // P2-F14: the family cap table is authored data
         // ---------------------------------------------------------------------------------------------------
 
+        // C-22 (T560): the authored asset carries the cap table itself, not only the class default.
+        [Test]
+        public void TheShippedCompositionAssetSerializesTheFamilyCapTable()
+        {
+            var text = System.IO.File.ReadAllText(WorldCompositionSettings.AssetPath);
+            Assert.That(text, Does.Contain("familyFpsCaps:"));
+            Assert.That(text, Does.Contain("machineId: machine.assembler"));
+        }
+
         [Test]
         public void TheFamilyCapTableIsAuthoredInTheCompositionSettingsAndTheModelReadsIt()
         {

@@ -221,6 +221,169 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(h.Card.IsHighlighted, Is.True, "the static response is the one-second highlight of the new machine's card");
         }
 
+        // C-48 (T560): the build card's not-available states. A location that is taken or locked by the time the card shows it keeps Confirm disabled with the visible
+        // reason; the warning and danger text keep 4.5:1 against the card surface.
+        [UnityTest]
+        public IEnumerator ATakenOrLockedLocationShowsTheNotAvailableStateWithADisabledConfirmAndTheReason()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
+            h.Build(1, "machine.miner");
+            Assert.That(h.Shell.OpenSlot(1, SlotCondition.Empty), Is.True, "a stale empty condition still opens the card");
+            yield return ShellRig.Settle();
+            h.Shell.RefreshCard();
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.True, "Confirm is disabled on a taken location");
+            Assert.That(card.ReasonLabel.text, Is.EqualTo(BuildCardCopy.LocationTaken));
+            Assert.That(card.ReasonLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+
+            Assert.That(h.Shell.OpenSlot(11, SlotCondition.Empty), Is.True);
+            yield return ShellRig.Settle();
+            h.Shell.RefreshCard();
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.True, "and on a locked one");
+            Assert.That(card.ReasonLabel.text, Is.EqualTo(BuildCardCopy.LocationLocked));
+        }
+
+        [UnityTest]
+        public IEnumerator TheWarningAndDangerTextOfTheBuildCardMeetContrastAgainstTheCardSurface([Values(100, 200)] int percent)
+        {
+            yield return Make(PhoneScreen(), percent, RunShellFixtures.MinerCost - 1);
+            yield return OpenBuild(0);
+            var surface = card.Root.resolvedStyle.backgroundColor;
+            Assert.That(surface.a, Is.GreaterThan(0f), "the docked card has its own surface");
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.True);
+            var warning = card.ReasonLabel.resolvedStyle.color;
+            Assert.That(ContrastRatio(warning, surface), Is.GreaterThanOrEqualTo(4.5f), "the warning reason line");
+            var danger = card.Root.Q<Label>("build-card-feedback");
+            Assert.That(danger, Is.Not.Null);
+            Assert.That(ContrastRatio(danger.resolvedStyle.color, surface), Is.GreaterThanOrEqualTo(4.5f), "the danger feedback line");
+        }
+
+        private static float ContrastRatio(Color foreground, Color background)
+        {
+            Func<float, float> channel = value => value <= 0.03928f ? value / 12.92f : Mathf.Pow((value + 0.055f) / 1.055f, 2.4f);
+            Func<Color, float> luminance = color => 0.2126f * channel(color.r) + 0.7152f * channel(color.g) + 0.0722f * channel(color.b);
+            var a = luminance(foreground);
+            var b = luminance(background);
+            return (Mathf.Max(a, b) + 0.05f) / (Mathf.Min(a, b) + 0.05f);
+        }
+
+        public static IEnumerable<ShellScreen> CompactScreens() =>
+            ShellScreens.All().Where(item => item.Name.StartsWith("phone-landscape 640", StringComparison.Ordinal) || item.Name.StartsWith("phone-portrait 360", StringComparison.Ordinal) ||
+                                             item.Name.StartsWith("phone-landscape 844", StringComparison.Ordinal));
+
+        // C-59 and C-46 (T560): at 200 % text on the compact classes the actions keep one word per label, the heading stays within two lines and the list either shows
+        // two type rows or scrolls the selected row into view.
+        [UnityTest]
+        public IEnumerator TheBuildCardKeepsItsWordsWholeItsHeadingShortAndTheSelectedRowReachableAtTwoHundredPercent([ValueSource(nameof(CompactScreens))] ShellScreen screen)
+        {
+            yield return Make(screen, 200, RunShellFixtures.ComfortableCash, unlockEverything: true, factoryLevel: 2);
+            yield return OpenBuild(0);
+            yield return ShellRig.Settle();
+            var where = screen.Name + " @200%";
+
+            foreach (var button in new[] { card.ConfirmButton, card.CancelButton })
+            {
+                var text = button.text;
+                var size = button.MeasureTextSize(text, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined);
+                var inner = button.worldBound.width - button.resolvedStyle.paddingLeft - button.resolvedStyle.paddingRight;
+                Assert.That(size.x, Is.LessThanOrEqualTo(inner + Tolerance), where + ": " + text + " fits on one line without breaking inside the word");
+            }
+
+            var heading = card.SelectedLabel;
+            // UI/UX N2: the real line height is the measured height of one line of the same text at the same font (never a guessed factor).
+            var oneLine = heading.MeasureTextSize("Wg", 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).y;
+            Assert.That(oneLine, Is.GreaterThan(0f));
+            var lines = heading.worldBound.height / oneLine;
+            // 640x360 at 200 %: the 40 percent column is 256 pt wide and the caption-size heading still wraps to three lines; it is recorded as the one class exempt from the
+            // two-line goal (shell rule: text is never clipped, so no ellipsis). Every other compact class holds two lines.
+            var maxLines = screen.Name.StartsWith("phone-landscape 640", StringComparison.Ordinal) ? 3.05f : 2.05f;
+            Assert.That(lines, Is.LessThanOrEqualTo(maxLines), where + ": the heading line count (" + lines + ")");
+
+            var visibleRows = 0;
+            Button selectedRow = null;
+            foreach (var row in card.TypeButtons)
+            {
+                if (row.ClassListContains("bcard__type--selected"))
+                {
+                    selectedRow = row;
+                }
+
+                var inside = row.worldBound.yMin >= card.Types.worldBound.yMin - Tolerance && row.worldBound.yMax <= card.Types.worldBound.yMax + Tolerance;
+                visibleRows += inside && IsDisplayed(row) ? 1 : 0;
+            }
+
+            Assert.That(selectedRow, Is.Not.Null, where + ": a type is selected");
+            var selectedVisible = selectedRow.worldBound.yMin >= card.Types.worldBound.yMin - Tolerance && selectedRow.worldBound.yMax <= card.Types.worldBound.yMax + Tolerance;
+            // The two-row goal is asserted where the class has the room (the wide landscape 844x390); on 360x640 and 640x360 at 200 % the card band is too short for
+            // two rows (360x640 shows one: the 45 percent cap), so there the selected row scrolled into view is the contract (C-46).
+            var roomy = screen.Name.StartsWith("phone-landscape 844", StringComparison.Ordinal);
+            if (roomy)
+            {
+                Assert.That(visibleRows, Is.GreaterThanOrEqualTo(2), where + ": two type rows show");
+            }
+
+            Assert.That(selectedVisible, Is.True, where + ": the selected row is in view (" + visibleRows + " rows show)");
+        }
+
+        // B-13 (T560): later USS rules must not undercut the 48 pt touch floor of the scaffold controls on the card.
+        [UnityTest]
+        public IEnumerator TheBuildCardControlsKeepTheFortyEightPointFloorAtEveryTextScale(
+            [ValueSource(nameof(CompactScreens))] ShellScreen screen, [Values(100, 200)] int percent)
+        {
+            yield return Make(screen, percent, RunShellFixtures.ComfortableCash, unlockEverything: true);
+            yield return OpenBuild(0);
+            foreach (var button in new[] { card.ConfirmButton, card.CancelButton }.Concat(card.TypeButtons))
+            {
+                if (!IsDisplayed(button) || button.worldBound.height <= 0f)
+                {
+                    continue;
+                }
+
+                Assert.That(button.worldBound.height, Is.GreaterThanOrEqualTo(48f - Tolerance), button.name + " at " + screen.Name + " " + percent + " %");
+            }
+        }
+
+        // C-41 (T560, SC-008): production changes the quantity revision every frame, but the card shows only what Cash decides (affordability, the shortfall), so the
+        // open card must not rebuild RunSnapshots.Factory then. 600 frames of a running factory with the card open allocate nothing.
+        [UnityTest]
+        public IEnumerator ARunningFactoryWithTheBuildCardOpenAllocatesNothingOver600Frames()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, factoryLevel: 2);
+            h.Build(1, "machine.miner");
+            h.Build(2, "machine.miner");
+            yield return OpenBuild(0);
+            for (var warm = 0; warm < 30; warm++)
+            {
+                h.Session.Advance(100L * RunSession.TicksPerMs);
+                card.Refresh();
+            }
+
+            var revisionBefore = h.Session.QuantityRevision;
+            var allocations = 0;
+            for (var frame = 0; frame < 600; frame++)
+            {
+                h.Session.Advance(100L * RunSession.TicksPerMs);
+                allocations += GcAllocationCounter.Count(() => card.Refresh());
+            }
+
+            Assert.That(h.Session.QuantityRevision, Is.GreaterThan(revisionBefore), "the quantities changed during the window");
+            Assert.That(allocations, Is.Zero, "the open build card rebuilds nothing while only quantities change");
+            Assert.That(IsDisplayed(card.Root), Is.True);
+        }
+
+        // C-41: the card still follows Cash where it shows it: crossing the price of the selected type enables Confirm without a structural change.
+        [UnityTest]
+        public IEnumerator TheCardStillRefreshesWhenCashCrossesThePriceOfTheSelectedType()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.MinerCost - 1, withEffects: true);
+            yield return OpenBuild(0);
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.True, "one short of the price");
+            h.Session.BeginCommand();
+            Assert.That(h.Session.State.TryAddCash(1), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            Assert.That(h.Session.EndCommand(0, false).IsSuccess, Is.True);
+            card.Refresh();
+            Assert.That(PanelScaffold.IsDisabled(card.ConfirmButton), Is.False, "affordable now, with no structural change");
+        }
+
         [UnityTest]
         public IEnumerator WithoutEnoughCashConfirmIsDisabledAndTheCardSaysHowMuchIsMissing()
         {
@@ -236,7 +399,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(preview.PreviewSlot, Is.EqualTo(0));
             Assert.That(card.HintLabel.text, Is.EqualTo(BuildCardCopy.NothingAffordable), "the empty state: nothing is affordable");
             Assert.That(card.HintLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
-            Assert.That(card.TypeButton("machine.miner").Q<Label>(className: "bcard__line", name: "build-card-status-" + card.TypeButtons.ToList().IndexOf(card.TypeButton("machine.miner"))).text, Is.EqualTo("Need $1 more"));
+            Assert.That(card.TypeButton("machine.miner").Q<Label>(className: "bcard__line", name: "build-card-status-" + card.TypeButtons.ToList().IndexOf(card.TypeButton("machine.miner"))).text, Is.EqualTo(BuildCardCopy.SelectedRow), "C-47: the shortfall shows once as text (the reason line); the selected row only says it is selected");
 
             // The control stays focusable and pressing it changes nothing.
             Assert.That(card.ConfirmButton.focusable, Is.True);

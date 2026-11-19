@@ -566,12 +566,12 @@ namespace IdleFactory.Tests.PlayMode
             yield return Sync();
             Assert.That(shell.Attention.ContractsDeliverable, Is.EqualTo(1));
             Assert.That(shell.IsHubDotShown, Is.True, "the hub entry dot shows the system flag");
-            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office, 1 system needs attention"), "the accessible name carries the count of systems");
+            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office, 1 needs attention"), "the accessible name carries the count of flagged cards");
 
             AddStock(session, GearResource, GearRequired);
             yield return Sync();
             Assert.That(shell.Attention.ContractsDeliverable, Is.EqualTo(2));
-            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office, 1 system needs attention"), "two contracts are still one system (Contracts)");
+            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office, 1 needs attention"), "two contracts are still one system (Contracts)");
 
             Assert.That(commands.Sell(PlateResource, PlateRequired).IsSuccess, Is.True);
             Assert.That(commands.Sell(GearResource, GearRequired).IsSuccess, Is.True);

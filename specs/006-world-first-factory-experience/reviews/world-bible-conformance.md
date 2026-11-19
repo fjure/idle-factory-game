@@ -85,6 +85,139 @@ Findings: 0 blocker, 0 major, 5 minor.
 
 P1-F5 stays provisional by the earlier owner decision; no new decision is needed.
 
-## Part 2
+## Part 2 (T547, final)
 
-Placeholder. Part 2 is recorded with T547.
+**Task**: T547, GitHub Issue #718. **Date**: 2026-11-19. **Base commit**: `b44b87d` (the shipped build). **Reviewer**: World Designer, conformance lens; an independent, read-only session that built none of the reviewed work. **Checked against**: `F006-WB v0.1` (frozen by OD-9a) and `F006-WB v0.2` (MINOR, owner 2026-11-19, CF-1: "Store" is the capacity term, "Depot" the structure; [world-bible-v0.2.md](../../../docs/world/world-bible-v0.2.md)), [world-copy.md](world-copy.md), the OD-9b World Designer conditions in [direction.md](direction.md), Part 1 above, and `p3b-followups.md` (coordination copy, newer than main).
+**Evidence location (not all in this checkout)**: the captures `playtest-agent-f006-C/` (c03, c07, c17, c23, e08), `uiux-f006-C.md`, `playtest-agent-f006-C.md` and the newer `p3b-followups.md` are NOT on `main` at `b44b87d`. They were read from the coordination worktree `C:/Users/Domenik/ai-projects/idle-factory-game/.claude/worktrees/feat-006-world-first/specs/006-world-first-factory-experience/reviews/` (branch `feat-006-maqa-batch5`, PR #775), read-only. Only `t527-proofs/` and this record are in this branch. Every reference below to those files points at that path until #775 merges.
+**Evidence**: (a) visual: the gate captures `playtest-agent-f006-C/` (c03, c07, c17, c23 viewed as PNG; coordination worktree) and the composites `t527-proofs/3x4-stage2.png` and `3x4-stage3.png` (this branch); (b) strings: a scan of the shipped source (`Assets/IdleFactory/Unity/UI/**`, `Presentation/**`, UXML and USS; `RunRejectionCopy`, `MilestoneCopy`, `HubPanel`, `MachineCard`, `BuildCard`, `ExpansionPanel`, `OfflineSummaryPanel`, `SettingsPanelPresenter`, `OreVeinCopy`, `AttentionModel`, `PersistentLayer`, `RunShellDocument*`). No localisation tables exist; all copy is in code or UXML. Content data holds resource, machine and research labels of F001 to F005, which are not F006 world strings.
+**Scope note**: palette, numbers, layout fit and code quality are not this lens. Tone, vocabulary, naming and forbidden-term rules, and the world reading of deck, depot, links, props, vein and stage dressing, are.
+
+### Overall verdict: CONFLICTS (4 conflicts, 0 blockers; CF-1 is RESOLVED (v0.2); each remaining conflict is a proposed string change not yet applied)
+
+Under the task rule, a proposed change counts as a conflict until an implementation worker applies it; CF-2 to CF-5 are applied by T560 (#776). No conflict touches a forbidden reading: no people, lore, brand, planet, power, region or hype word; no exclamation marks in player text; no text baked into a world sprite; "Systems" is not a label anywhere. The world art itself conforms. The remaining conflicts are vocabulary drift in strings.
+
+- Conflicts: **4** (CF-2 to CF-5 below). Severity: 1 major (CF-2), 3 minor (CF-3, CF-4, CF-5). CF-1 is resolved by owner decision (option A, `F006-WB v0.2`).
+- Unowned strings: **0 player-visible literals unaccounted for**, proved mechanically in [world-copy.md](world-copy.md) section 7 ("Mechanical coverage proof"): 888 literal lines in 72 files, each inside a cited N-row or CF range (356), an L-row whole file (406), a class D whole file (52), or a listed class D line (74); 0 unaccounted. The N-rows are N-01 to N-46 (N-42 split into N-42a to N-42i); the L-rows are L-01 to L-12. L-rows are term-swept, not tone-read, and the proof states the extraction's limit. No string count is claimed. Rows that carry a CHANGE stay conflicts until applied.
+- When CF-2 to CF-5 are applied the verdict becomes CONFORMS, with the device-only checks under "Not verifiable here" still carried.
+
+### Conflicts and exact string changes
+
+Apply as written; tests that pin the old strings change with them. Line numbers are from `b44b87d`.
+
+**CF-1 (RESOLVED 2026-11-19, owner decision, option A): "Store" versus "Depot".** v0.1 rule 3 said the central store is never "store" in player text, while the shipped build calls the stock capacity "Store" everywhere and shows it in the world as the depot (the depot FULL sprite means the Store is at capacity; contracts/world-presentation.md section 2). The owner chose option A: `F006-WB v0.2` (MINOR) makes "Store" the capacity term and "Depot" the world structure. No string is renamed. Every shipped "Store" string, exhaustively, now conforms:
+- `FactoryRun.uxml:18` (caption), `:23`, `:63` ("Store full"); `RunShellDocument.cs:918-920` (pill and tooltip), `:2953-2955` (exact value).
+- `MachineCard.cs:71` ("Store is full"), `:90` (cause detail; proposed shorter text under B-4).
+- `OreVeinCopy.cs:19` ("Store full"), `:71` (", store full").
+- `HubPanel.cs:581` ("Store N% full").
+- `InventoryRatesPanel.cs:100`, `:320`, `:348`, `:349`; `InventoryRatesPanel.uxml:8`.
+- `RunRejectionCopy.cs:43`; `OfflineSummaryPanel.cs:567`; `MachinePanelPresenter.cs:389`; `PrioritiesPanel.cs:70` and `PrioritiesPanel.uxml:3`; `StartupStatusPanel.cs:807` ("first store level").
+"Storage" wording for the same capacity (Expansion "Storage" and "Upgrade storage", machine panel "Storage is full", research effect, prestige reset list, `SlotVisualModel.cs:211` "storage full") is not forbidden and is not renamed; it is recorded in v0.2 section 8. Closed.
+
+**CF-2 (major, WB tone vocabulary and rule 6, "one thing, one word"): "slot" versus "location".** 16 sites in the 15 table rows below (the two `RunShellDocument.cs` title strings share a row). The build card, the lattice accessible stop and the machine card already say "location" (`BuildCard.cs:22,25`; `RunShellDocument.cs:213,1600`; the header comment of `MachineCardCopy` says "location, never slot"), but other surfaces still say "slot" for the same thing. A player sees both words in one session (captured: c03 "Build a Miner: tap an empty slot." above "Selected: Miner at location 1"; c23 "Slots now and next"). Exact old to new:
+
+| File:line | Old | New |
+|---|---|---|
+| `UI/FactoryRun.uxml:46` | `Build a Miner: tap an empty slot.` | `Build a Miner: tap an empty location.` |
+| `UI/RunRejectionCopy.cs:17` | `That slot already has a machine.` | `That location already has a machine.` |
+| `UI/RunRejectionCopy.cs:18` | `That slot is not unlocked yet.` | `That location is not unlocked yet.` |
+| `UI/Panels/ExpansionPanel.cs:109` | `UpdateTrack(factory, snapshot.Factory, "Slots", "slots");` | `UpdateTrack(factory, snapshot.Factory, "Locations", "locations");` |
+| `UI/Panels/ExpansionPanel.cs:127` | `"Slots now and next"` | `"Locations now and next"` |
+| `UI/Panels/ExpansionPanel.cs:189` | `... + " slots."` | `... + " locations."` |
+| `UI/Panels/OfflineSummaryPanel.cs:570` | `"Slot " + (blocked.SlotIndex + 1)...` | `"Location " + (blocked.SlotIndex + 1)...` |
+| `UI/Panels/PrioritiesPanel.cs:172` | `"Slot " + (line.Slot + 1) + " · Level "` | `"Location " + (line.Slot + 1) + " · Level "` |
+| `Presentation/World/SlotVisualModel.cs:110` | `"Slot " + (index + 1)...` | `"Location " + (index + 1)...` |
+| `UI/RunShellDocument.cs:1288` | `"Slot " + (slot + 1) + " unlocks at factory level "` | `"Location " + (slot + 1) + " unlocks at factory level "` |
+| `UI/RunShellDocument.cs:1313` and `:1370` | `... + " · Slot " + (slot + 1)` | `... + " · Location " + (slot + 1)` |
+| `UI/RunShellDocument.cs:2093` | `Tap an empty slot to build, or a machine to inspect it.` | `Tap an empty location to build, or a machine to inspect it.` |
+| `UI/RunShellDocument.cs:2097` | `The build sheet for slot ` | `The build sheet for location ` |
+| `UI/RunShellDocument.cs:2101` | `The machine panel for slot ` | `The machine panel for location ` |
+| `UI/Panels/MachinePanel.uxml:3` | `There is no machine in this slot.` | `There is no machine at this location.` |
+
+Identifiers, reason codes (`slot.occupied`), save keys, GameObject names and content JSON keys stay; only player-visible text changes. Reachability of the older sheet paths (`RunShellDocument.cs:1313,1370,2097,2101`) was not proven from captures; change them anyway so no path leaks the word. The Expansion row (c23) and the hint (c03) are captured, shipped and visible.
+
+**CF-3 (minor, WB rule 2): hub card "Prestige" versus "Factory Sale".** The hub card title is the enum name (`HubPanel.cs:39`, `TitleOf(card) => card.ToString()`), so the card reads "Prestige" (captured, c07), while the panel it opens is titled "Factory Sale" (`PrestigePresenter.cs:40`) and every other string says "Factory Sale". Rule 2 keeps "Factory Sale". Change `HubPanel.cs:39` to return `"Factory Sale"` for `HubCard.Prestige` (keep `card.ToString()` for the rest); `RunShellDocument.cs:38` `TabNames` entry `"Prestige"` likewise if it is shown. The status "Not ready yet: needs Factory Value ..." stays.
+
+**CF-4 (minor, WB rule 1 and OD-1 intent): generic "system(s)" in hub text.** "Systems" is forbidden as the hub label; the shipped label is "Office", but the accessible name and two states reintroduce the vague noun, and T537 listed the first for confirmation. Rejected:
+
+| File:line | Old | New |
+|---|---|---|
+| `UI/RunShellDocument.Hub.cs:81` | `" system needs attention"` / `" systems need attention"` (after `Office, N`) | `" needs attention"` / `" need attention"` (reads "Office, 1 needs attention", "Office, 2 need attention") |
+| `UI/Panels/HubPanel.cs:428` | `No system is available right now.` | `Nothing is available in the Office right now.` |
+| `UI/Panels/HubPanel.cs:637` | `This system could not be opened` | `That could not be opened` |
+
+**CF-5 (minor, B-11): the two "no cause" lock strings.**
+
+| File:line | Old | New |
+|---|---|---|
+| `UI/Panels/HubPanel.cs:610` | `Overdrive is not unlocked yet` | `Overdrive is locked.` (the words of `RunRejectionCopy.cs:57,65`) |
+| `UI/UnlockCopy.cs:111` | `Locked: not unlocked yet.` (no condition) | `Locked.` |
+
+Where a condition exists the copy already names it ("Overdrive unlocks after the factory reaches level 2.", c07; "Locked: unlocks after you produce ...", c07). Content with no condition cannot name one, so "locked" alone is honest; the old strings read as a tautology.
+
+### Closure of Part 1 (T525) items
+
+| Id | Part 1 finding | Status | Evidence |
+|---|---|---|---|
+| M1 | s2 parapet on one back edge, brief says two | CLOSED | `t527-proofs/3x4-stage2.png`: the depot slab carries a low parapet on its back and right edges (two edges); s3 adds the gantry beam and hoist (`3x4-stage3.png`). |
+| M2 | No trunk terminus art; "trunks end at the depot" by composition | CLOSED | Every row trunk meets the vertical collector spine, which runs into the depot hopper, in both composites and in play (`c23-expansion.png`, `c17-established.png`). The layout validator enforces it (`FactoryWorldLayout.cs:537`). No branch or junction connects two machines. |
+| M3 | Vein out of view on most classes | CLOSED_WITH_RECORD | The vein reads as an ore outcrop at the left margin in both composites and the portrait captures (c23): a source, not a machine. Edge clipping at level 2 portrait was `U-C1` (`uiux-f006-C.md`) and was fixed by T558 (merged); not re-captured on device. Compact landscape stays recorded under C-14. Carried to the final device gate, not passed here. |
+| M4 | Stage-2 and stage-3 art not composed | CLOSED | Both stages are composed: stage 1 railing, stage 2 front wall, depot parapet, lamp and crate, stage 3 gantry frame and more props (`t527-proofs/`); the established stage shows in play (c17). Look items (gantry height, front-only wall reading as a fence) stay with the owner's visual gate (C-12, C-61). |
+| M5 | P2-F20 "Show zoom buttons" needs a read | CLOSED | CONFORMS: plain, sentence case, no forbidden term; the hint "Adds zoom buttons to the factory view. Pinch zoom still works." is plain and present tense. Rows N-24 and N-25. |
+
+OD-9b World Designer conditions: (1) trunks end at the depot: MET (M2). (2) Vein legible or recorded: MET as a record (M3). (3) Stage-2 and stage-3 art before the progression is accepted: MET (M4). The two T525 owner-decision items were decided by the owner; the word "Office" shows beside the glyph in every captured hub chip (c07, c17, c23).
+
+### World checklist (the shipped build)
+
+| Area | Verdict | Evidence |
+|---|---|---|
+| Deck (ground, foundation, edges) | CONFORMS | Dark neutral base, one region id `starter-platform`; no lore marks; ground is region-keyed (rule 5). Dressing reads railing, front wall, gantry (`t527-proofs/`, c17). |
+| Depot | CONFORMS_WITH_CONDITIONS | One central store with fill states; named nowhere in player text, which v0.2 permits (the Store is the capacity term). A FULL state is clipped out of some framings (C-14, C-31; layout, not this lens). |
+| Links | CONFORMS | Trunk lanes end at the depot spine; branches only trunk-to-depot; no machine-to-machine link (OD-2). |
+| Props | CONFORMS | Crate, stack, pallet, lamp: neutral, unbranded scenery (c17, composites). |
+| Vein | CONFORMS | A resource source plus the Mine control; D-02 "Ore vein" is not shown; the control's accessible name is "Mine Iron Ore, +0.1 per click". |
+| Stage dressing | CONFORMS | Three stages, no text; names G-01 to G-03 are not shown in the build. |
+| Strings | CONFLICTS | CF-2 to CF-5 open; every player-visible literal in the swept scope is owned (world-copy.md section 7). |
+| Forbidden terms | CONFORMS | A search of the F006 surfaces for epic, legendary, mega, ultimate, boss, empire, tycoon, expedition, warehouse, region names and exclamation marks found none. "Systems" is not a label (CF-4 covers the generic noun). |
+| Site name and tagline | CONFORMS (not shipped) | S-01 and S-02 are in no build string or UXML; they stay store and title-surface copy. |
+
+### Carried-item dispositions assigned to T547 (p3b-followups.md)
+
+| Id | Disposition | Detail |
+|---|---|---|
+| B-4 / C-29 | DECIDED, proposed change | Keep the visible first line "Short on {resource}" (category-level, correct) and make the specific cause visible, not tooltip-only, as a second line of the same label so a touch user reads it. `UI/MachineCard.cs:454`: old `causeLabel.text = text ?? string.Empty;` new as below, where the existing `causeDetail` local (line 414, today the tooltip string `text + ". " + detail`) stays for the tooltip, and a new local `string detailLine = null;` is declared beside it and assigned inside the `MissingInput` case at line 424 (the existing `var detail = MachineCardCopy.CauseDetail(presentation.LimitingCause);` stays) as `detailLine = detail;`. The new line 454 is then `causeLabel.text = text == null ? string.Empty : (detailLine == null ? text : text + "\n" + detailLine);`. Keep line 456 (tooltip). New `CauseDetail` strings (`MachineCard.cs:88-91`): AutoSold `Auto-sell is selling it` (unchanged); NoSource `No machine makes it` (unchanged); StoreFull old `The store is full, so its makers cannot deliver` new `Store full, so makers cannot deliver`; SourceTooSlow old `Its makers are not keeping up` new `Makers cannot keep up`. UI/UX measures the two-line fit at 200 % per class. |
+| B-11 | DECIDED | Name the condition when one exists (already shipped); otherwise "Overdrive is locked." and "Locked." (CF-5). |
+| C-56 | CONFIRMED | B-01s "Level {n}. 1 new location opens." CONFORMS: the singular of B-01, present tense, states the change and the unlock, no numbers beyond level and unlock count (rule 5), no hype. The plural form is captured with "Deck extended." (playtest-C, e08). Promoted from draft to `F006-WB v0.1` copy. |
+| B-6 | DECIDED, proposed name | Card Close icon accessible name `Close machine card` (visible text stays "Close", contained in the name). `UI/MachineCard.cs:193`: old `CloseButton.tooltip = MachineCardCopy.CloseName;` new `CloseButton.tooltip = MachineCardCopy.CloseAccessibleName;` with `public const string CloseAccessibleName = "Close machine card";` beside line 77. Sheet Close (`UI/RunShellDocument.cs:2935`): old `"Close"` new `"Close panel"`. |
+| C-50 | DECIDED (copy only) | The banner announce text is `MilestoneCopy.Full(...)` as built (`MilestoneBanner.AccessibleText`): the primary line, a space, then "Deck extended." when the stage rose, with no prefix. Plain and complete. The live-region mechanism is not a copy matter (see the table below). |
+| C-38 | CONFIRMED, deliberate | World markers, deck, depot, trunks, props and vein sprites have no screen-reader name or focus, by decision. From the world-text side this is right: they are scenery and state pictures, not controls; the meaning is carried by the strip indicator ("Short on Iron Ore, 2 machines ..."), the location stops ("Locations. Arrow keys move between locations"), the vein control's name and the card's cause line. Naming each sprite would add noise. Revisit only if the human playtest shows a gap. |
+
+### Not World Designer scope: needs an implementation owner
+
+| Id | One line |
+|---|---|
+| C-7 | A full F004 re-import reverts the K4 tails; make `F004ArtIntegration` run the swap or fail with a pointer (tooling). |
+| C-22 | `familyFpsCaps` is not serialized in `WorldCompositionSettings.asset`; serialize at the next Unity re-save. |
+| C-41 | `BuildCard.Refresh` rebuilds the factory snapshot on every quantity change while open; cache and measure (SC-008). |
+| C-48 | Cancel-left order unrecorded; no test of the build card not-available state; warning and danger text contrast not asserted; T555 A3 and A6 lack direct assertions. |
+| C-53 | The bootstrap is 1862+ lines (extract a world feedback coordinator); the `DeckPlanner.Build` legacy undressed path is a footgun. |
+| C-59 | 640x360 at 200 %: Cancel and Confirm break mid-word, a 3-line title, about 1.3 type rows, Confirm collides with the dev label; "Overdrive Ready" clipped at 360x640; "Research" breaks at 844x390 (layout). |
+| C-60 | Mine button overlaps slots with a card open; stale idle hint under the tablet build card; Back left Market open after Expand factory; a 9 s gap shows a full Welcome back modal; the world recentres about 120 px at hand-over. |
+| C-64 | `FitBounds`/`ViewBounds` computed twice per frame; the fit test mirrors the production formula; no test asserts B-04 in the offline summary; stale `RunViewportDriver` risk. |
+| C-67 | The autosave interval is a code default, not a run setting (PO to confirm); the gate is held about 30 ms; diagnostics listeners may run on a pool thread; stale wiki pages need the batch ingest. |
+| B-7 | T535 UI/UX U-2, U-4 to U-7 and T534 UX F3 were never checked. |
+| B-12 | In-flow notices shift the body when one arrives or is dismissed (layout; needs a playthrough). |
+| C-50 mechanism | Whether TalkBack reads the banner (a live region) is a platform and UI question; only the text is decided here. |
+
+### Not verifiable here (carried, never passed)
+
+| Item | Carrier |
+|---|---|
+| Vein and depot framing on device after T558, per screen class | final device gate |
+| Two-line cause label fit at 200 % per class once B-4 is applied | UI/UX re-measure with the change |
+| TalkBack reading of the banner, hub accessible name and attention strip (Android tree is one SurfaceView, C-62) | final gate |
+
+### Required follow-up (for the parent)
+
+1. CF-1 is decided (option A, `F006-WB v0.2`, authored in this PR); the parent records v0.2 on the coordination branch.
+2. T560 (#776) applies CF-2 to CF-5, B-4 and B-6 exactly as listed, with the matching test string updates and a 200 % re-read.
+3. A short World Designer re-read afterwards to flip the verdict to CONFORMS.

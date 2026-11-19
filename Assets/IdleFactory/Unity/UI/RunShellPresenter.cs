@@ -228,7 +228,9 @@ namespace IdleFactory.Unity.UI
 
             // T540: the banner lives 2.5 s at most; milestones detected by the last snapshot show now. Nothing here allocates while no milestone waits.
             shell.TickMilestoneBanner(Time.unscaledDeltaTime);
-            while (milestones.TryDequeue(out var milestone))
+            // C-51 (T560, decision: queue): a milestone that arrives while a banner shows waits in the watcher's queue until the banner closes (timeout, tap or Back),
+            // instead of replacing the first text silently. Each milestone is shown whole, in order, for its own 2.5 s; the deck feedback follows the banner.
+            while ((shell.MilestoneBanner == null || !shell.MilestoneBanner.IsShown) && milestones.TryDequeue(out var milestone))
             {
                 var reduced = ReducedMotionProbe != null && ReducedMotionProbe();
                 shell.ShowMilestoneBanner(milestoneCopy.Primary(milestone), milestoneCopy.Secondary(milestone), reduced);

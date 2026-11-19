@@ -63,6 +63,91 @@ namespace IdleFactory.Tests.PlayMode
             yield return rig.Settle();
         }
 
+        // C-48 (T560): T555 A6 (the top hold belongs to a shown view: showing a card ends it) and A3 (the guard: a player's own focus on a clipped control still scrolls it
+        // into view during the hold, only the shell's programmatic focus stays at the top).
+        [UnityTest]
+        public IEnumerator TheTopHoldEndsWhenACardShowsAndAPlayersFocusStillScrollsAClippedControlIntoView()
+        {
+            yield return Make();
+            var shell = rig.ShellDocument;
+            // The rig registers the system tabs but not Settings: a tall test panel stands in for it.
+            Assert.That(shell.Panels.TryGet(ShellPanelIds.Settings, out _), Is.False, "the rig has no Settings panel");
+            var panel = new TestShellPanel(ShellPanelIds.Settings, "Settings", 40, true, true);
+            registrations.Add(shell.Panels.Register(panel));
+            shell.OpenSettings();
+            yield return rig.Settle();
+            Assert.That(shell.IsPanelTopHeld, Is.True, "a view that just opened is held at its top");
+            Assert.That(shell.PanelScroll.scrollOffset.y, Is.EqualTo(0f).Within(0.5f));
+
+            panel.Buttons[panel.Buttons.Count - 1].Focus();
+            yield return rig.Settle();
+            Assert.That(shell.PanelScroll.scrollOffset.y, Is.GreaterThan(0f), "A3: the player's own focus scrolls the clipped control into view during the hold");
+
+            Assert.That(rig.Presenter.OpenSlot(BaselineFixture.EmptySlot), Is.True);
+            yield return rig.Settle();
+            Assert.That(shell.IsBuildCardOpen, Is.True);
+            Assert.That(shell.IsPanelTopHeld, Is.False, "A6: showing a card ends the hold, it never outlives the view it was taken for");
+        }
+
+        // B-3 and C-51 (T560): a presenter-level check of the milestone path. A second milestone that arrives while a banner shows waits in the watcher's queue and
+        // shows whole, in order, after the first closes; it never replaces the first text silently.
+        [UnityTest]
+        public IEnumerator ASecondMilestoneWaitsForTheBannerAndShowsAfterItCloses()
+        {
+            yield return Make();
+            var presenter = rig.Presenter;
+            var shell = rig.ShellDocument;
+            presenter.Refresh();
+            yield return rig.Settle();
+            shell.MilestoneBanner.Dismiss();
+            presenter.Milestones.Reset();
+            var run = rig.Session.State.RunId;
+            presenter.Milestones.Observe(1, 4, 12, run);
+            presenter.Milestones.Observe(2, 6, 12, run);
+            presenter.Milestones.Observe(3, 8, 12, run);
+            var queued = presenter.Milestones.PendingCount;
+            Assert.That(queued, Is.GreaterThanOrEqualTo(2), "two raises are queued");
+
+            presenter.Refresh();
+            Assert.That(shell.MilestoneBanner.IsShown, Is.True, "the first milestone shows");
+            var first = shell.MilestoneBanner.AccessibleText;
+            Assert.That(presenter.Milestones.PendingCount, Is.EqualTo(queued - 1), "only one is taken while the banner shows");
+            presenter.Refresh();
+            Assert.That(shell.MilestoneBanner.AccessibleText, Is.EqualTo(first), "the second does not replace the first text");
+            Assert.That(presenter.Milestones.PendingCount, Is.EqualTo(queued - 1));
+
+            shell.MilestoneBanner.Dismiss();
+            presenter.Refresh();
+            Assert.That(shell.MilestoneBanner.IsShown, Is.True, "the second milestone shows once the first closed");
+            Assert.That(shell.MilestoneBanner.AccessibleText, Is.Not.EqualTo(first));
+            Assert.That(presenter.Milestones.PendingCount, Is.EqualTo(queued - 2));
+        }
+
+        // C-44 (T560, FR-032): while the card is open an occupied or locked location is muted, an explicit mark that does not rely on one frame's alpha; closing restores it.
+        [UnityTest]
+        public IEnumerator OccupiedAndLockedLocationsAreMutedWhileTheBuildCardIsOpen()
+        {
+            yield return Make();
+            var grid = rig.Grid;
+            var slot = BaselineFixture.EmptySlot;
+            Assert.That(grid.IsMutedForBuild(0), Is.False, "nothing is muted without a build preview");
+            Assert.That(rig.Presenter.OpenSlot(slot), Is.True);
+            yield return rig.Settle();
+
+            Assert.That(grid.BuildPreviewActive, Is.True);
+            Assert.That(grid.IsMutedForBuild(0), Is.True, "an occupied location is muted");
+            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Plate).color, Is.EqualTo(SlotGridView.MutedTint), "its plate is dimmed");
+            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Machine).color.r, Is.EqualTo(SlotGridView.MutedTint.r).Within(1e-4f), "and its machine");
+            Assert.That(grid.IsMutedForBuild(slot), Is.False, "the selected free location is not muted");
+            Assert.That(grid.RendererOf(slot, SlotGridView.SlotRendererRole.Plate).color, Is.EqualTo(Color.white));
+
+            Assert.That(rig.ShellDocument.HandleBack(), Is.True);
+            yield return rig.Settle();
+            Assert.That(grid.BuildPreviewActive, Is.False);
+            Assert.That(grid.IsMutedForBuild(0), Is.False);
+            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Plate).color, Is.EqualTo(Color.white), "closing the card restores the tint");
+        }
+
         [UnityTest]
         public IEnumerator TheGridDrawsTheGhostAtSixtyPercentAndOutlinesTheAvailableLocations()
         {

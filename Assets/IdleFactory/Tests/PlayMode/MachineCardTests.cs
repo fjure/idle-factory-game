@@ -96,7 +96,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(card.Root.Q<VisualElement>("machine-remove"), Is.Null, "Remove is not on the card (FR-019)");
             Assert.That(card.Root.Query<Button>().ToList().Any(button => button.text == "Remove"), Is.False);
             Assert.That(card.DetailsButton.text, Does.StartWith("Details"));
-            Assert.That(card.CloseButton.tooltip, Is.EqualTo("Close"), "the icon-only close has its accessible name");
+            Assert.That(card.CloseButton.tooltip, Is.EqualTo("Close machine card"), "the icon-only close has its accessible name");
         }
 
         [UnityTest]
@@ -136,7 +136,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(card.StateLabel.text, Is.EqualTo("Paused"));
             var presentation = card.Model.Get(new BuildingLocationId(0));
             Assert.That(presentation.LimitingResourceId, Is.Not.Null, "the limiting resource comes from the presentation model (P2-F13)");
-            Assert.That(card.CauseLabel.text, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore")), "the copy comes from the attention model, not derived again");
+            Assert.That(card.CauseLabel.text, Does.StartWith(AttentionModel.ShortOnCopy("Iron Ore")), "the copy comes from the attention model, not derived again");
             var iconKey = h.Session.Catalog.Resources[presentation.LimitingResourceId].PresentationKey;
             if (ContractsPanelTestSupport.Icon(iconKey) != null)
             {
@@ -742,8 +742,131 @@ namespace IdleFactory.Tests.PlayMode
             var limiting = rates.Resources.Single(r => r.ResourceId == presentation.LimitingResourceId);
             var expected = limiting.AutoSold ? MissingInputCause.AutoSold : MissingInputCause.NoSource;
             Assert.That(presentation.LimitingCause, Is.EqualTo(expected), "no miner is built, so nothing makes the input unless auto-sell reads it first");
-            Assert.That(card.CauseLabel.text, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore")), "the visible line is unchanged (copy follows in T547)");
+            Assert.That(card.CauseLabel.text, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore") + "\n" + MachineCardCopy.CauseDetail(expected)),
+                "B-4 (T560): the first line stays category-level, the cause is the visible second line (touch users cannot read a tooltip)");
             Assert.That(card.CauseLabel.tooltip, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore") + ". " + MachineCardCopy.CauseDetail(expected)));
+        }
+
+        // C-41 (T560, T531): with the machine card open on a running factory, quantity changes rebuild no snapshot: 600 frames allocate nothing.
+        [UnityTest]
+        public IEnumerator ARunningFactoryWithTheMachineCardOpenAllocatesNothingOver600Frames()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, level: 2);
+            h.Build(0, "machine.miner");
+            h.Build(1, "machine.miner");
+            yield return h.OpenCard(0);
+            for (var warm = 0; warm < 30; warm++)
+            {
+                h.Session.Advance(100L * RunSession.TicksPerMs);
+                h.Shell.RefreshCard();
+            }
+
+            var revisionBefore = h.Session.QuantityRevision;
+            var allocations = 0;
+            for (var frame = 0; frame < 600; frame++)
+            {
+                h.Session.Advance(100L * RunSession.TicksPerMs);
+                allocations += GcAllocationCounter.Count(() => h.Shell.RefreshCard());
+            }
+
+            Assert.That(h.Session.QuantityRevision, Is.GreaterThan(revisionBefore), "the quantities changed during the window");
+            Assert.That(allocations, Is.Zero, "the open machine card rebuilds nothing while only quantities change");
+        }
+
+        // C-28 (B-5, T560): portrait at 200 % with Details open, a text-scale change must not reframe on the old card band: the card band is pending first, and once it
+        // settles the framed world rectangle ends above the card, so nothing is drawn over the card edge.
+        [UnityTest]
+        public IEnumerator ATextScaleChangeWithDetailsOpenWaitsForTheCardBandAndLeavesTheCardEdgeClear()
+        {
+            var screen = PhoneScreen();
+            yield return Make(screen, 200, RunShellFixtures.ComfortableCash);
+            h.Build(0, "machine.miner");
+            yield return h.OpenCard(0);
+            CardHarness.Press(h.Card.DetailsButton);
+            yield return ShellRig.Settle();
+
+            h.Shell.ApplyTextScale(1.5f);
+            Assert.That(h.Shell.IsCardBandPending, Is.True, "the band is pending after the change (Details sheet open)");
+            Assert.That(h.Shell.TryGetUnobstructedScreenRect(screen.Height, out _), Is.False, "no reframe on the old band");
+
+            for (var frame = 0; frame < 8; frame++)
+            {
+                yield return null;
+            }
+
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.TryGetUnobstructedScreenRect(screen.Height, out var rect), Is.True, "the band settled");
+            var points = h.Shell.Root.panel.scaledPixelsPerPoint;
+            var worldBottomPoints = (screen.Height - rect.yMin) / points;
+            var cardTop = h.Shell.IsSheetOpen ? h.Shell.PanelScroll.worldBound.yMin : h.Shell.CardRoot.worldBound.yMin;
+            Assert.That(worldBottomPoints, Is.LessThanOrEqualTo(cardTop + Tolerance), "the framed world ends above the card edge");
+        }
+
+        // Architect 2d (T560): the machine card twin of the build card's cash-crossing test. With only quantities changing (no structure revision), the Upgrade button
+        // follows Cash across the upgrade price and the card follows a state change of its machine.
+        [UnityTest]
+        public IEnumerator TheCardStillRefreshesWhenCashCrossesTheUpgradePriceAndWhenTheMachineChangesState()
+        {
+            yield return Make(PhoneScreen(), 100, MinerCost);
+            h.Build(0, "machine.miner");
+            yield return h.OpenCard(0);
+            var card = h.Card;
+            var price = h.MachineAt(0).NextUpgrade.Cost;
+            var structure = h.Session.StructureRevision;
+            var short1 = price - 1 - h.Session.ReadCash();
+            Assert.That(short1, Is.GreaterThanOrEqualTo(0L));
+            h.Session.BeginCommand();
+            Assert.That(h.Session.State.TryAddCash(short1), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            Assert.That(h.Session.EndCommand(0, false).IsSuccess, Is.True);
+            h.Shell.RefreshCard();
+            Assert.That(PanelScaffold.IsDisabled(card.UpgradeButton), Is.True, "one short of the price");
+            h.Session.BeginCommand();
+            Assert.That(h.Session.State.TryAddCash(1), Is.EqualTo(IdleFactory.Run.Domain.RunStateResult.Ok));
+            Assert.That(h.Session.EndCommand(0, false).IsSuccess, Is.True);
+            h.Shell.RefreshCard();
+            Assert.That(PanelScaffold.IsDisabled(card.UpgradeButton), Is.False, "affordable once Cash crosses the price");
+            Assert.That(h.Session.StructureRevision, Is.EqualTo(structure), "no structure change was involved");
+        }
+
+        [UnityTest]
+        public IEnumerator TheCardFollowsAStateChangeWithNoStructureChange()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, level: 2);
+            h.Build(0, "machine.smelter");
+            yield return h.OpenCard(0);
+            var structure = h.Session.StructureRevision;
+            var before = h.Card.VisualState;
+            h.Session.Advance(2_000L * RunSession.TicksPerMs);
+            h.Shell.RefreshCard();
+            Assert.That(h.Session.StructureRevision, Is.EqualTo(structure), "only quantities moved");
+            Assert.That(h.Card.VisualState, Is.EqualTo(MachineVisualState.MissingInput), "the starved smelter now shows its cause (was " + before + ")");
+            Assert.That(h.Card.CauseLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+        }
+
+        // C-29 (T560): ProductionPerMinuteMicro is the steady-state rate of the ACTIVE makers assuming their own inputs (RunSnapshots, "a blocked machine still
+        // counts"), not an effective delivered rate. A press whose smelter exists but is itself starved therefore reads "Makers cannot keep up", never "No machine
+        // makes it": the maker is there and not delivering. NoSource is reserved for an input nothing active makes.
+        [UnityTest]
+        public IEnumerator ABlockedMakerStillCountsAsASourceSoTheCauseIsMakersCannotKeepUp()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, level: 3);
+            h.Build(0, "machine.smelter");
+            h.Build(1, "machine.press");
+            yield return h.OpenCard(1);
+            h.Session.Advance(2_000L * RunSession.TicksPerMs);
+            h.Shell.RefreshCard();
+            yield return ShellRig.Settle();
+
+            var card = h.Card;
+            var presentation = card.Model.Get(new BuildingLocationId(1));
+            Assert.That(card.VisualState, Is.EqualTo(MachineVisualState.MissingInput));
+            var limiting = RunSnapshots.Rates(h.Session).Resources.Single(r => r.ResourceId == presentation.LimitingResourceId);
+            var expected = limiting.AutoSold ? MissingInputCause.AutoSold : MissingInputCause.SourceTooSlow;
+            Assert.That(limiting.ProductionPerMinuteMicro, Is.GreaterThan(0), "the starved smelter is an active maker, so its nominal rate counts");
+            Assert.That(presentation.LimitingCause, Is.EqualTo(expected), "the starved smelter still counts as the press's source (never NoSource)");
+            Assert.That(card.CauseLabel.text, Does.EndWith("\n" + MachineCardCopy.CauseDetail(expected)));
+            Assert.That(MachineCardCopy.CauseDetail(MissingInputCause.SourceTooSlow), Is.EqualTo("Makers cannot keep up"));
+            Assert.That(MachineCardCopy.CauseDetail(MissingInputCause.StoreFull), Is.EqualTo("Store full, so makers cannot deliver"));
         }
 
         // P2-F13 (T528): the tap priority between an attention marker and a machine shape, through the real presenter. The marker icon never overlaps a machine

@@ -177,6 +177,21 @@ namespace IdleFactory.Editor.Art
             if (stepSet.Contains("import"))
             {
                 ImportFamilies(familyList, removeOrphans);
+                if (familyList.Contains("cues"))
+                {
+                    // C-7 (T560): a re-import of the cues family copies the f004 originals over the approved K4 tails. Swap them back at once, or fail with the pointer.
+                    AssetDatabase.Refresh();
+                    try
+                    {
+                        F006ArtIntegration.SwapCueTails();
+                    }
+                    catch (Exception exception)
+                    {
+                        throw new InvalidOperationException(
+                            "The cues family was re-imported but the K4 tail swap did not complete (" + exception.Message + "). Run F006ArtIntegration with -f006Steps cues before " +
+                            "committing; F004AssetContractTests fails on the original badge hashes.", exception);
+                    }
+                }
             }
 
             if (stepSet.Contains("atlas"))

@@ -37,6 +37,9 @@ namespace IdleFactory.Unity.Presentation
         private int machineFrame;
         private int accentFrame;
 
+        /// <summary>The tint of an occupied or locked location while the build card is open (C-44): about half brightness.</summary>
+        public static readonly Color MutedTint = new Color(0.5f, 0.5f, 0.5f, 1f);
+
         public SlotRenderers(Transform parent, int index, int overlayLayerId)
         {
             var slotObject = new GameObject("Slot " + (index + 1));
@@ -106,7 +109,7 @@ namespace IdleFactory.Unity.Presentation
             badge.sortingOrder = SlotGridView.OverlayOrder + row * 4 + 3;
         }
 
-        public void Show(SlotVisual visual, PresentationSpriteCatalog catalog, StateCueSet cues, bool highlighted = false, string previewKey = null)
+        public void Show(SlotVisual visual, PresentationSpriteCatalog catalog, StateCueSet cues, bool highlighted = false, string previewKey = null, bool muted = false)
         {
             var hasRow = cues.TryGetRowForBadgeKey(visual.BadgeKey, out var cueRow);
             var running = hasRow && cueRow.State == MachineVisualState.Running;
@@ -119,7 +122,10 @@ namespace IdleFactory.Unity.Presentation
             // so `animated` stays false) and never replaces a real machine.
             var ghost = visual.MachineKey == null && visual.Condition == SlotCondition.Empty && previewKey != null;
             machineEntry = Apply(machine, catalog, ghost ? previewKey : visual.MachineKey);
-            machine.color = ghost && machineEntry != null ? new Color(1f, 1f, 1f, SlotGridView.PreviewAlpha) : Color.white;
+            // C-44 (T560): while the build card is open an occupied or locked location is muted (a dim tint on the plate and the machine), an explicit "not here".
+            var body = muted ? MutedTint : Color.white;
+            plate.color = body;
+            machine.color = ghost && machineEntry != null ? new Color(1f, 1f, 1f, SlotGridView.PreviewAlpha) : body;
             machineCanvas = IsCanvas(machineEntry, machine);
             accentEntry = running ? Apply(accent, catalog, StateCueSet.AccentKeyFor(visual.MachineKey)) : Apply(accent, catalog, null);
             accentCanvas = IsCanvas(accentEntry, accent);
