@@ -270,7 +270,7 @@ namespace IdleFactory.Unity.Presentation
             {
                 if (i < visuals.Length)
                 {
-                    slots[i].Show(visuals[i], sprites, cueSet, IsAvailable(i), i == previewSlot ? previewKey : null);
+                    slots[i].Show(visuals[i], sprites, cueSet, IsAvailable(i), i == previewSlot ? previewKey : null, IsMutedForBuild(i));
                 }
                 else
                 {
@@ -303,6 +303,25 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The machine body key of the ghost, or null.</summary>
         public string PreviewKey => previewKey;
 
+        /// <summary>
+        /// C-44 (T560, FR-032): while the build card shows its outline or ghost, a location that cannot take a machine (occupied or locked) is muted to a dim tint, so it
+        /// reads as "not here" by contrast with the framed available ones, not by the alpha of one frame alone. False when no build preview is active.
+        /// </summary>
+        public bool IsMutedForBuild(int slotIndex)
+        {
+            if (!BuildPreviewActive || slotIndex < 0 || slotIndex >= visuals.Length)
+            {
+                return false;
+            }
+
+            return visuals[slotIndex].Condition != SlotCondition.Empty;
+        }
+
+        /// <summary>True while the build card has outlined locations or a ghost.</summary>
+        public bool BuildPreviewActive => availableCount > 0 || previewSlot >= 0;
+
+        private int availableCount;
+
         /// <summary>True when <paramref name="slotIndex"/> is outlined as an available build location.</summary>
         public bool IsAvailable(int slotIndex) => slotIndex >= 0 && slotIndex < available.Length && available[slotIndex];
 
@@ -320,12 +339,14 @@ namespace IdleFactory.Unity.Presentation
                 Array.Clear(available, 0, available.Length);
             }
 
+            availableCount = 0;
             for (var i = 0; i < count; i++)
             {
                 var location = locations[i];
                 if (location >= 0 && location < available.Length)
                 {
                     available[location] = true;
+                    availableCount++;
                 }
             }
 
@@ -345,6 +366,7 @@ namespace IdleFactory.Unity.Presentation
         public void ClearBuildPreview()
         {
             Array.Clear(available, 0, available.Length);
+            availableCount = 0;
             previewSlot = -1;
             previewKey = null;
             Reapply();
@@ -360,7 +382,7 @@ namespace IdleFactory.Unity.Presentation
 
             for (var i = 0; i < slots.Length && i < visuals.Length; i++)
             {
-                slots[i].Show(visuals[i], sprites, cueSet, IsAvailable(i), i == previewSlot ? previewKey : null);
+                slots[i].Show(visuals[i], sprites, cueSet, IsAvailable(i), i == previewSlot ? previewKey : null, IsMutedForBuild(i));
             }
 
             ApplyOverlayScale();

@@ -14,6 +14,8 @@ namespace IdleFactory.Unity.UI
         public const string Confirm = "Confirm";
         public const string Cancel = "Cancel";
         public const string NoTypes = "No machine types are unlocked yet.";
+        /// <summary>The status line of the selected row while its shortfall shows once, in the reason line below Confirm (C-47).</summary>
+        public const string SelectedRow = "Selected";
         public const string NothingAffordable = "You cannot afford a machine yet. Earn Cash, then build here.";
         public const string LocationTaken = "That location is no longer free.";
         public const string LocationLocked = "That location is not unlocked yet.";
@@ -217,6 +219,7 @@ namespace IdleFactory.Unity.UI
             slot = -1;
             context = null;
             selectedMachineId = null;
+            scrolledTo = null;
             ClearWorldPreview();
         }
 
@@ -263,10 +266,10 @@ namespace IdleFactory.Unity.UI
             unchecked
             {
                 var key = 14695981039346656037UL;
-                var types = factory.MachineTypes;
-                for (var i = 0; i < types.Count; i++)
+                var typeSnapshots = factory.MachineTypes;
+                for (var i = 0; i < typeSnapshots.Count; i++)
                 {
-                    var need = types[i].BuildCost - cash;
+                    var need = typeSnapshots[i].BuildCost - cash;
                     ulong part = 0;
                     if (need > 0)
                     {
@@ -316,9 +319,34 @@ namespace IdleFactory.Unity.UI
             }
 
             RenderSelected(selectedType, slotFree);
+            ScrollSelectedIntoView(selectedType);
             RenderActions(selectedType, snapshot.Cash, slotStatus);
             RenderHint(anyUnlocked, anyAffordable);
             RenderWorld(selectedType, slotFree);
+        }
+
+        // C-46 (T560): where the list shows fewer rows than types (portrait or 640x360 at 200 percent), the selected row scrolls into view when the selection changes, not on
+        // every refresh (which would fight the player's own scroll and allocate a schedule item).
+        private string scrolledTo;
+
+        private void ScrollSelectedIntoView(MachineTypeSnapshot selectedType)
+        {
+            var id = selectedType?.MachineId;
+            if (id == null || string.Equals(id, scrolledTo, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            scrolledTo = id;
+            foreach (var row in rows)
+            {
+                if (string.Equals(row.MachineId, id, StringComparison.Ordinal))
+                {
+                    var target = row.Button;
+                    types.schedule.Execute(() => types.ScrollTo(target)).ExecuteLater(0);
+                    break;
+                }
+            }
         }
 
         // The selected type: the player's choice while it is still unlocked, otherwise the first affordable type, otherwise the first unlocked one (it previews and
@@ -362,6 +390,7 @@ namespace IdleFactory.Unity.UI
             row.Cost.text = priceKnown ? "Cost: " + MarketPanelParts.Money(type.BuildCost) : "Cost: too large";
             string status;
             string reason;
+            var spoken = (string)null;
             if (!type.Unlocked)
             {
                 reason = SlotSheetText.UnlockReason(session, type);
@@ -376,6 +405,13 @@ namespace IdleFactory.Unity.UI
             {
                 reason = BuildCardCopy.Need(type.BuildCost, cash);
                 status = reason;
+                if (selected)
+                {
+                    // C-47 (T560): the shortfall of the selected type shows once as text, in the reason line below Confirm; its row only says it is the selected one.
+                    // The accessible description (tooltip) still carries the full words.
+                    spoken = reason;
+                    status = BuildCardCopy.SelectedRow;
+                }
             }
             else
             {
@@ -393,7 +429,7 @@ namespace IdleFactory.Unity.UI
             var sprite = icons != null ? icons(presentationKeyOf(type.MachineId)) : null;
             row.Icon.style.backgroundImage = sprite == null ? new StyleBackground(StyleKeyword.None) : new StyleBackground(sprite);
             var priceName = priceKnown ? ", " + MarketPanelParts.MoneyExact(type.BuildCost) : string.Empty;
-            row.Button.tooltip = type.Label + priceName + ", owned " + type.OwnedOfType + ", " + status + (selected ? ", selected" : string.Empty);
+            row.Button.tooltip = type.Label + priceName + ", owned " + type.OwnedOfType + ", " + (spoken ?? status) + (selected ? ", selected" : string.Empty);
         }
 
         private void RenderSelected(MachineTypeSnapshot selectedType, bool slotFree)

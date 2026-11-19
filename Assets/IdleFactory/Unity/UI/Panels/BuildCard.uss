@@ -152,7 +152,10 @@
     min-width: 44px;
     min-height: 48px;
     margin: 0 2px;
-    white-space: normal;
+    /* C-59 (T560): a button label is one word and never breaks inside it ("Canc/el" at 640x360 and 200 percent): no wrap, a small padding so the word fits. */
+    padding-left: 2px;
+    padding-right: 2px;
+    white-space: nowrap;
     -unity-text-align: middle-center;
 }
 
@@ -184,4 +187,25 @@
 .factory-hud--compact-landscape .bcard__reason {
     margin-left: 6px;
     margin-right: 6px;
+}
+
+/* C-59 (T560): phone landscape at a large text scale. The heading takes the caption size so it stays within two lines in the 40 percent column, the type rows lose
+   their padding so more of the list shows (the list also scrolls the selected row into view, C-46), and the buttons keep their label on one line. */
+.factory-hud--compact-landscape .bcard__selected {
+    font-size: var(--run-fs-caption);
+}
+
+.factory-hud--compact-landscape .bcard__type {
+    padding: 2px 6px;
+    margin-bottom: 2px;
+}
+
+.factory-hud--compact-landscape .bcard__icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+}
+
+.factory-hud--compact-landscape .scaffold.bcard .bcard__action {
+    margin: 0 1px;
 }

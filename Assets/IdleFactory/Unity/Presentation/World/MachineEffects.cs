@@ -21,6 +21,12 @@ namespace IdleFactory.Unity.Presentation
     {
         /// <summary>Spawns the effect of <paramref name="kind"/> at the machine of <paramref name="location"/>.</summary>
         void Spawn(MachineResponseKind kind, int location);
+
+        /// <summary>
+        /// Whether the world can show <paramref name="kind"/> now (its optional FX row is in the catalog). False sends the card to the static highlight outside reduced motion too,
+        /// so a missing row never makes the response silent (C-47, T560). A sink that cannot tell says true.
+        /// </summary>
+        bool CanSpawn(MachineResponseKind kind) => true;
     }
 
     /// <summary>

@@ -295,6 +295,9 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The <see cref="IMachineEffects"/> seam of the card: the glint of an upgrade, the spark of a switch-on.</summary>
         public void Spawn(MachineResponseKind kind, int location) => TrySpawn(KindOf(kind), location);
 
+        /// <summary>True when the catalog has frames for the effect of <paramref name="kind"/> (C-47: no row means the static highlight shows instead).</summary>
+        public bool CanSpawn(MachineResponseKind kind) => kindFrames[(int)KindOf(kind)] > 0;
+
         /// <summary>
         /// Spawns an effect at a location at the pool's current time, or says why it did not. <paramref name="framesPerSecond"/> 0 takes the latest
         /// rate set for the location with <see cref="SetLocationFps"/>, otherwise the kind's own rate.

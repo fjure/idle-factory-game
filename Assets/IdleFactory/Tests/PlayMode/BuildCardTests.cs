@@ -278,7 +278,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(preview.PreviewSlot, Is.EqualTo(0));
             Assert.That(card.HintLabel.text, Is.EqualTo(BuildCardCopy.NothingAffordable), "the empty state: nothing is affordable");
             Assert.That(card.HintLabel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
-            Assert.That(card.TypeButton("machine.miner").Q<Label>(className: "bcard__line", name: "build-card-status-" + card.TypeButtons.ToList().IndexOf(card.TypeButton("machine.miner"))).text, Is.EqualTo("Need $1 more"));
+            Assert.That(card.TypeButton("machine.miner").Q<Label>(className: "bcard__line", name: "build-card-status-" + card.TypeButtons.ToList().IndexOf(card.TypeButton("machine.miner"))).text, Is.EqualTo(BuildCardCopy.SelectedRow), "C-47: the shortfall shows once as text (the reason line); the selected row only says it is selected");
 
             // The control stays focusable and pressing it changes nothing.
             Assert.That(card.ConfirmButton.focusable, Is.True);

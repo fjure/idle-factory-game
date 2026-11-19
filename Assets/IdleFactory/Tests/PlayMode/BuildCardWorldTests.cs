@@ -63,6 +63,31 @@ namespace IdleFactory.Tests.PlayMode
             yield return rig.Settle();
         }
 
+        // C-44 (T560, FR-032): while the card is open an occupied or locked location is muted, an explicit mark that does not rely on one frame's alpha; closing restores it.
+        [UnityTest]
+        public IEnumerator OccupiedAndLockedLocationsAreMutedWhileTheBuildCardIsOpen()
+        {
+            yield return Make();
+            var grid = rig.Grid;
+            var slot = BaselineFixture.EmptySlot;
+            Assert.That(grid.IsMutedForBuild(0), Is.False, "nothing is muted without a build preview");
+            Assert.That(rig.Presenter.OpenSlot(slot), Is.True);
+            yield return rig.Settle();
+
+            Assert.That(grid.BuildPreviewActive, Is.True);
+            Assert.That(grid.IsMutedForBuild(0), Is.True, "an occupied location is muted");
+            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Plate).color, Is.EqualTo(SlotRenderers.MutedTint), "its plate is dimmed");
+            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Machine).color.r, Is.EqualTo(SlotRenderers.MutedTint.r).Within(1e-4f), "and its machine");
+            Assert.That(grid.IsMutedForBuild(slot), Is.False, "the selected free location is not muted");
+            Assert.That(grid.RendererOf(slot, SlotGridView.SlotRendererRole.Plate).color, Is.EqualTo(Color.white));
+
+            Assert.That(rig.ShellDocument.HandleBack(), Is.True);
+            yield return rig.Settle();
+            Assert.That(grid.BuildPreviewActive, Is.False);
+            Assert.That(grid.IsMutedForBuild(0), Is.False);
+            Assert.That(grid.RendererOf(0, SlotGridView.SlotRendererRole.Plate).color, Is.EqualTo(Color.white), "closing the card restores the tint");
+        }
+
         [UnityTest]
         public IEnumerator TheGridDrawsTheGhostAtSixtyPercentAndOutlinesTheAvailableLocations()
         {

@@ -2160,6 +2160,11 @@ namespace IdleFactory.Unity.UI
             PlacePersistentLayer();
             UpdateEmptyHint();
             UpdateOreVeinVisibility();
+            if (placeholder != null && activePanelId == null && gameplayAvailable)
+            {
+                // C-60 (U-C7, T560): the idle guidance "Tap an empty location..." under the docked card (tablet and desktop side panel) is stale while a card is open.
+                placeholder.style.display = cardOpen ? DisplayStyle.None : DisplayStyle.Flex;
+            }
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -3268,7 +3273,9 @@ namespace IdleFactory.Unity.UI
 
             // A phone sheet covers the world: the vein then leaves the view and the focus order, and a hold ends. The side panel of
             // tablet and desktop sits beside the world, so the vein stays.
-            var show = oreVeinWanted && !(sheetOpen && !IsSidePanelLayout);
+            // C-60 (U-C6, T560): a docked machine or build card on a phone takes the band the sheet would, so the Mine overlay leaves the world the same way and can no
+            // longer lie over a lattice location while the card is open (portrait 200 percent, 640x360). Closing the card brings it back.
+            var show = oreVeinWanted && !((sheetOpen || cardOpen) && !IsSidePanelLayout);
             var shown = oreVein.Root.style.display != DisplayStyle.None;
             if (show == shown)
             {

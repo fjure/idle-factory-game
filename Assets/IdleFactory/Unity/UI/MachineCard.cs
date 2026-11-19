@@ -43,7 +43,7 @@ namespace IdleFactory.Unity.UI
             Responses++;
             LastKind = kind;
             var sink = Effects;
-            if (sink != null && !Reduced)
+            if (sink != null && !Reduced && sink.CanSpawn(kind))
             {
                 LastWasWorldEffect = true;
                 sink.Spawn(kind, location);
