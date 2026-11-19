@@ -300,6 +300,19 @@ namespace IdleFactory.Unity.UI
             }
 
             var changed = dirty || structureRevision != session.StructureRevision || quantityRevision != session.QuantityRevision;
+            if (changed && !dirty && structureRevision == session.StructureRevision && factory != null && machine != null)
+            {
+                // C-41 (T560, T531 measurement): a quantity-only change (production, a sale) rebuilt the factory and rates snapshots every frame, about 400 allocations.
+                // The card shows only the upgrade shortfall (Cash) and the machine's state and cause, so rebuild only when one of those changed; the model still reads
+                // the live machine states every frame.
+                quantityRevision = session.QuantityRevision;
+                RefreshModel();
+                if (QuantityKey(session.ReadCash()) == quantityKey)
+                {
+                    return;
+                }
+            }
+
             if (changed)
             {
                 dirty = false;
@@ -313,6 +326,48 @@ namespace IdleFactory.Unity.UI
             if (changed)
             {
                 Render();
+                quantityKey = QuantityKey(session.ReadCash());
+            }
+        }
+
+        private ulong quantityKey;
+
+        /// <summary>Everything the card derives from quantities: the upgrade shortfall at four significant digits, the visual state and the limiting cause.</summary>
+        private ulong QuantityKey(long cash)
+        {
+            unchecked
+            {
+                var key = 14695981039346656037UL;
+                var next = machine?.NextUpgrade;
+                if (next != null && next.Available)
+                {
+                    var need = next.Cost - cash;
+                    ulong part = 0;
+                    if (need > 0)
+                    {
+                        long step = 1;
+                        ulong exponent = 1;
+                        while (need / step >= 10000)
+                        {
+                            step *= 10;
+                            exponent++;
+                        }
+
+                        part = (ulong)(need / step) * 64UL + exponent;
+                    }
+
+                    key = (key ^ part) * 1099511628211UL;
+                }
+
+                if (machine != null && slot >= 0)
+                {
+                    var presentation = model.Get(new BuildingLocationId(slot));
+                    key = (key ^ (ulong)(int)presentation.VisualState) * 1099511628211UL;
+                    key = (key ^ (ulong)(int)presentation.LimitingCause) * 1099511628211UL;
+                    key = (key ^ (ulong)(presentation.LimitingResourceId == null ? 0 : presentation.LimitingResourceId.GetHashCode())) * 1099511628211UL;
+                }
+
+                return key;
             }
         }
 

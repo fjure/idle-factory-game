@@ -748,6 +748,32 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(card.CauseLabel.tooltip, Is.EqualTo(AttentionModel.ShortOnCopy("Iron Ore") + ". " + MachineCardCopy.CauseDetail(expected)));
         }
 
+        // C-41 (T560, T531): with the machine card open on a running factory, quantity changes rebuild no snapshot: 600 frames allocate nothing.
+        [UnityTest]
+        public IEnumerator ARunningFactoryWithTheMachineCardOpenAllocatesNothingOver600Frames()
+        {
+            yield return Make(PhoneScreen(), 100, RunShellFixtures.ComfortableCash * 4, unlockEverything: true, level: 2);
+            h.Build(0, "machine.miner");
+            h.Build(1, "machine.miner");
+            yield return h.OpenCard(0);
+            for (var warm = 0; warm < 30; warm++)
+            {
+                h.Session.Advance(100L * RunSession.TicksPerMs);
+                h.Shell.RefreshCard();
+            }
+
+            var revisionBefore = h.Session.QuantityRevision;
+            var allocations = 0;
+            for (var frame = 0; frame < 600; frame++)
+            {
+                h.Session.Advance(100L * RunSession.TicksPerMs);
+                allocations += GcAllocationCounter.Count(() => h.Shell.RefreshCard());
+            }
+
+            Assert.That(h.Session.QuantityRevision, Is.GreaterThan(revisionBefore), "the quantities changed during the window");
+            Assert.That(allocations, Is.Zero, "the open machine card rebuilds nothing while only quantities change");
+        }
+
         // C-29 (T560): ProductionPerMinuteMicro is the steady-state rate of the ACTIVE makers assuming their own inputs (RunSnapshots, "a blocked machine still
         // counts"), not an effective delivered rate. A press whose smelter exists but is itself starved therefore reads "Makers cannot keep up", never "No machine
         // makes it": the maker is there and not delivering. NoSource is reserved for an input nothing active makes.
