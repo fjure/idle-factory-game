@@ -133,7 +133,7 @@ Rows N-01 to N-25 are as first recorded in T547; N-26 to N-46 were added by the 
 | N-14 | That location is not unlocked yet. | `UI/Panels/BuildCard.cs:19` | Build card notice | CONFORMS |
 | N-15 | Selected: {type} at location {n}; Build at location {n} | `UI/Panels/BuildCard.cs:22,25` | Build card | CONFORMS (the model for CF-2) |
 | N-16 | Need ${x} more | `UI/Panels/BuildCard.cs:28` | Build card | CONFORMS |
-| N-17 | Cost: ...; Affordable; {n} free location(s) are outlined. | `UI/Panels/BuildCard.cs:314,335,348,363,395` | Build card rows and tooltips | CONFORMS |
+| N-17 | Cost: ...; Affordable; {n} free location(s) are outlined. | `UI/Panels/BuildCard.cs:314,335,348,363,393-432` (range extended at the T560 re-read) | Build card rows and tooltips | CONFORMS |
 | N-18 | Price changed to ${x}. You were not charged. | `UI/Panels/BuildCard.cs:589` | Build card notice | CONFORMS |
 | N-19 | Something went wrong; The Office could not read the factory. Try again.; Nothing here yet | `UI/Panels/HubPanel.cs:419-427` | Hub error and empty states | CONFORMS |
 | N-20 | No system is available right now. | `UI/Panels/HubPanel.cs:428` | Hub empty state | CHANGE (CF-4): `Nothing is available in the Office right now.` |
@@ -171,6 +171,7 @@ Rows N-01 to N-25 are as first recorded in T547; N-26 to N-46 were added by the 
 | N-44 | Goal line: Factory Sale available; All goals reached; The goal line is not available for this run.; Next goal ...; Exact value; Goal reached ...; contract feed: Auto-delivered ...; Produced ...: contract complete; +$, RP, Item(s) | `UI/Panels/GoalsLinePanel.cs:29-221`; `UI/ContractsShellFeed.cs:179-213` | Goal line and contract notices | CONFORMS |
 | N-45 | Back; Loading; Something went wrong; Retry; Notice: {text}, Warning: {text}, Error: {text}; Dismiss; Dismiss notice; Unavailable: {reason} | `UI/PanelScaffold.cs:95,200,209,225,228,229,278,296,297`; `UI/PanelScaffold.uxml:4` | Panel scaffold | CONFORMS |
 | N-46 | The factory is starting.; HUD unavailable | `UI/CoreGameFoundation.uxml:6`; `Presentation/FactoryHudDocument.cs:101,236` | Startup HUD status and its fallback label | CONFORMS |
+| N-47 | Selected | `UI/Panels/BuildCard.cs:18,393,412-413,432` (T560) | Build card type row status; the spoken form is the reason text | CONFORMS |
 
 ### Rows already owned above, verified in the shipped source
 
@@ -205,6 +206,8 @@ Owner: the feature of origin (F001 to F005) for wording; the World Designer for 
 | L-12 | `UI/ShellPanelRegistry.cs`, `UI/Panels/ScaffoldEmpty.cs`, `UI/OreVeinControl.cs`, `UI/RunOreVeinSource.cs`, `UI/MilestoneBanner.cs`, `UI/QuantityFormatter.cs` | Only identifiers, formats and the strings already in N-rows. |
 
 ### Class D: not player-visible (no ownership row needed)
+
+Added at the T560 re-read (QA W-1, C-71): `Presentation/FactoryCameraController.cs`, `Presentation/GridWorldMapper.cs`, `Presentation/StateCueSet.cs` (exception messages and key constants) and `Presentation/World/AttentionMarkerView.cs` (GameObject names, exception message, sprite key) are class D, whole file.
 
 Developer diagnostics and identifiers, outside tone and vocabulary rules: HUD and shell setup errors (`Presentation/FactoryHudDocument.cs:51,68,74,93`; `UI/RunShellDocument.cs:416-507` `Fail(...)`), validator "problems" text (`FactoryWorldLayout.cs`, `WorldCompositionSettings.cs`), log lines (`CameraScaleModel.cs`, `ShellPanelScale.cs`, `ShellDeviceProfile.cs`), `ToString` overrides (`DevelopmentStage.cs`, `MilestoneWatcher.cs`, `BuildingLocationId.cs`, `DeckPlan.cs`), GameObject and sorting-layer names, sprite keys (`PresentationSpriteCatalog.cs`, `F006-*`, `F003-*`), USS class names, reason codes (`slot.occupied`), and the badge text cues in N-35.
 

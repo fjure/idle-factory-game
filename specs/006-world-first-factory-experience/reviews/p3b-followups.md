@@ -217,3 +217,18 @@ Owner decisions 2026-11-19 (through the coordinating session):
 | C-70 | T541 QA | `F006Autosave` restore check can pass against an unchanged periodic file (require a newer generation or check the screenshot); every tap fraction is provisional; landscape zoom and card-column fractions unconfirmed; `-ZoomPrefTaps` from the Settings screenshot. | T542 |
 | C-71 | T547 QA W-1..W-3 | Name FactoryCameraController, GridWorldMapper, StateCueSet and AttentionMarkerView in class D; the coverage extraction script is not committed; L-rows are term-swept only. | World Designer re-read after T560 |
 | C-72 | T560 worker | `ProductionPerMinuteMicro` is the potential rate of active makers, not the effective rate: a starved smelter reads "Makers cannot keep up" (C-29). Semantics unchanged, pinned by a test. | Record |
+
+## T560 (pre-T542 polish)
+
+| Task | Issue | PR | Commit | QA | Reviews |
+|---|---|---|---|---|---|
+| T560 | #776 | #780 | `38ff7cc` (fix round on `137da8e`) | PASS: Edit Mode 3167/3167, Play Mode 3483/3483, Windows player 82/82, settings noise OK (first round 137da8e also passed: PM 3471) | Software Architect APPROVE_WITH_NOTES; UI/UX with Art Director ACCEPT_WITH_NOTES; World Designer re-read CONFORMS (Part 3) |
+
+Done: CF-2..CF-5, B-4 (visible second cause line), B-6, C-28 (guard now covers the Details sheet), C-39 (LayoutId compare, 0.3 s safety net), C-41 for BuildCard and MachineCard (600-frame zero-allocation tests), C-54, C-64, C-51 (queue), C-52 (documented), C-44 (dim tint), C-47, C-57 store-full icon, B-1 audit (27 sites, all reachable), C-4, C-22, C-7, B-3, B-15, B-16, C-35, C-40, C-48, C-55 (offline return), doc fix. Owner-accepted behaviours are listed in the batch-6 section above.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-73 | T560 partial | C-59: "Overdrive Ready" clip at 360x640/200 % and "Research" break at 844x390; C-60: ~120 px recentre on build-card hand-over; C-57: shortage marker generic arrow (no code path found). Device checks D1-D9 in the T560 UI/UX review. | T542 (device sweep); final T543 |
+| C-74 | T560 not done | C-65 StandalonePlayer two-write autosave test (no player-compatible RunPersistence rig); C-53 `DeckPlanner.Build` undressed-path assert (first Refresh is legitimately undressed; needs bootstrap ordering); C-55 real prestige banner end-to-end test; B-13 duplicate PanelScaffold sheet (per-card `styleSheets.Add`) and B-14 shim (production callers remain). | Later task (refactor/test debt); C-65 also T544 device evidence |
+| C-75 | UI/UX + Art Director N1, N3, N4 | Store-full marker draws the 24 px storage icon at 22 px (0.917x, non-integer; shimmer risk): author a 22/23 px marker sprite (art task). Dim tint 0.5 makes occupied plates almost `floor_1`; consider 0.6 after the device look. "it." widow in the side-panel hint and the four F004-B2 baselines. | Final T543 (D4, D5); later art task |
+| C-76 | Architect 1d, 2b, 2c, 3c, 5c | Stale ShellNavigationStack docs; MachineCard cause and rates refresh only on state, shortfall or completion change (rate-only change lags); the card's CompletionsDelta written in a rebuild frame is lost (no production reader); no bootstrap-level cold-start test beyond T560's C-60 case; confirm `familyFpsCaps` 8 equals the old class default. | T542 notes; later |
