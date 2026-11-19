@@ -169,3 +169,14 @@ Owner decision 2026-11-18: fix before batch D through T558 (U-C1/C-F5 depot fram
 | C-60 | UI/UX U-C6, U-C7, U-C8; Play-Tester C-F7, C-F10, C-F11 | Mine button overlaps lattice slots while a card is open; stale idle hint under the tablet build card; after Expand factory the first Back left Market open; a 9 s gap shows a full Welcome back modal; the world recentres about 120 px on build-card hand-over. | T547; T542 |
 | C-61 | UI/UX U-C12, Play-Tester C-F6 | Hard-edged deck rectangle with about 13 % black above it. | Art Director; owner |
 | C-62 | Both reports, not covered | TalkBack and accessible names (Android tree is one SurfaceView), Windows player, prestige banner, offline milestone line, build dust and hand-over on device, second shortage marker (rank 0 possibly off screen right), 150 % text. Build note: delete `Library/Bee/Android` before a gate APK build (stale Gradle intermediate gave a hanging 64 MB APK). | T542; final T543 gate |
+
+## T558 (batch-C gate fixes)
+
+| Task | Issue | PR | Commit | QA | Reviews |
+|---|---|---|---|---|---|
+| T558 | #771 | #773 | `0cdc8a7` | PASS: Edit Mode 3127/3127, Play Mode 3439/3439, settings noise OK (first round 1758b0b also PASS) | Architect APPROVE_WITH_NOTES (fix-now C-F2 round trip done); UI/UX + Art Director ACCEPT_WITH_NOTES |
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-63 | UI/UX + AD F3, F4, F5 | Machine hit area at n = 3 (cell about 27 pt) against 48 dp; banner at exactly 20.0 % on 640 x 360 / 200 %; whether the hidden second banner line reaches the screen reader. Device checks. | final T543 gate; T542 |
+| C-64 | Architect 2, QA 3, 4 | `FitBounds`/`ViewBounds` computed twice per frame (cache); `SlotGridTests` fit expectation mirrors the production tier formula; no test asserts B-04 in the offline summary; the lazily created `RunViewportDriver` would be stale if the camera controller were replaced. | T542; T547 |
