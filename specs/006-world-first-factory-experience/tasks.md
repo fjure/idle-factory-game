@@ -69,6 +69,7 @@ description: "Dependency-ordered implementation work for the World-First Factory
 | T531, T544 | new | unity, emulator, gpu | B4a and B4b |
 | T541 | new | none | Emulator script changes (validated without an emulator) |
 | T542, T543, T545 | new | unity, emulator | Full verification, Play-Tester, trial captures |
+| T560 | new | unity, emulator | Pre-T542 polish (owner decision 2026-11-19) |
 
 ---
 
@@ -162,7 +163,7 @@ Ledger convention:
 - Every prerequisite names an earlier unit.
 - The Tasks column is the only mapping between units and tasks.
 
-Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
+Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units; 61 after the owner-added T555–T560).
 
 | Unit | Phase | Tasks | Atomic scope and touched paths | Prerequisites | Required handoff sources | Parent verification |
 |------|-------|-------|--------------------------------|---------------|--------------------------|---------------------|
@@ -216,16 +217,17 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 | WU48 | Phase 9: User Story 5 — Building and progress feel rewarding (P2, phase P3) | T558 | Gate-C fix pass (U-C1 depot framing, C-F2 rotation re-fit, C-F1 compact banner): `Assets/IdleFactory/Unity/UI/RunShellDocument*.cs`, `MilestoneBanner.cs`, `FactoryRun.uss`, camera fit code, PlayMode tests, `contracts/ui-surfaces-f006.md` | WU46, WU47 | spec.md US1, US5, FR-007, FR-032, FR-035; contracts/ui-surfaces-f006.md §1, §5; reviews/direction.md OD-9b; reviews/uiux-f006-C.md, reviews/playtest-agent-f006-C.md, reviews/p3b-followups.md | `scripts/test-unity.ps1` both suites (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
 | WU49 | Phase 9: User Story 5 — Building and progress feel rewarding (P2, phase P3) | T559 | Periodic autosave: `Assets/IdleFactory/Core/Run/Application/RunPersistence*.cs`, run lifecycle host, tests | WU43 | spec.md FR-003, FR-045; constitution persistence rules; reviews/playtest-agent-f006-C.md (U-B13) | `scripts/test-unity.ps1` both suites (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit. |
 | WU50 | Phase 10: Verification and evidence (phase P4) | T541 | `scripts/android-emulator-journey.ps1` | WU44 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
-| WU51 | Phase 10: Verification and evidence (phase P4) | T542 | `scripts/test-art-pipeline.ps1`, `scripts/android-emulator-journey.ps1`, `reviews/baseline.md`, `reviews/final-test-evidence.md`, `test-rebaseline.md` | WU42, WU44, WU43, WU46, WU47, WU50, WU35, WU31, WU48, WU49 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
-| WU52 | Phase 10: Verification and evidence (phase P4) | T543 | `specs/006-world-first-factory-experience/reviews/` | WU37, WU44, WU47, WU51, WU31 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
-| WU53 | Phase 10: Verification and evidence (phase P4) | T544 | `reviews/performance-b4.md` | WU51 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
-| WU54 | Phase 10: Verification and evidence (phase P4) | T545 | `tools/art-pipeline/trials/f006/` | WU44, WU47 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
-| WU55 | Phase 10: Verification and evidence (phase P4) | T546 | Parent-only. `reviews/readability-f006.md` | WU54 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
-| WU56 | Phase 10: Verification and evidence (phase P4) | T547 | Read-only review. `reviews/world-bible-conformance.md` | WU44, WU47 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Review record exists at the named path with verdicts and findings; the reviewer is a fresh session and not the producer; no code diff. |
-| WU57 | Phase 10: Verification and evidence (phase P4) | T548 | Read-only review. `specs/006-world-first-factory-experience/reviews/final-acceptance.md` | WU51, WU52, WU53, WU54, WU55, WU56 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Review record exists at the named path with verdicts and findings; the reviewer is a fresh session and not the producer; no code diff. |
-| WU58 | Phase 10: Verification and evidence (phase P4) | T549 | Parent-only. `reviews/final-acceptance.md` | WU57 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
-| WU59 | Phase 11: Closeout hooks and convergence (parent) | T550 | Parent-only. `specs/006-world-first-factory-experience/tasks.md`, `specs/006-world-first-factory-experience/learn.md`, `wiki/` | WU58 | AGENTS.md (MAQA lane, after_implement hooks); quickstart.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
-| WU60 | Phase 11: Closeout hooks and convergence (parent) | T551 | Parent-only. `scripts/maqa-stale-worktrees.ps1` | WU59 | AGENTS.md (MAQA lane, after_implement hooks); quickstart.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU51 | Phase 10: Verification and evidence (phase P4) | T547 | Read-only review. `reviews/world-bible-conformance.md` | WU44, WU47 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Review record exists at the named path with verdicts and findings; the reviewer is a fresh session and not the producer; no code diff. |
+| WU52 | Phase 10: Verification and evidence (phase P4) | T560 | Pre-T542 polish: T547 string changes and the code carries named for T542/T547 in `reviews/p3b-followups.md`: `Assets/IdleFactory/Unity/UI/`, `Assets/IdleFactory/Unity/Presentation/`, `Assets/IdleFactory/Unity/Bootstrap/`, `Assets/IdleFactory/Unity/Editor/F006SceneWiring.cs`, `reviews/world-copy.md`, Edit/Play Mode tests | WU48, WU49, WU51 | spec.md FR-007–FR-010, FR-025–FR-036, FR-047, SC-008; reviews/p3b-followups.md; reviews/world-bible-conformance.md (Part 2); reviews/uiux-f006-C.md; reviews/playtest-agent-f006-C.md; contracts/ui-surfaces-f006.md | `scripts/test-unity.ps1` both suites (recompile first, total > 0); `scripts/check-settings-noise.ps1 -Commit <sha>`; diff limited to the listed paths; independent QA PASS on the exact commit; UI/UX review. |
+| WU53 | Phase 10: Verification and evidence (phase P4) | T542 | `scripts/test-art-pipeline.ps1`, `scripts/android-emulator-journey.ps1`, `reviews/baseline.md`, `reviews/final-test-evidence.md`, `test-rebaseline.md` | WU42, WU44, WU43, WU46, WU47, WU50, WU35, WU31, WU48, WU49, WU52 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU54 | Phase 10: Verification and evidence (phase P4) | T543 | `specs/006-world-first-factory-experience/reviews/` | WU37, WU44, WU47, WU53, WU31 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU55 | Phase 10: Verification and evidence (phase P4) | T544 | `reviews/performance-b4.md` | WU53 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | diff inspection against the listed paths plus the closest validation named in the task; diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU56 | Phase 10: Verification and evidence (phase P4) | T545 | `tools/art-pipeline/trials/f006/` | WU44, WU47 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | `powershell -NoProfile -File scripts/test-art-pipeline.ps1` exit 0 (3 = blocker); diff limited to the listed paths; independent QA PASS on the exact commit. |
+| WU57 | Phase 10: Verification and evidence (phase P4) | T546 | Parent-only. `reviews/readability-f006.md` | WU56 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU58 | Phase 10: Verification and evidence (phase P4) | T548 | Read-only review. `specs/006-world-first-factory-experience/reviews/final-acceptance.md` | WU53, WU54, WU55, WU56, WU57, WU51 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Review record exists at the named path with verdicts and findings; the reviewer is a fresh session and not the producer; no code diff. |
+| WU59 | Phase 10: Verification and evidence (phase P4) | T549 | Parent-only. `reviews/final-acceptance.md` | WU58 | spec.md Success Criteria; research.md R16, R18, R19; quickstart.md; reviews/baseline.md; wiki/pages/f005-batch-d-journeys.md, android-emulator-validation.md, unity-player-validation.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU60 | Phase 11: Closeout hooks and convergence (parent) | T550 | Parent-only. `specs/006-world-first-factory-experience/tasks.md`, `specs/006-world-first-factory-experience/learn.md`, `wiki/` | WU59 | AGENTS.md (MAQA lane, after_implement hooks); quickstart.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
+| WU61 | Phase 11: Closeout hooks and convergence (parent) | T551 | Parent-only. `scripts/maqa-stale-worktrees.ps1` | WU60 | AGENTS.md (MAQA lane, after_implement hooks); quickstart.md | Parent records the decision or gate result with date and evidence links; diff limited to the named records. |
 
 ## Phase 1: Setup and gates
 
@@ -796,11 +798,11 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Validation**: without an emulator (parsing, unknown step, lease conflict).
   - **Resources**: none.
   - **Covers**: SC-007, SC-009; research R19.
-- [ ] T542 Test/QA, after T536–T541, T556, T557, T558 and T559.
+- [ ] T542 Test/QA, after T536–T541, T556, T557, T558, T559 and T560.
   - **Suites**: full Edit Mode and Play Mode with the test manifest, then `scripts/test-unity.ps1 -StandaloneWindowsPlayer` with every F006 `StandalonePlayer` case.
   - **Checks**: console, `scripts/test-art-pipeline.ps1` and `scripts/check-settings-noise.ps1 -Commit <sha>`.
   - **Emulator**: `scripts/android-emulator-journey.ps1` for all retargeted scenarios plus `-Scenario F006`.
-  - **Manual input**: the real-input checklist on the Windows player (hub, card, build card, Back) via user32 input.
+  - **Manual input**: not covered (owner decision 2026-11-19: no host input injection). Record the real-input checklist on the Windows player (hub, card, build card, Back) as not covered; the emulator/adb coverage stays.
   - **Fixtures**: save fixtures before F006 load and re-save byte-identically; the balance trace is unchanged.
   - **Guidance re-run**: re-run `InteractionCountJourney` and the `ShellGeometryProbe` (SC-001, SC-002, SC-003, SC-010) on the final build. Record before→after in `reviews/baseline.md`.
   - **Record**: `reviews/final-test-evidence.md` and the completed `test-rebaseline.md`.
@@ -836,6 +838,13 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
   - **Record**: `reviews/world-bible-conformance.md` (final): zero conflicts and no unowned string.
   - **Resources**: none.
   - **Covers**: FR-047, SC-013.
+- [ ] T560 UI/UX Developer with Gameplay Developer (Software Architect and Test/QA lenses), after T547, T558 and T559. Added 2026-11-19 by the owner decision on the batch-6 scope: the carries named for T542 (Test/QA) and T547 (read-only World Designer) need an implementer, so T542 only verifies.
+  - **Copy**: apply every string change that the T547 conformance record (Part 2) proposes, including B-4/C-29 cause lines, B-11 Overdrive locked copy, C-56 B-01s and the B-6 Close accessible name.
+  - **Carries**: the code items in `reviews/p3b-followups.md` carried by T542 or T547 that are fixes rather than verification, among them B-1, B-13, B-14, B-15, B-16, C-4, C-7, C-22, C-30, C-39, C-40, C-41, C-47, C-48, C-52, C-53, C-54, C-57, C-58, C-59, C-60 and C-64. The parent assignment lists the final set; an item left out is recorded with a reason.
+  - **Constraints**: no camera, fit or column assertion is relaxed (OD-9b C1); no per-frame allocation on the steady path (SC-008); scenes change only through Unity tooling, with a real-scene test for anything wired.
+  - **Tests**: Edit Mode and Play Mode cases per fixed item; full suites green.
+  - **Resources**: unity, emulator.
+  - **Covers**: FR-007–FR-010, FR-025–FR-036, FR-047, SC-008.
 - [ ] T548 Independent read-only final reviews, after T542–T547:
   - Game Designer/PO;
   - Software Architect;
@@ -936,7 +945,8 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units).
 - T556 needs T527 (owner decision 2026-11-17, cue contrast gate).
 - T557 needs T532 and T528 (owner decision 2026-11-18, attention marker wiring); it merges before the T543 batch-C gate.
 - T558 needs T539 and T540; T559 needs T538 (owner decision 2026-11-18 on the T543 batch-C gate). Both merge before batch D.
-- T542 needs T536–T541, T556, T557, T558 and T559.
+- T560 needs T547, T558 and T559 (owner decision 2026-11-19: pre-T542 polish).
+- T542 needs T536–T541, T556, T557, T558, T559 and T560.
 - T543 runs once per P3 batch and finally after T542.
 - T544 needs T542.
 - T545 needs T537 and T540, then T546.
