@@ -103,3 +103,52 @@ Player-facing strings changed in T555 (#760), the gate-B fixes. Both are in code
 
 - Hub Contracts row while no contract offer is unlocked and none is active: "Locked: unlocks after <condition>" (the condition in the shared `UnlockCopy` wording, for example "Locked: unlocks after you produce Iron Plate or Gear or Iron Bar"); with no offers in the catalog: "Locked: unlocks after you build more of the factory". It replaces "Nothing ready to deliver", which stays for an unlocked, idle Contracts system. The row's accessible name carries the status, so it names the lock.
 - Research view: no new copy. The existing hint "Scroll sideways to see more Research." moved above the graph, and the graph edge cue is an arrow glyph (no words).
+
+## 7. Shipped-string ownership and disposition (T547, final, `b44b87d`)
+
+Owner of every row: the World Designer (tone and vocabulary), UI/UX (fit), the assigned worker (wiring). Strings from F001 to F005 that no F006 surface changed stay under their feature and are checked only against the vocabulary rules (class L). Verdicts follow [world-bible-conformance.md](world-bible-conformance.md) Part 2. "CHANGE" rows list the exact new text there; they stay open until applied.
+
+| Row | String (shipped) | File:line | Surface | Verdict |
+|---|---|---|---|---|
+| N-01 | Milestone reached. | `UI/MilestoneCopy.cs:35` | Banner fallback on a copy gap only | CONFORMS |
+| N-02 | Short on an input | `UI/MachineCard.cs:74` | Card cause line, no limiting resource | CONFORMS |
+| N-03 | Store is full | `UI/MachineCard.cs:71` | Card cause line | CONFORMS_WITH_CONDITIONS (CF-1) |
+| N-04 | The finished cycle cannot be delivered yet | `UI/MachineCard.cs:72` | Card cause line | CONFORMS |
+| N-05 | Switch it on in Details | `UI/MachineCard.cs:73` | Card cause line | CONFORMS |
+| N-06 | Cause detail: Auto-sell is selling it; No machine makes it; The store is full, so its makers cannot deliver; Its makers are not keeping up | `UI/MachineCard.cs:88-91` | Card cause line (B-4) | CHANGE: the last two become `Store full, so makers cannot deliver` and `Makers cannot keep up`; shown as a visible second line |
+| N-07 | Close (visible) and its accessible name | `UI/MachineCard.cs:77,193,202`; `UI/RunShellDocument.cs:2935` | Card and sheet Close | CHANGE (B-6): accessible names `Close machine card` and `Close panel` |
+| N-08 | Details | `UI/MachineCard.cs:78` | Card button | CONFORMS |
+| N-09 | That machine is gone. | `UI/MachineCard.cs:75` | Notice | CONFORMS |
+| N-10 | Confirm; Cancel | `UI/Panels/BuildCard.cs:14,15` | Build card | CONFORMS |
+| N-11 | No machine types are unlocked yet. | `UI/Panels/BuildCard.cs:16` | Build card empty state | CONFORMS |
+| N-12 | You cannot afford a machine yet. Earn Cash, then build here. | `UI/Panels/BuildCard.cs:17` | Build card empty state | CONFORMS |
+| N-13 | That location is no longer free. | `UI/Panels/BuildCard.cs:18` | Build card notice | CONFORMS |
+| N-14 | That location is not unlocked yet. | `UI/Panels/BuildCard.cs:19` | Build card notice | CONFORMS |
+| N-15 | Selected: {type} at location {n}; Build at location {n} | `UI/Panels/BuildCard.cs:22,25` | Build card | CONFORMS (the model for CF-2) |
+| N-16 | Need ${x} more | `UI/Panels/BuildCard.cs:28` | Build card | CONFORMS |
+| N-17 | Cost: ...; Affordable; {n} free location(s) are outlined. | `UI/Panels/BuildCard.cs:314,335,363` | Build card rows and tooltip | CONFORMS |
+| N-18 | Price changed to ${x}. You were not charged. | `UI/Panels/BuildCard.cs:589` | Build card notice | CONFORMS |
+| N-19 | Something went wrong; The Office could not read the factory. Try again.; Nothing here yet | `UI/Panels/HubPanel.cs:419-427` | Hub error and empty states | CONFORMS |
+| N-20 | No system is available right now. | `UI/Panels/HubPanel.cs:428` | Hub empty state | CHANGE (CF-4): `Nothing is available in the Office right now.` |
+| N-21 | • Attention; Needs attention; Unavailable: {reason} | `UI/Panels/HubPanel.cs:511,648,652` | Hub rows | CONFORMS |
+| N-22 | Hub status lines: Store {n}% full; {n} owned; RP {n}; Ready; On, m:ss left; Cooling down; Locked; Not ready yet: needs Factory Value {x}; Display and comfort; Not available right now; ready to deliver; Nothing ready to deliver | `UI/Panels/HubPanel.cs:545-637` | Hub rows | CONFORMS_WITH_CONDITIONS (the "Store" term, CF-1); "This system could not be opened" at `:637` is CF-4 |
+| N-23 | Hub card title "Prestige" | `UI/Panels/HubPanel.cs:39` | Hub row | CHANGE (CF-3): `Factory Sale` |
+| N-24 | Show zoom buttons | `UI/Panels/Settings/SettingsPanelPresenter.cs:24` | Settings (P2-F20) | CONFORMS |
+| N-25 | Adds zoom buttons to the factory view. Pinch zoom still works. | `UI/Panels/Settings/SettingsPanelPresenter.cs:25` | Settings | CONFORMS |
+
+### Rows already owned above, verified in the shipped source
+
+| Row | Shipped at | Verdict |
+|---|---|---|
+| H-02 Office | `UI/Panels/HubPanel.cs:30` | CONFORMS; always shown beside the glyph in captures c07, c17, c23. |
+| B-01, B-01s, B-02, B-03, B-04 | `UI/MilestoneCopy.cs:38-42` | CONFORMS. B-01s is confirmed and promoted from draft to `F006-WB v0.1` copy (T547, C-56). |
+| T537 hub accessible name "Office, N systems need attention" | `UI/RunShellDocument.Hub.cs:81` | CHANGE (CF-4): `Office, N need attention` (`Office, 1 needs attention`). |
+| T537 attention accessible name "Short on <resource>, N machines, M more causes. Select the first one." | `UI/PersistentLayer.cs:184-187` | CONFORMS. |
+| T537 "Overdrive is not unlocked yet" and "Locked: not unlocked yet." | `UI/Panels/HubPanel.cs:610`; `UI/UnlockCopy.cs:111` | CHANGE (CF-5): `Overdrive is locked.` and `Locked.` |
+| T555 hub Contracts "Locked: unlocks after <condition>" | `UI/Panels/HubPanel.cs:477,563,564` | CONFORMS (captured, c07). |
+| T537 "Contracts are locked", Items empty state, "Nothing here yet" | `UI/Panels/ScaffoldEmpty.cs:13` and the panels | CONFORMS. |
+| G-01 to G-03, D-01 to D-03, S-01, S-02 | no build string | Not shipped; unchanged; no text in the world. |
+
+### Vocabulary changes owed (not new rows)
+
+"Slot" to "location" on 15 player-visible sites, and the "Store" term decision, are listed with exact old and new text in Part 2 of the conformance review (CF-2 and CF-1). Class L strings that stay: Cash, Store (pending CF-1), Contracts, Market, Research, Industry, Overdrive, Items, Mining, Mine, Max rate, Welcome back, Settings, Reduced motion, and the F001 to F005 notice, rejection and offline-summary sentences not listed in CF-2 to CF-5.
