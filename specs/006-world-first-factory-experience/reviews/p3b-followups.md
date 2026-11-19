@@ -180,3 +180,17 @@ Owner decision 2026-11-18: fix before batch D through T558 (U-C1/C-F5 depot fram
 |---|---|---|---|
 | C-63 | UI/UX + AD F3, F4, F5 | Machine hit area at n = 3 (cell about 27 pt) against 48 dp; banner at exactly 20.0 % on 640 x 360 / 200 %; whether the hidden second banner line reaches the screen reader. Device checks. | final T543 gate; T542 |
 | C-64 | Architect 2, QA 3, 4 | `FitBounds`/`ViewBounds` computed twice per frame (cache); `SlotGridTests` fit expectation mirrors the production tier formula; no test asserts B-04 in the offline summary; the lazily created `RunViewportDriver` would be stale if the camera controller were replaced. | T542; T547 |
+
+## T559 (periodic autosave)
+
+| Task | Issue | PR | Commit | QA | Reviews |
+|---|---|---|---|---|---|
+| T559 | #772 | #774 | `7ee8d74` | PASS: Edit Mode 3161/3161, Play Mode 3445/3445, targeted persistence rerun green, settings noise OK (first round 4f5b5ef also PASS) | Software Architect (High tier, concurrency) APPROVE_WITH_NOTES (fix-now F1 done); Security/Privacy ACCEPT_WITH_NOTES |
+
+As built: `AutosavePolicy` (30 s interval, 2 s spacing after a structural change, full-interval backoff after a failure) in the Application layer; `RunPersistence.AutosaveWhenDue` writes only while Running with no pending prestige; the main thread captures and serializes (about 0.12 ms on the dev host) and a pool thread publishes through the optional `IRunCheckpointBackgroundPromoter` under the store's operation gate (about 30 ms of file IO); one write in flight, every other persistence access joins it first; same Save V3 format and generation protocol. A kill without a pause callback restores the last periodic checkpoint and credits the absence once.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-65 | Architect F2, QA | No IL2CPP/Android coverage of the pool thread: add a `[Category("StandalonePlayer")]` two-write case and confirm a periodic checkpoint in the F006 emulator journey (force-stop after more than 30 s). Main-thread cost measured on the Windows host only. | T542; T544 |
+| C-66 | Architect F6, Security | Write rate during build bursts (up to about 30 writes per minute, five flushed files each) and flash wear (about 120 writes per hour while the run changes); measure frame time and IO on the emulator. The `mainMedian < 8 ms` assertion is wall-clock based. | T544 |
+| C-67 | Architect F7, Security N3/N4 | The interval is a code default (`AutosavePolicy.DefaultIntervalMs`), not a run setting as the task text says; PO to confirm. The operation gate is held for about 30 ms of IO, so a command in that window waits. Diagnostics listeners can now run on a pool thread. Wiki `run-persistence.md` and `desktop-focus-lifecycle.md` ("no periodic autosave") are stale: update at the batch ingest. | owner (interval); wiki ingest; T547 |
