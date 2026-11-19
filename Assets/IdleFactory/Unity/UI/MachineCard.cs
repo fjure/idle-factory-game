@@ -43,7 +43,7 @@ namespace IdleFactory.Unity.UI
             Responses++;
             LastKind = kind;
             var sink = Effects;
-            if (sink != null && !Reduced)
+            if (sink != null && !Reduced && sink.CanSpawn(kind))
             {
                 LastWasWorldEffect = true;
                 sink.Spawn(kind, location);
@@ -75,6 +75,7 @@ namespace IdleFactory.Unity.UI
         public const string Gone = "That machine is gone.";
         public const string MaxLevel = "Maximum level";
         public const string CloseName = "Close";
+        public const string CloseAccessibleName = "Close machine card";
         public const string DetailsName = "Details";
 
         /// <summary>
@@ -87,8 +88,8 @@ namespace IdleFactory.Unity.UI
             {
                 case MissingInputCause.AutoSold: return "Auto-sell is selling it";
                 case MissingInputCause.NoSource: return "No machine makes it";
-                case MissingInputCause.StoreFull: return "The store is full, so its makers cannot deliver";
-                case MissingInputCause.SourceTooSlow: return "Its makers are not keeping up";
+                case MissingInputCause.StoreFull: return "Store full, so makers cannot deliver";
+                case MissingInputCause.SourceTooSlow: return "Makers cannot keep up";
                 default: return null;
             }
         }
@@ -190,7 +191,7 @@ namespace IdleFactory.Unity.UI
             DetailsButton.clicked += OnDetailsClicked;
             CloseButton.clicked += OnCloseClicked;
             DetailsButton.tooltip = MachineCardCopy.DetailsName;
-            CloseButton.tooltip = MachineCardCopy.CloseName;
+            CloseButton.tooltip = MachineCardCopy.CloseAccessibleName;
             var closeSprite = icons != null ? icons("F003-UI-ICON-CLOSE") : null;
             if (closeSprite != null)
             {
@@ -299,6 +300,27 @@ namespace IdleFactory.Unity.UI
             }
 
             var changed = dirty || structureRevision != session.StructureRevision || quantityRevision != session.QuantityRevision;
+            if (changed && !dirty && structureRevision == session.StructureRevision && factory != null && machine != null)
+            {
+                // C-41 (T560, T531 measurement): a quantity-only change (production, a sale) rebuilt the factory and rates snapshots every frame, about 400 allocations.
+                // The card shows only the upgrade shortfall (Cash) and the machine's state and cause, so rebuild only when one of those changed; the model still reads
+                // the live machine states every frame.
+                quantityRevision = session.QuantityRevision;
+                statesCount = session.CopyMachineStates(states);
+                if (statesCount > states.Length)
+                {
+                    states = new MachineStateView[statesCount];
+                    statesCount = session.CopyMachineStates(states);
+                }
+
+                // The completions come from the live states, so the card's delta still follow every cycle.
+                model.ApplyCompletions(states, statesCount);
+                if (QuantityKey(session.ReadCash()) == quantityKey)
+                {
+                    return;
+                }
+            }
+
             if (changed)
             {
                 dirty = false;
@@ -312,6 +334,54 @@ namespace IdleFactory.Unity.UI
             if (changed)
             {
                 Render();
+                quantityKey = QuantityKey(session.ReadCash());
+            }
+        }
+
+        private ulong quantityKey;
+        private int statesCount;
+
+        /// <summary>Everything the card derives from quantities: the upgrade shortfall at four significant digits, the visual state and the limiting cause.</summary>
+        private ulong QuantityKey(long cash)
+        {
+            unchecked
+            {
+                var key = 14695981039346656037UL;
+                var next = machine?.NextUpgrade;
+                if (next != null && next.Available)
+                {
+                    var need = next.Cost - cash;
+                    ulong part = 0;
+                    if (need > 0)
+                    {
+                        long step = 1;
+                        ulong exponent = 1;
+                        while (need / step >= 10000)
+                        {
+                            step *= 10;
+                            exponent++;
+                        }
+
+                        part = (ulong)(need / step) * 64UL + exponent;
+                    }
+
+                    key = (key ^ part) * 1099511628211UL;
+                }
+
+                for (var i = 0; i < statesCount && i < states.Length; i++)
+                {
+                    if (states[i].SlotIndex != slot)
+                    {
+                        continue;
+                    }
+
+                    key = (key ^ (states[i].IsActive ? 1UL : 0UL)) * 1099511628211UL;
+                    key = (key ^ (ulong)(int)states[i].Phase) * 1099511628211UL;
+                    key = (key ^ (ulong)(int)states[i].Blocker) * 1099511628211UL;
+                    break;
+                }
+
+                return key;
             }
         }
 
@@ -328,6 +398,8 @@ namespace IdleFactory.Unity.UI
                 states = new MachineStateView[count];
                 count = session.CopyMachineStates(states);
             }
+
+            statesCount = count;
 
             var layout = layoutSource?.Invoke();
             if (layout == null)
@@ -412,6 +484,7 @@ namespace IdleFactory.Unity.UI
             string iconKey = null;
             var resourceIcon = false;
             string causeDetail = null;
+            string detailLine = null;
             switch (state)
             {
                 case MachineVisualState.MissingInput:
@@ -423,6 +496,7 @@ namespace IdleFactory.Unity.UI
                         text = AttentionModel.ShortOnCopy(SlotSheetText.ResourceLabel(session, resource));
                         var detail = MachineCardCopy.CauseDetail(presentation.LimitingCause);
                         causeDetail = detail == null ? text : text + ". " + detail;
+                        detailLine = detail;
                         if (session.Catalog.Resources.TryGetValue(resource, out var def))
                         {
                             iconKey = def.PresentationKey;
@@ -451,7 +525,8 @@ namespace IdleFactory.Unity.UI
                     break;
             }
 
-            causeLabel.text = text ?? string.Empty;
+            // B-4/C-29 (T560): the visible cause is a second line of the same label, so a touch user reads it without a tooltip.
+            causeLabel.text = text == null ? string.Empty : (detailLine == null ? text : text + "\n" + detailLine);
             // The specific cause (auto-sell, no source, a full store, a slow source) comes from the model and rides in the description; T547 owns the visible copy.
             causeLabel.tooltip = causeDetail ?? text ?? string.Empty;
             causeLabel.style.display = text == null ? DisplayStyle.None : DisplayStyle.Flex;

@@ -548,7 +548,11 @@ namespace IdleFactory.Unity.Bootstrap
             if (coldStartOutcome != null && coldStartOutcome.OfflineSummary != null)
             {
                 LastOfflineSummary = coldStartOutcome.OfflineSummary;
-                ShowOfflineSummary(coldStartOutcome.OfflineSummary);
+                // C-60 (T560): a cold start after a short absence (a 9 s gap) opens no modal either; the summary stays available through LastOfflineSummary.
+                if (OfflineSummaryPanel.ShouldOpenSummary(coldStartOutcome.OfflineSummary, coldStartOutcome.UsedFallback))
+                {
+                    ShowOfflineSummary(coldStartOutcome.OfflineSummary);
+                }
             }
 
             observedOrientation = Screen.orientation;
@@ -976,7 +980,10 @@ namespace IdleFactory.Unity.Bootstrap
             if (result.Value != null && result.Value.OfflineSummary != null)
             {
                 LastOfflineSummary = result.Value.OfflineSummary;
-                ShowOfflineSummary(result.Value.OfflineSummary);
+                if (OfflineSummaryPanel.ShouldOpenSummary(result.Value.OfflineSummary, result.Value.UsedFallback))
+                {
+                    ShowOfflineSummary(result.Value.OfflineSummary);
+                }
             }
 
             if (result.Value != null && result.Value.SelectedDurableCheckpoint)
@@ -1522,7 +1529,14 @@ namespace IdleFactory.Unity.Bootstrap
 
                 reducedMotionSignal = reducedMotionSignal ?? new ReducedMotionSignal();
                 var effective = ReducedMotionResolver.Resolve(store.Preference, reducedMotionSignal);
+                var switchedOn = effective.Reduced && !animationClock.ReducedMotion;
                 animationClock.SetReducedMotion(effective.Reduced);
+                if (switchedOn)
+                {
+                    // C-51 (T560): reduced motion switched on while a milestone reveal or highlight is running: end it at once instead of easing on.
+                    deckView?.ClearFeedback();
+                }
+
                 cachedEffective = effective;
                 hasCachedEffective = true;
                 return effective;
@@ -1574,12 +1588,37 @@ namespace IdleFactory.Unity.Bootstrap
                 return;
             }
 
+            if (cameraController == null || Viewport == null)
+            {
+                return;
+            }
+
             var layout = RunCameraFraming.Layout(factoryCamera, slotGrid.Layout, PixelsPerPoint(), visibleArea);
             var wantSheet = selectedSlot >= 0;
             Viewport.Apply(layout, visibleArea, wantSheet, wantSheet ? framing.FrameMachine(selectedSlot, slotGrid.Layout) : default);
         }
 
-        private RunViewportDriver Viewport => viewportDriver ?? (viewportDriver = new RunViewportDriver(cameraController));
+        // C-64 (T560): the driver is bound to one controller; if the controller was replaced the driver is rebuilt and fits the world once.
+        private RunViewportDriver Viewport
+        {
+            get
+            {
+                if (cameraController == null)
+                {
+                    // Architect 3d: no controller yet (or any more): keep the old driver, never throw per frame.
+                    return viewportDriver;
+                }
+
+                if (viewportDriver == null || !ReferenceEquals(viewportDriver.Controller, cameraController))
+                {
+                    var replaced = viewportDriver != null;
+                    viewportDriver = new RunViewportDriver(cameraController);
+                    viewportDriver.FramingPending = replaced;
+                }
+
+                return viewportDriver;
+            }
+        }
 
         private void OnApplicationFocus(bool hasFocus)
         {

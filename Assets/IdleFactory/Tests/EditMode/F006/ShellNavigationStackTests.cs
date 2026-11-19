@@ -17,12 +17,40 @@ namespace IdleFactory.Tests.EditMode.F006
             public bool HasPinnedValue { get; set; }
             public bool IsSettingsOpen { get; set; }
             public bool HasClosableSheet { get; set; }
+            public bool HasBanner { get; set; }
+            public bool HasCard { get; set; }
+            public void PopBanner() { Popped.Add("banner"); HasBanner = false; }
+            public void PopCard() { Popped.Add("card"); HasCard = false; }
             public readonly List<string> Popped = new List<string>();
 
             public void PopDialog() { Popped.Add("dialog"); HasDialog = false; }
             public void PopPinnedValue() { Popped.Add("pinned"); HasPinnedValue = false; }
             public void PopSettings() { Popped.Add("settings"); IsSettingsOpen = false; }
             public void PopSheet() { Popped.Add("sheet"); HasClosableSheet = false; }
+        }
+
+        // C-60 (T560, U-C8): after Expand factory the milestone banner sits over the open Market; the one Back that clears it also closes the sheet.
+        [Test]
+        public void ABannerAndTheSheetUnderItGoInOneBack_ButADialogOrAPinStaysForTheNextBack()
+        {
+            var frames = new FakeFrames { HasBanner = true, HasClosableSheet = true };
+            Assert.That(new ShellNavigationStack().HandleBack(frames, 1, true), Is.True);
+            Assert.That(frames.Popped, Is.EqualTo(new[] { "banner", "sheet" }));
+
+            frames = new FakeFrames { HasBanner = true, HasCard = true };
+            new ShellNavigationStack().HandleBack(frames, 1, true);
+            Assert.That(frames.Popped, Is.EqualTo(new[] { "banner", "card" }));
+
+            frames = new FakeFrames { HasBanner = true, HasDialog = true, HasClosableSheet = true };
+            var stack = new ShellNavigationStack();
+            stack.HandleBack(frames, 1, true);
+            Assert.That(frames.Popped, Is.EqualTo(new[] { "banner" }), "C-52: the dialog is answered by the next Back, not with the banner");
+            stack.HandleBack(frames, 2, true);
+            Assert.That(frames.Popped, Is.EqualTo(new[] { "banner", "dialog" }));
+
+            frames = new FakeFrames { HasBanner = true, HasPinnedValue = true, HasClosableSheet = true };
+            new ShellNavigationStack().HandleBack(frames, 1, true);
+            Assert.That(frames.Popped, Is.EqualTo(new[] { "banner" }));
         }
 
         [Test]

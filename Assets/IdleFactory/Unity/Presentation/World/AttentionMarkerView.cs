@@ -21,6 +21,15 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The marker draws after every slot overlay: the slot overlays use orders up to <c>OverlayOrder + 4 * rows + 3</c>.</summary>
         public const int MarkerOrderOffset = 200;
 
+        /// <summary>
+        /// C-57 (U-C2, T560): the store-full marker uses the 24 x 24 storage icon the Store pill and the card cause line use, a glyph of the marker's own size, so it is not
+        /// mistaken for the per-machine store-full badge (<see cref="SlotGridModel.BadgeStorageFullKey"/>, 72 x 64). No new art; the badge stays the fallback.
+        /// </summary>
+        /// <summary>The longest a layout change blanks the markers: the feed refreshes within 0.25 s, so a model that never refreshed (same layout) is trusted after this.</summary>
+        public const float PendingLayoutSeconds = 0.3f;
+
+        public const string StoreFullMarkerKey = "F003-UI-ICON-STORAGE";
+
         private PresentationSpriteCatalog sprites;
         private Func<string, string> resourceKeyOf;
         private SpriteRenderer[] renderers;
@@ -29,6 +38,15 @@ namespace IdleFactory.Unity.Presentation
         private int visibleCount;
         private float pointsPerCell = 48f;
         private SlotGridView bound;
+        private FactoryWorldLayout pendingLayout;
+        private float pendingSince;
+
+        /// <summary>True between a layout change of the bound grid and the first render of a model computed on that layout (C-39): nothing is drawn then.</summary>
+        public bool AwaitingModelLayout => pendingLayout != null;
+
+        // The layout id includes the composition identity, so two instances of the same layout (the shell's and the grid's) are the same layout (Architect 1a).
+        private static bool SameLayout(FactoryWorldLayout a, FactoryWorldLayout b) =>
+            a != null && b != null && (ReferenceEquals(a, b) || string.Equals(a.LayoutId, b.LayoutId, System.StringComparison.Ordinal));
 
         /// <summary>The number of markers drawn now.</summary>
         public int VisibleMarkerCount => visibleCount;
@@ -80,6 +98,7 @@ namespace IdleFactory.Unity.Presentation
         {
             Unbind();
             bound = slotGrid ?? throw new ArgumentNullException(nameof(slotGrid));
+            pendingLayout = null;
             bound.LayoutChanged += HandleLayoutChanged;
         }
 
@@ -94,7 +113,14 @@ namespace IdleFactory.Unity.Presentation
             bound = null;
         }
 
-        private void HandleLayoutChanged(FactoryWorldLayout newLayout) => Clear();
+        private void HandleLayoutChanged(FactoryWorldLayout newLayout)
+        {
+            // C-39 (T560): the model recomputes its positions only on its next refresh (up to 0.25 s). Until it carries this layout, Render draws nothing, so
+            // a stale marker is neither drawn nor hit.
+            pendingLayout = newLayout;
+            pendingSince = Time.unscaledTime;
+            Clear();
+        }
 
         /// <summary>Hides every marker (no hit target remains) until the next <see cref="Render"/>.</summary>
         public void Clear()
@@ -126,11 +152,27 @@ namespace IdleFactory.Unity.Presentation
             if (model == null) throw new ArgumentNullException(nameof(model));
             if (renderers == null) throw new InvalidOperationException("Configure the view first.");
             visibleCount = 0;
+            if (pendingLayout != null)
+            {
+                if (!SameLayout(model.Layout, pendingLayout) && Time.unscaledTime - pendingSince < PendingLayoutSeconds)
+                {
+                    return;
+                }
+
+                pendingLayout = null;
+            }
+
             var box = AttentionModel.MarkerSizePixels / (float)SlotGridLayout.Density;
             for (var i = 0; i < model.MarkerCount && i < renderers.Length; i++)
             {
                 var marker = model.GetMarker(i);
-                var key = marker.Kind == AttentionKind.StoreFull ? SlotGridModel.BadgeStorageFullKey : resourceKeyOf(marker.ResourceId);
+                var key = marker.Kind == AttentionKind.StoreFull ? StoreFullMarkerKey : resourceKeyOf(marker.ResourceId);
+                if (marker.Kind == AttentionKind.StoreFull && (!sprites.TryGetEntry(key, out var markerEntry) || markerEntry.Sprite == null))
+                {
+                    // C-57 (T560): without the marker-sized icon the store-full marker falls back to the machine badge sprite (the old behaviour) rather than draw nothing.
+                    key = SlotGridModel.BadgeStorageFullKey;
+                }
+
                 var renderer = renderers[visibleCount];
                 if (key == null || !sprites.TryGetEntry(key, out var entry) || entry.Sprite == null)
                 {

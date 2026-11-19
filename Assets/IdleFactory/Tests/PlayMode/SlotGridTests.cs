@@ -489,7 +489,7 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(bootstrap.RecomposeRunPanels(), Is.True);
             Assert.That(bootstrap.ShellPresenter.HandleWorldTap(bootstrap.SlotGrid.WorldRectOf(0).center), Is.True);
             yield return null;
-            Assert.That(shell.PlaceholderText, Does.Contain("build sheet for slot 1 is not available yet"));
+            Assert.That(shell.PlaceholderText, Does.Contain("build sheet for location 1 is not available yet"));
             shell.SelectTab(ShellTab.Prestige);
             yield return null;
             Assert.That(shell.PlaceholderText, Does.Contain("This panel is not available yet"));

@@ -63,6 +63,57 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(bootstrap.RunShell.MilestoneBanner, Is.Not.Null, "the shell builds its banner from the authored UXML and USS");
         }
 
+        // C-51 (T560): reduced motion switched on while a milestone reveal and highlight run ends them at once.
+        [UnityTest]
+        public IEnumerator SwitchingReducedMotionOnMidRevealClearsTheMilestoneFeedback()
+        {
+            yield return StartRun();
+            var bootstrap = run.Bootstrap;
+            var deck = bootstrap.DeckView;
+            deck.ShowMilestone(0, 2, true, bootstrap.AnimationClock.Milliseconds, false);
+            Assert.That(deck.ActiveHighlightCount > 0 || deck.RevealActive, Is.True, "feedback is running");
+            Assert.That(bootstrap.AnimationClock.ReducedMotion, Is.False);
+            bootstrap.DisplayPreferences.TrySave(IdleFactory.Unity.Persistence.ReducedMotionPreference.On);
+            bootstrap.RefreshReducedMotion();
+            Assert.That(bootstrap.AnimationClock.ReducedMotion, Is.True);
+            Assert.That(deck.ActiveHighlightCount, Is.Zero, "the highlight ended");
+            Assert.That(deck.RevealActive, Is.False, "and so did the reveal");
+        }
+
+        // C-64 (T560): the bootstrap rebuilds its viewport driver when the camera controller is replaced, and a missing controller never throws.
+        [UnityTest]
+        public IEnumerator TheViewportDriverIsRebuiltWhenTheCameraControllerIsReplaced()
+        {
+            yield return StartRun();
+            var bootstrap = run.Bootstrap;
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var field = typeof(IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap).GetField("cameraController", flags);
+            var property = typeof(IdleFactory.Unity.Bootstrap.CoreGameFoundationBootstrap).GetProperty("Viewport", flags);
+            Assert.That(field, Is.Not.Null);
+            Assert.That(property, Is.Not.Null);
+            var original = (IdleFactory.Unity.Presentation.FactoryCameraController)field.GetValue(bootstrap);
+            var first = (IdleFactory.Unity.Presentation.RunViewportDriver)property.GetValue(bootstrap);
+            Assert.That(first.Controller, Is.SameAs(original));
+            var host = new UnityEngine.GameObject("replacement-camera-controller");
+            try
+            {
+                var replacement = host.AddComponent<IdleFactory.Unity.Presentation.FactoryCameraController>();
+                field.SetValue(bootstrap, replacement);
+                var second = (IdleFactory.Unity.Presentation.RunViewportDriver)property.GetValue(bootstrap);
+                Assert.That(second, Is.Not.SameAs(first), "a driver for the new controller");
+                Assert.That(second.Controller, Is.SameAs(replacement));
+                Assert.That(second.FramingPending, Is.True, "and it fits the world once");
+
+                field.SetValue(bootstrap, null);
+                Assert.DoesNotThrow(() => property.GetValue(bootstrap), "no controller: no throw");
+            }
+            finally
+            {
+                field.SetValue(bootstrap, original);
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
         [UnityTest]
         public IEnumerator TheAuthoredSceneDrivesTheDeckTheDepotAndTheDepositFromTheFactoryLevel()
         {
@@ -98,6 +149,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(camera.transform.position, Is.EqualTo(cameraPosition), "and the camera does not move");
             Assert.That(camera.orthographicSize, Is.EqualTo(cameraSize).Within(1e-4f));
 
+            banner.Dismiss(); // C-51 (T560): a milestone queues behind a showing banner, so each is read after the last closed
             Assert.That(bootstrap.RunCommands.UpgradeFactory().IsSuccess, Is.True);
             yield return Frames(4);
             Assert.That(presenter.Development.Stage, Is.EqualTo(1), "8 of 12 is Partial");
@@ -109,6 +161,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(banner.SecondaryLabel.text, Is.EqualTo("Deck extended."), "the stage rose");
             Assert.That(deck.RevealActive || deck.BaseTilemap.color.r >= 0.99f, Is.True, "the deck reveal ran in normal motion");
 
+            banner.Dismiss();
             Assert.That(bootstrap.RunCommands.UpgradeFactory().IsSuccess, Is.True);
             yield return Frames(4);
             Assert.That(presenter.Development.Stage, Is.EqualTo(2), "10 of 12 is Established");

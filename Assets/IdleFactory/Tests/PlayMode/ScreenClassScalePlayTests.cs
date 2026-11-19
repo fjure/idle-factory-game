@@ -201,8 +201,24 @@ namespace IdleFactory.Tests.PlayMode
             // tolerance still matters wherever n_fit is below the ceiling, which the Screen scale suites cover.
             Assert.That(largest, Is.GreaterThanOrEqualTo(range.Min), "the tolerance keeps n_fit at or above n_min");
 
+            // B-15 (T560): the 1 % tolerance is load-bearing. Shrink the world band until the largest fitting scale is exactly 2, the case the tolerance exists for: it
+            // passes only because n_min is 2 with the tolerance and would violate the exact ceiling of 3.
+            var probe = new Rect(0f, 0f, rect.width, rect.height);
+            var probeScale = largest;
+            var bounds = LatticeLayoutBuilder.ShippedForColumns(columns).Bounds;
+            for (var step = 0; step < 200 && probeScale > 2; step++)
+            {
+                probe = new Rect(0f, 0f, probe.width * 0.97f, probe.height * 0.97f);
+                probeScale = CameraScaleModel.LargestFittingScale(probe, bounds, zoom.artPixelsPerCell);
+            }
+
+            Assert.That(probeScale, Is.EqualTo(2), "a band exists where exactly n = 2 fits");
+            Assert.That(probeScale, Is.GreaterThanOrEqualTo(range.Min), "n_fit = 2 satisfies the rule only with the 1 % tolerance");
+            Assert.That(probeScale, Is.LessThan(exactCeiling), "and would violate the exact ceiling of 3 without it");
+
             var cell = range.Min * zoom.artPixelsPerCell / pixelsPerPoint;
             Assert.That(cell, Is.GreaterThanOrEqualTo(zoom.readableCellPoints * 0.99f), "the cell at n_min is within 1 % of the readable floor");
+            Assert.That(cell, Is.LessThan(zoom.readableCellPoints), "and below the exact floor, which is what the tolerance buys");
         }
 
         [UnityTest]

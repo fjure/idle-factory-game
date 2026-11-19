@@ -172,7 +172,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return ShellRig.Settle();
             Assert.That(shell.IsHubDotShown, Is.True);
             Assert.That(shell.HubEntryButton.Q<Label>("hub-entry-dot").text, Is.EqualTo(RunShellDocument.DotGlyph));
-            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office, 1 system needs attention"));
+            Assert.That(shell.HubEntryButton.tooltip, Is.EqualTo("Office, 1 needs attention"));
         }
 
         // ---------------------------------------------------------------------------------------------------

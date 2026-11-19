@@ -106,7 +106,7 @@ namespace IdleFactory.Unity.UI.Panels
             lastCash = session.ReadCash();
             var snapshot = RunSnapshots.Factory(session);
             UpdateTrack(storage, snapshot.Storage, "Capacity", "units");
-            UpdateTrack(factory, snapshot.Factory, "Slots", "slots");
+            UpdateTrack(factory, snapshot.Factory, "Locations", "locations");
         }
 
         private Track BuildTrack(string key, string title, string upgradeText, Func<RunCommandResult<ExpansionResult>> upgrade, string iconKey, Func<string, Sprite> icons)
@@ -124,7 +124,7 @@ namespace IdleFactory.Unity.UI.Panels
             track.Card.Add(heading);
             track.Level = MarketPanelParts.NewLabel("expansion-" + key + "-level", "exp-card__level");
             track.Card.Add(track.Level);
-            track.Value = AddLine(track, key == "storage" ? "Capacity now and next" : "Slots now and next", "expansion-" + key + "-value", () => track.ValueExact);
+            track.Value = AddLine(track, key == "storage" ? "Capacity now and next" : "Locations now and next", "expansion-" + key + "-value", () => track.ValueExact);
             track.Cost = AddLine(track, "Next level costs", "expansion-" + key + "-cost", () => track.CostExact);
             track.Upgrade = RunShellDocument.CreateButton("expansion-" + key + "-upgrade", upgradeText, true);
             track.Upgrade.AddToClassList("exp-upgrade");
@@ -186,7 +186,7 @@ namespace IdleFactory.Unity.UI.Panels
             {
                 track.Status.text = track.Key == "storage"
                     ? "Storage is now level " + result.Value.NewLevel + ": capacity " + QuantityFormatter.Format(result.Value.NewValue) + "."
-                    : "The factory is now level " + result.Value.NewLevel + ": " + QuantityFormatter.Format(result.Value.NewValue) + " slots.";
+                    : "The factory is now level " + result.Value.NewLevel + ": " + QuantityFormatter.Format(result.Value.NewValue) + " locations.";
                 Render(true);
             }
             else

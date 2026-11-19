@@ -1,7 +1,7 @@
 # Unity Profiler (Standalone Process) for the Android emulator player
 
 **Verified**: 2026-09-28, Europe/Berlin (T064, Issue #114)
-**Scope**: the development GLES3 player on AVD `Medium_Phone_API_36.0` (`emulator-5554`), Unity `6000.6.0f1`, this Windows workstation
+**Scope**: the development GLES3 player on AVD `IdleFactory_Test_API_36` (`emulator-5554`), Unity `6000.6.0f1`, this Windows workstation
 
 This is the profiling path for the Android emulator player (T040-F2, owner decision 2026-09-28). In T040 the in-editor Profiler slowed the player's cold start from "Fully drawn" +14–16.5 s to +33–48 s and stalled the player after scene load, so no run reached the capture-start state. With this procedure the player reached that state with the standalone profiler attached in all three T064 runs; see the [T064 section of `mobile-performance.md`](../../specs/001-core-game-foundation/reviews/mobile-performance.md#t064-unity-profiler-standalone-process-set).
 
@@ -23,7 +23,7 @@ All results are emulator-only development evidence. A frame time measured under 
 
 1. **Exclusive emulator use.** No other session may use `emulator-5554` for the whole protocol: no parallel Claude or Codex session, no `scripts/android-emulator-journey.ps1`, and no Unity batch test run or Android build (these end with "Killing ADB server"). Check for foreign `adb`/`monkey` processes (`Get-CimInstance Win32_Process` command lines) and for running sessions, ask the user to pause them, and record the check.
 2. **Processes.** Close every other Unity editor and every Unity batch process. Keep exactly: the emulator (`emulator.exe`, `qemu-system-x86_64.exe`), one `adb` server, one idle main editor on this checkout, the standalone profiler, and the MCP server (`mcp-for-unity`, `python`). Opening the main editor terminates a foreign `adb` server ("Multiple ADB server instances found…"); run `adb devices` afterwards and wait until `emulator-5554` is `device`.
-3. **Emulator.** Cold boot with host GPU: `emulator -avd Medium_Phone_API_36.0 -gpu host -no-snapshot-load` (quick boot restores SwiftShader and breaks the ARM64 Unity player).
+3. **Emulator.** Cold boot with host GPU: `emulator -avd IdleFactory_Test_API_36 -no-window -no-audio -gpu host -no-snapshot-load -no-snapshot-save` (quick boot restores SwiftShader and breaks the ARM64 Unity player).
 4. **Build** with the editor closed:
 
    ```powershell

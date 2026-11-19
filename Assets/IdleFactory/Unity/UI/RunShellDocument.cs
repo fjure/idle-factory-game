@@ -35,7 +35,9 @@ namespace IdleFactory.Unity.UI
         /// <summary>How long a transient notice stays before it clears on its own (T192, F-1).</summary>
         public const float DefaultNoticeSeconds = 6f;
 
-        private static readonly string[] TabNames = { "Factory", "Market", "Contracts", "Items", "Research", "Prestige" };
+        private static readonly string[] TabNames = { "Factory", "Market", "Contracts", "Items", "Research", "Factory Sale" };
+        /// <summary>Accessible name of the sheet Close button (B-6, T560); the visible text stays "Close".</summary>
+        public const string CloseSheetName = "Close panel";
 
         [SerializeField] private UIDocument uiDocument;
         [SerializeField] private VisualTreeAsset visualTree;
@@ -347,6 +349,8 @@ namespace IdleFactory.Unity.UI
         // The banner is an overlay (position absolute): it takes no space in the world column and is NOT part of TryGetUnobstructedScreenRect, so showing or hiding it never
         // reframes the camera (T540 fix, UI/UX U2, Architect 3). It sits right below the strip (when the strip is inside the world column: tablet, desktop, the landscape status
         // band) and below the detail line, notice and hint bars, so it never covers Cash, Overdrive or the status band.
+        private readonly VisualElement[] bannerBars = new VisualElement[3];
+
         private void PlaceMilestoneBanner()
         {
             if (milestoneBanner == null || worldColumn == null)
@@ -361,8 +365,14 @@ namespace IdleFactory.Unity.UI
                 top = Mathf.Max(top, topStrip.worldBound.yMax - column.yMin);
             }
 
-            foreach (var bar in new[] { detailLine, noticeBar, worldHint })
+            // C-54 (T560): the three bars are read through one reused array, never a new one per tick while the banner shows.
+            var bars = bannerBars;
+            bars[0] = detailLine;
+            bars[1] = noticeBar;
+            bars[2] = worldHint;
+            for (var i = 0; i < bars.Length; i++)
             {
+                var bar = bars[i];
                 if (bar != null && bar.resolvedStyle.display != DisplayStyle.None && bar.worldBound.height > 0f && !float.IsNaN(bar.worldBound.yMax))
                 {
                     top = Mathf.Max(top, bar.worldBound.yMax - column.yMin);
@@ -578,6 +588,7 @@ namespace IdleFactory.Unity.UI
         /// </summary>
         public void ApplyTextScale(float factor)
         {
+            var previousPercent = ShellTextScale.Percent(textScale);
             textScale = ShellTextScale.Clamp(factor);
             if (root == null)
             {
@@ -592,6 +603,12 @@ namespace IdleFactory.Unity.UI
             }
 
             ApplyCardCap();
+            if ((cardOpen || sheetOpen) && previousPercent != ShellTextScale.Percent(textScale))
+            {
+                // C-28 (B-5, T560): a text-scale change with the card open (Details too) resizes the card band. The camera waits for the new band exactly as it does
+                // after a resize or rotation; without the guard the Fit branch ran on the old band and the overlays drew over the card edge at portrait 200 percent.
+                MarkCardBandPending();
+            }
         }
 
         private void ProbeNow(bool includeFontScale)
@@ -1285,7 +1302,7 @@ namespace IdleFactory.Unity.UI
 
             if (condition == SlotCondition.Locked)
             {
-                ShowNotice("Slot " + (slot + 1) + " unlocks at factory level " + unlockLevel + ".", ShellNoticeKind.Lock);
+                ShowNotice("Location " + (slot + 1) + " unlocks at factory level " + unlockLevel + ".", ShellNoticeKind.Lock);
                 lockNoticeSlot = slot;
                 return false;
             }
@@ -1310,7 +1327,7 @@ namespace IdleFactory.Unity.UI
             SetSelectedSlot(slot);
             ShowPanel(
                 condition == SlotCondition.Empty ? ShellPanelIds.Build : ShellPanelIds.Machine,
-                (condition == SlotCondition.Empty ? "Build" : "Machine") + " · Slot " + (slot + 1),
+                (condition == SlotCondition.Empty ? "Build" : "Machine") + " · Location " + (slot + 1),
                 slot);
             UpdateSheetState();
             return true;
@@ -1367,7 +1384,7 @@ namespace IdleFactory.Unity.UI
             if (id != activePanelId)
             {
                 detailsFromCard = false;
-                ShowPanel(id, (condition == SlotCondition.Empty ? "Build" : "Machine") + " · Slot " + (slot + 1), slot);
+                ShowPanel(id, (condition == SlotCondition.Empty ? "Build" : "Machine") + " · Location " + (slot + 1), slot);
             }
         }
 
@@ -2066,6 +2083,9 @@ namespace IdleFactory.Unity.UI
         private bool panelTopHold;
         private int programmaticFocus;
 
+        /// <summary>True while a freshly opened view is held at its top (T555 U-B6); a test reads it for the A3 and A6 assertions of T560 (C-48).</summary>
+        public bool IsPanelTopHeld => panelTopHold;
+
         private void HoldPanelAtTop()
         {
             panelTopHold = true;
@@ -2090,15 +2110,15 @@ namespace IdleFactory.Unity.UI
             }
             else if (activePanelId == null)
             {
-                text = "Tap an empty slot to build, or a machine to inspect it.";
+                text = "Tap an empty location to build, or a machine to inspect it.";
             }
             else if (activePanelId == ShellPanelIds.Build)
             {
-                text = "The build sheet for slot " + (selectedSlot + 1) + " is not available yet.";
+                text = "The build sheet for location " + (selectedSlot + 1) + " is not available yet.";
             }
             else if (activePanelId == ShellPanelIds.Machine)
             {
-                text = "The machine panel for slot " + (selectedSlot + 1) + " is not available yet.";
+                text = "The machine panel for location " + (selectedSlot + 1) + " is not available yet.";
             }
             else
             {
@@ -2143,6 +2163,11 @@ namespace IdleFactory.Unity.UI
             PlacePersistentLayer();
             UpdateEmptyHint();
             UpdateOreVeinVisibility();
+            if (placeholder != null && activePanelId == null && gameplayAvailable)
+            {
+                // C-60 (U-C7, T560): the idle guidance "Tap an empty location..." under the docked card (tablet and desktop side panel) is stale while a card is open.
+                placeholder.style.display = cardOpen ? DisplayStyle.None : DisplayStyle.Flex;
+            }
         }
 
         // ------------------------------------------------------------------------------------------------------
@@ -2932,7 +2957,7 @@ namespace IdleFactory.Unity.UI
         private void BindCallbacks()
         {
             CloseButton.clicked += () => CloseSheetOrDetails();
-            CloseButton.tooltip = "Close";
+            CloseButton.tooltip = CloseSheetName;
             ZoomInButton.clicked += () => OnZoomClicked(1);
             ZoomOutButton.clicked += () => OnZoomClicked(-1);
             OverdriveButton.clicked += OnOverdriveClicked;
@@ -3251,7 +3276,9 @@ namespace IdleFactory.Unity.UI
 
             // A phone sheet covers the world: the vein then leaves the view and the focus order, and a hold ends. The side panel of
             // tablet and desktop sits beside the world, so the vein stays.
-            var show = oreVeinWanted && !(sheetOpen && !IsSidePanelLayout);
+            // C-60 (U-C6, T560): a docked machine or build card on a phone takes the band the sheet would, so the Mine overlay leaves the world the same way and can no
+            // longer lie over a lattice location while the card is open (portrait 200 percent, 640x360). Closing the card brings it back.
+            var show = oreVeinWanted && !((sheetOpen || cardOpen) && !IsSidePanelLayout);
             var shown = oreVein.Root.style.display != DisplayStyle.None;
             if (show == shown)
             {

@@ -305,10 +305,21 @@ namespace IdleFactory.Unity.Presentation
         {
             get
             {
-                var deposit = DepositRect;
-                return Union(FitBounds, deposit);
+                // C-64 (T560): the layout is immutable, so the extent is computed once; the framing reads it every frame.
+                if (!hasViewBounds)
+                {
+                    viewBounds = Union(FitBounds, DepositRect);
+                    hasViewBounds = true;
+                }
+
+                return viewBounds;
             }
         }
+
+        private Rect viewBounds;
+        private bool hasViewBounds;
+        private Rect fitBounds;
+        private bool hasFitBounds;
 
         /// <summary>
         /// The fit extent (T558, U-C1): <see cref="Bounds"/> plus the depot column, framed as a whole: the depot sprite, the collector spine along <see cref="DepotAnchor"/>'s column, the
@@ -318,6 +329,19 @@ namespace IdleFactory.Unity.Presentation
         public Rect FitBounds
         {
             get
+            {
+                if (!hasFitBounds)
+                {
+                    fitBounds = ComputeFitBounds();
+                    hasFitBounds = true;
+                }
+
+                return fitBounds;
+            }
+        }
+
+        private Rect ComputeFitBounds()
+        {
             {
                 var depot = DepotRect;
                 var fit = Union(Bounds, depot);

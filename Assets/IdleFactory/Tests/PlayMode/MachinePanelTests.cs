@@ -275,7 +275,7 @@ namespace IdleFactory.Tests.PlayMode
             yield return Open(PhoneScreen(), 100, RunShellFixtures.ComfortableCash);
             yield return ShowSlot(2);
             Assert.That(panel.Root.Q<Label>("machine-empty").style.display, Is.EqualTo(new StyleEnum<DisplayStyle>(DisplayStyle.Flex)));
-            Assert.That(Text("machine-empty"), Is.EqualTo("There is no machine in this slot."));
+            Assert.That(Text("machine-empty"), Is.EqualTo("There is no machine at this location."));
             Assert.That(panel.Root.Q<VisualElement>("machine-body").style.display, Is.EqualTo(new StyleEnum<DisplayStyle>(DisplayStyle.None)));
             Press(panel.UpgradeButton);
             Press(panel.RemoveButton);

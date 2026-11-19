@@ -307,6 +307,36 @@ namespace IdleFactory.Tests.EditMode.F006
             Assert.That(model.GetMarker(2).Kind, Is.EqualTo(AttentionKind.StoreFull));
         }
 
+        // C-35 (T560): the keep-out of every marker (both shortage markers and the store-full marker, not only marker 0) on every shipped layout: the marker box covers no
+        // machine footprint, no location cell and no keep-out rectangle of any location.
+        [TestCase(WorldOrientation.Portrait)]
+        [TestCase(WorldOrientation.Landscape)]
+        public void EveryMarkerBoxOfEveryShippedLayoutAvoidsEveryMachineCellAndKeepOut(WorldOrientation orientation)
+        {
+            var layouts = new List<FactoryWorldLayout> { LatticeLayoutBuilder.Shipped(orientation), LatticeLayoutBuilder.ShippedForColumns(3), LatticeLayoutBuilder.ShippedForColumns(4) };
+            foreach (var layout in layouts)
+            {
+                var last = layout.LocationCount - 1;
+                var model = Refresh(new[] { Blocked(0, Ore), Blocked(Math.Min(3, last), Bar), Blocked(Math.Min(4, last), Plate), Full(last) }, layout: layout);
+                Assert.That(model.MarkerCount, Is.EqualTo(AttentionModel.MaxMarkers), layout.LayoutId + ": two shortage markers and the store-full marker");
+                for (var m = 0; m < model.MarkerCount; m++)
+                {
+                    var box = AttentionModel.MarkerBoxAt(model.GetMarker(m).Position);
+                    for (var i = 0; i < layout.LocationCount; i++)
+                    {
+                        var id = new BuildingLocationId(i);
+                        var where = layout.LayoutId + " marker " + m + " (" + model.GetMarker(m).Kind + ") against " + id;
+                        Assert.That(FactoryWorldLayout.Overlaps(box, layout.FootprintOf(id)), Is.False, where + ": footprint");
+                        Assert.That(FactoryWorldLayout.Overlaps(box, layout.LocationCellRectOf(id)), Is.False, where + ": cell");
+                        for (var k = 0; k < FactoryWorldLayout.KeepOutCount; k++)
+                        {
+                            Assert.That(FactoryWorldLayout.Overlaps(box, layout.KeepOutOf(id, k)), Is.False, where + ": keep-out " + k);
+                        }
+                    }
+                }
+            }
+        }
+
         // ---------------------------------------------------------------------------------------------------
         // Production versus system attention
         // ---------------------------------------------------------------------------------------------------

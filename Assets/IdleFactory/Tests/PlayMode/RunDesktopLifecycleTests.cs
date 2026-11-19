@@ -226,6 +226,33 @@ namespace IdleFactory.Tests.PlayMode
             AssertNoOfflineReturn(published);
         }
 
+        // C-60 (T560): the cold-start path honours the 60 s short-absence threshold: a 9 s gap opens no full welcome-back modal, 61 s does (the test clock measures 5 s less than the wall gap, so 66 s of wall time is 61 s measured).
+        [UnityTest]
+        public IEnumerator TheColdStartOpensTheWelcomeBackModalOnlyFromSixtySeconds([Values(9_000L, 66_000L)] long gapMs)
+        {
+            yield return StartRun(mobile: false);
+            BuildMiner();
+            clock.CumulativeActiveSeconds = 2d;
+            yield return null;
+            Send("OnApplicationFocus", false);
+            clock.CumulativeActiveSeconds = 5d;
+            yield return null;
+            SendQuit();
+            yield return run.Stop();
+            clock.UtcNow = clock.UtcNow.AddMilliseconds(gapMs);
+            run = new RunSceneRun(root, clock);
+            yield return run.Start();
+            Assert.That(Bootstrap.IsInitialized, Is.True, Bootstrap.InitializationError);
+            Assert.That(Bootstrap.LastOfflineSummary, Is.Not.Null, "the return is still recorded");
+            yield return null;
+            yield return null;
+            var summary = Bootstrap.LastOfflineSummary;
+            var expected = IdleFactory.Unity.UI.Panels.OfflineSummaryPanel.ShouldOpenSummary(summary, false);
+            Assert.That(expected, Is.EqualTo(gapMs - 5_000L >= IdleFactory.Unity.UI.Panels.OfflineSummaryPanel.ShortAbsenceThresholdMs), "the rule for a measured " + summary.MeasuredMs + " ms, outcome " + summary.Outcome);
+            var open = Bootstrap.OfflinePanel != null && Bootstrap.OfflinePanel.IsOpen;
+            Assert.That(open, Is.EqualTo(expected), "gap " + gapMs + " ms, measured " + summary.MeasuredMs + " ms, outcome " + summary.Outcome);
+        }
+
         [UnityTest]
         public IEnumerator DesktopRegularShutdownRecordsTheDepartureAndTheNextStartCreditsTheIntervalOnce()
         {

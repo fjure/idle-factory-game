@@ -14,8 +14,8 @@ namespace IdleFactory.Unity.UI
         {
             switch (reasonCode)
             {
-                case RunReasons.SlotOccupied: return "That slot already has a machine.";
-                case RunReasons.SlotUnavailable: return "That slot is not unlocked yet.";
+                case RunReasons.SlotOccupied: return "That location already has a machine.";
+                case RunReasons.SlotUnavailable: return "That location is not unlocked yet.";
                 case RunReasons.MachineLocked: return "That machine is not unlocked yet.";
                 case RunReasons.CashInsufficient: return "Not enough Cash.";
                 case RunReasons.LevelMax: return "Already at the maximum level.";
