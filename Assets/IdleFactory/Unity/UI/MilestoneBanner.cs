@@ -31,6 +31,8 @@ namespace IdleFactory.Unity.UI
         private bool reduced;
         private string fullText = string.Empty;
         private bool opaque;
+        private bool primaryOnly;
+        private bool hasExtra;
 
         private MilestoneBanner(VisualElement bannerRoot, Label primaryLabel, Label secondaryLabel)
         {
@@ -51,6 +53,20 @@ namespace IdleFactory.Unity.UI
 
         /// <summary>The text a screen reader reads: the main line and, when there is one, the second line.</summary>
         public string AccessibleText => fullText;
+
+        /// <summary>
+        /// T558 (C-F1, U-C4): on compact height or large text only the main line shows, so the banner stays short and does not cover the top machine row. The second line
+        /// (B-04 and the others) stays in <see cref="AccessibleText"/>, the tooltip and the offline summary. Takes effect at once for a banner that is showing.
+        /// </summary>
+        public bool PrimaryOnly
+        {
+            get => primaryOnly;
+            set
+            {
+                primaryOnly = value;
+                secondary.style.display = hasExtra && !primaryOnly ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
 
         /// <summary>Seconds the banner has been showing.</summary>
         public float Elapsed => elapsed;
@@ -90,9 +106,9 @@ namespace IdleFactory.Unity.UI
             elapsed = 0f;
             reduced = reducedMotion;
             primary.text = main;
-            var hasExtra = !string.IsNullOrEmpty(extra);
+            hasExtra = !string.IsNullOrEmpty(extra);
             secondary.text = hasExtra ? extra : string.Empty;
-            secondary.style.display = hasExtra ? DisplayStyle.Flex : DisplayStyle.None;
+            secondary.style.display = hasExtra && !primaryOnly ? DisplayStyle.Flex : DisplayStyle.None;
             fullText = hasExtra ? main + " " + extra : main;
             root.tooltip = fullText;
             opaque = reducedMotion;
@@ -138,6 +154,7 @@ namespace IdleFactory.Unity.UI
             }
 
             IsShown = false;
+            hasExtra = false;
             root.style.display = DisplayStyle.None;
             primary.text = string.Empty;
             secondary.text = string.Empty;

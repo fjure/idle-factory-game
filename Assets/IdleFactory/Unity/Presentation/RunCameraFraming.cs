@@ -60,13 +60,16 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>
         /// Rule 3: the largest scale in the allowed range at which the grid plus a half-cell margin fits <paramref name="visibleScreenArea"/>
-        /// (screen pixels, bottom-left origin). When not even <c>n_min</c> fits, the runtime degrade returns the largest scale of at
-        /// least 1 that fits (never fractional).
+        /// (screen pixels, bottom-left origin). T558 (U-C1): the extent it fits is the one the camera model frames
+        /// (<see cref="CameraScaleModel.ExtentFor"/>): the grid with the depot column while that fits at or above the readable floor. When not even
+        /// <c>n_min</c> fits, the runtime degrade returns the largest scale of at least 1 that fits (never fractional).
         /// </summary>
         public int FitAll(Rect visibleScreenArea, FactoryWorldLayout worldLayout, float pixelsPerPoint)
         {
             var range = ConfigureLimits(pixelsPerPoint);
-            var largest = CameraScaleModel.LargestFittingScale(visibleScreenArea, worldLayout.Bounds, zoom.artPixelsPerCell, worldLayout.Margin);
+            var extent = CameraScaleModel.ExtentFor(
+                ScaleLayout.WithView(0, 0, SafeScale(pixelsPerPoint), visibleScreenArea, worldLayout), visibleScreenArea, zoom.artPixelsPerCell, range.Min);
+            var largest = CameraScaleModel.LargestFittingScale(visibleScreenArea, extent, zoom.artPixelsPerCell, worldLayout.Margin);
             if (largest >= range.Min && range.Min <= range.Max)
             {
                 return Math.Min(largest, range.Max);
