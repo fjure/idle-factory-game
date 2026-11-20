@@ -1,7 +1,7 @@
 ---
 title: F006 batch P2 art families, attention model and panel scaffold
 type: component
-sources: [S056, S059]
+sources: [S056, S059, S060]
 updated: 2026-11-13
 ---
 
@@ -37,3 +37,7 @@ Commits: d135e9b, a6f079c, 0f950bd, 3ef6df7, 64bd02b, 3ef08f5. (S059)
 ## Display preferences v2 (T538, #709 / #745, f178a65)
 
 `DisplayPreferencesStore` v2 reads `display-v2.json` with a strict parser, falls back to v1 only when v2 is absent, writes atomically through `display-v2.json.tmp`, and caps the file at 4096 bytes; the Settings toggle is "Show zoom buttons". Security PASS_WITH_NOTES. QA failed twice; see the replace failure in [P2 workflow pitfalls](./f006-batch-p2-workflow-pitfalls.md). Predecessor: [display preferences store](./f004-display-preferences-store.md). (S059)
+
+## Closed in batch 4
+
+P2-F22 (Office glyph) closed by T554 and P2-F23 (conditional front-only wall) decided; the K4 tail swap and `KeepOutOf` 23 x 27 landed in T526. See [batch 4 art review and import](./f006-batch-p3a-art-review-and-import.md). (S060)

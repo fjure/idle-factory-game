@@ -1,8 +1,8 @@
 ---
 title: Art production pipeline
 type: decision
-sources: [S038, S040, S042, S052, S053, S054, S055, S057]
-updated: 2026-11-11
+sources: [S038, S040, S042, S052, S053, S054, S055, S057, S060]
+updated: 2026-11-13
 ---
 
 # Art production pipeline
@@ -60,3 +60,7 @@ Readability tooling `tools/art-pipeline/trials/final_readability.py` builds the 
 ## F006 P0 additions (2026-11-11)
 
 The pipeline gained a `mockup` compositor and `concept-f006` for direction sheets; see [F006 P0 mockup tooling](./f006-p0-art-tooling.md). (S057)
+
+## F006 batch 4 additions (2026-11-13)
+
+Every atlas page is capped at 512 x 512 RGBA32 (T552); F006 world (512) and FX (256) atlases are imported. See [Android load hang](./f006-android-load-hang-atlas-page-cap.md) and [art review and import](./f006-batch-p3a-art-review-and-import.md). (S060)

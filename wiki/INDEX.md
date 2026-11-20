@@ -48,6 +48,8 @@ page files, not here.
 - [F006 P0 mockup tooling](pages/f006-p0-art-tooling.md) — Lattice export, mockup compositor, concept-f006, UI occlusion in framing.
 - [F006 batch P1 enabling refactor](pages/f006-batch-p1-enabling-refactor.md) — T510-T518 seams (layout, sorting layers, CompletedCycles, shell stack), OD-10/OD-12, follow-ups, pitfalls.
 - [F006 batch P2 art, attention model and scaffold](pages/f006-batch-p2-art-and-presentation.md) — Ground/link/FX/depot/edge art families, T524 K4 tail, attention and presentation models, panel scaffold, display prefs v2.
+- [F006 batch 4 machine card, Details view and Office hub](pages/f006-batch-p3a-card-hub-and-gate-fixes.md) — T534 docked card, ViewBounds, T553 empty tap, T535 hub, entry placement, Back order.
+- [F006 batch 4 art reviews, import and Office glyph](pages/f006-batch-p3a-art-review-and-import.md) — T525 verdicts, Art Bible 21.9, T526 atlases and K4 tail, T554 glyph.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
 - [F004 batch 1 art tooling](pages/f004-batch-1-art-tooling.md) — Pixel pass project, Blender rig, test runner, ComfyUI workflows, LoRA, gpu lease, placeholders.
@@ -60,6 +62,8 @@ page files, not here.
 
 - [Feature 006 plan overview (planned)](pages/f006-plan-overview.md) — Phases P0-P4, owner decisions OD-1..OD-16, binding versus guidance criteria, World Bible gate.
 - [F006 P0 direction decision](pages/f006-p0-direction-decision.md) — OD-9a World Bible freeze, OD-9b direction A with B's wall as stage-2 candidate, hub "Office", binding conditions.
+- [F006 Android load hang and the atlas page cap](pages/f006-android-load-hang-atlas-page-cap.md) — T552: 2 MiB page hang, 512x512 cap, carried SetPass re-measure.
+- [F006 batch-A gate and owner decisions](pages/f006-p3a-gate-and-owner-decisions.md) — T543 REJECT then ACCEPT_WITH_NOTES, owner decisions, carried A-1..A-13.
 - [F005 batch B live gap credit (T337)](pages/f005-batch-b-live-gap.md) — Departure formula, check placement before ScaleAndClamp, departure retry.
 - [F005 batch C content revision 3](pages/f005-batch-c-content-revision-3.md) — T345 tuning order (dominance, ratios, bands), values, results, W005-L 548.5 ms risk.
 - [F005 batch C Play-Tester report and decisions](pages/f005-batch-c-playtest-and-decisions.md) — C-F1..C-F8 owner decisions, reserve-mode auto-sell, #406/#408 decisions.
@@ -127,6 +131,7 @@ page files, not here.
 - [F006 batch P0 workflow pitfalls](pages/f006-batch-p0-workflow-pitfalls.md) — Merge-exit-code gate, scope widening, emulator /data full, ProjectSettings noise, worktree delete.
 - [F006 batch P1 workflow pitfalls](pages/f006-batch-p1-workflow-pitfalls.md) — Library reuse between worktrees, per-run ProjectSettings and UI Toolkit noise.
 - [F006 batch P2 workflow pitfalls](pages/f006-batch-p2-workflow-pitfalls.md) — File.Replace 0x80070497 host failure and test strategy, headless Blender, worker and branch housekeeping.
+- [F006 batch 4 workflow pitfalls](pages/f006-batch-p3a-workflow-pitfalls.md) — Limit resumes, gate order, reviewer checkout, synthetic Escape, APK repack, Library move.
 - [F004 batch 1 workflow pitfalls](pages/f004-batch-1-workflow-pitfalls.md) — Usage-limit resumes, no ExecutionPolicy Bypass, Blender metadata, tool version drift.
 - [F004 batch 2 workflow pitfalls](pages/f004-batch-2-workflow-pitfalls.md) — Limit resume, generated-file cleanup, Play Mode timeout, T411 comparator decision.
 - [F004 batch 3 workflow pitfalls](pages/f004-batch-3-workflow-pitfalls.md) — Play Mode timeout, disk space, review fidelity, deferred B2.

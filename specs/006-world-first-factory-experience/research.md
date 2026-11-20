@@ -271,10 +271,10 @@
 
 - **Clock.** All motion uses `PresentationAnimationClock` with frame `floor(t·fps) mod n`.
 - **Pace.**
-  - `ActivityPace` selects 6, 8 or 10 fps, **capped per machine family by its measured flash rate**: the Assembler stays at ≤ 8 fps, because it is already at 3 flashes/s.
+  - `ActivityPace` selects 6, 8 or 10 fps, **capped per machine family by its measured flash rate**: the Assembler stays at ≤ 8 fps as conservative headroom (3 flashes/s in the F004 spike; 0 alone and 2 with the completion pop in production, T522; Art Bible 21.9, P2-F3).
   - A pace change takes effect at the next loop start (frame 0).
   - `check_flash` runs on body + accent + FX composites at every pace.
-- **Lamps.** No lamp flicker. Lamps are static and use steel or teal tones, never `lit_*`. L-1 and §6.4 stay unamended, except for the effect-sprite allowance listed in the v1.1 amendments (R17).
+- **Lamps.** No lamp flicker. Lamps are static, with a `copper_2` head and a `steel_3` cap; no `teal_*`, never `lit_*` (Art Bible 21.2, 21.8 item 5, 21.9; P2-F4). L-1 and §6.4 stay unamended, except for the effect-sprite allowance listed in the v1.1 amendments (R17).
 - **Effects.** Completion pop, spark (Smelter, Press), steam (Smelter), build dust and upgrade glint.
 - **Pool.**
   - **8 renderers = 3 active + 5 for draining tails.** A cancelled effect fades its remaining frames instead of popping, and a pop lasts 6 frames, so a cap of 3 can churn without reallocating.

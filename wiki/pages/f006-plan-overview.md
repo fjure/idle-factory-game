@@ -1,7 +1,7 @@
 ---
 title: Feature 006 plan overview (planned)
 type: decision
-sources: [S056, S057, S058, S059]
+sources: [S056, S057, S058, S059, S060]
 updated: 2026-11-13
 ---
 
@@ -42,3 +42,7 @@ FR-047: World Bible v0.1 (`docs/world/world-bible-v0.1.md`, World Designer) must
 ## Review waves and constraints
 
 Discovery and plan reviews are recorded under `specs/006-world-first-factory-experience/reviews/`. Sound Designer omitted (audio out of scope). No new package or asmdef; `com.unity.modules.tilemap` is already in the manifest but F006 is its first runtime use, so an Android IL2CPP and Player check applies. Budgets are the F004 frozen ones on workload W006-V. (S056) Related: [Feature 005 plan overview](./f005-plan-overview.md), [visual identity](./visual-identity-art-direction.md), [future capabilities](./future-free-building-vision.md).
+
+## Batch 4 status (P3 batch A, 2026-11-13)
+
+P3 batch A merged (T525, T526, T534, T552-T554, T535): card, Details, hub and the art import are in; the batch-A gate was REJECT then ACCEPT_WITH_NOTES, and the owner deferred Android accessibility (R-7) to a later feature. See [gate and owner decisions](./f006-p3a-gate-and-owner-decisions.md), [card and hub](./f006-batch-p3a-card-hub-and-gate-fixes.md), [art review and import](./f006-batch-p3a-art-review-and-import.md). (S060)

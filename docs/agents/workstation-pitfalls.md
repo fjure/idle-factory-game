@@ -6,6 +6,8 @@ Read it before working in the shared main checkout, running Unity tests or build
 
 ## Shared checkout and Git
 
+- **Never move HEAD in a worktree another role is using.** In F006 batch 4 a read-only reviewer ran `git checkout --detach <sha>` in the worktree where QA was running Unity. It was the same commit, so nothing broke, but a different sha would have changed files under a running test. Reviewers read with `git show`/`git diff`; QA verifies HEAD and never checks out.
+- **`git worktree remove` fails with "Permission denied" while any shell's cwd is inside the worktree.** The registration is removed but an empty folder stays. `cd` out first; remove the leftover folder with `rmdir` afterwards.
 - **Check the branch right before every commit and push.** Parallel sessions share the main checkout because it holds the only Unity editor slot, and they switch its branch mid-task. A commit once landed on another session's branch and had to be cherry-picked back. Run `git branch --show-current` immediately before `git commit` and `git push`. If the branch drifted, cherry-pick onto the intended branch and reset the other local branch to its remote; never rewrite another session's commits.
 - **Give `git worktree add` an absolute path when you use `git -C <dir>`.** A relative target path resolves against `<dir>`, not the current directory. That once nested a new worktree inside a Unity worktree; `git worktree move` fixed it.
 - **Guard `cd` into a side worktree.** When a worktree was deleted, a failed `cd` let the following `git switch` run in the main checkout. Chain with `&&` (Bash) or check `Test-Path` first (PowerShell), and verify the worktree still exists at the start of each task.
@@ -25,6 +27,10 @@ Read it before working in the shared main checkout, running Unity tests or build
 
 ## Unity test runs
 
+- **Unity in batch mode returns immediately from a PowerShell call.** A build or `-executeMethod` started directly as `Unity.exe ... -batchmode` does not block the caller; wait on the Unity process (or use `scripts/test-unity.ps1`, which waits) before reading results.
+- **Move, do not copy, a warm `Library/` between sequential Unity worktrees when C: is low.** A Library is about 13 GB; in F006 batch 4 C: had 12 to 13 GB free. Move it from the finished Issue's worktree to the next one before removing the old worktree, and note that it keeps the previous active build target (Android after an APK build).
+- **A usage limit can cut a worker or QA agent mid-run.** Check the worktree and the newest `test-results/unity/*` XML first; if the suites finished, do not re-run them. Renew the lease and resume the same agent with its context (SendMessage) instead of starting a new one; a new commit still needs a fresh QA verdict.
+- **Synthetic input with scan code 0 is ignored by the Input System.** `keybd_event` with scan code 0 never reaches `Keyboard.current.escapeKey`; only UI Toolkit key events see it. A Play-Tester finding "Escape does nothing" came from that (F006 A-F1). Send real scan codes (`MapVirtualKey`) before filing input defects.
 - **A Play Mode result with 0 tests is never a pass.** Through the editor's MCP runner, consecutive Play Mode runs often return `total: 0` ("Passed"), usually every second run, with or without an MCP disconnect. Before each Play Mode run, force a recompile (`CompilationPipeline.RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache)`) and wait until the editor is ready. Edit Mode is unaffected.
 - **Run scene suites at a 640x480 Game view.** At 1366 px wide or more, the camera-drag assertion in `CoreGameFoundationSceneTests` fails for layout reasons.
 - **A player build leaves the editor's active build target behind.** `BuildPipeline.BuildPlayer` for Android switches the editor to Android, and scene tests then fail with the Android Game view size. In the `finally` of an in-editor build, call `EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64)`. Do not call `PlatformBuildCommands.BuildAndroidArm64DevelopmentGles3` inside the open editor: on failure it calls `EditorApplication.Exit(1)`.
@@ -53,6 +59,7 @@ Read it before working in the shared main checkout, running Unity tests or build
 
 ## Emulator and adb
 
+- **The reference emulator's `/data` is nearly full (about 450 to 575 MB free).** Uninstall only `com.DefaultCompany.idlefactorygame` before installing; never clear or uninstall other apps' data and never change the AVD storage threshold without the owner. A development APK built by Unity can carry dead zip data (82 MB file, 46 MB of entries, F006 R-8, carried to T541) and fail `adb install` with `INSUFFICIENT_STORAGE`.
 - **Emulator evidence needs exclusive use.** Beyond holding the `emulator` lease, check for foreign `adb`/`monkey` processes and other running sessions before a measurement, verify the installed APK hash and the device checkpoint, and do one unscored launch after an install. Do not run the Unity editor during timed captures. The profiling protocol is in [unity-standalone-profiler-android.md](../integrations/unity-standalone-profiler-android.md).
 - **Start the emulator and adb from the main checkout.** An emulator or adb server started from a worktree keeps that directory in use, and the worktree cannot be deleted until `adb -s emulator-5554 emu kill` and `adb kill-server` have run.
 - **A long-running emulator degrades** (about 1.5 FPS at full CPU after roughly 12 hours). Cold-boot it with host GPU before measuring.
