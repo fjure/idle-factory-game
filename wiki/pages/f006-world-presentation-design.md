@@ -1,8 +1,8 @@
 ---
 title: F006 world presentation design (planned)
 type: component
-sources: [S056, S057, S058, S059]
-updated: 2026-11-13
+sources: [S056, S057, S058, S059, S061]
+updated: 2026-11-19
 ---
 
 # F006 world presentation design (partly implemented)
@@ -32,6 +32,8 @@ Design from `research.md` R04-R08, R11, R23 of Feature 006. Implemented in batch
 
 - The simulator is stateless across advances, so it emits a per-advance count in `CompletionPass`, **+1 per completed cycle** (never the batch factor), exposed only after a successful commit. `RunSession` owns a session-only `long` per `InstanceId` (pruned on removal, reset on replace, empty on construction/restore/prestige) and surfaces it as `MachineStateView.CompletedCycles` via a defaulted constructor parameter. **Not saved**; no economy code reads it. Offline completions are not deltas. Tests: faulted advance, multi-completion, no-observer-effect SHA, property test against trace, public-API fixture diff.
 - "Short on <resource>" ranking: resources blocking at least one MissingInput machine, filtered to `HasDemand`, ordered by `SupplyCoveragePpm` ascending, then affected count descending, then content order. No MissingInput machine means no signal. The hub dot shows system attention only (Contracts, Research, Prestige, Overdrive). (S056)
+- **R09 note (C-25, T529 worker N3)**: a locked input gives no shortage: a resource the player cannot yet obtain raises no "Short on" signal. The worker asked for this to be documented in research R09; the parent records it here and `research.md` stays unedited by the ingest. (S061)
+- Implemented in batch 5: the marker view is wired (T557), `LimitingCause` is in the machine model for tooltip detail (T528), and the card copy follows in T547. See [batch 5 world and effects](./f006-batch-5-world-and-effects.md). (S061)
 
 ## ShellTab shim migration (R11)
 

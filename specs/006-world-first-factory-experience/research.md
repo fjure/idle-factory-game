@@ -227,6 +227,8 @@
    - Per-machine badges stay as in F004.
 5. **Review.** Game Systems reviewed the derivation (Low tier) and accepted it with these conditions applied.
 
+**Note (C-25, T529 review, 2026-11-18).** An input that is locked (its producer type not yet unlocked) is not a shortage: the "short on" signal and the shared cause name only inputs the player can already produce; a locked input surfaces as the unlock reason, never as "Short on".
+
 ## R10 — Contextual machine card and details (US3)
 
 **Decision.**
@@ -308,7 +310,7 @@
 
 **Decision.**
 
-- **Stage.** `stage = t ≤ 0 ? Early : clamp(floor(3·u/t), 0, 2)` [G-4]. Here u is the unlocked-location count at the current factory level and t is the location count at the maximum level. With 12 locations the steps fall at 4 and 8 [AD-12].
+- **Stage.** `stage = t ≤ u0 ? Early : clamp(floor(3·(u − u0)/(t − u0)), 0, 2)` [G-4; owner decision 2026-11-18]. Here u is the unlocked-location count at the current factory level, u0 the unlocked-location count at the first factory level, and t the location count at the maximum level. The original `floor(3·u/t)` (steps at 4 and 8 of 12 [AD-12]) made Early unreachable on Iron, which opens 4 of 12 at level 1; with the offset, Iron (4, 6, 8, 10, 12) gives Early at levels 1–2, Partial at level 3 and Established at levels 4–5.
 - **Secondary densities.** Active/unlocked and mean/max machine level, each in 3 bins.
 - **Per stage:**
   - deck-lit area, where unlocked cells use deck art and the others hatch;

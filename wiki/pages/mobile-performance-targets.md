@@ -1,8 +1,8 @@
 ---
 title: Mobile performance targets
 type: decision
-sources: [S001, S018, S048]
-updated: 2026-10-29
+sources: [S001, S018, S048, S062]
+updated: 2026-11-19
 ---
 
 # Mobile performance targets
@@ -41,3 +41,7 @@ Feature 003 plans workload W003, a producing 12-slot factory, to close the produ
 ## F004 frozen budgets (2026-10-29)
 
 T412 froze the Feature 004 render budgets from the first B2 measurement (61.37 FPS, APK +8.99 MB, 490 variants, SetPass 0.77-0.81 against 7.86-13.96 at B1); four budgets are deferred to B3 (T444). Emulator evidence only. See [F004 B2 frozen budgets](./f004-b2-frozen-budgets.md). (S048)
+
+## F006 budget 8 restated (2026-11-19)
+
+The B2/B3 SetPass reading of about one pass per render came from an Editor probe whose batch counters read 0; in the Windows player the same differential reads 28 to 34 passes for F004 pages alone (F004-only baseline 34) and 42 to 44 with F006. The owner restated row 8: the F006 delta must be at most +12 passes (about +35 %) over the F004-only baseline on W006-V, with the `camera.Render()` CPU tier 1 bound binding; the absolute count is informational. T531 measured +6 to +10, which passes. `performance-budgets.md` takes the text at the T544 close-out. See [F006 batch 6](./f006-batch-6-verification-and-polish.md) and `specs/004-visual-identity/reviews/performance-b3.md` section 12. (S062)
