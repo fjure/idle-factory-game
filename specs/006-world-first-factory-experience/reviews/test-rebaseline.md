@@ -414,3 +414,21 @@ No site was found without a reachable reason. B-14: `SelectTab` and `OpenTabAtSe
 |---|---|---|---|
 | `BuildCardTests.TheBuildCardKeepsItsWords...` heading | height at most 2 x font size x 1.8 (about 3 lines at a 1.2 line factor) | measured one-line height; at most 2.05 lines on every compact class, **3.05 lines on 640x360 at 200 %** | Stricter on 360x640 and 844x390, equal or stricter on 640x360. The 256 pt column wraps the title to three lines at 640x360/200 % and the shell never clips text (an ellipsis was tried and rejected by the no-clip assertion). UI/UX-owned exemption; device check D1/D3 at the final gate. |
 | same test, type rows | 2 rows visible OR selected row visible | selected row visible on every class; at least 2 rows only on 844x390 | 360x640 at 200 % shows 1 row (45 % card cap) and 640x360 shows 1; the C-46 scroll-to-selected contract applies there. |
+
+## T542 (#714): final verification
+
+T542 is verification only: no test, fixture, snapshot or production file changed, so no test was re-baselined and no expectation moved. Full record: [final-test-evidence.md](./final-test-evidence.md); manifest: [final-test-names.txt](./final-test-names.txt).
+
+| Item | Result |
+|---|---|
+| Edit Mode | 3167 of 3167 passed, 0 skipped |
+| Play Mode | 3483 of 3483 passed, 0 skipped (not 0 tests) |
+| Windows player (`-StandaloneWindowsPlayer`) | 82 of 82 passed (F006 cases: F006Allocation 7, ReducedMotionWorld 3, TilemapSmoke 2, W006VWorldPlayer 5, W006VRealScenePlayer 1, HubPlayer 1, MachineCardPlayer 1, DisplayPreferencesPlayer 1); no two-write autosave case (C-65/C-74, not covered) |
+| Manifest SHA-256 (CRLF method of F004) | Edit Mode `bdfc76400c06186fdf417934d7bc3f4fafdb6c248db4939f19d5d1a7e0cba66b`, Play Mode `f709abb0a2c2e389f4cb8933ab21e38691fc8d7368be25c5bdbc9366d7f57b69` |
+| `scripts/test-art-pipeline.ps1` | exit 0 |
+| `scripts/check-settings-noise.ps1 -Commit` | OK |
+| Save fixtures and golden trace | unchanged since c568d24 (`git diff --stat` over `Fixtures/SaveV1`, `SaveV2`, `SaveV3`, `Balance` is empty); the Edit Mode round-trip, device-set and balance-trace tests pass, so fixtures load under F006 and re-save with the same bytes |
+| Core public API fixture | `PublicApiSnapshotTests` passes (no fixture change by T542) |
+| Manual real-input checklist (Windows player) | not covered (owner decision 2026-11-19); emulator/adb coverage in final-test-evidence.md |
+
+Journey script (test tooling, not a test): three tap fractions calibrated and one check tightened for C-70, listed in final-test-evidence.md section 6.2 (Welcome back Continue 0.855,0.766; `-F006UpgradeTaps` 0.5,0.815; F005 contract Accept 0.133,0.70; F006Autosave restore requires a newer generation).

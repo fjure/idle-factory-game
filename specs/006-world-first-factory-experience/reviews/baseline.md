@@ -143,3 +143,57 @@ Re-run of the T502 probe (`BaselineMatrixTests`, probe mode, no panel open) on t
 | phone-portrait-390x844 | 67.9 % / 68.4 % | 17.0 % / 16.5 % | 13 / 10 | 44.9 % / 50.0 % | 33.2 % / 26.4 % | 13 / 10 |
 | tablet-landscape-1024x768 | 50.6 % / 50.3 % | 8.9 % / 6.5 % | 13 / 10 | 44.1 % / 44.0 % | 13.7 % / 8.3 % | 13 / 10 |
 | tablet-portrait-768x1024 | 41.4 % / 41.2 % | 7.1 % / 4.6 % | 13 / 10 | 34.5 % / 32.5 % | 11.7 % / 8.9 % | 13 / 10 |
+
+## T542 (#714): final re-run on the F006 build
+
+Re-run of the T502 probes (`BaselineMatrixTests`, probe mode, inside the full Play Mode suite on the code of origin/main 9ca6dbb7) at the end of F006. Before = the `baseline/` JSON of c568d24 (not rewritten), after = this run. The rig keeps the zoom buttons on and composes the Office hub. Guidance values steer design and are not gates. Evidence index: `final-test-evidence.md`.
+
+### SC-001 and SC-010 (no panel open): world share, chrome share, persistent labels
+
+| Class | World 100 % before / after | Chrome 100 % | Labels 100 % | World 200 % | Chrome 200 % | Labels 200 % |
+|---|---|---|---|---|---|---|
+| desktop-1280x720 | 57.2 % / 56.9 % | 8.5 % / 6.7 % | 13 / 10 | 51.1 % / 51.0 % | 12.4 % / 8.2 % | 13 / 10 |
+| desktop-1920x1080 | 70.6 % / 70.3 % | 5.3 % / 4.6 % | 13 / 10 | 66.3 % / 66.2 % | 7.1 % / 5.3 % | 13 / 10 |
+| emulator-landscape-2400x1080 | 62.8 % / 70.5 % | 28.3 % / 20.9 % | 13 / 10 | 49.8 % / 56.2 % | 38.4 % / 33.0 % | 13 / 10 |
+| emulator-portrait-1080x2400 | 71.7 % / 72.1 % | 14.1 % / 13.6 % | 13 / 10 | 50.7 % / 55.0 % | 27.4 % / 21.8 % | 13 / 10 |
+| phone-landscape-640x360 | 51.6 % / 54.6 % | 35.7 % / 35.3 % | 13 / 10 | 27.7 % / 36.0 % | 62.0 % / 55.8 % | 13 / 10 |
+| phone-landscape-844x390 | 58.0 % / 63.9 % | 32.1 % / 25.8 % | 13 / 10 | 43.6 % / 46.7 % | 43.8 % / 40.8 % | 13 / 10 |
+| phone-portrait-360x640 | 61.8 % / 62.4 % | 22.0 % / 21.3 % | 13 / 10 | 35.6 % / 41.9 % | 42.8 % / 34.1 % | 13 / 10 |
+| phone-portrait-390x844 | 67.9 % / 68.4 % | 17.0 % / 16.5 % | 13 / 10 | 44.9 % / 50.0 % | 33.2 % / 26.4 % | 13 / 10 |
+| tablet-landscape-1024x768 | 50.6 % / 50.3 % | 8.9 % / 6.5 % | 13 / 10 | 44.1 % / 44.0 % | 13.7 % / 8.3 % | 13 / 10 |
+| tablet-portrait-768x1024 | 41.4 % / 41.2 % | 7.1 % / 4.6 % | 13 / 10 | 34.5 % / 32.5 % | 11.7 % / 8.9 % | 13 / 10 |
+
+SC-001 guidance (world >= 60 %, chrome <= 15 % or 20 % at 200 %): desktop 1920x1080 and emulator-landscape 100 % meet the world share; phone classes at 200 % stay above the 20 % chrome guidance (34 % to 56 %). SC-010 guidance (<= 6 labels, 50 % of 13): not met on any class, 10 labels everywhere (six tab labels removed, the hub word stays, Overdrive keeps its name). The numbers equal the T537 re-run, so the later batches changed none of them.
+
+### SC-002 (machine card open): unobscured world share and selected-machine visibility
+
+| Class | Unobscured 100 % before / after | Machine visible 100 % | Unobscured 200 % | Machine visible 200 % |
+|---|---|---|---|---|
+| desktop-1280x720 | 100.0 % / 100.0 % | 100.0 % / 100.0 % | 100.0 % / 100.0 % | 100.0 % / 100.0 % |
+| desktop-1920x1080 | 100.0 % / 100.0 % | 100.0 % / 100.0 % | 100.0 % / 100.0 % | 100.0 % / 100.0 % |
+| emulator-landscape-2400x1080 | 52.8 % / 62.1 % | 100.0 % / 100.0 % | 65.4 % / 88.2 % | 100.0 % / 100.0 % |
+| emulator-portrait-1080x2400 | 48.4 % / 47.1 % | 100.0 % / 100.0 % | 46.4 % / 45.9 % | 100.0 % / 100.0 % |
+| phone-landscape-640x360 | 55.3 % / 66.3 % | 100.0 % / 100.0 % | 71.4 % / 102.6 % | 100.0 % / 100.0 % |
+| phone-landscape-844x390 | 53.6 % / 67.5 % | 100.0 % / 100.0 % | 67.2 % / 82.5 % | 100.0 % / 100.0 % |
+| phone-portrait-360x640 | 46.3 % / 46.1 % | 100.0 % / 100.0 % | 53.3 % / 51.3 % | 100.0 % / 100.0 % |
+| phone-portrait-390x844 | 44.5 % / 44.4 % | 100.0 % / 100.0 % | 48.5 % / 47.6 % | 100.0 % / 100.0 % |
+| tablet-landscape-1024x768 | 100.0 % / 100.0 % | 100.0 % / 100.0 % | 100.0 % / 100.0 % | 100.0 % / 100.0 % |
+| tablet-portrait-768x1024 | 100.0 % / 100.0 % | 100.0 % / 100.0 % | 100.0 % / 100.0 % | 100.0 % / 100.0 % |
+
+Guidance 50 % on phone portrait, 70 % on phone landscape and tablet. After: phone-landscape 640x360 at 200 % 102.6 % (the card docks beside the world, the world is wider than with no card, 100 % visible machine), 844x390 82.5 %, emulator-landscape 88.2 %: met at 200 %; at 100 % the landscape phones read 66.3 % and 67.5 % (just under 70 %). Portrait phones stay at 44 to 51 %: only 360x640 at 200 % (51.3 %) meets 50 %. The selected machine is 100 % visible on every class.
+
+### SC-003 (interactions, identical on every class and both text scales)
+
+| Journey | Before | After | Goal reached after | After steps |
+|---|---|---|---|---|
+| learn the limiting cause of one stopped machine | 1 | 1 | True | select the stopped machine in slot 4 |
+| learn the limiting cause of every stopped machine | 4 | 4 | True | select the stopped machine in slot 4; select the stopped machine in slot 5; select the stopped machine in slot 6; press Close |
+| open Market and return to the factory | 2 | 3 | True | press the Office entry; press the Market card; press Close |
+| open Contracts and return to the factory | 2 | 3 | True | press the Office entry; press the Contracts card; press Close |
+| open Items and return to the factory | 2 | 3 | True | press the Office entry; press the Items card; press Close |
+| open Research and return to the factory | 2 | 3 | True | press the Office entry; press the Research card; press Close |
+| open Prestige and return to the factory | 2 | 3 | True | press the Office entry; press the Prestige card; press Close |
+| upgrade a machine and see the factory again | 3 | 3 | True | select the machine in slot 1; press Upgrade; press Close |
+| build a machine in an empty slot | 3 | 3 | True | select the empty slot 9; press a build card; press Close |
+
+Guidance: upgrade <= 2 (after: 3), one stopped machine 1 tap (1), every stopped machine 0 taps for the problem category (4 taps, unchanged: the journey counts card reads; the 0-tap guidance is not met by this journey), system views reach in <= 2 and return in <= 1 (the hub adds one step: Office entry, card, Close = 3 counted, `to reach 2, to return 1` in the evidence string, so the reach and return guidance are met and the total is one more than the tab baseline), build 3 (3).
