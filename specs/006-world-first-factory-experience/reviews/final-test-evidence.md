@@ -6,12 +6,12 @@
 
 | # | Check | Result | Evidence |
 |---|---|---|---|
-| 1 | Edit Mode, full | **PASS** 3167/3167, 0 skipped | `final-test-evidence/editmode.log` (exit 0) |
+| 1 | Edit Mode, full | **PASS** 3167/3167, 0 skipped | `final-test-evidence/editmode.log` (exit 0), `unity-log-summary-editmode-playmode.txt` |
 | 2 | Play Mode, full (not 0 tests) | **PASS** 3483/3483, 0 skipped | `final-test-evidence/playmode.log` (exit 0) |
-| 3 | Windows player `-StandaloneWindowsPlayer` | **PASS** 82/82 | `final-test-evidence/standalone.log` (exit 0) |
+| 3 | Windows player `-StandaloneWindowsPlayer` | **PASS** 82/82 | `final-test-evidence/standalone.log` (exit 0), `PlayerPlayMode-results.xml` |
 | 4 | `scripts/test-art-pipeline.ps1` | **PASS** (exit 0, `ART_PIPELINE_PASS`) | `final-test-evidence/art-pipeline.log` |
-| 5 | `scripts/check-settings-noise.ps1 -Commit` | **PASS** on 76b7ee16 (the evidence commit; Unity-run noise in `ProjectSettings.asset`, the URP global settings and `Assets/UI Toolkit` was restored or deleted after every run and never committed) | command output |
-| 6 | Console (Unity logs) | **PASS** no `error CS`; tests ran with Unity's log check; APK build log: `Build Finished, Result: Success.`, 0 `error CS` | `test-results/unity/*/*.log` (not committed), APK build log |
+| 5 | `scripts/check-settings-noise.ps1 -Commit` | **PASS** on 76b7ee16 (the evidence commit) and on 8eec44bf; the fix-round commit is re-checked, see section 11 (details of the first commit: Unity-run noise in `ProjectSettings.asset`, the URP global settings and `Assets/UI Toolkit` was restored or deleted after every run and never committed) | command output |
+| 6 | Console (Unity logs) | **PASS** no `error CS`; tests ran with Unity's log check; APK build log: `Build Finished, Result: Success.`, 0 `error CS` | `unity-log-summary-editmode-playmode.txt` (the full Unity logs are 6 to 8 MB and not committed), `apk-build.log` |
 | 7 | Test manifest | recorded | section 3, `final-test-names.txt` |
 | 8 | Save fixtures / balance trace | **PASS** | section 4 |
 | 9 | Guidance re-run (SC-001, 002, 003, 010) | recorded, before to after in `baseline.md` | section 5 |
@@ -80,7 +80,7 @@ The first F006 run (`journey-f006-run1-uncalibrated`) failed Select, Upgrade, Hu
 
 Test-tool change beyond tap fractions (binding carry C-70, one line, line 2340): the F006Autosave restore check now also requires `restored.Generation -gt periodic.Generation`. Before, `Wait-CheckpointV2` returned the unchanged periodic file on timeout and the check passed on it. I did not touch anything else in the script.
 
-F006 run 2 results: Start PASS; Select, Upgrade (level sum 331 to 332), HubContracts (hub, Contracts, Back) PASS; BuildRotation PASS (portrait to landscape to portrait with the build card open, same process, no coded diagnostics); **Autosave PASS (C-65, C-70)**: before force-stop gen 11 level sum 332, periodic checkpoint without a lifecycle event after 35 s gen 13 level sum 333, same process, `am force-stop` without HOME, relaunch restored gen 14 with level sum 333 (a newer generation than the periodic one, so the restore check was satisfied by a real write); Zoom INFO (buttons stay hidden on touch without the preference; `-ZoomPrefTaps` were not supplied because the Settings screenshot `17-f006-zoom-0-settings.png` shows the preference below the fold and no tap was calibrated); LogScan PASS (0 crash, 0 coded diagnostics, 0 unexpected `E Unity`).
+F006 run 2 results: Start PASS; Select, Upgrade (level sum 331 to 332), HubContracts (hub, Contracts, Back) PASS; BuildRotation PASS (portrait to landscape to portrait, same process, no coded diagnostics) but with the MACHINE card open, not the build card: the set has no empty location, so the build-card tap opened a Miner card (see F006Build below); **Autosave PASS (C-65, C-70)**: before force-stop gen 11 level sum 332, periodic checkpoint without a lifecycle event after 35 s gen 13 level sum 333, same process, `am force-stop` without HOME, relaunch restored gen 14 with level sum 333 (a newer generation than the periodic one, so the restore check was satisfied by a real write); Zoom INFO (buttons stay hidden on touch without the preference; `-ZoomPrefTaps` were not supplied because the Settings screenshot `17-f006-zoom-0-settings.png` shows the preference below the fold and no tap was calibrated); LogScan PASS (0 crash, 0 coded diagnostics, 0 unexpected `E Unity`).
 
 **F006Build FAIL, structural.** The committed device sets (`w003-s-shipped`, `prestige-ready`) have a machine on all 12 locations of the placed factory, so `-F006EmptySlotTaps` taps a Miner and the machine card opens instead of the build card (`journey-f006-run2/11-f006-build-1-card.png`). The scenario cannot pass its build step on that set. The build card itself works on a fresh run (6.4). Open for the owner: add a device set with an empty location, or drop the step from the default F006 list.
 
@@ -112,7 +112,7 @@ Screen classes: reachable on the AVD through `wm size`/`wm density`/`user_rotati
 | Marker 7 taps (adb) | (a) tap and a 120 ms press on the icon centre **FAIL** (no card, no selection); (c) tap 40 px beside the icon inside the 48 pt circle **FAIL** (nothing); (d) far empty world: not conclusive (no card was open); strip indicator chip tap **PASS** (card opens). The shortage marker is not tappable in this build | `m1-tap-marker-icon.png`, `m1b-press-marker-icon.png`, `m2-tap-near-marker.png`, `m4-tap-strip-chip.png` |
 | Marker 11 accessibility route | **NOT REACHABLE via adb** (no accessible nodes, see D8); TalkBack not run | |
 | Marker 8, 9, 10, 12, 13 | 13: PASS (logcat free of marker or other errors, LogScan). 12: not graded (needs a zoom crop). 8 reduced motion, 9 rotation re-position timing, 10 recovery: **not run** | |
-| T539 build card (portrait 100 %) | PASS: ghost and frame above the card, type rows visible, selected row Miner, Confirm builds, cash 37 to 7, hand-over to the machine card with focus on the disabled Upgrade (not Overdrive); rotation with the build card open PASS (journey) | `f-...` |
+| T539 build card (portrait 100 %) | PASS: ghost and frame above the card, type rows visible, selected row Miner, Confirm builds, cash 37 to 7, hand-over to the machine card with focus on the disabled Upgrade (not Overdrive); rotation with the build card open NOT RUN (the journey's rotation step had the machine card open) | `f-...` |
 | T540 banner / stage | not run (no level-up fixture) | |
 
 ## 8. Success criteria, UI rule and empty/error states
@@ -137,3 +137,57 @@ Screen classes: reachable on the AVD through `wm size`/`wm density`/`user_rotati
 ## 10. Not covered
 
 The manual real-input checklist on the Windows player (owner decision 2026-11-19). TalkBack. Physical devices, notch or cutout classes, 150 % text. The Research hub card at 844x390/200 %, the 640x360/200 % build card, the tablet build card, level-up banner and stage triptych (no fixture), reduced-motion and rotation timing of markers. Pinch zoom (adb has one pointer).
+
+
+## 11. Fix round (QA PASS-with-findings on 8eec44bf): records only
+
+**Logs.** `*.log` is gitignored (`.gitignore:116`). Force-added (each under 1 MB, nothing trimmed): `final-test-evidence/editmode.log`, `playmode.log`, `standalone.log`, `art-pipeline.log`, `journey-default.log`, `journey-f003-run1.log`, `journey-f004-run1.log`, `journey-f005-run1-uncalibrated.log`, `journey-f005-run2.log`, `journey-f005-run3-nofps.log`, `journey-f006-run1-uncalibrated.log`, `journey-f006-run2.log`; also `apk-build.log` (the Unity APK build log, 739 KB) and `PlayerPlayMode-results.xml` (872 KB). The Edit Mode and Play Mode Unity logs (6.3 and 7.6 MB) and result XML (2.5 and 3.3 MB) exceed 1 MB and are **not** committed; `unity-log-summary-editmode-playmode.txt` carries their error counts and result headers, and `final-test-names.txt` the per-test results. The `editmode.log`, `playmode.log` and `standalone.log` files are the runner's short stdout (about 0.5 KB each). The player's own Unity log is not committed.
+
+**Row 5.** `scripts/check-settings-noise.ps1 -Commit 8eec44bf` (the final commit before this round): `Settings noise check: OK`. It is re-run on the fix-round commit after this commit; the result is in the PR report.
+
+**s1-* captures.** Committed in 76b7ee16: `device/s1-360x640-200-start.png` and `device/s1-360x640-200-card.png` (`git ls-files` lists both).
+
+### Verdicts added (pass, fail, not run or not reachable)
+
+Marker checklist (T543-C), items 3 to 6 and the rest:
+
+| Item | Verdict | Reason |
+|---|---|---|
+| 3 keep-out (marker box covers no machine, plate cell, badge, selected card band; first and last row; two shortages in a row) | **NOT RUN** | No overlap analysis and no first/last-row selection against markers. By eye the markers sit in the lane gaps beside machines in every capture (`m0-start.png`, `c-*-start.png`); that is an observation, not a pass |
+| 4 backdrop tone under the marker (A_ov, grayscale, icon identifiable at n_min) | **NOT RUN** | No grayscale or contrast measurement; the icon is also the generic arrow (D6 FAIL) |
+| 5 draw order (marker above cues and pips; Overdrive machine) | **NOT RUN** | No Overdrive machine in any loaded state; no pip overlap was looked for |
+| 6 store-full marker vs the depot FULL sprite | **NOT RUN (partial by eye)** | Store-full markers (orange storage glyph) appear in the F005 W005-L captures and differ from the red shortage markers; the depot FULL sprite state (copper lip) was not reached or compared |
+| 1, 2 | PASS | section 7 |
+| 7 | (a) FAIL, (c) FAIL, (d) not conclusive, strip chip PASS | section 7; (b) machine at the junction side was not tapped: **NOT RUN** |
+| 8, 9, 10, 12 | NOT RUN | section 7 |
+| 11 | NOT REACHABLE via adb | no accessibility nodes |
+| 13 | PASS | LogScan |
+| U1 (band flex-wrap at 640x360/200 % with a sheet open) | **NOT RUN** | no sheet was opened in that class; only the machine card (`c-phone-640x360-200-card.png`, the side column wraps its text without clipping) |
+| A10 (selected footprint visible with the band) | **PASS by eye** | the blue selected frame is visible above the card in `s1-360x640-200-card.png` and beside the side column in `c-phone-640x360-200-card.png` |
+| C-12/C-31 look items (gantry 9 px, floating stage-3 props, V float, pip over body, 5 px depot clip) | **NOT RUN** | no pixel-level inspection; no floating prop was noticed in the captures (not a verdict) |
+| T529 pop placement (C-24) | NOT RUN | no pop trigger |
+
+T539 build card, items 2 to 9:
+
+| Item | Verdict | Reason |
+|---|---|---|
+| 2 landscape 2400x1080 100/200 % and 640x360 200 % (Cash/store/Overdrive tappable, ghost in the world column, card not clipped, buttons >= 48, reason lines) | **NOT RUN** | the build card was opened only on the fresh run in portrait; the landscape classes ran on the W003-S set, which has no empty location |
+| 3 tablet side-panel dock, first column not clipped | **NOT RUN** | same reason |
+| 4 60 % ghost vs dark plate; available/selected/occupied/locked distinguishable | **PASS by eye** (portrait 1080x2400, 100 %) | `f-1080x2400-100-buildcard.png`: the selected location shows the ghost with a blue frame, available plates are outlined in blue, occupied/locked plates are dimmed with level numbers; not measured |
+| 5 shortfall "Need $X more" below the buttons; disabled Confirm not primary | **NOT RUN** | the Miner was affordable (cash 37, cost 30); the "Need $29" seen later is the machine card's Upgrade line, not the build card |
+| 6 build with Cash: dust, hand-over to the machine card, focus to Upgrade, no world jump; reduced-motion static highlight | **PARTIAL** | hand-over PASS and focus ring on the (disabled) Upgrade button PASS (`f-...-built-t3.png`); dust not seen in the 1 s and 3 s captures; the world recentres about 180 px on hand-over (D7); reduced motion NOT RUN |
+| 7 Back/Escape, hub open while card open, rotation with the card open, retarget keeps the type | **PARTIAL** | Back after the build closed the machine card (card band changed in `f-...-after-back.png`); Back on the build card itself, hub while open, rotation with the build card open (the journey rotated the machine card) and retarget: **NOT RUN** |
+| 8 TalkBack/keyboard order, tooltips, Overdrive focus guard (A3) | **NOT REACHABLE via adb** | no accessible nodes; the Overdrive guard was not exercised |
+| 9 warning/danger text contrast on the card surface | **PARTIAL by eye** | the yellow "Unlocks at factory level 3." and "Short on Iron Ore" lines are legible on the dark card in `f-...-buildcard.png` and `s1-360x640-200-card.png`; no contrast ratio was measured |
+
+T540 milestone banner and stages (UI/UX review 641c5a0):
+
+| Item | Verdict | Reason |
+|---|---|---|
+| 1 (C1: 640x360, 844x390, 360x640 at 200 %: is a top-row machine or ghost covered by the banner) | **NOT RUN** (mandatory check not done) | no level-up can be triggered through adb with the committed sets; no fixture raises the factory level on the device |
+| 2, 3, 4 (banner below strip and notice bar, wrap and dismiss, gone by 2.5 s, reduced motion) | **NOT RUN** | same reason |
+| 5 TalkBack announcement | **NOT REACHABLE via adb** | |
+| 6 offline return with a level-up while away; prestige gives B-03 | **NOT RUN** | the offline summaries seen (8 h cap, 61 s) held no level-up; prestige was not confirmed on the device |
+| 7 stage triptych | **PARTIAL by eye** | Early stage on the fresh run (railing only, no lit ring, `f-1080x2400-100-fresh.png`) and the full-edge stage on W003-S (wall and depot, `m0-start.png`, no floating prop noticed); Partial and Established transitions, "Deck extended." and the lit-ring growth NOT RUN; 12-location keep-out at 640x360 not checked |
+
+These NOT RUN and PARTIAL verdicts stand for T543/T548: the device could not cover them with the committed sets and adb input, and I did not fabricate a fixture.

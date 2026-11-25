@@ -1,0 +1,42 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.6, pytest-8.4.2, pluggy-1.7.0
+rootdir: C:\Users\Domenik\ai-projects\idle-factory-game\.maqa-worktrees\issue-714-t542-final-qa
+collected 350 items
+
+tools\art-pipeline\tests\test_a03_anchor.py ..........                   [  2%]
+tools\art-pipeline\tests\test_checks.py ..............                   [  6%]
+tools\art-pipeline\tests\test_checks_v1.py ...................           [ 12%]
+tools\art-pipeline\tests\test_comfy_samples.py ......................    [ 18%]
+tools\art-pipeline\tests\test_comfy_workflows.py ..........              [ 21%]
+tools\art-pipeline\tests\test_concept_f006.py .....                      [ 22%]
+tools\art-pipeline\tests\test_cue_tail.py ....                           [ 24%]
+tools\art-pipeline\tests\test_cues_production.py ..................      [ 29%]
+tools\art-pipeline\tests\test_cues_sheets_budgets.py ..............      [ 33%]
+tools\art-pipeline\tests\test_f006_depot_deposit.py ...................  [ 38%]
+tools\art-pipeline\tests\test_f006_ground_foundation.py ........         [ 40%]
+tools\art-pipeline\tests\test_f006_link_fx.py ............               [ 44%]
+tools\art-pipeline\tests\test_f006_prop_edge.py ........................ [ 51%]
+...                                                                      [ 52%]
+tools\art-pipeline\tests\test_f006_ui_office.py ....                     [ 53%]
+tools\art-pipeline\tests\test_final_readability.py ........              [ 55%]
+tools\art-pipeline\tests\test_golden.py ..........                       [ 58%]
+tools\art-pipeline\tests\test_golden_blender_slots_floor.py ............ [ 61%]
+.                                                                        [ 62%]
+tools\art-pipeline\tests\test_mockup.py ................................ [ 71%]
+.                                                                        [ 71%]
+tools\art-pipeline\tests\test_models_registry.py ......................  [ 77%]
+tools\art-pipeline\tests\test_palette.py .....                           [ 79%]
+tools\art-pipeline\tests\test_palette_v1.py ....                         [ 80%]
+tools\art-pipeline\tests\test_pixel_pass.py ...............              [ 84%]
+tools\art-pipeline\tests\test_slots_pipeline_lattice.py ......           [ 86%]
+tools\art-pipeline\tests\test_spike_s2_palette_budget.py ........        [ 88%]
+tools\art-pipeline\tests\test_tier_chips.py ........                     [ 90%]
+tools\art-pipeline\tests\test_timed_trial.py ..................          [ 96%]
+tools\art-pipeline\tests\test_ui_icons.py ..............                 [100%]
+
+======================= 350 passed in 81.57s (0:01:21) ========================
+
+Using CPython 3.13.6 interpreter at: C:\Program Files\Python313\python.exe
+Creating virtual environment at: tools\art-pipeline\.venv
+Installed 7 packages in 292ms
+ART_PIPELINE_PASS
