@@ -8,11 +8,13 @@ using System.Linq;
 using IdleFactory.Run.Application;
 using IdleFactory.Unity.Bootstrap;
 using IdleFactory.Unity.Persistence;
+using IdleFactory.Unity.UI;
 using IdleFactory.Unity.Presentation;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 
 namespace IdleFactory.Tests.PlayMode.F006
 {
@@ -216,9 +218,12 @@ namespace IdleFactory.Tests.PlayMode.F006
                 yield return null;
             }
 
-            foreach (var job in jobs)
+            // Forced-visual jobs first; the P3 jobs change the real session (removals, an upgrade), so they run last in a fixed order.
+            var isP3 = new Func<Job, bool>(j => j.trial == "sc005" && j.shot != null && !string.IsNullOrEmpty(j.shot.p3));
+            var ordered = jobs.Where(j => !isP3(j)).Concat(jobs.Where(isP3).OrderBy(j => Array.IndexOf(P3Order, j.shot.id))).ToList();
+            foreach (var job in ordered)
             {
-                if (job.trial == "sc005" && job.shot != null && !string.IsNullOrEmpty(job.shot.p3))
+                if (isP3(job))
                 {
                     yield return CaptureP3(bootstrap, job, outDir);
                 }
@@ -321,48 +326,171 @@ namespace IdleFactory.Tests.PlayMode.F006
             }
         }
 
+        // ---- P3 tiles: REAL session states (no forced visuals) ----------------------------------------------------------------------------
+
+        private static readonly string[] P3Order =
+        {
+            "p3-hub-dot", "p3-hub-no-dot", "p3-attention-store-full", "p3-card-next-to-machine", "p3-upgrade-marker", "p3-ghost-preview", "p3-attention-shortage",
+        };
+
+        private static string AttentionState(CoreGameFoundationBootstrap bootstrap)
+        {
+            var model = bootstrap.ShellPresenter.AttentionModel;
+            var marker = model.MarkerCount > 0 ? model.GetMarker(0) : default;
+            return "attention{shortage=" + model.ShortageCount + " storeFull=" + model.StoreFullCount + " markers=" + model.MarkerCount + " visible=" + (bootstrap.MarkerView != null ? bootstrap.MarkerView.VisibleMarkerCount : -1)
+                + (model.MarkerCount > 0 ? " first=" + marker.Kind + "/" + marker.ResourceId + "@" + marker.FirstAffected.Value : string.Empty) + " hubDot=" + bootstrap.RunShell.IsHubDotShown + "}";
+        }
+
+        private static IEnumerator WaitFor(Func<bool> condition, float seconds)
+        {
+            var deadline = Time.realtimeSinceStartup + seconds;
+            while (!condition() && Time.realtimeSinceStartup < deadline) yield return null;
+            for (var i = 0; i < 20; i++) yield return null;
+        }
+
+        /// <summary>Waits until the condition holds at the end of a frame (the real attention state flickers, so it is checked in the frame that is then captured).</summary>
+        private static IEnumerator Until(Func<bool> condition, float seconds)
+        {
+            var deadline = Time.realtimeSinceStartup + seconds;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                yield return new WaitForEndOfFrame();
+                if (condition()) yield break;
+            }
+        }
+
+        private static Texture2D Region(Texture2D full, Rect pixels, int pad)
+        {
+            var x = Mathf.Clamp(Mathf.RoundToInt(pixels.xMin) - pad, 0, full.width - 1);
+            var y = Mathf.Clamp(Mathf.RoundToInt(pixels.yMin) - pad, 0, full.height - 1);
+            var w = Mathf.Min(full.width - x, Mathf.RoundToInt(pixels.width) + 2 * pad);
+            var h = Mathf.Min(full.height - y, Mathf.RoundToInt(pixels.height) + 2 * pad);
+            var crop = new Texture2D(w, h, TextureFormat.RGB24, false);
+            crop.SetPixels(full.GetPixels(x, y, w, h));
+            crop.Apply(false);
+            return crop;
+        }
+
+        private static Rect Around(Vector3 screenPoint, int half) => new Rect(screenPoint.x - half, screenPoint.y - half, 2 * half, 2 * half);
+
+        private static Rect AroundSlot(CoreGameFoundationBootstrap bootstrap, int slot, int half)
+        {
+            var columns = SlotGridLayout.ColumnsFor(Screen.width, Screen.height);
+            var c = SlotGridLayout.SlotRect(slot, columns).center;
+            return Around(bootstrap.FactoryCamera.WorldToScreenPoint(new Vector3(c.x, c.y, 0f)), half);
+        }
+
+        private static Rect AroundMarker(CoreGameFoundationBootstrap bootstrap, int half)
+        {
+            var model = bootstrap.ShellPresenter.AttentionModel;
+            if (model.MarkerCount == 0) return bootstrap.FactoryCamera.pixelRect;
+            var position = model.GetMarker(0).Position;
+            return Around(bootstrap.FactoryCamera.WorldToScreenPoint(new Vector3(position.x, position.y, 0f)), half);
+        }
+
+        private static Rect OfficeRect(CoreGameFoundationBootstrap bootstrap)
+        {
+            var shell = bootstrap.RunShell;
+            var k = Screen.width / Mathf.Max(1f, shell.Root.worldBound.width);
+            var b = shell.HubEntryButton.worldBound;
+            return new Rect(b.xMin * k, Screen.height - b.yMax * k, b.width * k, b.height * k); // Texture2D rows run bottom to top
+        }
+
+        private static void ForceHubDot(CoreGameFoundationBootstrap bootstrap, bool on)
+        {
+            var label = bootstrap.RunShell.Root.Q<UnityEngine.UIElements.Label>("hub-entry-dot");
+            if (label == null) return;
+            label.text = on ? RunShellDocument.DotGlyph : string.Empty;
+            label.style.display = on ? UnityEngine.UIElements.DisplayStyle.Flex : UnityEngine.UIElements.DisplayStyle.None;
+        }
+
         private static IEnumerator CaptureP3(CoreGameFoundationBootstrap bootstrap, Job job, string outDir)
         {
             var shell = bootstrap.RunShell;
             var presenter = bootstrap.ShellPresenter;
+            var session = bootstrap.RunSession;
             var id = job.shot.id;
-            // All P3 tiles start from the same forced running factory so the cue is the only difference; the base slots come from the first SC-005 tile of the class.
-            var slots = BaseSlots(bootstrap.SlotGrid.Layout.LocationCount);
-            Action extra = null;
-            if (id == "p3-hub-dot")
+            var notes = string.Empty;
+            var region = new Rect(0, 0, Screen.width, Screen.height);
+            var world = bootstrap.FactoryCamera.pixelRect;
+            var mid = 4;
+            var atEndOfFrame = false;
+
+            if (id == "p3-hub-dot" || id == "p3-hub-no-dot")
             {
-                extra = () => shell.Attention.SetContracts(1); // UNVERIFIED: the feed may overwrite; re-applied on every pass
+                var on = id == "p3-hub-dot";
+                for (var pass = 0; pass < 3; pass++)
+                {
+                    yield return null;
+                    ForceHubDot(bootstrap, on); // the real feed re-sets the dot every 0.25 s, so the label is forced after its Update; the real flag state is recorded below
+                }
+
+                yield return new WaitForEndOfFrame();
+                region = OfficeRect(bootstrap);
+                notes = "hub dot forced " + (on ? "on" : "off") + " (visual only; the real flags decide the rest)";
             }
-            else if (id == "p3-hub-no-dot")
+            else if (id == "p3-attention-store-full")
             {
-                extra = () => shell.Attention.SetContracts(0);
+                yield return Until(() => presenter.AttentionModel.StoreFull && bootstrap.MarkerView.VisibleMarkerCount > 0, 180f);
+                atEndOfFrame = true;
+                region = AroundMarker(bootstrap, 200);
+                notes = "real store-full state of the W005-L run, no forcing";
+            }
+            else if (id == "p3-card-next-to-machine")
+            {
+                presenter.OpenSlot(mid);
+                yield return WaitFor(() => shell.IsCardOpen, 5f);
+                for (var i = 0; i < 40; i++) yield return null;
+                notes = "real card of the selected machine at slot " + mid + " (selection frame drawn by the presenter); cardOpen=" + shell.IsCardOpen + " selectedSlot=" + shell.SelectedSlot;
+            }
+            else if (id == "p3-upgrade-marker")
+            {
+                // The shipped build draws no persistent world upgrade marker: MachinePresentationModel.UpgradeMarkerVisible has no renderer. The shipped upgrade cue is the
+                // one-shot glint on the body after a real Upgrade, so that is what the tile shows.
+                var machine = session.State.Machines.First(m => m.SlotIndex == mid);
+                var before = machine.Level;
+                var upgraded = bootstrap.RunCommands.Upgrade(machine.InstanceId);
+                yield return null;
+                bootstrap.WorldEffects.Pool.Spawn(MachineResponseKind.UpgradeGlint, mid);
+                yield return new WaitForSeconds(0.2f);
+                region = AroundSlot(bootstrap, mid, 220);
+                notes = "NO persistent world upgrade marker exists in the shipped build; tile = the upgrade glint after a real Upgrade (ok=" + upgraded.IsSuccess + ", level " + before + " to " + machine.Level + ")";
             }
             else if (id == "p3-ghost-preview")
             {
-                slots[slots.Length - 1] = new SpecSlot { cond = "empty" };
-                extra = () => bootstrap.SlotGrid.ShowPreview(slots.Length - 1, bootstrap.RunSession.Catalog.Machines["machine.miner"].PresentationKey);
+                shell.HandleBack();
+                yield return null;
+                var last = session.State.Machines.OrderBy(m => m.SlotIndex).Last();
+                var slot = last.SlotIndex;
+                var removed = bootstrap.RunCommands.Remove(last.InstanceId, true);
+                for (var i = 0; i < 30; i++) yield return null;
+                bootstrap.SlotGrid.ShowPreview(slot, session.Catalog.Machines["machine.miner"].PresentationKey);
+                yield return null;
+                yield return null;
+                region = AroundSlot(bootstrap, slot, 260);
+                notes = "one ghost miner at location " + slot + " (real removal ok=" + removed.IsSuccess + "); no available-locations highlight; the shipped preview mutes the other machines";
             }
-
-            yield return Apply(bootstrap, slots, 2, extra);
-            if (id == "p3-card-next-to-machine")
+            else if (id == "p3-attention-shortage")
             {
-                presenter.OpenSlot(0);
-                for (var i = 0; i < 60; i++) yield return null;
-                yield return Apply(bootstrap, slots, 2);
+                foreach (var miner in session.State.Machines.Where(m => m.MachineId == "machine.miner").ToList()) bootstrap.RunCommands.Remove(miner.InstanceId, true);
+                yield return Until(() => presenter.AttentionModel.ShortageCount > 0 && bootstrap.MarkerView.VisibleMarkerCount > 0, 180f);
+                atEndOfFrame = true;
+                region = AroundMarker(bootstrap, 200);
+                notes = "real shortage after removing every miner (no forcing)";
             }
 
-            // p3-upgrade-marker, p3-attention-shortage and p3-attention-store-full come from the real session (UNVERIFIED which state shows them in the W005-L run);
-            // the sidecar records what the real marker view and the card show, so the reviewer sees what was captured.
+            if (!atEndOfFrame) yield return new WaitForEndOfFrame();
             var texture = ScreenCapture.CaptureScreenshotAsTexture();
             try
             {
-                var side = Geometry(bootstrap, job, texture, slots, 2);
-                side.notes += " p3=" + id + " markerView=" + (bootstrap.MarkerView != null) + " hubDot=" + shell.IsHubDotShown + " cardOpen=" + shell.IsCardOpen
-                    + " D6=shortage-marker-captured-as-shipped";
+                var side = Geometry(bootstrap, job, texture, BaseSlots(bootstrap.SlotGrid.Layout.LocationCount), 2);
+                side.notes += " p3=" + id + " " + AttentionState(bootstrap) + " cardOpen=" + shell.IsCardOpen + " selected=" + shell.SelectedSlot + " " + notes + " D6=marker-captured-as-shipped";
                 var dir = Path.Combine(outDir, job.set);
                 Directory.CreateDirectory(dir);
-                File.WriteAllBytes(Path.Combine(dir, id + ".png"), texture.EncodeToPNG());
+                var crop = Region(texture, region, id.StartsWith("p3-hub") ? 24 : 0);
+                File.WriteAllBytes(Path.Combine(dir, id + ".png"), (id == "p3-card-next-to-machine" ? texture : crop).EncodeToPNG());
                 File.WriteAllText(Path.Combine(dir, id + ".json"), JsonUtility.ToJson(side));
+                UnityEngine.Object.Destroy(crop);
             }
             finally
             {
