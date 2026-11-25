@@ -32,6 +32,7 @@ namespace IdleFactory.Unity.UI
         private long lastCapacity = long.MinValue;
         private long overdriveSecond = long.MinValue;
         private bool factoryDirty = true;
+        private ulong affordableUpgradeMask;
         private RunFactorySnapshot snapshot;
         private HashSet<string> boosted = new HashSet<string>(StringComparer.Ordinal);
         private bool overdriveActive;
@@ -193,6 +194,13 @@ namespace IdleFactory.Unity.UI
             }
 
             if (MachineStatesChanged())
+            {
+                factoryDirty = true;
+            }
+
+            // FR-027 (T563): the upgrade marker follows the cash. A snapshot is not rebuilt for cash alone, so the cached costs are compared with the cash here
+            // (a loop over at most 12 locations, no allocation) and the visuals are rebuilt only when an upgrade becomes affordable or stops being so.
+            if (!factoryDirty && grid.Visuals.Count > 0 && AffordableUpgradeMask(cash) != affordableUpgradeMask)
             {
                 factoryDirty = true;
             }
@@ -389,6 +397,7 @@ namespace IdleFactory.Unity.UI
             milestones.Observe(snapshot, session.State.RunId, PrestigeCountOf(), BaseUnlockedOf());
             var visuals = SlotGridModel.DescribeAll(snapshot, presentationKeyOf, overdriveActive, boosted, shell.SelectedSlot);
             grid.Render(visuals);
+            affordableUpgradeMask = AffordableUpgradeMask(session.ReadCash());
             var anyOccupied = false;
             for (var i = 0; i < visuals.Length; i++)
             {
@@ -405,6 +414,22 @@ namespace IdleFactory.Unity.UI
             {
                 shell.UpdateSlotRoute(shell.SelectedSlot, visuals[shell.SelectedSlot].Condition);
             }
+        }
+
+        // One bit per location whose next upgrade the cash pays for, from the costs of the cached grid visuals.
+        private ulong AffordableUpgradeMask(long cash)
+        {
+            ulong mask = 0;
+            var visuals = grid.Visuals;
+            for (var i = 0; i < visuals.Count && i < 64; i++)
+            {
+                if (visuals[i].UpgradeCost != SlotGridModel.NoUpgradeCost && cash >= visuals[i].UpgradeCost)
+                {
+                    mask |= 1UL << i;
+                }
+            }
+
+            return mask;
         }
 
         private void HandleSelectionChanged(int slot)

@@ -18,9 +18,11 @@ namespace IdleFactory.Unity.Presentation
         private readonly SpriteRenderer badge;
         private readonly SpriteRenderer boosted;
         private readonly SpriteRenderer overdrive;
+        private readonly SpriteRenderer upgrade;
         private readonly SpriteRenderer[] all;
         private bool hasBoosted;
         private bool hasOverdrive;
+        private bool hasUpgrade;
         private bool hasLabel;
         private LabelPolicy labelPolicy = LabelPolicy.Never;
         private PresentationSpriteEntry machineEntry;
@@ -60,7 +62,9 @@ namespace IdleFactory.Unity.Presentation
             boosted = Create(root, "Boosted", SlotGridView.OverlayOrder + 1, overlayLayerId);
             overdrive = Create(root, "Overdrive", SlotGridView.OverlayOrder + 2, overlayLayerId);
             badge = Create(root, "Badge", SlotGridView.OverlayOrder + 3, overlayLayerId);
-            all = new[] { plate, machine, accent, frame, label, badge, boosted, overdrive };
+            // FR-027 (T563): the upgrade marker shares the boosted marker's sorting order: the two are never drawn together (a boosted machine keeps its Item marker).
+            upgrade = Create(root, "UpgradeMarker", SlotGridView.OverlayOrder + 1, overlayLayerId);
+            all = new[] { plate, machine, accent, frame, label, badge, boosted, overdrive, upgrade };
         }
 
         public IReadOnlyList<SpriteRenderer> All => all;
@@ -93,6 +97,7 @@ namespace IdleFactory.Unity.Presentation
                 case SlotGridView.SlotRendererRole.Badge: return badge;
                 case SlotGridView.SlotRendererRole.Boosted: return boosted;
                 case SlotGridView.SlotRendererRole.Overdrive: return overdrive;
+                case SlotGridView.SlotRendererRole.UpgradeMarker: return upgrade;
                 default: return null;
             }
         }
@@ -105,6 +110,7 @@ namespace IdleFactory.Unity.Presentation
             frame.sortingOrder = SlotGridView.FrameOrder + row;
             label.sortingOrder = SlotGridView.OverlayOrder + row * 4;
             boosted.sortingOrder = SlotGridView.OverlayOrder + row * 4 + 1;
+            upgrade.sortingOrder = SlotGridView.OverlayOrder + row * 4 + 1;
             overdrive.sortingOrder = SlotGridView.OverlayOrder + row * 4 + 2;
             badge.sortingOrder = SlotGridView.OverlayOrder + row * 4 + 3;
         }
@@ -150,6 +156,12 @@ namespace IdleFactory.Unity.Presentation
             hasOverdrive = overdriveEntry != null;
             overdriveCanvas = IsCanvas(overdriveEntry, overdrive);
 
+            // FR-027 (T563): lower priority than every other cue. A problem badge already cleared `UpgradeMarker`; an Item boost keeps marker box M1.
+            var upgradeEntry = Apply(upgrade, catalog, visual.UpgradeMarker && !visual.Boosted ? SlotGridModel.UpgradeMarkerKey : null);
+            hasUpgrade = upgradeEntry != null;
+            upgrade.transform.localScale = Vector3.one;
+            upgrade.transform.localPosition = new Vector3(StateCueGeometry.UpgradeMarkerOffset.x, StateCueGeometry.UpgradeMarkerOffset.y, 0f);
+
             PlaceLayer(plate, plateCanvas);
             PlaceLayer(machine, machineCanvas);
             PlaceLayer(accent, accentCanvas);
@@ -164,7 +176,7 @@ namespace IdleFactory.Unity.Presentation
                 renderer.enabled = false;
             }
 
-            hasBoosted = hasOverdrive = hasLabel = false;
+            hasBoosted = hasOverdrive = hasUpgrade = hasLabel = false;
             machineEntry = accentEntry = null;
             animated = false;
         }
@@ -190,6 +202,7 @@ namespace IdleFactory.Unity.Presentation
             PlaceMarker(overdrive, overdriveCanvas, markerScale, StateCueGeometry.Marker2Offset);
             boosted.enabled = hasBoosted && markersVisible;
             overdrive.enabled = hasOverdrive && markersVisible;
+            upgrade.enabled = hasUpgrade && markersVisible;
             label.enabled = hasLabel && labelPolicy.IsShown(pointsPerCell, StateCueGeometry.ArtPixelsPerCell);
         }
 

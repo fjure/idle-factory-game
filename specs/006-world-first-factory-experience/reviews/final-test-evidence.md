@@ -232,3 +232,22 @@ These NOT RUN and PARTIAL verdicts stand for T543/T548: the device could not cov
 - The emulator and the adb server are stopped; wm size, density and font scale were never changed in this task.
 - Default, F003 and F005 were run on the code before the fix round (camera clamp, Back polling and journey-script changes); the fix round re-ran F006 and F004 on the final APK plus the three full suites and the Windows player.
 - Recentre on the final code: cross-correlation of `d7-0`, `d7-1`, `d7-2` of `journey-f006` gives 0 px and 0 px.
+
+
+## 13. T563 upgrade marker (Issue #786, FR-027)
+
+**Role**: UI/UX Developer with Gameplay Developer (implementer; independent QA and UI/UX review follow). Base `origin/main` cad6d419. Evidence: `final-test-evidence/t563/` (journey reports, one device screenshot). Emulator numbers are exploratory workstation evidence.
+
+- **What**: the world now draws the upgrade-available marker. `SlotVisual.UpgradeMarker` (affordable next upgrade and no problem badge, the rule of `MachinePresentation.UpgradeMarkerVisible`) feeds one marker renderer per location (`SlotRenderers`, role `UpgradeMarker`).
+- **Sprite reused**: `F003-UI-ICON-UPGRADE` (approved F004 UI-icon family, 24 x 24, 16 x 15 opaque pixels, near white). Drawn at scale 1 (no resampling, C-75), no new art, no atlas or importer change. It is smaller than the 23 x 27 badge and never red (Edit Mode pixel test).
+- **Placement and priority**: centre at art pixel (26, row 21), left of marker box M1; it never covers the badge or the Overdrive marker box. It yields to an Item boost (boosted machine keeps its marker; at most two markers per location). It follows the marker zoom rule (hidden below 24 px per cell), shares the boosted marker's sorting order (below the badge), is not a tap target.
+- **Updates**: only on model change. `RunShellPresenter` compares cached upgrade costs with the cash each frame (loop over the locations, no allocation) and rebuilds the visuals only when an upgrade becomes affordable or stops being so. No scene or prefab change (the shipped catalog already holds the icon as a required row).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Edit Mode, full | PASS 3187/3187 (3175 plus 12 new) |
+| 2 | Play Mode, full (`-TimeoutSeconds 3000`) | PASS 3522/3522 (3516 plus 6 new, incl. 2 real-scene cases) |
+| 3 | `-StandaloneWindowsPlayer` | PASS 83/83 |
+| 4 | Emulator F006 `-AutosaveCheck` | PASS every step (`t563/journey-f006`) |
+| 5 | Emulator F004 | Crispness PASS portrait 98.9 % (n=3), landscape 97.6 % (n=4); FAIL only `ProducingFps` 33.0 fps (informational, C-83 to T544) and `Environment adb server stable` (adb restarted during one pull, Unity-independent) (`t563/journey-f004`) |
+| 6 | Device screenshot | `t563/device/marker-affordable-and-problem.png`: white upgrade marker above the three running Miners of the top row (affordable), none on the machines under a red Missing-input badge |

@@ -137,6 +137,12 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The centre of marker box M2 (x 36..46, rows 16..26) relative to the footprint pivot.</summary>
         public static readonly Vector2 Marker2Offset = Offset(Marker2CenterX, MarkerCenterRowFromTop);
 
+        /// <summary>
+        /// FR-027 (T563): the centre of the upgrade marker, left of marker box M1 (the 24 px icon has 16 x 15 opaque pixels, x 18..34, rows 14..28). It is drawn
+        /// only while M1 is free (no Item boost), so it never covers the boosted marker, and it ends 2 px before M2 (x 36..46) and 13 px before the badge.
+        /// </summary>
+        public static readonly Vector2 UpgradeMarkerOffset = Offset(26, MarkerCenterRowFromTop);
+
         public static readonly float BadgeSizeWorld = BadgeSizePixels / (float)ArtPixelsPerCell;
         public static readonly float MarkerSizeWorld = MarkerSizePixels / (float)ArtPixelsPerCell;
 
