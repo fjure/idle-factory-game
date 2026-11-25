@@ -296,3 +296,19 @@ Owner decisions 2026-11-25 (continued):
 |---|---|---|---|
 | C-92 | T545 re-QA | The upgrade-marker P3 tile (a glint) is scored by the oracle as a normal cue and its key carries no "cue not shown" mark. Mark it in the key and the oracle; re-capture it after T563. T546 must not score the T545 upgrade tile. | T562 (after T563); T546 note |
 | C-93 | T545 re-QA | Real confounding markers on some P3 tiles (phoneP store-full tile has a red arrow; upgrade tiles show shortage arrows or store-full stacks; phoneL ghost tile shows store-full stacks); the phoneP shortage crop shows only the ore icon. | T562 (re-crop or accept with a note) |
+
+### T563 (FR-027 upgrade marker)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T563 | #786 | #787 | `8e5131b`, merged as `ae17efa` (architect APPROVE_WITH_NOTES; UI/UX ACCEPT_WITH_NOTES) | PASS: Edit Mode 3187/3187, Play Mode 3522/3522, Windows player 83/83, settings noise OK; emulator F006 `-AutosaveCheck` PASS, F004 crispness portrait 97.9 % / landscape 97.7 %, Default PASS; reverting `RunShellPresenter` fails the shipped-scene cash-follow test |
+
+Result: the world draws the reused F003-UI-ICON-UPGRADE (16x15 opaque, near white, scale 1) per location when an upgrade is affordable and the machine shows no problem badge; it yields to an Item boost (ART-2, two markers per location), sorts below the badge, hides below 24 px per cell and is not a tap target. A per-frame, allocation-free affordability mask in `RunShellPresenter` rebuilds the visuals when cash crosses an upgrade cost. C-89 closed.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-94 | T563 QA, architect | No 600-frame zero-alloc test over `RunShellPresenter.Refresh` (the new per-frame mask); no worst-case overlay renderer census with the marker on all 12 slots (expected equal to the boosted + Overdrive case). | T544 (SC-008 / budgets) |
+| C-95 | T563 QA, architect | No shipped-scene assertion that the marker disappears when cash is spent (only the appear direction); the mask also counts costs of machines whose marker a problem badge hides, so cash oscillating around such a cost rebuilds the factory snapshot with no visible change. | T548 (architect) / later polish |
+| C-96 | T563 architect | The affordability rule exists twice (`SlotGridModel` and `MachinePresentationModel`, pinned by a parity test); `WorldEffectsFeed.UpgradeAvailable` can be snapshot-stale. Make both call one helper. | T548 (architect) / later polish |
+| C-97 | T563 worker, reviews | The marker extends about 5 px outside the M1 keep-out box; keep-outs and the geometry export are unchanged and no test checks the sliver against the shipped layouts. | Art Director with C-75 |
+| C-98 | T563 UI/UX | Device evidence only at 1080x2400 portrait (no landscape, tablet, small phone, full 12-machine grid, neutral-badge state); state which supported classes fall below 24 px per cell and lose the marker. Owner to acknowledge: the marker is hidden on boosted machines (ART-2 trade-off). | Final T543 (captures); T562 (upgrade tile); owner |
