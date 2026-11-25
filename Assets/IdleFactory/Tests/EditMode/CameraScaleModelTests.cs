@@ -540,6 +540,89 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(model.Scale, Is.EqualTo(3), "the prior scale returns on close");
         }
 
+        // T561 (C-60, C-80, D7): the sheet stays open while its band changes (the build card hands over to the machine card). Visibility first: a slot that is already in the
+        // band does not move the view, and the pan limits then contain the view, so neither the next pan nor a layout change jumps it.
+        private static CameraScaleModel DeviceModel(out Rect full)
+        {
+            // 1080x2400 at 420 dpi, 100 % text (2.63 px per point, the rectangles the shell measured in BuildCardTests.OnTheDeviceTheHandOver...): the view rectangle of the
+            // shipped 3-column lattice, as the run shell builds it (ScaleLayout.WithView).
+            full = new Rect(127f, 139f, 953f, 2132f);
+            var model = new CameraScaleModel(new ArtScaleSettings(24, 24, 6));
+            model.Fit(ScaleLayout.WithView(1080, 2400, 2.625f, full, LatticeLayoutBuilder.ShippedForColumns(3)));
+            return model;
+        }
+
+        [Test]
+        public void Rule7_AnOpenWithTheSameBandAndASlotAlreadyInsideItIsUnchangedAndLeavesThePositionUntouched()
+        {
+            var model = DeviceModel(out _);
+            var band = new Rect(127f, 859f, 953f, 1412f);
+            var slot = LatticeLayoutBuilder.ShippedForColumns(3).MachineRectOf(new BuildingLocationId(0));
+            model.OpenSheet(band, slot);
+            var position = model.Position;
+            var scale = model.Scale;
+
+            Assert.That(model.OpenSheet(band, slot), Is.EqualTo(SheetOutcome.Unchanged));
+            Assert.That(model.Position, Is.EqualTo(position), "no pan, no clamp, no re-snap");
+            Assert.That(model.Scale, Is.EqualTo(scale));
+        }
+
+        [Test]
+        public void Rule7_ABandThatGrowsWhileTheSheetIsOpenKeepsTheViewAndTheViewStaysInsideItsLimits([Values(0, 5, 11)] int location)
+        {
+            var model = DeviceModel(out _);
+            var layout = LatticeLayoutBuilder.ShippedForColumns(3);
+            var slot = layout.MachineRectOf(new BuildingLocationId(location));
+            var small = new Rect(127f, 859f, 953f, 1412f); // the build card
+            var large = new Rect(127f, 659f, 953f, 1612f); // the shorter machine card: a larger band over the same top edge
+            model.OpenSheet(small, slot);
+            var position = model.Position;
+            var scale = model.Scale;
+            var slotBefore = ScreenOf(model, slot.min);
+
+            var outcome = model.OpenSheet(large, slot);
+
+            var moved = (ScreenOf(model, slot.min) - slotBefore).magnitude;
+            Assert.That(model.Scale, Is.EqualTo(scale), "the hand-over never changes the zoom");
+            Assert.That(outcome, Is.Not.EqualTo(SheetOutcome.SteppedDown).And.Not.EqualTo(SheetOutcome.TopAligned));
+            Assert.That(moved, Is.LessThanOrEqualTo(large.height - small.height + 1f), "moved by no more than the card band's growth (it is 0: the slot is in view)");
+            var after = ScreenOf(model, slot.min);
+            var high = ScreenOf(model, slot.max);
+            Assert.That(after.y, Is.GreaterThanOrEqualTo(large.yMin - 1f), "the slot stays inside the band (bottom)");
+            Assert.That(high.y, Is.LessThanOrEqualTo(large.yMax + 1f), "the slot stays inside the band (top)");
+            Assert.That(model.Position, Is.EqualTo(position), "the slot was in view, so the view did not move");
+            // Inside the limits: a pan by nothing is not clamped, and a small pan moves by that pan plus one art pixel of snap, not by the band growth.
+            Assert.That(model.Pan(Vector2.zero), Is.False, "the view is inside its pan limits: nothing to clamp on the next gesture");
+            var before = model.Position;
+            model.Pan(new Vector2(0.01f, 0.01f));
+            Assert.That(Mathf.Abs(model.Position.x - before.x), Is.LessThanOrEqualTo(0.01f + 1f / (model.Scale * 24f)));
+            Assert.That(Mathf.Abs(model.Position.y - before.y), Is.LessThanOrEqualTo(0.01f + 1f / (model.Scale * 24f)));
+        }
+
+        [Test]
+        public void Rule7_AStepDownKeepsThePositionClampedAndSnappedAtTheNewScaleForEverySlot()
+        {
+            var full = new Rect(0f, 0f, 1000f, 1000f);
+            var band = new Rect(0f, 910f, 1000f, 90f);
+            var stepped = 0;
+            for (var slot = 0; slot < SlotGridLayout.SlotCount; slot++)
+            {
+                var model = Fitted(1000, 1000, 1f, columns: 4, rect: full);
+                var outcome = model.OpenSheet(band, SlotGridLayout.SlotRect(slot, 4));
+                if (outcome != SheetOutcome.SteppedDown)
+                {
+                    continue;
+                }
+
+                stepped++;
+                Assert.That(CameraScaleModel.IsOnPixelGrid(model.Position.x, 1000, model.Scale, 24), Is.True, $"slot {slot} x on the grid of scale {model.Scale}");
+                Assert.That(CameraScaleModel.IsOnPixelGrid(model.Position.y, 1000, model.Scale, 24), Is.True, $"slot {slot} y on the grid of scale {model.Scale}");
+                Assert.That(model.Pan(Vector2.zero), Is.False, $"slot {slot}: the position is inside the limits of the new scale");
+            }
+
+            Assert.That(stepped, Is.GreaterThan(0), "at least one slot stepped down");
+        }
+
         [Test]
         public void Rule7_ASingleLevelRangeOnlyPansAndAlignsTheFootprintToTheBandTopWhenItStillDoesNotFit()
         {

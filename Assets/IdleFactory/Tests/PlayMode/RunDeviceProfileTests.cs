@@ -117,6 +117,21 @@ namespace IdleFactory.Tests.PlayMode
             Assert.That(pointer.ShowsHover, Is.True);
         }
 
+        // T561 (C-81, D8): the 48 pt floor of the cards is a physical size. At the required scale a 48 pt control is 7.63 mm, the size of a 48 dp target on a screen of that
+        // reported density (48 dp = 48/160 in = 7.62 mm). On the emulator the density bucket is 420 while the reported xdpi is lower (about 400), so a screenshot read in
+        // bucket dp (px / 2.625) shows 45 to 47 dp for the same 48 pt: that is a unit difference, not a short control.
+        [TestCase(400f)]
+        [TestCase(420f)]
+        [TestCase(480f)]
+        public void A48PointControlAtTheRequiredScaleIsAtLeastAsTallAsA48DpTargetOfTheReportedDensity(float dpi)
+        {
+            var profile = ShellDeviceProfile.Touch(PhoneWidth, PhoneHeight, dpi);
+            var scale = profile.RequiredPixelsPerPoint;
+            var millimeters = profile.MillimetersFor(48f, scale);
+            Assert.That(millimeters, Is.GreaterThanOrEqualTo(48f / 160f * 25.4f), "48 pt at " + dpi + " dpi");
+            Assert.That(48f * scale, Is.GreaterThanOrEqualTo(48f * dpi / 160f), "48 pt in device pixels is at least 48 dp at the reported density");
+        }
+
         [Test]
         public void ThePointerDeviceNeverRequiresAScaleAndTheProbeReadsTheRunningDevice()
         {

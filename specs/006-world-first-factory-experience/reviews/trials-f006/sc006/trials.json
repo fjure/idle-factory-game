@@ -1,0 +1,20 @@
+{
+  "files": [
+    "triptych_01.png",
+    "triptych_02.png",
+    "triptych_03.png",
+    "triptych_04.png",
+    "triptych_05.png",
+    "triptych_06.png",
+    "triptych_07.png",
+    "triptych_08.png",
+    "triptych_09.png",
+    "triptych_10.png"
+  ],
+  "panels": [
+    "A",
+    "B",
+    "C"
+  ],
+  "task": "Order the three panels from the least to the most developed factory; answer as three letters, e.g. BAC."
+}

@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "feature": "006-world-first-factory-experience",
+  "note": "Integer seeds only. Everything a trial taker must not see (capture states, answer keys) is derived from these seeds by f006_trials.py and written outside the repository.",
+  "sc004": {"seed": 6040, "emuSeed": 6044, "practiceOffset": 100000, "trials": 10, "stoppedLimitSeconds": 3.0, "resourceLimitSeconds": 5.0, "required": 9},
+  "sc005": {"seedBase": 6050, "sets": ["emuP", "phoneP", "phoneL", "tabL"], "timedSeeds": {"standard": 6061, "reduced-motion": 6062}, "timedRequired": 10, "timedLimitSeconds": 2.0, "timedMedianMaxSeconds": 1.077},
+  "sc006": {"seed": 6060, "emuSeed": 6064, "trials": 10, "required": 9}
+}

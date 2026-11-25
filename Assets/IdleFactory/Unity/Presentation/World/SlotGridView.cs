@@ -62,6 +62,7 @@ namespace IdleFactory.Unity.Presentation
             Badge = 6,
             Boosted = 7,
             Overdrive = 8,
+            UpgradeMarker = 9,
         }
 
         /// <summary>The slot renderers that currently draw something, for tests and diagnostics.</summary>
