@@ -254,3 +254,23 @@ Owner decisions 2026-11-25:
 | C-82 | T542 journeys | `F006Build` fails because the committed device sets have no empty location; F005 Sell heuristic picks Auto-sell; landscape, zoom and hub taps calibrated on 1080x2400 portrait only; `-ZoomPrefTaps` not calibrated. | T561 (fixture, Sell); later (landscape taps) |
 | C-83 | T542 journeys | ProducingFps about 40 in every scenario, controls equal; host loaded (B4a 61.4). | T544 on a quiet host, cold-booted emulator |
 | C-84 | T542 QA | Result-table row 14 still lists BuildRotation as PASS without the machine-card qualifier (corrected at lines 83, 115). | T561 record update |
+
+### T561 (T542 findings fix)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T561 | #782 | #784 | `55a8e48` (fix round on `f1c0664`, architect REJECT then APPROVE_WITH_NOTES; UI/UX ACCEPT_WITH_NOTES) | PASS: Edit Mode 3175/3175, Play Mode 3516/3516, Windows player 82/82, settings noise OK; emulator F006 `-AutosaveCheck` PASS, F004 crispness portrait 97.6 % / landscape 97.7 %, F005 Sell PASS; reverting `CameraScaleModel.cs` fails 3 camera and 2 hand-over tests |
+
+Results: C-77 and C-78 were a T542 misread (the red arrow is the per-machine Missing-input badge; the attention marker is the 22 px resource icon, and a tap on it selects the first affected location). C-79 cause: the landscape HUD columns inside the crispness band; the analyzer now crops x 0.10–0.90. C-80 fixed in `CameraScaleModel` (no recentre on an unchanged band; a scale change always clamps and snaps; `KeepCurrentViewLegal` grows the sheet relaxation by the overrun and resets on close). C-81: 48 pt = 126 px at 420 dpi, asserted by a device-scale Play Mode test. C-82: device set `device/empty-location`, robust Sell selector. C-84 corrected.
+
+Owner decisions 2026-11-25 (continued):
+- **Marker salience** (22 px resource icon reads weak next to the red Missing-input badge): art decision together with C-75 after P4; no change in T561.
+- **Crispness crop** x 0.10–0.90 accepted as a measurement-window change (no threshold relaxed).
+- **C-85 folded into T561**: on the AVD the first device Back after launch was lost, because Escape was read only from `Keyboard.current` and the AVD exposes 16 keyboard devices. `RunShellDocument.EscapePressedThisFrame()` now reads every keyboard (allocation-free); `HubContractsBackSceneTests` covers it.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-85 | T561 device journey | First Back after launch lost (multi-keyboard AVD). | Fixed in T561 |
+| C-86 | T561 UI/UX re-read | Device Back re-check; focus ring on Upgrade after the strip-chip tap; compact-class card re-captures (D1, tablet). | Final T543 |
+| C-87 | T561 architect | Fit-all degenerate axis at the hand-over is untested; document the multi-keyboard Escape assumption; `HubContractsBackSceneTests` does not discriminate the old `Keyboard.current` polling; optional zero-alloc test for the Escape polling. | T548 (architect review) |
+| C-88 | T561 QA | Marker tap at 40 px covered only by a device capture (scene test 0 and 6 px); Back-state threshold 0.5 from few runs; landscape crop right edge 0.90 close to the HUD column (~0.904); landscape, zoom and hub tap fractions still provisional (C-82 remainder). | Final T543 / T548 |
