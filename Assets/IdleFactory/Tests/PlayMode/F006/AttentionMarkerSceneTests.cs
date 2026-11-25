@@ -122,7 +122,8 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(WorldTapResolver.Resolve(layout, markers, marker.Position, out var viaIcon), Is.EqualTo(WorldTapSource.MarkerIcon));
             Assert.That(viaIcon, Is.EqualTo(marker.FirstAffected));
             // T561 (C-78, marker checklist 7a, 7c): the same through a screen point, the way a finger arrives (camera projection and back), on the icon centre and
-            // a few points beside it inside the 48 pt circle.
+            // 6 pixels beside it. The editor Game view has 1 pixel per point, so this is 6 pt inside the 24 pt radius of the 48 pt circle; the device-scale case (a tap 40 px,
+            // 15 pt, beside the icon at 2.63 px per point) was checked by hand on the emulator (final-test-evidence.md section 12.2).
             foreach (var offsetPoints in new[] { 0f, 6f })
             {
                 var screenPoint = bootstrap.FactoryCamera.WorldToScreenPoint(new Vector3(marker.Position.x, marker.Position.y, 0f)) + new Vector3(offsetPoints, 0f, 0f);

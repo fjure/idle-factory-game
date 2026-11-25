@@ -171,7 +171,7 @@ with Landscape. for the landscape layout, for example "Entry=0.14,0.97;Landscape
 
 .PARAMETER F006SelectTaps
 F006Select taps that select a machine (default: the middle of the world band, portrait). F006UpgradeTaps: the Upgrade button of the docked
-card. F006EmptySlotTaps: an empty unlocked location. F006BuildTaps: the build card's type row and Confirm. ZoomPrefTaps: Settings taps that
+card. F006EmptySlotTaps: an empty unlocked location (default calibrated on the 1080x2400 test AVD with the committed empty-location set: location 11, bottom right of the lattice in the unframed portrait view). F006BuildTaps: the build card's type row and Confirm. ZoomPrefTaps: Settings taps that
 turn on "Show zoom buttons". All use the -BuildTaps format (fractions of the display, "x,y" pairs).
 
 .PARAMETER AutosaveCheck
@@ -1315,16 +1315,17 @@ function Invoke-ConfirmRotation {
 function Send-BackInput {
     # KEYCODE_BACK, or -BackSwipes edge swipes from x=3 (the system edge handler ignores a swipe that starts at x=0: T247 control
     # with the Settings app, where x=0 did not go back and x=3 did) 0.4 s apart.
-    param([int] $Width, [int] $Height)
+    param([int] $Width, [int] $Height, [int] $Swipes = 0)
+    $swipeCount = if ($Swipes -gt 0) { $Swipes } else { $BackSwipes }
     if ($BackInput -eq 'Keycode') {
         Invoke-Adb shell input keyevent 4 | Out-Null
         return
     }
     $mid = [int] [Math]::Round($Height / 2)
     $reach = [int] [Math]::Round($Width * 0.4)
-    for ($swipe = 1; $swipe -le $BackSwipes; $swipe++) {
+    for ($swipe = 1; $swipe -le $swipeCount; $swipe++) {
         Invoke-Adb shell input swipe 3 $mid $reach $mid 300 | Out-Null
-        if ($swipe -lt $BackSwipes) { Start-Sleep -Milliseconds 400 }
+        if ($swipe -lt $swipeCount) { Start-Sleep -Milliseconds 400 }
     }
 }
 
@@ -1731,7 +1732,7 @@ function Select-SellButtonBands {
     # (spacing about 0.062 of the screen height). Every button, cyan or grey, carries a light border column at x = 0.0426 of the width
     # (about (148,163,184)); the card background does not. "Sell 1" is the cyan band with a button right BELOW it (the Auto-sell toggle);
     # the Auto-sell toggle itself has none (the next thing below it is the card edge). A band whose lower neighbour lies below the visible
-    # sheet (y > 0.78) cannot be judged and is kept only when no other band qualifies.
+    # sheet (y > 0.93) cannot be judged and is never returned.
     param([string] $Path, [double[]] $Bands)
     Add-Type -AssemblyName System.Drawing
     $bitmap = New-Object System.Drawing.Bitmap $Path
@@ -1752,11 +1753,13 @@ function Select-SellButtonBands {
         $unjudged = New-Object System.Collections.Generic.List[double]
         foreach ($band in $Bands) {
             $below = $band + 0.062
-            if ($below -gt 0.78) { $unjudged.Add($band); continue }
+            if ($below -gt 0.93) { $unjudged.Add($band); continue }
             if (& $hasButton $below) { $sure.Add($band) }
         }
-        if ($sure.Count -gt 0) { return @($sure) }
-        return @($unjudged)
+        # A band whose Auto-sell neighbour cannot be seen is not guessed: no band is returned, the caller scrolls on and 'Sell button located' fails
+        # loudly (T561) rather than tapping what may be the Auto-sell toggle.
+        if ($unjudged.Count -gt 0 -and $sure.Count -eq 0) { Write-Warning "Select-SellButtonBands: $($unjudged.Count) unjudged cyan band(s) (no Auto-sell button visible below); not tapping." }
+        return @($sure)
     }
     finally { $bitmap.Dispose() }
 }
@@ -2202,15 +2205,11 @@ function Open-HubCard {
 
 function Invoke-BackOnce {
     # One Android Back (-BackInput) with the display size adb reports now. Only call it while a surface is open: a Back on the bare
-    # factory leaves the app (Invoke-BackGesture records that case).
-    # T561 (C-82): two edge swipes. The player runs in immersive mode, where the first swipe only reveals the system bars and leaves the open
-    # surface (T542: F006HubContracts "Back" left the Contracts sheet open and the later build step tapped through it); KEYCODE_BACK did not reach
-    # the shell on this build either (screenshots unchanged). The second swipe is the Back (see -BackSwipes).
+    # factory leaves the app (Invoke-BackGesture records that case). -Swipes overrides -BackSwipes for this call only (T561: the F006
+    # hub step needs two edge swipes, because in immersive mode the first one only reveals the system bars; no other caller changes).
+    param([int] $Swipes = 0)
     $g = Get-ScreenGeometry
-    $saved = $script:BackSwipes
-    $script:BackSwipes = [Math]::Max(2, $BackSwipes)
-    Send-BackInput -Width $g.Width -Height $g.Height
-    $script:BackSwipes = $saved
+    Send-BackInput -Width $g.Width -Height $g.Height -Swipes $Swipes
     Start-Sleep -Seconds 2
 }
 
@@ -2284,20 +2283,14 @@ function Invoke-F006HubContracts {
     Start-Sleep -Seconds 2
     $contracts = Save-Screenshot 'f006-hub-2-contracts'
     Assert-Check $step 'Contracts view opened (sheet region changed)' ((Compare-Shots $hub $contracts $region) -ge 0.03) "change $(Compare-Shots $hub $contracts $region). Screenshots: $hub, $contracts"
-    Invoke-BackOnce
+    Invoke-BackOnce -Swipes 2
     $back = Save-Screenshot 'f006-hub-3-back'
-    Assert-Check $step 'Back left the Contracts view (sheet region changed)' ((Compare-Shots $contracts $back $region) -ge 0.03) "change $(Compare-Shots $contracts $back $region). Screenshots: $contracts, $back"
-    # T561 (C-82): the Back swipe did not pop the Contracts sheet on the emulator build (T542 and T561 screenshots: the sheet stays open and
-    # the next step then tapped through it). The sheet's Close button (top right of its header, portrait) closes it deterministically; the
-    # check is that the sheet region returns to the factory view.
-    if (-not $g.Landscape) {
-        Add-TapSource -Step $step -Name 'sheet Close' -Taps @('0.936,0.770') -Source 'Close button in the header of the bottom sheet (portrait, calibrated on the 1080x2400 AVD, T561).'
-        Invoke-Taps -Taps @('0.936,0.770') -Step $step
-        Start-Sleep -Seconds 2
-        $closed = Save-Screenshot 'f006-hub-4-closed'
-        Assert-Check $step 'sheet closed (sheet region changed)' ((Compare-Shots $back $closed $region) -ge 0.15) "change $(Compare-Shots $back $closed $region). Screenshots: $back, $closed"
-    }
-    Add-Result $step 'residual difference to the factory before the hub' 'INFO' "$(Compare-Shots $factory $back $region) in the sheet region (Cash and production tick); the decisive check that the factory is back is the screenshot $back"
+    # Real Back state check (C-85): after Back the Contracts sheet is gone. The sheet region of the screenshot differs from the open Contracts view by 0.69 to 0.75
+    # when the sheet closed (T561 device runs) and by about 0.2 when only the system bars appeared and the sheet stayed (the T542 failure); 0.5 separates them.
+    # The pre-hub factory view is no reference here: it may still carry the machine card of the Upgrade step.
+    $backFromContracts = Compare-Shots $contracts $back $region
+    Assert-Check $step 'Back closed the Contracts sheet (sheet region differs from the open Contracts view)' ($backFromContracts -ge 0.5) "change $backFromContracts (closed >= 0.5; the sheet staying open reads about 0.2). Screenshots: $contracts, $back"
+    Add-Result $step 'difference to the factory view before the hub' 'INFO' "$(Compare-Shots $factory $back $region) in the sheet region (the pre-hub view may carry the machine card, so this is informational); screenshot $back"
     Assert-Check $step 'same process' ((Get-AppPid) -eq $runPid) "PID $runPid"
 }
 

@@ -143,7 +143,7 @@ namespace IdleFactory.Unity.Presentation
 
         private void OnDestroy() => Unbind();
 
-        /// <summary>The projected pixels per cell of the camera, for the hit radius. It changes no drawing.</summary>
+        /// <summary>The projected size of one cell in panel POINTS at the camera's zoom (<c>CoreGameFoundationBootstrap.CurrentPixelsPerCell</c> already divides by the panel scale), for the hit radius of 24 pt. It changes no drawing.</summary>
         public void SetProjectedPixelsPerCell(float value) => pointsPerCell = Mathf.Max(1f, value);
 
         /// <summary>Draws the model's markers. Allocation-free once configured.</summary>

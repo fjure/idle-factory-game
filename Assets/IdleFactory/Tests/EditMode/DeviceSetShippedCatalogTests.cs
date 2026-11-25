@@ -213,6 +213,24 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(session.State.Machines.Count, Is.EqualTo(Scenario(setDirectory).Session.State.Machines.Count));
         }
 
+        // T561 (C-82): the F006 journey opens the build card on location 11, so the committed set must keep it empty and unlocked after the player's cold start too.
+        [Test]
+        public void EmptyLocation_HasAnEmptyUnlockedLocation11AfterTheColdStart()
+        {
+            RunCatalog catalog = ShippedDeviceSets.LoadShippedCatalog();
+            RunState generated = ShippedDeviceSets.BuildEmptyLocation().Session.State;
+            Assert.That(generated.SlotCount, Is.EqualTo(12), "all twelve locations are unlocked");
+            Assert.That(generated.Machines.Any(m => m.SlotIndex == 11), Is.False, "location 11 is empty in the generated state");
+            Assert.That(generated.Machines.Count, Is.EqualTo(11));
+
+            string root = InstallCommittedSet(ShippedDeviceSets.EmptyLocationDirectory);
+            RunPersistence persistence = PlayerComposition(root, catalog, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), out RunSession session);
+            Assert.That(persistence.ColdStart(null).IsSuccess, Is.True, Describe(_diagnostics));
+            Assert.That(session.State.SlotCount, Is.EqualTo(12), "all twelve locations are unlocked after the cold start");
+            Assert.That(session.State.Machines.Any(m => m.SlotIndex == 11), Is.False, "location 11 is empty after the cold start");
+            Assert.That(session.State.Machines.Count, Is.EqualTo(11));
+        }
+
         [Test]
         public void PrestigeReady_StillOffersThePrestigeAfterTheColdStartReconcile()
         {

@@ -3189,12 +3189,29 @@ namespace IdleFactory.Unity.UI
             OverdriveRequested?.Invoke();
         }
 
+        /// <summary>
+        /// Whether any Keyboard device had Escape (Android Back) pressed this frame. C-85 (T561): on the emulator the first Back after a launch never reached
+        /// <c>Keyboard.current</c>; the press is on the device that is added with it, so every Keyboard is read, not only the current one. No allocation.
+        /// </summary>
+        public static bool EscapePressedThisFrame()
+        {
+            var devices = InputSystem.devices;
+            for (var i = 0; i < devices.Count; i++)
+            {
+                if (devices[i] is Keyboard keyboard && keyboard.escapeKey.wasPressedThisFrame)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void Update()
         {
             // Android Back arrives as Escape in the Input System. UI Toolkit also sees Escape as a key event; HandleBack is
             // idempotent within a frame, so whichever path runs first acts and the other is ignored.
-            var keyboard = Keyboard.current;
-            if (IsReady && keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+            if (IsReady && EscapePressedThisFrame())
             {
                 HandleBack();
             }

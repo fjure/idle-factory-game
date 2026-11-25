@@ -407,10 +407,21 @@ namespace IdleFactory.Tests.PlayMode
 
             var moved = Mathf.Abs(after.y - before.y) + Mathf.Abs(after.x - before.x);
             var allowed = Mathf.Max(0f, buildArea.height - machineArea.height);
-            TestContext.Out.WriteLine($"T561-HANDOVER | {context} ppp {ppp:0.00} | build band {buildArea.height:0} machine band {machineArea.height:0} | moved {moved:0.0} px | allowed {allowed:0.0} | scale {scaleBefore} -> {controller.Scale}");
+            TestContext.Out.WriteLine($"T561-HANDOVER | {context} ppp {ppp:0.00} | build band {buildArea.height:0} machine band {machineArea.height:0} | moved {moved:0.0} px | allowed {allowed:0.0} | scale {scaleBefore} -> {controller.Scale} | closed {closedArea} build {buildArea} machine {machineArea}");
             Assert.That(controller.Scale, Is.EqualTo(scaleBefore), context + ": the hand-over never changes the zoom");
             Assert.That(moved, Is.LessThanOrEqualTo(allowed + 1.5f), context + ": the world moves by no more than the shrink of the band");
-            Assert.That(moved, Is.LessThanOrEqualTo(closedArea.height - Mathf.Min(buildArea.height, machineArea.height) + 1.5f), context + ": and never by more than the card band");
+            var cardBand = closedArea.height - machineArea.height;
+            Assert.That(cardBand, Is.GreaterThan(0f), context + ": the machine card takes a band of its own");
+            Assert.That(moved, Is.LessThanOrEqualTo(cardBand), context + ": and never by more than the machine card's band");
+
+            // The built machine stays fully inside the band above the card, and the view is inside its pan limits (a pan by nothing is not clamped), so the next gesture does not jump it.
+            var low = camera.WorldToScreenPoint(layout.MachineRectOf(new BuildingLocationId(slot)).min);
+            var high = camera.WorldToScreenPoint(layout.MachineRectOf(new BuildingLocationId(slot)).max);
+            Assert.That(low.x, Is.GreaterThanOrEqualTo(machineArea.xMin - 1.5f), context + ": machine inside the band (left)");
+            Assert.That(low.y, Is.GreaterThanOrEqualTo(machineArea.yMin - 1.5f), context + ": machine inside the band (bottom)");
+            Assert.That(high.x, Is.LessThanOrEqualTo(machineArea.xMax + 1.5f), context + ": machine inside the band (right)");
+            Assert.That(high.y, Is.LessThanOrEqualTo(machineArea.yMax + 1.5f), context + ": machine inside the band (top)");
+            Assert.That(controller.Model.Pan(Vector2.zero), Is.False, context + ": the view is inside its pan limits after the hand-over");
         }
 
         // T561 (C-81, D8): the same 48 floor measured in DEVICE pixels at the applied scale of the device the T542 sweep used (1080x2400 at 420 dpi, 2.63 px per point), at
