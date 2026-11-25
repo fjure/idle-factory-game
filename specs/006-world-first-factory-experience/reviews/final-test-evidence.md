@@ -251,3 +251,47 @@ These NOT RUN and PARTIAL verdicts stand for T543/T548: the device could not cov
 | 4 | Emulator F006 `-AutosaveCheck` | PASS every step (`t563/journey-f006`) |
 | 5 | Emulator F004 | Crispness PASS portrait 98.9 % (n=3), landscape 97.6 % (n=4); FAIL only `ProducingFps` 33.0 fps (informational, C-83 to T544) and `Environment adb server stable` (adb restarted during one pull, Unity-independent) (`t563/journey-f004`) |
 | 6 | Device screenshot | `t563/device/marker-affordable-and-problem.png`: white upgrade marker above the three running Miners of the top row (affordable), none on the machines under a red Missing-input badge |
+
+## T562 emuP captures
+
+**Role**: Test/QA (Asset Artist lens), capture producer only: nothing here was run or judged as a trial. Base `origin/main` ae17efa9 (T545 driver and T563 marker merged). AVD `IdleFactory_Test_API_36`, native 1080 x 2400 at 420 dpi (`wm size` and density untouched), headless host GPU. Keys, capture specs and raw captures live outside the repository; the key folder is 1:1 with the taker files.
+
+**Method.** One capture-only APK (GLES3 development build, `IdleFactory.Editor.F006EmulatorCaptureBuild`, scripting define `IDLEFACTORY_T562_CAPTURE`, test assemblies included, a temporary empty launcher scene first) runs the T545 driver unchanged in method (`F006TrialCapturePlayerTests.CaptureAll`: the authored scene on the committed W005-L checkpoint, forced slot visuals, `ScreenCapture` read-back) through `F006TrialCaptureAndroidLauncher`. The spec is pushed with adb after launch and the images are pulled afterwards. "Per-state save fixtures" are the W005-L checkpoint plus the forced per-slot states of the spec, as in T545; no per-state save file exists, and the attention markers and HUD behind sc004/sc006 shots are those of the W005-L session (T545 limit, unchanged). No other build contains the driver. The Windows P3 re-captures ran through the existing env-gated StandalonePlayer path.
+
+**Sets (taker files under `reviews/trials-f006/`).**
+
+| Trial | Class | Files |
+|---|---|---|
+| SC-004 | emuP | `sc004-emuP/` 10 trials + practice + `trial.html` (own seed, independent of the T545 Windows set) |
+| SC-006 | emuP | `sc006-emuP/` 10 triptychs |
+| SC-005 | emuP | `sc005/emuP/` 22 F004 tiles + 7 P3 tiles, grayscale and three CVD sheets each (F004 and `p3/`) |
+| SC-005 | phoneP, phoneL, tabL | `sc005/<set>/p3/` re-captured (the F004 sheets are the T545 ones, unchanged) |
+| SC-005 timed (C-90) | emuP composites | `sc005/timed/standard/` (6-frame APNG, 10 fps) and `sc005/timed/reduced-motion/` (1 frozen frame, shipped reduced-motion preference On for those jobs), 10 trials + practice each, `trial.html` |
+
+**Upgrade tile (T563 marker), per class.** Captured on a quiet screen (one running, not boosted level-2 miner; every other location an empty plate; world attention markers hidden), marker forced through the shipped `SlotVisual.UpgradeMarker`. `cueShown` is read from the real marker renderer.
+
+| Class | art px per device px (n) | marker drawn |
+|---|---|---|
+| emuP 1080x2400 | 3 | yes |
+| phoneP 720x1280 | 2 | yes |
+| phoneL 1280x720 | 2 | yes |
+| tabL 2048x1536 | 3 | yes |
+| tabP 1536x2048 (no SC-005 set; probe only, not a taker file) | 3 | yes |
+
+C-98: no captured class loses the marker. Caveat: the Windows captures run at 96 dpi (pixels per point 1.0), so they cannot show the 24 points-per-cell cutoff; on a 2.0 px/pt phone the n=2 classes (phoneP, phoneL) sit at 24 points per cell and keep the marker only through the 1 % tolerance of `MarkersVisibleAt`. A smaller screen class or a coarser density falls below it and loses the marker. The marker stays hidden on boosted machines (owner decision 2026-11-25, ART-2); the tiles use non-boosted machines.
+
+**C-92.** The key cell of every P3 tile carries `cueShown`; the oracle (`score_sc005`) never scores a cell with `cueShown: false` (reported as `notScored`), and a key without the field (T545 keys) scores every tile. The T545 glint tiles are replaced; every new key has all seven cues shown, so T546 scores all P3 tiles of all four sets.
+
+**C-93.** Real confounders removed by staging: the upgrade and ghost tiles hide the world attention-marker view; the store-full tile hides every non-store-full marker for the captured frame, the shortage tile every non-shortage one, and both crops are 80 art px square around their marker. Accepted with a note: (1) the shortage tile is a tight crop of the shipped marker at the trunk junction and shows the resource icon only (no row context); (2) the ghost tile still shows the muted neighbouring machines of the shipped preview; (3) the hub tiles and the card tile are real shell states of the W005-L session (the card tile shows the Upgrade button and the Store is full cause line of the real selected machine, and the emuP card tile is the frame below the HUD band, rows 640 to 2400); (4) the upgrade and ghost tiles are not real session states (forced visual, markers hidden). Per-tile staging notes are in the key cells (`capture`).
+
+**What T546 scores.** SC-005 final: the four sets (emuP, phoneP, phoneL, tabL), F004 sheets as delivered plus the P3 series of each; the timed trial on `sc005/timed/standard` and `reduced-motion` (emuP composites; keys `sc005-timed-<variant>-key.json`, scorer `score-timed`). SC-004 and SC-006: the T545 Windows set and the emuP set (`sc004-emuP-key.json`, `sc006-emuP-key.json`) are separate sets with separate keys. The T545 upgrade tile must not be used. Not run here: any trial.
+
+**Tooling.** `f006_trials.py`: profile `emu`, `plan --p3-only`, `sc005 --only-p3`, `sc004/sc006 --profile`, `timed` (now maps the F006 keys onto the F004 builder), `cueShown` in key and oracle. `seeds.json`: `emuSeed` for SC-004 and SC-006. Capture-only C# (test and editor code only): `F006TrialCapturePlayerTests.cs` (shared `CaptureAll`, timed jobs, quiet upgrade tile, marker hiding), `F006TrialCaptureAndroidLauncher.cs`, `Editor/F006EmulatorCaptureBuild.cs`. The device was left with the game uninstalled; emulator and adb server stopped.
+
+| # | Check (T562) | Result |
+|---|---|---|
+| 1 | Edit Mode, full | PASS 3187/3187 |
+| 2 | Play Mode, full (`-TimeoutSeconds 3000`) | PASS 3522/3522 |
+| 3 | `-StandaloneWindowsPlayer` (also ran the Windows P3 re-capture) | PASS 83/83 |
+| 4 | `scripts/test-art-pipeline.ps1` | exit 0, 378 passed (f006 trials: 28) |
+| 5 | Capture APK build and emulator run | build Succeeded (48.6 MB); driver `done`, 220 files pulled, no failure marker |

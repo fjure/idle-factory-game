@@ -350,3 +350,126 @@ def test_filters_make_grayscale_and_three_cvd_versions_of_any_image(tmp_path):
     assert all(abs(r - g) <= 1 and abs(g - b) <= 1 for r, g, b in outs[0].getdata())
     assert len({tuple(o.getdata()) for o in outs}) == 4
     assert ft.main(["filters", "--image", str(src), "--out", str(tmp_path / "g")]) == 0
+
+
+# --- T562: the emulator profile, the cue-shown mark (C-92), the P3-only re-capture and the timed trial pages (C-90) ---------------
+
+def test_emu_profile_is_an_independent_emup_only_set_with_its_own_seeds_and_key_names():
+    assert ft.classes_for("emu") == ["emuP"] and ft.sets_for("emu") == ["emuP"]
+    assert ft.seed_for("sc004", "emu") != ft.seed_for("sc004", "windows") and ft.seed_for("sc006", "emu") != ft.seed_for("sc006", "windows")
+    assert ft.key_name("sc004", "emu") == "sc004-emuP-key.json" and ft.key_name("sc006", "windows") == "sc006-key.json"
+    emu, _ = ft.sc004_trials(ft.seed_for("sc004", "emu"), 10, "emu")
+    win, _ = ft.sc004_trials(ft.seed_for("sc004", "windows"), 10, "windows")
+    assert {t["class"] for t in emu} == {"emuP"} and [t["slots"] for t in emu] != [t["slots"] for t in win]
+    f004 = set(fr.SC002_SEEDS.values()) | {fr.SC001_SEED_BASE}
+    assert not {SEEDS["sc004"]["emuSeed"], SEEDS["sc006"]["emuSeed"]} & (f004 | set(SEEDS["sc005"]["timedSeeds"].values()))
+
+
+def test_emu_plan_holds_the_emup_trials_the_set_and_the_timed_screens_and_keeps_the_windows_keys_apart(tmp_path):
+    summary = ft.build_plan(tmp_path / "spec.json", tmp_path / "keys", "emu")
+    assert summary["perTrial"] == {"sc004": 11, "sc006": 30, "sc005": 22 + len(ft.P3_CUES), "sc002": 22}
+    spec = json.loads((tmp_path / "spec.json").read_text(encoding="utf-8"))
+    assert {j["source"] for j in spec["jobs"]} == {"emulator"} and {j["class"] for j in spec["jobs"]} == {"emuP"}
+    timed = [j for j in spec["jobs"] if j["trial"] == "sc002"]
+    assert {(j["set"], j["frames"], j["frozen"]) for j in timed} == {("standard", 6, False), ("reduced-motion", 1, True)}
+    assert all(len(j["slots"]) == 12 for j in timed)
+    assert {p.name for p in (tmp_path / "keys").iterdir()} >= {"sc004-emuP-key.json", "sc006-emuP-key.json", "sc005-timed-standard-key.json", "sc005-timed-reduced-motion-key.json"}
+    assert not (tmp_path / "keys" / "sc004-key.json").exists()
+
+
+def test_p3_only_plan_recaptures_the_windows_p3_tiles_and_probes_the_marker_on_tabp(tmp_path):
+    summary = ft.build_plan(tmp_path / "spec.json", tmp_path / "keys", "windows", True)
+    spec = json.loads((tmp_path / "spec.json").read_text(encoding="utf-8"))
+    assert summary["jobs"] == len(spec["jobs"]) == len(ft.sets_for("windows")) * len(ft.P3_CUES) + 1
+    assert all(j["shot"]["id"].startswith("p3-") for j in spec["jobs"])
+    assert [j["id"] for j in spec["jobs"] if j["set"] == "tabP"] == ["sc005-tabP-p3-upgrade-marker"]
+    assert not (tmp_path / "keys").exists()  # no key is written: the delivered keys are copied and updated by `sc005 --only-p3`
+
+
+def _mark_not_shown(raw: Path, name: str, tile_id: str):
+    (raw / name / f"{tile_id}.json").write_text(json.dumps({"cueShown": False, "notes": "marker hidden below 24 points per cell"}), encoding="utf-8")
+
+
+def test_a_tile_whose_cue_is_not_shown_is_marked_in_the_key_and_can_never_be_scored(tmp_path):
+    raw, out, keys = tmp_path / "raw", tmp_path / "out", tmp_path / "keys"
+    _synthetic_raw_sc005(raw)
+    _mark_not_shown(raw, "phoneP", "p3-upgrade-marker")
+    summary = ft.build_sc005(raw, out, keys)
+    assert summary["phoneP"]["cueNotShown"] == ["p3-upgrade-marker"] and summary["phoneL"]["cueNotShown"] == []
+    key = json.loads((keys / "sc005-phoneP-key.json").read_text(encoding="utf-8"))
+    for cells in key["p3Filters"].values():
+        flags = {c["id"]: c["cueShown"] for c in cells}
+        assert flags["p3-upgrade-marker"] is False and all(v for k, v in flags.items() if k != "p3-upgrade-marker")
+        assert next(c for c in cells if c["id"] == "p3-upgrade-marker")["capture"].startswith("marker hidden")
+    res = _score_set(keys, _transcript(keys))
+    assert res["passP3"] and all(v["tiles"] == len(ft.P3_CUES) - 1 and v["notScored"][0]["id"] == "p3-upgrade-marker" for v in res["p3"].values())
+    # naming anything for the not-shown tile changes nothing: it is not scored
+    res = _score_set(keys, _transcript(keys, flip_p3=True))
+    assert res["passP3"] and res["pass"]
+    # a scored tile still fails when it is named wrongly: the same transcript with the ghost preview named as the hub dot
+    wrong = _transcript(keys).replace("ghost preview", "hub dot")
+    assert not _score_set(keys, wrong)["passP3"]
+    # a key without the mark (the T545 keys) scores every tile
+    for cells in key["p3Filters"].values():
+        for c in cells:
+            c.pop("cueShown")
+    old = ft.score_sc005(key, fr.parse_naming(_transcript(keys)), ft.parse_p3_naming(_transcript(keys)))
+    assert all(v["tiles"] == len(ft.P3_CUES) for v in old["p3"].values())
+
+
+def test_only_p3_rebuilds_the_p3_series_and_leaves_the_f004_sheets_and_part_of_the_key_untouched(tmp_path):
+    raw, out, keys = tmp_path / "raw", tmp_path / "out", tmp_path / "keys"
+    _synthetic_raw_sc005(raw)
+    ft.build_sc005(raw, out, keys)
+    before = {p.name: p.read_bytes() for p in (out / "phoneP").glob("sheet_*.png")}
+    key_before = json.loads((keys / "sc005-phoneP-key.json").read_text(encoding="utf-8"))
+    raw2 = tmp_path / "raw2"
+    for name in ft.sets_for("windows"):
+        (raw2 / name).mkdir(parents=True)
+        for t in ft.sc005_tile_definitions():
+            if "cue" in t:
+                Image.new("RGB", (44, 30), (200, 10, 10)).save(raw2 / name / f"{t['id']}.png")
+    _mark_not_shown(raw2, "phoneL", "p3-upgrade-marker")
+    summary = ft.build_sc005(raw2, out, keys, "windows", True)
+    assert summary["phoneL"]["cueNotShown"] == ["p3-upgrade-marker"] and summary["phoneP"]["p3Tiles"] == len(ft.P3_CUES)
+    assert {p.name: p.read_bytes() for p in (out / "phoneP").glob("sheet_*.png")} == before
+    key_after = json.loads((keys / "sc005-phoneP-key.json").read_text(encoding="utf-8"))
+    assert key_after["filters"] == key_before["filters"] and key_after["schema"] == 5
+    assert [c["id"] for c in key_after["p3Filters"]["grayscale"]] == [c["id"] for c in key_before["p3Filters"]["grayscale"]]
+    assert "p3Recaptured" in json.loads((out / "phoneP" / "meta.json").read_text(encoding="utf-8"))
+    with pytest.raises(SystemExit):
+        ft.build_sc005(raw2, out, tmp_path / "nokeys", "windows", True)
+
+
+def test_emup_sc004_and_sc006_builders_read_the_emup_keys(tmp_path):
+    ft.build_plan(tmp_path / "spec.json", tmp_path / "keys", "emu")
+    raw, out4, out6 = tmp_path / "raw", tmp_path / "out4", tmp_path / "out6"
+    raw.mkdir()
+    Image.new("RGB", (60, 100), (40, 40, 48)).save(raw / "sc004-practice.png")
+    for j in json.loads((tmp_path / "spec.json").read_text(encoding="utf-8"))["jobs"]:
+        if j["trial"] == "sc004":
+            Image.new("RGB", (60, 100), (40, 40, 48)).save(raw / f"{j['id']}.png")
+        elif j["trial"] == "sc006":
+            Image.new("RGB", (60, 100), (90, 30, 40)).save(raw / f"{j['id']}.png")
+    assert ft.build_sc004(raw, out4, tmp_path / "keys", "emu") == {"trials": 10}
+    assert ft.build_sc006(raw, out6, tmp_path / "keys", "emu") == {"triptychs": 10}
+    assert ft.main(["sc004", "--raw", str(raw), "--out", str(tmp_path / "o4"), "--keys", str(tmp_path / "keys"), "--profile", "emu"]) == 0
+    with pytest.raises(FileNotFoundError):
+        ft.build_sc004(raw, out4, tmp_path / "keys", "windows")
+
+
+def test_timed_pages_are_built_from_the_f006_keys_under_the_f004_builder(tmp_path):
+    keys = tmp_path / "keys"
+    ft.build_plan(tmp_path / "spec.json", keys, "emu")
+    raw, out = tmp_path / "raw", tmp_path / "out"
+    from test_final_readability import fake_trial_capture
+    fake_trial_capture(raw, "sc002-standard", 6)
+    fake_trial_capture(raw, "sc002-reduced-motion", 1)
+    summary = ft.build_timed(raw, out, keys)
+    assert summary["standard"]["seed"] == SEEDS["sc005"]["timedSeeds"]["standard"] and summary["reduced-motion"]["trials"] == 10
+    html = (out / "standard" / "trial.html").read_text(encoding="utf-8")
+    assert "problemState" not in html and not list(out.rglob("*key*"))
+    assert getattr(Image.open(out / "standard" / "trial_01.png"), "n_frames", 1) == 6
+    assert fr.SC002_SEEDS == {"standard": 4461, "reduced-motion": 4462}  # the F004 seeds are restored
+    with pytest.raises(SystemExit):
+        ft.build_timed(raw, out, tmp_path / "nokeys")

@@ -11,5 +11,6 @@
   ],
   "seed": 6070,
   "shuffle": "per filter: random.Random(seed + filter index).shuffle(sorted tile ids); the P3 series uses seed + 5",
-  "note": "D6: the shortage marker is captured as shipped in the build named in the capture notes"
+  "note": "D6: the shortage marker is captured as shipped in the build named in the capture notes",
+  "p3Recaptured": "T562: the P3 series was captured again from the post-T563 build (the F004 sheets are the T545 ones)"
 }

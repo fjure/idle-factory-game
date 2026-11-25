@@ -16,6 +16,7 @@ sheets) with no stage, state or class in names or metadata. The taker is handed 
     sc004         trial images + the timing page from raw captures
     sc005         numbered grayscale and CVD sheets from raw tile captures
     sc006         shuffled triptychs from raw captures
+    timed         the SC-005 timed cue trial pages from raw sc002-<variant> captures (T562, C-90)
     filters       the grayscale and three CVD versions of any PNG (e.g. a trial image or a triptych)
     score-sc004 | score-sc005 | score-sc006 | score-timed    the oracles
 
@@ -58,7 +59,19 @@ CAPTURE_CLASSES = {
 }
 CLASS_NAMES = list(CAPTURE_CLASSES)
 # Profiles: T545 captures the Windows classes only (owner decision 2026-11-25); the emulator class emuP moves to T562 and keeps its place in profile "all".
-PROFILES = {"windows": [c for c in CLASS_NAMES if CAPTURE_CLASSES[c]["source"] == "windows-batch"], "all": CLASS_NAMES}
+# T562 adds the profile "emu": the emulator class emuP alone, with its own SC-004 and SC-006 seeds (`emuSeed`), so the emuP trials are a second, independent set next to the
+# T545 Windows set and never repeat its factories. The keys of that set are named `sc004-emuP-key.json` and `sc006-emuP-key.json`.
+PROFILES = {"windows": [c for c in CLASS_NAMES if CAPTURE_CLASSES[c]["source"] == "windows-batch"], "all": CLASS_NAMES, "emu": ["emuP"]}
+SEED_KEY = {"emu": "emuSeed"}
+
+
+def seed_for(kind: str, profile: str) -> int:
+    cfg = load_seeds()[kind]
+    return cfg[SEED_KEY[profile]] if profile in SEED_KEY else cfg["seed"]
+
+
+def key_name(kind: str, profile: str) -> str:
+    return f"{kind}-emuP-key.json" if profile == "emu" else f"{kind}-key.json"
 
 
 def classes_for(profile: str) -> list[str]:
@@ -345,19 +358,35 @@ def score_sc005(key: dict, named: dict, p3_named: dict) -> dict:
         rows = p3_named.get((key["set"] + "-p3", flt), {})  # the P3 sheets are a second numbered series under the heading `<set>-p3 / <filter>`
         wrong = []
         total = 0
+        not_scored = []
         for c in cells:
+            if c.get("cueShown", True) is False:
+                # C-92: a tile whose cue is not drawn in the capture (a superseded capture, or a class below the marker's 24 points per cell) carries `cueShown: false` in the
+                # key and can never be scored: it counts neither as a confusion nor as a hit.
+                not_scored.append({"tile": c["number"], "id": c["id"]})
+                continue
             total += 1
             got = rows.get(c["number"])
             if got != c["id"]:
                 wrong.append({"tile": c["number"], "id": c["id"], "named": got})
-        result["p3"][flt] = {"tiles": total, "correct": total - len(wrong), "confusions": wrong}
+        result["p3"][flt] = {"tiles": total, "correct": total - len(wrong), "confusions": wrong, "notScored": not_scored}
     result["passP3"] = all(v["correct"] == v["tiles"] for v in result["p3"].values())
     result["pass"] = result["passGateFields"] and result["passP3"]
     return result
 
 
-def build_sc005(raw_dir: Path, out_dir: Path, keys_dir: Path, profile: str = "windows") -> dict:
-    """Raw layout: <raw>/<set>/<tile id>.png for every sc005 tile. Sheets and meta go to <out>/<set>/, the key to <keys>/sc005-<set>-key.json."""
+def cue_shown(set_dir: Path, tile_id: str) -> bool:
+    """C-92: the capture driver writes `cueShown` into the tile's sidecar JSON; a tile whose cue the capture did not draw is marked in the key and never scored."""
+    side = set_dir / f"{tile_id}.json"
+    if not side.exists():
+        return True
+    return bool(json.loads(side.read_text(encoding="utf-8")).get("cueShown", True))
+
+
+def build_sc005(raw_dir: Path, out_dir: Path, keys_dir: Path, profile: str = "windows", only_p3: bool = False) -> dict:
+    """Raw layout: <raw>/<set>/<tile id>.png for every sc005 tile (plus the optional <tile id>.json sidecar of the capture driver). Sheets and meta go to <out>/<set>/, the key
+    to <keys>/sc005-<set>-key.json. With `only_p3` (T562 re-capture of the P3 series of a set whose F004 sheets stay as delivered) only the P3 tiles are read: the F004 sheets
+    are left untouched and the existing key in `keys_dir` keeps its F004 part and gets the new P3 part."""
     cfg = load_seeds()["sc005"]
     tiles_by_id = {t["id"]: t for t in sc005_tile_definitions()}
     summary = {}
@@ -368,13 +397,30 @@ def build_sc005(raw_dir: Path, out_dir: Path, keys_dir: Path, profile: str = "wi
         set_dir = raw_dir / name
         if not set_dir.is_dir():
             raise SystemExit(f"missing raw set folder {set_dir}")
-        missing = [tid for tid in tiles_by_id if not (set_dir / f"{tid}.png").exists()]
+        needed = [tid for tid in tiles_by_id if not only_p3 or "cue" in tiles_by_id[tid]]
+        missing = [tid for tid in needed if not (set_dir / f"{tid}.png").exists()]
         if missing:
             raise SystemExit(f"set {name}: missing tiles {missing}")
-        tiles = {tid: Image.open(set_dir / f"{tid}.png").convert("RGB") for tid in tiles_by_id}
+        tiles = {tid: Image.open(set_dir / f"{tid}.png").convert("RGB") for tid in needed}
         seed = cfg["seedBase"] + 10 * index
         base = {tid: img for tid, img in tiles.items() if "cue" not in tiles_by_id[tid]}
         p3 = {tid: img for tid, img in tiles.items() if "cue" in tiles_by_id[tid]}
+        shown = {tid: cue_shown(set_dir, tid) for tid in p3}
+        if only_p3:
+            key_path = keys_dir / f"sc005-{name}-key.json"
+            if not key_path.exists():
+                raise SystemExit(f"--only-p3 needs the existing key {key_path} (copy the delivered keys first)")
+            old_key = json.loads(key_path.read_text(encoding="utf-8"))
+            p3_orders = fr.build_sheets(p3, seed + 5, out_dir / name / "p3", columns=3)
+            old_key["schema"] = 5
+            old_key["p3Filters"] = {mode: _p3_cells(order, tiles_by_id, shown, set_dir) for mode, order in p3_orders.items()}
+            write_json(key_path, old_key)
+            meta_path = out_dir / name / "meta.json"
+            meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {"set": name}
+            meta["p3Recaptured"] = "T562: the P3 series was captured again from the post-T563 build (the F004 sheets are the T545 ones)"
+            write_json(meta_path, meta)
+            summary[name] = {"p3Tiles": len(p3), "seed": seed + 5, "cueNotShown": sorted(t for t, ok in shown.items() if not ok)}
+            continue
         # Two numbered series: the F004 tiles at their small slot size, and the P3 tiles (frame-sized captures) on their own sheets, three columns.
         orders = fr.build_sheets(base, seed, out_dir / name)
         p3_orders = fr.build_sheets(p3, seed + 5, out_dir / name / "p3", columns=3)
@@ -382,14 +428,40 @@ def build_sc005(raw_dir: Path, out_dir: Path, keys_dir: Path, profile: str = "wi
                 "shuffle": "per filter: random.Random(seed + filter index).shuffle(sorted tile ids); the P3 series uses seed + 5",
                 "note": "D6: the shortage marker is captured as shipped in the build named in the capture notes"}
         write_json(out_dir / name / "meta.json", meta)
-        cell = lambda order: [{"number": i + 1} | {k: tiles_by_id[tid][k] for k in ("id", "cond", "machine", "state", "markers", "selected", "level")}
-                              | ({"cue": tiles_by_id[tid]["cue"]} if "cue" in tiles_by_id[tid] else {}) for i, tid in enumerate(order)]
-        key = {"schema": 4, "set": name, "seed": seed, "columns": fr.SC001_COLUMNS,
+        cell = lambda order: [{"number": i + 1} | {k: tiles_by_id[tid][k] for k in ("id", "cond", "machine", "state", "markers", "selected", "level")} for i, tid in enumerate(order)]
+        key = {"schema": 5, "set": name, "seed": seed, "columns": fr.SC001_COLUMNS,
                "filters": {mode: cell(order) for mode, order in orders.items()},
-               "p3Filters": {mode: cell(order) for mode, order in p3_orders.items()}}
+               "p3Filters": {mode: _p3_cells(order, tiles_by_id, shown, set_dir) for mode, order in p3_orders.items()}}
         write_json(keys_dir / f"sc005-{name}-key.json", key)
-        summary[name] = {"tiles": len(tiles), "seed": seed}
+        summary[name] = {"tiles": len(tiles), "seed": seed, "cueNotShown": sorted(t for t, ok in shown.items() if not ok)}
     return summary
+
+
+def _p3_cells(order: list[str], tiles_by_id: dict, shown: dict, set_dir: Path) -> list[dict]:
+    """The key cells of one P3 sheet. `cueShown` is false when the capture did not draw the cue (C-92); `capture` is the driver's own note (answer-side only, the key never leaves
+    the key folder) so that an independent checker can see how each tile was staged (C-93)."""
+    cells = []
+    for i, tid in enumerate(order):
+        cell = {"number": i + 1} | {k: tiles_by_id[tid][k] for k in ("id", "cond", "machine", "state", "markers", "selected", "level")} | {"cue": tiles_by_id[tid]["cue"]}
+        cell["cueShown"] = bool(shown.get(tid, True))
+        side = set_dir / f"{tid}.json"
+        if side.exists():
+            cell["capture"] = json.loads(side.read_text(encoding="utf-8")).get("notes", "")
+        cells.append(cell)
+    return cells
+
+
+def build_timed(raw_dir: Path, out_dir: Path, keys_dir: Path) -> dict:
+    """The F004 builder with the F006 seeds. It reads `sc002-<variant>-key.json`; the F006 keys are named `sc005-timed-<variant>-key.json`, so they are copied under the F004
+    name into a temporary folder (outside the repository, like every key) and the F004 builder runs on that."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp, f006_timed_seeds():
+        for variant in load_seeds()["sc005"]["timedSeeds"]:
+            source = keys_dir / f"sc005-timed-{variant}-key.json"
+            if not source.exists():
+                raise SystemExit(f"missing key {source}: run `plan` first")
+            (Path(tmp) / f"sc002-{variant}-key.json").write_text(source.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
+        return fr.build_sc002(raw_dir, out_dir, Path(tmp))
 
 
 def timed_key(variant: str) -> dict:
@@ -427,17 +499,19 @@ def f006_timed_seeds():
 
 # --- capture plan ---------------------------------------------------------------------------------------------------------
 
-def build_plan(spec_path: Path, keys_dir: Path, profile: str = "windows") -> dict:
+def build_plan(spec_path: Path, keys_dir: Path, profile: str = "windows", p3_only: bool = False) -> dict:
     """The capture specification (it contains the answers: work folder only) and every key. Jobs name the build source per class: the emulator class by adb
     screencap on AVD IdleFactory_Test_API_36 from the shipped APK, the Windows classes by the batch/player capture path, never an interactive session."""
     seeds = load_seeds()
     jobs = []
-    t4, p4 = sc004_trials(seeds["sc004"]["seed"], seeds["sc004"]["trials"], profile)
+    if p3_only:
+        return _plan_p3_only(spec_path, profile)
+    t4, p4 = sc004_trials(seed_for("sc004", profile), seeds["sc004"]["trials"], profile)
     for t in [p4] + t4:
         cls = CAPTURE_CLASSES[t["class"]]
         jobs.append({"id": "sc004-practice" if t["trial"] == 0 else f"sc004-{t['trial']:02d}", "trial": "sc004", "class": t["class"], **{k: cls[k] for k in ("w", "h", "dpi", "source")},
                      "factoryLevel": 5, "slots": t["slots"], "expectShortage": t["sharedResource"], "record": ["image", "geometry", "attention-model"]})
-    for t in sc006_trials(seeds["sc006"]["seed"], seeds["sc006"]["trials"], profile):
+    for t in sc006_trials(seed_for("sc006", profile), seeds["sc006"]["trials"], profile):
         cls = CAPTURE_CLASSES[t["class"]]
         for st in t["stages"]:
             jobs.append({"id": f"sc006-{t['trial']:02d}-s{st['stage']}", "trial": "sc006", "class": t["class"], **{k: cls[k] for k in ("w", "h", "dpi", "source")},
@@ -448,9 +522,19 @@ def build_plan(spec_path: Path, keys_dir: Path, profile: str = "windows") -> dic
         for tile in sc005_tile_definitions():
             shot = fr.tile_shot(tile, cls["slot"]) if "cue" not in tile else {"id": tile["id"], "p3": P3_BY_ID[tile["id"]]["capture"]}
             jobs.append({"id": f"sc005-{name}-{tile['id']}", "trial": "sc005", "set": name, "class": name, "w": cls["w"], "h": cls["h"], "dpi": cls["dpi"], "source": src, "shot": shot})
+    if profile == "emu":
+        # T562 (C-90): the SC-005 timed cue trial screens at the emulator class (the F004 builder takes emuP-class composites): ten scored screens and one practice screen per
+        # variant, six frames at 10 fps for the standard variant, one frozen frame under reduced motion.
+        cls = CAPTURE_CLASSES["emuP"]
+        for variant, seed in seeds["sc005"]["timedSeeds"].items():
+            trials, practice = fr.sc002_trials(seed)
+            reduced = variant == "reduced-motion"
+            for trial in [practice] + trials:
+                jobs.append({"id": "practice" if trial["trial"] == 0 else f"trial_{trial['trial']:02d}", "trial": "sc002", "set": variant, "class": "emuP",
+                             **{k: cls[k] for k in ("w", "h", "dpi", "source")}, "slots": trial["slots"], "frames": 1 if reduced else 6, "frozen": reduced})
     keys_dir.mkdir(parents=True, exist_ok=True)
-    write_json(keys_dir / "sc004-key.json", sc004_key(seeds["sc004"]["seed"], profile))
-    write_json(keys_dir / "sc006-key.json", sc006_key(seeds["sc006"]["seed"], profile))
+    write_json(keys_dir / key_name("sc004", profile), sc004_key(seed_for("sc004", profile), profile))
+    write_json(keys_dir / key_name("sc006", profile), sc006_key(seed_for("sc006", profile), profile))
     for variant in seeds["sc005"]["timedSeeds"]:
         write_json(keys_dir / f"sc005-timed-{variant}-key.json", timed_key(variant))
     for j in jobs:
@@ -462,6 +546,29 @@ def build_plan(spec_path: Path, keys_dir: Path, profile: str = "windows") -> dic
     return {"jobs": len(jobs), "perTrial": by_trial}
 
 
+def _plan_p3_only(spec_path: Path, profile: str) -> dict:
+    """T562: the P3 series of the Windows sets captured again from the post-T563 build (no keys are written: the delivered keys are copied and updated by `sc005 --only-p3`).
+    Classes that have no SC-005 set (tabP) get the upgrade-marker tile only, as evidence of the marker's visibility on that class (C-98); it is not a taker file."""
+    jobs = []
+    for name in sets_for(profile):
+        cls = fr.CLASSES[name]
+        for tile in sc005_tile_definitions():
+            if "cue" not in tile:
+                continue
+            jobs.append({"id": f"sc005-{name}-{tile['id']}", "trial": "sc005", "set": name, "class": name, "w": cls["w"], "h": cls["h"], "dpi": cls["dpi"],
+                         "source": CAPTURE_CLASSES.get(name, {"source": "windows-batch"})["source"], "shot": {"id": tile["id"], "p3": P3_BY_ID[tile["id"]]["capture"]}})
+    for name in classes_for(profile):
+        if name in sets_for(profile):
+            continue
+        cls = CAPTURE_CLASSES[name]
+        jobs.append({"id": f"sc005-{name}-p3-upgrade-marker", "trial": "sc005", "set": name, "class": name, "w": cls["w"], "h": cls["h"], "dpi": cls["dpi"],
+                     "source": cls["source"], "shot": {"id": "p3-upgrade-marker", "p3": P3_BY_ID["p3-upgrade-marker"]["capture"]}})
+    for j in jobs:
+        j["cls"] = j["class"]
+    write_json(spec_path, {"schema": 1, "jobs": jobs})
+    return {"jobs": len(jobs), "perTrial": {"sc005": len(jobs)}}
+
+
 # --- sheet builders -------------------------------------------------------------------------------------------------------
 
 def _neutral(img: Image.Image) -> Image.Image:
@@ -471,9 +578,9 @@ def _neutral(img: Image.Image) -> Image.Image:
     return out
 
 
-def build_sc006(raw_dir: Path, out_dir: Path, keys_dir: Path) -> dict:
+def build_sc006(raw_dir: Path, out_dir: Path, keys_dir: Path, profile: str = "windows") -> dict:
     """Raw: <raw>/sc006-<NN>-s<stage>.png. Output: triptych_NN.png (panels A, B, C in the seeded order, a letter chip on each) and trials.json (file list only)."""
-    key = json.loads((keys_dir / "sc006-key.json").read_text(encoding="utf-8"))
+    key = json.loads((keys_dir / key_name("sc006", profile)).read_text(encoding="utf-8"))
     out_dir.mkdir(parents=True, exist_ok=True)
     files = []
     for t in key["trials"]:
@@ -504,10 +611,10 @@ def render_sc004_page(data: dict) -> str:
     return SC004_HTML.replace("__DATA__", json.dumps(data))
 
 
-def build_sc004(raw_dir: Path, out_dir: Path, keys_dir: Path) -> dict:
+def build_sc004(raw_dir: Path, out_dir: Path, keys_dir: Path, profile: str = "windows") -> dict:
     """Raw: <raw>/sc004-<NN>.png (and sc004-practice.png) with an optional <same>.json {w, h, n, centres, lift} recorded by the capture. Without it the slot centres
     come from trial_layouts.json (nmin) for the trial's class. Output: trial_NN.png, practice.png and trial.html; the page embeds slot centres but no answers."""
-    key = json.loads((keys_dir / "sc004-key.json").read_text(encoding="utf-8"))
+    key = json.loads((keys_dir / key_name("sc004", profile)).read_text(encoding="utf-8"))
     layouts = json.loads((TRIALS / "trial_layouts.json").read_text(encoding="utf-8"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -606,12 +713,16 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("plan")
     p.add_argument("--spec", type=Path, required=True)
     p.add_argument("--keys", type=Path, required=True)
-    p.add_argument("--profile", choices=sorted(PROFILES), default="windows", help="windows (T545) or all (adds the emulator class emuP, T562)")
+    p.add_argument("--profile", choices=sorted(PROFILES), default="windows", help="windows (T545), emu (T562: the emulator class emuP alone, own seeds, timed screens) or all (the five classes)")
+    p.add_argument("--p3-only", action="store_true", help="T562: only the P3 tiles of the profile's SC-005 sets (and the tabP upgrade tile) for a re-capture; writes no keys")
     for name in ("sc004", "sc005", "sc006"):
         q = sub.add_parser(name)
         q.add_argument("--raw", type=Path, required=True)
         q.add_argument("--out", type=Path, required=True)
         q.add_argument("--keys", type=Path, required=True)
+        q.add_argument("--profile", choices=sorted(PROFILES), default="windows")
+        if name == "sc005":
+            q.add_argument("--only-p3", action="store_true", help="rebuild only the P3 series of each set (the F004 sheets and the F004 part of the key stay as delivered)")
     t = sub.add_parser("timed", help="the SC-005 timed cue trial pages from raw sc002-<variant> captures (the F004 builder with the F006 seeds)")
     t.add_argument("--raw", type=Path, required=True)
     t.add_argument("--out", type=Path, required=True)
@@ -632,14 +743,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "plan":
         _need_outside(args.spec, args.keys)
-        result = build_plan(args.spec, args.keys, args.profile)
+        result = build_plan(args.spec, args.keys, args.profile, args.p3_only)
     elif args.cmd in ("sc004", "sc005", "sc006", "timed"):
         _need_outside(args.keys)
         if args.cmd == "timed":
-            with f006_timed_seeds():
-                result = fr.build_sc002(args.raw, args.out, args.keys)
+            result = build_timed(args.raw, args.out, args.keys)
+        elif args.cmd == "sc005":
+            result = build_sc005(args.raw, args.out, args.keys, args.profile, args.only_p3)
         else:
-            result = {"sc004": build_sc004, "sc005": build_sc005, "sc006": build_sc006}[args.cmd](args.raw, args.out, args.keys)
+            result = {"sc004": build_sc004, "sc006": build_sc006}[args.cmd](args.raw, args.out, args.keys, args.profile)
     elif args.cmd == "filters":
         result = {img.name: apply_filters(img, args.out) for img in args.image}
     elif args.cmd == "score-sc005":
