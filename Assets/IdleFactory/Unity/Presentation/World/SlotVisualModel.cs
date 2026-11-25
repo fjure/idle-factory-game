@@ -31,7 +31,9 @@ namespace IdleFactory.Unity.Presentation
             bool overdrive,
             bool selected,
             int unlockLevel,
-            string description)
+            string description,
+            bool upgradeMarker = false,
+            long upgradeCost = SlotGridModel.NoUpgradeCost)
         {
             Index = index;
             Condition = condition;
@@ -44,6 +46,8 @@ namespace IdleFactory.Unity.Presentation
             Selected = selected;
             UnlockLevel = unlockLevel;
             Description = description;
+            UpgradeMarker = upgradeMarker;
+            UpgradeCost = upgradeCost;
         }
 
         public int Index { get; }
@@ -72,6 +76,19 @@ namespace IdleFactory.Unity.Presentation
         public string Description { get; }
 
         public int MarkerCount => (Boosted ? 1 : 0) + (Overdrive ? 1 : 0);
+
+        /// <summary>
+        /// FR-027 (T563): an upgrade exists, is affordable and the machine shows no problem badge (the rule of
+        /// <c>MachinePresentation.UpgradeMarkerVisible</c>, contracts/presentation-model.md section 2). Whether the marker is also drawn depends on the
+        /// slot's marker boxes (a boosted machine keeps its Item marker).
+        /// </summary>
+        public bool UpgradeMarker { get; }
+
+        /// <summary>
+        /// The cash the next upgrade costs, or <see cref="SlotGridModel.NoUpgradeCost"/> without an upgrade (maximum level, a value limit, an empty or locked
+        /// slot). The presenter compares it with the cash every frame and rebuilds the visuals only when an upgrade becomes (un)affordable.
+        /// </summary>
+        public long UpgradeCost { get; }
     }
 
     /// <summary>The pure rules that turn the run read model into slot visuals (Art Bible sections 5 and 6).</summary>
@@ -88,6 +105,15 @@ namespace IdleFactory.Unity.Presentation
         public const string BadgeInactiveKey = "F003-BADGE-INACTIVE";
         public const string MarkerBoostedKey = "F003-MARKER-BOOSTED";
         public const string MarkerOverdriveKey = "F003-MARKER-OVERDRIVE";
+
+        /// <summary>
+        /// FR-027 (T563): the upgrade-available marker reuses the approved 24 x 24 upgrade icon of the UI-icon family (the arrow the machine card's Upgrade
+        /// button shows), drawn at scale 1 (no resampling) with 16 x 15 opaque pixels: smaller than the 23 x 27 badge and never red (near white).
+        /// </summary>
+        public const string UpgradeMarkerKey = "F003-UI-ICON-UPGRADE";
+
+        /// <summary><see cref="SlotVisual.UpgradeCost"/> when no upgrade can be bought.</summary>
+        public const long NoUpgradeCost = long.MaxValue;
 
         public static string LockedKey(int unlockLevel) => "F003-SLOT-LOCKED-L" + unlockLevel.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -127,10 +153,16 @@ namespace IdleFactory.Unity.Presentation
                     var machine = snapshot.Machines[slot.MachineIndex];
                     var key = BadgeFor(machine, out var text, out var word);
                     var boosted = boostedMachineIds != null && boostedMachineIds.Contains(machine.MachineId);
+                    var upgrade = machine.NextUpgrade;
+                    var hasUpgrade = upgrade != null && upgrade.Available && upgrade.RejectionReason != RunReasons.ValueLimit;
+                    var upgradeAffordable = hasUpgrade && upgrade.Affordable;
+                    var state = StateFor(machine.IsActive, machine.Blocker, machine.Phase);
+                    var marker = upgradeAffordable && !MachinePresentationModel.IsProblemState(state);
                     var description = label + ", " + machine.Label + " level " + machine.Level + ", " + word +
-                        (boosted ? ", boosted by an Item" : string.Empty) + (overdriveActive ? ", Overdrive" : string.Empty);
+                        (boosted ? ", boosted by an Item" : string.Empty) + (overdriveActive ? ", Overdrive" : string.Empty) +
+                        (marker ? ", upgrade available" : string.Empty);
                     return new SlotVisual(index, SlotCondition.Occupied, SlotOccupiedKey, presentationKeyOf(machine.MachineId), key, text, boosted,
-                        overdriveActive, selected, 0, description);
+                        overdriveActive, selected, 0, description, marker, hasUpgrade ? upgrade.Cost : NoUpgradeCost);
                 }
                 default:
                     return new SlotVisual(index, SlotCondition.Empty, SlotEmptyKey, null, null, null, false, false, selected, 0,
