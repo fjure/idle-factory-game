@@ -232,3 +232,25 @@ Done: CF-2..CF-5, B-4 (visible second cause line), B-6, C-28 (guard now covers t
 | C-74 | T560 not done | C-65 StandalonePlayer two-write autosave test (no player-compatible RunPersistence rig); C-53 `DeckPlanner.Build` undressed-path assert (first Refresh is legitimately undressed; needs bootstrap ordering); C-55 real prestige banner end-to-end test; B-13 duplicate PanelScaffold sheet (per-card `styleSheets.Add`) and B-14 shim (production callers remain). | Later task (refactor/test debt); C-65 also T544 device evidence |
 | C-75 | UI/UX + Art Director N1, N3, N4 | Store-full marker draws the 24 px storage icon at 22 px (0.917x, non-integer; shimmer risk): author a 22/23 px marker sprite (art task). Dim tint 0.5 makes occupied plates almost `floor_1`; consider 0.6 after the device look. "it." widow in the side-panel hint and the four F004-B2 baselines. | Final T543 (D4, D5); later art task |
 | C-76 | Architect 1d, 2b, 2c, 3c, 5c | Stale ShellNavigationStack docs; MachineCard cause and rates refresh only on state, shortfall or completion change (rate-only change lags); the card's CompletionsDelta written in a rebuild frame is lost (no production reader); no bootstrap-level cold-start test beyond T560's C-60 case; confirm `familyFpsCaps` 8 equals the old class default. | T542 notes; later |
+
+## Batch 6 part B (P4): T542 and owner decisions 2026-11-25
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T542 | #714 | #781 | `689baa1` (records fix round on `8eec44b`) | PASS: records complete and truthful against committed logs; Edit Mode 3167/3167, Play Mode 3483/3483, Windows player 82/82, art pipeline PASS, fixtures and trace unchanged, settings noise OK |
+
+Owner decisions 2026-11-25:
+- **T561 added** (fix task, like T560): the T542 product and journey gaps are fixed before T544, the T545 captures and the final T543; T561 re-verifies the delta.
+- **T545 scope**: T545 delivers the capture driver and the Windows-class captures (phoneP, phoneL, tabL, tabP) after T561; the emulator class (emuP) moves to the new T562, after disk space is freed.
+- Removal of the 12 stale batch-6a worktrees approved and done.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-77 | T542 D6, C-73 | Shortage marker shows the generic down-arrow, not the resource icon. | T561 |
+| C-78 | T542 marker checklist 7a/7c | A tap on a visible marker icon (or 40 px beside it) selects nothing; only the strip chip selects. | T561 |
+| C-79 | T542 F004 journey | F004Crispness landscape 94.2 % (floor 95 %); a pixel test, not host load; suspected marker or prop scale (C-75). | T561 (cause; art decision if C-75) |
+| C-80 | T542 D7 | About 180 px recentre on the build-card hand-over to the machine card. | T561 |
+| C-81 | T542 D8 | Targets estimated at 45–47 dp on the 100 % portrait class (project rule 48 px; SC-009 minimum 44 pt); no accessibility nodes via adb. | T561 (measure and fix); UI/UX ruling in final T543 |
+| C-82 | T542 journeys | `F006Build` fails because the committed device sets have no empty location; F005 Sell heuristic picks Auto-sell; landscape, zoom and hub taps calibrated on 1080x2400 portrait only; `-ZoomPrefTaps` not calibrated. | T561 (fixture, Sell); later (landscape taps) |
+| C-83 | T542 journeys | ProducingFps about 40 in every scenario, controls equal; host loaded (B4a 61.4). | T544 on a quiet host, cold-booted emulator |
+| C-84 | T542 QA | Result-table row 14 still lists BuildRotation as PASS without the machine-card qualifier (corrected at lines 83, 115). | T561 record update |
