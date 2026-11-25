@@ -57,6 +57,16 @@ CAPTURE_CLASSES = {
     "tabP": {"w": 1536, "h": 2048, "dpi": 323.52, "source": "windows-batch", "layoutClass": "tabP"},
 }
 CLASS_NAMES = list(CAPTURE_CLASSES)
+# Profiles: T545 captures the Windows classes only (owner decision 2026-11-25); the emulator class emuP moves to T562 and keeps its place in profile "all".
+PROFILES = {"windows": [c for c in CLASS_NAMES if CAPTURE_CLASSES[c]["source"] == "windows-batch"], "all": CLASS_NAMES}
+
+
+def classes_for(profile: str) -> list[str]:
+    return PROFILES[profile]
+
+
+def sets_for(profile: str) -> list[str]:
+    return [n for n in load_seeds()["sc005"]["sets"] if n in PROFILES[profile]]
 
 MACHINES = ["miner", "smelter", "press", "assembler"]
 # The recipe input that a stopped (missing-input) machine of a type is short of. Verified against the real snapshot at capture time (the capture
@@ -132,11 +142,12 @@ def make_sc004_trial(rng: random.Random, cls: str) -> dict:
             "benign": [{"slot": s, "state": slots[s]["state"]} for s in benign_slots]}
 
 
-def sc004_trials(seed: int, count: int = 10) -> tuple[list[dict], dict]:
+def sc004_trials(seed: int, count: int = 10, profile: str = "windows") -> tuple[list[dict], dict]:
     """Ten scored trials (screen classes balanced over the five capture classes, twice each, in a seeded order) and one unscored practice screen from its
     own seeded stream, so the scored trials are identical with or without it."""
     rng = random.Random(seed)
-    classes = (CLASS_NAMES * (-(-count // len(CLASS_NAMES))))[:count]
+    names = classes_for(profile)
+    classes = (names * (-(-count // len(names))))[:count]
     rng.shuffle(classes)
     trials = []
     for number, cls in enumerate(classes, start=1):
@@ -144,7 +155,7 @@ def sc004_trials(seed: int, count: int = 10) -> tuple[list[dict], dict]:
         trial["trial"] = number
         trials.append(trial)
     prng = random.Random(seed + load_seeds()["sc004"]["practiceOffset"])
-    practice = make_sc004_trial(prng, "emuP")
+    practice = make_sc004_trial(prng, classes_for(profile)[0])
     practice["trial"] = 0
     return trials, practice
 
@@ -183,9 +194,9 @@ def score_sc004(key: dict, log: dict) -> dict:
             "pass": complete and a >= key["required"] and b >= key["required"]}
 
 
-def sc004_key(seed: int) -> dict:
+def sc004_key(seed: int, profile: str = "windows") -> dict:
     cfg = load_seeds()["sc004"]
-    trials, practice = sc004_trials(seed, cfg["trials"])
+    trials, practice = sc004_trials(seed, cfg["trials"], profile)
     pick = ("trial", "class", "stopped", "sharedResource", "sharedSlots", "benign")
     return {"schema": 1, "seed": seed, "stoppedLimitSeconds": cfg["stoppedLimitSeconds"], "resourceLimitSeconds": cfg["resourceLimitSeconds"],
             "required": cfg["required"], "practice": {k: practice[k] for k in pick},
@@ -241,9 +252,10 @@ def sc006_orders(rng: random.Random, count: int) -> list[list[int]]:
     return orders
 
 
-def sc006_trials(seed: int, count: int = 10) -> list[dict]:
+def sc006_trials(seed: int, count: int = 10, profile: str = "windows") -> list[dict]:
     rng = random.Random(seed)
-    classes = (CLASS_NAMES * (-(-count // len(CLASS_NAMES))))[:count]
+    names = classes_for(profile)
+    classes = (names * (-(-count // len(names))))[:count]
     rng.shuffle(classes)
     orders = sc006_orders(rng, count)
     trials = []
@@ -254,9 +266,9 @@ def sc006_trials(seed: int, count: int = 10) -> list[dict]:
     return trials
 
 
-def sc006_key(seed: int) -> dict:
+def sc006_key(seed: int, profile: str = "windows") -> dict:
     cfg = load_seeds()["sc006"]
-    trials = sc006_trials(seed, cfg["trials"])
+    trials = sc006_trials(seed, cfg["trials"], profile)
     # presented[i] is the stage shown in panel A, B, C (i = 0, 1, 2); the correct answer is the panel letters from Early to Established.
     return {"schema": 1, "seed": seed, "required": cfg["required"],
             "trials": [{"trial": t["trial"], "class": t["class"], "mix": t["mix"], "presented": t["presented"],
@@ -347,12 +359,15 @@ def score_sc005(key: dict, named: dict, p3_named: dict) -> dict:
     return result
 
 
-def build_sc005(raw_dir: Path, out_dir: Path, keys_dir: Path) -> dict:
+def build_sc005(raw_dir: Path, out_dir: Path, keys_dir: Path, profile: str = "windows") -> dict:
     """Raw layout: <raw>/<set>/<tile id>.png for every sc005 tile. Sheets and meta go to <out>/<set>/, the key to <keys>/sc005-<set>-key.json."""
     cfg = load_seeds()["sc005"]
     tiles_by_id = {t["id"]: t for t in sc005_tile_definitions()}
     summary = {}
-    for index, name in enumerate(cfg["sets"]):
+    wanted = sets_for(profile)
+    for index, name in enumerate(cfg["sets"]):  # the index is the position in the full list, so emuP keeps its seed for T562
+        if name not in wanted:
+            continue
         set_dir = raw_dir / name
         if not set_dir.is_dir():
             raise SystemExit(f"missing raw set folder {set_dir}")
@@ -409,32 +424,34 @@ def f006_timed_seeds():
 
 # --- capture plan ---------------------------------------------------------------------------------------------------------
 
-def build_plan(spec_path: Path, keys_dir: Path) -> dict:
+def build_plan(spec_path: Path, keys_dir: Path, profile: str = "windows") -> dict:
     """The capture specification (it contains the answers: work folder only) and every key. Jobs name the build source per class: the emulator class by adb
     screencap on AVD IdleFactory_Test_API_36 from the shipped APK, the Windows classes by the batch/player capture path, never an interactive session."""
     seeds = load_seeds()
     jobs = []
-    t4, p4 = sc004_trials(seeds["sc004"]["seed"], seeds["sc004"]["trials"])
+    t4, p4 = sc004_trials(seeds["sc004"]["seed"], seeds["sc004"]["trials"], profile)
     for t in [p4] + t4:
         cls = CAPTURE_CLASSES[t["class"]]
         jobs.append({"id": "sc004-practice" if t["trial"] == 0 else f"sc004-{t['trial']:02d}", "trial": "sc004", "class": t["class"], **{k: cls[k] for k in ("w", "h", "dpi", "source")},
                      "factoryLevel": 5, "slots": t["slots"], "expectShortage": t["sharedResource"], "record": ["image", "geometry", "attention-model"]})
-    for t in sc006_trials(seeds["sc006"]["seed"], seeds["sc006"]["trials"]):
+    for t in sc006_trials(seeds["sc006"]["seed"], seeds["sc006"]["trials"], profile):
         cls = CAPTURE_CLASSES[t["class"]]
         for st in t["stages"]:
             jobs.append({"id": f"sc006-{t['trial']:02d}-s{st['stage']}", "trial": "sc006", "class": t["class"], **{k: cls[k] for k in ("w", "h", "dpi", "source")},
                          "factoryUnlocked": st["unlocked"], "expectStage": st["stage"], "mix": t["mix"], "slots": st["slots"], "record": ["image", "geometry", "development-stage"]})
-    for name in seeds["sc005"]["sets"]:
+    for name in sets_for(profile):
         cls = fr.CLASSES[name]
         src = CAPTURE_CLASSES.get(name, {"source": "windows-batch"})["source"]
         for tile in sc005_tile_definitions():
             shot = fr.tile_shot(tile, cls["slot"]) if "cue" not in tile else {"id": tile["id"], "p3": P3_BY_ID[tile["id"]]["capture"]}
             jobs.append({"id": f"sc005-{name}-{tile['id']}", "trial": "sc005", "set": name, "class": name, "w": cls["w"], "h": cls["h"], "dpi": cls["dpi"], "source": src, "shot": shot})
     keys_dir.mkdir(parents=True, exist_ok=True)
-    write_json(keys_dir / "sc004-key.json", sc004_key(seeds["sc004"]["seed"]))
-    write_json(keys_dir / "sc006-key.json", sc006_key(seeds["sc006"]["seed"]))
+    write_json(keys_dir / "sc004-key.json", sc004_key(seeds["sc004"]["seed"], profile))
+    write_json(keys_dir / "sc006-key.json", sc006_key(seeds["sc006"]["seed"], profile))
     for variant in seeds["sc005"]["timedSeeds"]:
         write_json(keys_dir / f"sc005-timed-{variant}-key.json", timed_key(variant))
+    for j in jobs:
+        j["cls"] = j["class"]  # C# JsonUtility cannot map the reserved word "class"
     write_json(spec_path, {"schema": 1, "jobs": jobs})
     by_trial = {}
     for j in jobs:
@@ -508,7 +525,7 @@ def build_sc004(raw_dir: Path, out_dir: Path, keys_dir: Path) -> dict:
         return {"file": name} | geometry(stem, cls, img.size)
 
     entries = [put(f"sc004-{t['trial']:02d}", t["file"], t["class"]) for t in key["trials"]]
-    practice = put("sc004-practice", "practice.png", "emuP")
+    practice = put("sc004-practice", "practice.png", key["practice"]["class"])
     write_json(out_dir / "trials.json", {"practice": practice, "trials": entries, "categories": CATEGORIES, "resources": RESOURCES})
     (out_dir / "trial.html").write_text(render_sc004_page({"practice": practice, "trials": entries, "categories": CATEGORIES, "resources": RESOURCES}), encoding="utf-8", newline="\n")
     return {"trials": len(entries)}
@@ -586,6 +603,7 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("plan")
     p.add_argument("--spec", type=Path, required=True)
     p.add_argument("--keys", type=Path, required=True)
+    p.add_argument("--profile", choices=sorted(PROFILES), default="windows", help="windows (T545) or all (adds the emulator class emuP, T562)")
     for name in ("sc004", "sc005", "sc006"):
         q = sub.add_parser(name)
         q.add_argument("--raw", type=Path, required=True)
@@ -611,7 +629,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "plan":
         _need_outside(args.spec, args.keys)
-        result = build_plan(args.spec, args.keys)
+        result = build_plan(args.spec, args.keys, args.profile)
     elif args.cmd in ("sc004", "sc005", "sc006", "timed"):
         _need_outside(args.keys)
         if args.cmd == "timed":

@@ -57,7 +57,9 @@ def test_sc004_trials_are_mixed_state_with_one_shared_multi_machine_stoppage():
         assert all(t["slots"][i]["state"] == c for i, c in stopped.items())
         assert all(b["state"] in ft.BENIGN for b in t["benign"])
         assert not {b["slot"] for b in t["benign"]} & set(stopped)
-    assert Counter(t["class"] for t in trials) == {c: 2 for c in ft.CLASS_NAMES}
+    counts = Counter(t["class"] for t in trials)
+    assert set(counts) == set(ft.classes_for("windows")) and "emuP" not in counts and sorted(counts.values()) == [2, 2, 3, 3]
+    assert {t["class"] for t in ft.sc004_trials(SEEDS["sc004"]["seed"], profile="all")[0]} == set(ft.CLASS_NAMES)  # T562 keeps emuP
     assert len({t["sharedResource"] for t in trials}) >= 2
     assert any(c["category"] == "storage-full" for t in trials for c in t["stopped"])
 
@@ -130,7 +132,9 @@ def test_sc006_triptychs_are_seeded_varied_and_each_stage_is_really_that_stage()
         levels = [max([s["level"] for s in st["slots"] if s["cond"] == "occupied"] or [0]) for st in t["stages"]]
         assert levels == sorted(levels)
     assert len({t["mix"] for t in a}) >= 2
-    assert Counter(t["class"] for t in a) == {c: 2 for c in ft.CLASS_NAMES}
+    counts = Counter(t["class"] for t in a)
+    assert set(counts) == set(ft.classes_for("windows")) and sorted(counts.values()) == [2, 2, 3, 3]
+    assert Counter(t["class"] for t in ft.sc006_trials(SEEDS["sc006"]["seed"], profile="all")) == {c: 2 for c in ft.CLASS_NAMES}
     assert len({tuple(t["presented"]) for t in a}) == 6  # every presentation order occurs
 
 
@@ -175,8 +179,8 @@ def test_cue_names_map_to_ids_with_the_most_specific_keyword_winning():
     assert ft.norm_cue("a purple banana") == ""
 
 
-def _synthetic_raw_sc005(raw: Path):
-    for name in SEEDS["sc005"]["sets"]:
+def _synthetic_raw_sc005(raw: Path, profile: str = "windows"):
+    for name in ft.sets_for(profile):
         (raw / name).mkdir(parents=True)
         for i, t in enumerate(ft.sc005_tile_definitions()):
             Image.new("RGB", (30 + 4 * (i % 3), 20), (10 * (i % 20), 40, 90)).save(raw / name / f"{t['id']}.png")
@@ -204,7 +208,7 @@ def _transcript(keys: Path, flip_p3: bool = False, flip_state: bool = False) -> 
     return "\n".join(lines)
 
 
-def _score_set(keys: Path, text: str, name: str = "emuP") -> dict:
+def _score_set(keys: Path, text: str, name: str = "phoneP") -> dict:
     return ft.score_sc005(json.loads((keys / f"sc005-{name}-key.json").read_text(encoding="utf-8")), fr.parse_naming(text), ft.parse_p3_naming(text))
 
 
@@ -212,7 +216,7 @@ def test_sc005_sheets_cover_four_filters_and_the_oracle_scores_a_blind_transcrip
     raw, out, keys = tmp_path / "raw", tmp_path / "out", tmp_path / "keys"
     _synthetic_raw_sc005(raw)
     summary = ft.build_sc005(raw, out, keys)
-    assert set(summary) == set(SEEDS["sc005"]["sets"])
+    assert set(summary) == set(ft.sets_for("windows")) and "emuP" not in summary
     for name in summary:
         assert sorted(p.name for p in (out / name).glob("sheet_*.png")) == sorted(f"sheet_{m}.png" for m in ft.FILTERS)
     assert not list(out.rglob("*key*"))
@@ -239,7 +243,7 @@ def test_sc005_cli_scores_all_sets_from_one_transcript(tmp_path):
 def test_sc005_sheet_builder_reports_missing_tiles(tmp_path):
     raw = tmp_path / "raw"
     _synthetic_raw_sc005(raw)
-    (raw / "emuP" / "p3-hub-dot.png").unlink()
+    (raw / "phoneP" / "p3-hub-dot.png").unlink()
     with pytest.raises(SystemExit):
         ft.build_sc005(raw, tmp_path / "out", tmp_path / "keys")
 
@@ -271,10 +275,12 @@ def test_f004_timed_seeds_are_restored_after_the_f006_swap():
 def test_plan_writes_the_spec_and_keys_and_refuses_paths_inside_the_repository(tmp_path):
     summary = ft.build_plan(tmp_path / "spec.json", tmp_path / "keys")
     assert summary["perTrial"]["sc004"] == 11 and summary["perTrial"]["sc006"] == 30
-    assert summary["perTrial"]["sc005"] == len(SEEDS["sc005"]["sets"]) * (22 + len(ft.P3_CUES))
+    assert summary["perTrial"]["sc005"] == len(ft.sets_for("windows")) * (22 + len(ft.P3_CUES))
     spec = json.loads((tmp_path / "spec.json").read_text(encoding="utf-8"))
-    sources = {j["class"]: j["source"] for j in spec["jobs"] if j["trial"] in ("sc004", "sc006")}
-    assert sources["emuP"] == "emulator" and {v for k, v in sources.items() if k != "emuP"} == {"windows-batch"}
+    assert {j["source"] for j in spec["jobs"]} == {"windows-batch"} and "emuP" not in {j["class"] for j in spec["jobs"]}
+    ft.build_plan(tmp_path / "all-spec.json", tmp_path / "all-keys", "all")
+    all_spec = json.loads((tmp_path / "all-spec.json").read_text(encoding="utf-8"))
+    assert {j["source"] for j in all_spec["jobs"]} == {"windows-batch", "emulator"}  # T562 plan
     assert {p.name for p in (tmp_path / "keys").iterdir()} >= {"sc004-key.json", "sc006-key.json", "sc005-timed-standard-key.json"}
     inside = ft.REPO / "specs" / "x-never-written"
     assert ft.inside_repo(inside) and not ft.inside_repo(tmp_path)
