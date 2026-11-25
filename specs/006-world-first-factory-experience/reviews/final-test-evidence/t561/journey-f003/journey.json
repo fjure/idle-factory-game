@@ -1,0 +1,371 @@
+{
+    "profile":  null,
+    "environment":  {
+                        "Serial":  "emulator-5554",
+                        "Avd":  "IdleFactory_Test_API_36",
+                        "Fingerprint":  "google/sdk_gphone64_x86_64/emu64xa:16/BP22.250325.006/13344233:user/release-keys",
+                        "Api":  "36",
+                        "Abis":  "x86_64,arm64-v8a",
+                        "NativeBridge":  "libndk_translation.so",
+                        "Gles":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)",
+                        "Display":  "1080x2400",
+                        "Apk":  "C:\\Users\\Domenik\\AppData\\Local\\Temp\\t561\\t561.apk (46722918 bytes, SHA-256 71cbaa6eefb83e537645ffee5c108382daa122f146e932b11509de5956de463d)",
+                        "UnityBuild":  "Development, il2cpp, arm64-v8a"
+                    },
+    "results":  [
+                    {
+                        "Step":  "Environment",
+                        "Check":  "emulator lease",
+                        "Result":  "INFO",
+                        "Detail":  "emulator: renewed for \u0027issue-782\u0027 (81 min)"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "device booted",
+                        "Result":  "PASS",
+                        "Detail":  "emulator-5554"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "expected AVD",
+                        "Result":  "PASS",
+                        "Detail":  "IdleFactory_Test_API_36, API 36"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "arm64-v8a via translation",
+                        "Result":  "PASS",
+                        "Detail":  "x86_64,arm64-v8a; bridge libndk_translation.so"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "GLES renderer",
+                        "Result":  "INFO",
+                        "Detail":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "/data free space",
+                        "Result":  "PASS",
+                        "Detail":  "3486 MB free (56 percent used), floor 400 MB"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "adb install -r",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "pm clear",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "process started",
+                        "Result":  "PASS",
+                        "Detail":  "PID 16986"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to graphics device",
+                        "Result":  "INFO",
+                        "Detail":  "2 s after process start"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "first scene loaded (playable shell)",
+                        "Result":  "PASS",
+                        "Detail":  "4 s after the graphics device"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "primary ABI",
+                        "Result":  "PASS",
+                        "Detail":  "arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "Unity build",
+                        "Result":  "INFO",
+                        "Detail":  "Development, il2cpp, arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "graphics device",
+                        "Result":  "PASS",
+                        "Detail":  "Creating OpenGL ES 3.1 graphics device ; Context level  \u003cOpenGL ES 3.1\u003e ; Context handle -2091524336"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to first display",
+                        "Result":  "INFO",
+                        "Detail":  "1s641ms"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "display",
+                        "Result":  "INFO",
+                        "Detail":  "ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "screenshot",
+                        "Result":  "INFO",
+                        "Detail":  "01-launch.png"
+                    },
+                    {
+                        "Step":  "TouchBuild",
+                        "Check":  "touchscreen feature",
+                        "Result":  "PASS",
+                        "Detail":  "android.hardware.touchscreen present"
+                    },
+                    {
+                        "Step":  "TouchBuild",
+                        "Check":  "display",
+                        "Result":  "INFO",
+                        "Detail":  "ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER"
+                    },
+                    {
+                        "Step":  "TouchBuild",
+                        "Check":  "screenshot before",
+                        "Result":  "INFO",
+                        "Detail":  "02-touch-before.png"
+                    },
+                    {
+                        "Step":  "TouchBuild",
+                        "Check":  "build by touch",
+                        "Result":  "INFO",
+                        "Detail":  "skipped: no -BuildTaps supplied (layout dependent; T124 supplies them from the screenshots)"
+                    },
+                    {
+                        "Step":  "RemoveConfirmRotation",
+                        "Check":  "confirmation cancelled by rotation",
+                        "Result":  "INFO",
+                        "Detail":  "skipped: no taps supplied for this confirmation (layout dependent; T124 supplies them)"
+                    },
+                    {
+                        "Step":  "BackGesture",
+                        "Check":  "back gesture cancels the confirmation",
+                        "Result":  "INFO",
+                        "Detail":  "skipped: no -RemoveTaps supplied (layout dependent; T124 supplies them)"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "taps",
+                        "Result":  "INFO",
+                        "Detail":  "default: Continue, hub entry, Prestige card, scroll, scroll, Sell the factory (fractions of the display size adb reports)"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "committed prestige-ready/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 4849e8f8d051f114"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "committed prestige-ready/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 46d98136301dbc39"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "device prestige-ready/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 4849e8f8d051f114 on the device"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "device prestige-ready/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 46d98136301dbc39 on the device"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "prestige-ready run loaded",
+                        "Result":  "PASS",
+                        "Detail":  "accepted by the player after 8 s"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "baseline departure checkpoint",
+                        "Result":  "PASS",
+                        "Detail":  "gen 2, id 0acd2242, run 1, cash 14708999, 10 machine(s), levels 400, prestige 0, data c2a14bac6c3f"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "screenshot confirmation open",
+                        "Result":  "INFO",
+                        "Detail":  "03-PrestigeConfirmRotation-open.png"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "rotated to landscape",
+                        "Result":  "PASS",
+                        "Detail":  "ROTATION_90 2400x1080, requested SCREEN_ORIENTATION_FULL_USER"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "screenshot after rotation (dialog cancelled, offline summary withheld)",
+                        "Result":  "INFO",
+                        "Detail":  "04-PrestigeConfirmRotation-rotated.png"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "same process",
+                        "Result":  "PASS",
+                        "Detail":  "PID 17149"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "return reconcile (R20: allowed)",
+                        "Result":  "INFO",
+                        "Detail":  "1 ResumeAndReconcile line(s), ms: 31"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "no coded diagnostics during the rotation",
+                        "Result":  "PASS",
+                        "Detail":  "no return.blocked / save.v2.* / persistence diagnostic while the dialog was open and rotated"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "offline summary withheld",
+                        "Result":  "INFO",
+                        "Detail":  "the player logs no marker for the summary panel; judge it on the screenshots PrestigeConfirmRotation-open and PrestigeConfirmRotation-rotated (no Welcome back dialog, notice Cancelled by rotation)"
+                    },
+                    {
+                        "Step":  "PrestigeConfirmRotation",
+                        "Check":  "nothing spent",
+                        "Result":  "PASS",
+                        "Detail":  "gen 2, id 0acd2242, run 1, cash 14708999, 10 machine(s), levels 400, prestige 0, data c2a14bac6c3f -\u003e gen 6, id 66c8a350, run 1, cash 14713463, 10 machine(s), levels 400, prestige 0, data f925e33036d8"
+                    },
+                    {
+                        "Step":  "W003Push",
+                        "Check":  "committed w003-s-shipped/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 4f7ed559fb1a396a"
+                    },
+                    {
+                        "Step":  "W003Push",
+                        "Check":  "committed w003-s-shipped/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 781810f0d39f3069"
+                    },
+                    {
+                        "Step":  "W003Push",
+                        "Check":  "device w003-s-shipped/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 4f7ed559fb1a396a on the device"
+                    },
+                    {
+                        "Step":  "W003Push",
+                        "Check":  "device w003-s-shipped/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 781810f0d39f3069 on the device"
+                    },
+                    {
+                        "Step":  "OfflineReturnTiming",
+                        "Check":  "departure beyond the eight-hour cap",
+                        "Result":  "PASS",
+                        "Detail":  "w003-s-shipped departure is 26.557 h before the device clock, so each accepted start reconciles exactly the capped 8 h"
+                    },
+                    {
+                        "Step":  "OfflineReturnTiming",
+                        "Check":  "start 1",
+                        "Result":  "PASS",
+                        "Detail":  "302 ms; accepted, reconciled from w003-s-shipped; gen 1, id 2a7eaa29, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data 31962b9bbb8b"
+                    },
+                    {
+                        "Step":  "OfflineReturnTiming",
+                        "Check":  "start 2",
+                        "Result":  "PASS",
+                        "Detail":  "312 ms; accepted, reconciled from w003-s-shipped; gen 1, id 85d55a83, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data c7390fa2d72b"
+                    },
+                    {
+                        "Step":  "OfflineReturnTiming",
+                        "Check":  "start 3",
+                        "Result":  "PASS",
+                        "Detail":  "295 ms; accepted, reconciled from w003-s-shipped; gen 1, id e8ace9d7, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data 46d9c86fbe7a"
+                    },
+                    {
+                        "Step":  "OfflineReturnTiming",
+                        "Check":  "median of accepted starts",
+                        "Result":  "PASS",
+                        "Detail":  "median 302 ms of [302, 312, 295] accepted (3 of 3 starts accepted; budget \u003c= 2000 ms, PE-2)"
+                    },
+                    {
+                        "Step":  "OfflineReturnTiming",
+                        "Check":  "w003-s-shipped keeps producing",
+                        "Result":  "PASS",
+                        "Detail":  "gen 1, id e8ace9d7, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data 46d9c86fbe7a -\u003e gen 2, id 951b58f3, run 1, cash 5682921, 12 machine(s), levels 331, prestige 0, data eca4bc05f10e"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "control-1 capture",
+                        "Result":  "INFO",
+                        "Detail":  "2371 frames, 44 dropped, 40.140 fps over 60 s; same process True"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "producing pushed run loaded",
+                        "Result":  "PASS",
+                        "Detail":  "reconciled in 287 ms from 22222222-2222-2222-2222-000000000030; gen 1, id 34b10c64, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data e2d92df1643e"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "producing capture",
+                        "Result":  "INFO",
+                        "Detail":  "2370 frames, 57 dropped, 40.144 fps over 60 s; same process True"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "control-2 capture",
+                        "Result":  "INFO",
+                        "Detail":  "2355 frames, 65 dropped, 39.869 fps over 60 s; same process True"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "profiler-free build",
+                        "Result":  "PASS",
+                        "Detail":  "0 Autoconnect Profiler line(s) in the producing capture (the frame-rate build must not autoconnect the profiler)"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "producing average FPS",
+                        "Result":  "FAIL",
+                        "Detail":  "40,144 fps (budget \u003e= 60, owner decision 2026-09-29)"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "same-session control (context)",
+                        "Result":  "INFO",
+                        "Detail":  "fresh-run control mean 40 fps (controls: 40,14, 39,869); producing 40.144 fps"
+                    },
+                    {
+                        "Step":  "F003LogScan",
+                        "Check":  "no crash signatures",
+                        "Result":  "PASS",
+                        "Detail":  "0 FATAL/F DEBUG/SIGSEGV line(s) in 12545"
+                    },
+                    {
+                        "Step":  "F003LogScan",
+                        "Check":  "no coded diagnostics",
+                        "Result":  "PASS",
+                        "Detail":  "0 persistence/start-up diagnostic line(s)"
+                    },
+                    {
+                        "Step":  "F003LogScan",
+                        "Check":  "E Unity lines",
+                        "Result":  "INFO",
+                        "Detail":  "9, of which 0 outside the known benign AssetPackManager and Autoconnect Profiler probes"
+                    }
+                ]
+}

@@ -50,12 +50,13 @@ namespace IdleFactory.Tests.PlayMode
         /// <summary>Builds the harness. <paramref name="reduced"/> is read live through <see cref="Reduced"/>.</summary>
         public static IEnumerator Create(
             ShellScreen screen, int percent, long cash, Action<CardHarness> result, bool reduced = false, bool withEffects = false, int factoryLevel = 1,
-            bool unlockEverything = false)
+            bool unlockEverything = false, ShellDeviceProfile? deviceProfile = null)
         {
             var harness = new CardHarness { Reduced = reduced };
             harness.Session = RunShellFixtures.NewSession(out var commands, factoryLevel, cash, unlockEverything);
             harness.Commands = commands;
-            harness.Rig = ShellRig.Create(screen, null, percent);
+            // T561: a device profile builds the panel with the authored settings and the scale the device decides (1080x2400 at 420 dpi: 2.63 px per point), as the player has it.
+            harness.Rig = deviceProfile.HasValue ? ShellRig.CreateAuthored(screen, deviceProfile.Value, percent) : ShellRig.Create(screen, null, percent);
             harness.Effects = withEffects ? new RecordingEffects() : null;
             harness.Feedback = new MachineFeedback(() => harness.Reduced, harness.Effects);
             var detailsTree = Load<VisualTreeAsset>("Panels/MachinePanel.uxml");

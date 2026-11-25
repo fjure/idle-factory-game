@@ -171,7 +171,7 @@ with Landscape. for the landscape layout, for example "Entry=0.14,0.97;Landscape
 
 .PARAMETER F006SelectTaps
 F006Select taps that select a machine (default: the middle of the world band, portrait). F006UpgradeTaps: the Upgrade button of the docked
-card. F006EmptySlotTaps: an empty unlocked location. F006BuildTaps: the build card's type row and Confirm. ZoomPrefTaps: Settings taps that
+card. F006EmptySlotTaps: an empty unlocked location (default calibrated on the 1080x2400 test AVD with the committed empty-location set: location 11, bottom right of the lattice in the unframed portrait view). F006BuildTaps: the build card's type row and Confirm. ZoomPrefTaps: Settings taps that
 turn on "Show zoom buttons". All use the -BuildTaps format (fractions of the display, "x,y" pairs).
 
 .PARAMETER AutosaveCheck
@@ -215,6 +215,9 @@ F004 F004Crispness: size of one art pixel in device pixels. 0 (default) detects 
 
 .PARAMETER CrispBand
 F004 F004Crispness: "top,bottom" fractions of the display height that contain only the pixel-art factory (default 0.25,0.6).
+
+.PARAMETER CrispBandLandscapeX
+F004 F004Crispness: "left,right" fractions of the display width that contain only the world column in landscape (default 0.10,0.90). T561 (C-79): the landscape HUD columns (Cash/Store, Mine, Overdrive, Office) lie inside the height band and carry text and UI edges that are not on the art-pixel grid; with them the measurement read 94.2 % and detected n=2. Portrait always uses the full width.
 
 .PARAMETER CrispMinUniform
 F004 F004Crispness: minimum share of uniform edge-bearing art-pixel blocks (default 0.95).
@@ -293,13 +296,14 @@ param(
     # height, and the minimum share of uniform edge-bearing blocks.
     [ValidateRange(0, 32)] [int] $ArtBlockPx = 0,
     [string] $CrispBand = '0.25,0.6',
+    [string] $CrispBandLandscapeX = '0.10,0.90',
     [ValidateRange(0.5, 1.0)] [double] $CrispMinUniform = 0.95,
 
     # T541 F006: hub-entry tap overrides and the F006 scenario taps (fractions of the current display, see .PARAMETER HubTaps).
     [string] $HubTaps,
     [string[]] $F006SelectTaps = @('0.5,0.45'),
     [string[]] $F006UpgradeTaps = @('0.5,0.815'),
-    [string[]] $F006EmptySlotTaps = @('0.5,0.30'),
+    [string[]] $F006EmptySlotTaps = @('0.715,0.572'),
     [string[]] $F006BuildTaps = @('0.5,0.78', '0.72,0.90'),
     [string[]] $ZoomPrefTaps = @(),
     [switch] $AutosaveCheck,
@@ -960,6 +964,16 @@ $deviceSets = [ordered]@{
             'run-checkpoint.manifest-a.bin' = '46d98136301dbc39d370f5a524a3a101c0e24e3dcf241207c2a3d47ac2c73ccf'
         }
     }
+    'empty-location' = [pscustomobject]@{
+        Name           = 'empty-location'
+        Directory      = 'device/empty-location'
+        CheckpointId   = '22222222-2222-2222-2222-000000000032'
+        DepartureUtcMs = 1700000010400
+        Files          = [ordered]@{
+            'run-checkpoint.data-a.json'    = '943f5931ca17827c3cef82e988c47d29b65eb5959c97cca2f245fc77ce03eb1b'
+            'run-checkpoint.manifest-a.bin' = '77b1a94ece319469f709f623972971e526799ca804d8a278c143a17701ed2568'
+        }
+    }
 }
 if ($DeviceSet -and -not $deviceSets.Contains($DeviceSet)) {
     throw "Unknown device set '$DeviceSet'. Known device sets: $($deviceSets.Keys -join ', ')."
@@ -973,7 +987,7 @@ $script:f003Logs = New-Object System.Text.StringBuilder
 function Get-DeviceSetFor {
     # -DeviceSet wins; otherwise PrestigeConfirmRotation uses prestige-ready and every other step w003-s-shipped.
     param([string] $Step)
-    $name = if ($DeviceSet) { $DeviceSet } elseif ($Step -eq 'PrestigeConfirmRotation') { 'prestige-ready' } else { 'w003-s-shipped' }
+    $name = if ($DeviceSet) { $DeviceSet } elseif ($Step -eq 'PrestigeConfirmRotation') { 'prestige-ready' } elseif ($Scenario -eq 'F006') { 'empty-location' } else { 'w003-s-shipped' }
     return $deviceSets[$name]
 }
 
@@ -1301,16 +1315,17 @@ function Invoke-ConfirmRotation {
 function Send-BackInput {
     # KEYCODE_BACK, or -BackSwipes edge swipes from x=3 (the system edge handler ignores a swipe that starts at x=0: T247 control
     # with the Settings app, where x=0 did not go back and x=3 did) 0.4 s apart.
-    param([int] $Width, [int] $Height)
+    param([int] $Width, [int] $Height, [int] $Swipes = 0)
+    $swipeCount = if ($Swipes -gt 0) { $Swipes } else { $BackSwipes }
     if ($BackInput -eq 'Keycode') {
         Invoke-Adb shell input keyevent 4 | Out-Null
         return
     }
     $mid = [int] [Math]::Round($Height / 2)
     $reach = [int] [Math]::Round($Width * 0.4)
-    for ($swipe = 1; $swipe -le $BackSwipes; $swipe++) {
+    for ($swipe = 1; $swipe -le $swipeCount; $swipe++) {
         Invoke-Adb shell input swipe 3 $mid $reach $mid 300 | Out-Null
-        if ($swipe -lt $BackSwipes) { Start-Sleep -Milliseconds 400 }
+        if ($swipe -lt $swipeCount) { Start-Sleep -Milliseconds 400 }
     }
 }
 
@@ -1711,6 +1726,44 @@ function Get-PrimaryButtonBands {
     finally { $bitmap.Dispose() }
 }
 
+function Select-SellButtonBands {
+    # T561 (C-82): the primary (cyan) bands of an Inventory list hold "Sell 1" but also an "Auto-sell: On" toggle whenever Sell is disabled
+    # (auto-sell empties the stock), and the first full run tapped the toggle. A resource card stacks three equal buttons: Amount, Sell, Auto-sell
+    # (spacing about 0.062 of the screen height). Every button, cyan or grey, carries a light border column at x = 0.0426 of the width
+    # (about (148,163,184)); the card background does not. "Sell 1" is the cyan band with a button right BELOW it (the Auto-sell toggle);
+    # the Auto-sell toggle itself has none (the next thing below it is the card edge). A band whose lower neighbour lies below the visible
+    # sheet (y > 0.93) cannot be judged and is never returned.
+    param([string] $Path, [double[]] $Bands)
+    Add-Type -AssemblyName System.Drawing
+    $bitmap = New-Object System.Drawing.Bitmap $Path
+    try {
+        $x = [int] (0.0426 * $bitmap.Width)
+        $hasButton = {
+            param([double] $Fraction)
+            $y = [int] ($Fraction * $bitmap.Height)
+            if ($y -lt 0 -or $y -ge $bitmap.Height) { return $false }
+            for ($dy = -6; $dy -le 6; $dy += 3) {
+                $yy = [Math]::Min([Math]::Max($y + $dy, 0), $bitmap.Height - 1)
+                $c = $bitmap.GetPixel($x, $yy)
+                if ([Math]::Abs($c.R - 148) -le 12 -and [Math]::Abs($c.G - 163) -le 12 -and [Math]::Abs($c.B - 184) -le 12) { return $true }
+            }
+            return $false
+        }
+        $sure = New-Object System.Collections.Generic.List[double]
+        $unjudged = New-Object System.Collections.Generic.List[double]
+        foreach ($band in $Bands) {
+            $below = $band + 0.062
+            if ($below -gt 0.93) { $unjudged.Add($band); continue }
+            if (& $hasButton $below) { $sure.Add($band) }
+        }
+        # A band whose Auto-sell neighbour cannot be seen is not guessed: no band is returned, the caller scrolls on and 'Sell button located' fails
+        # loudly (T561) rather than tapping what may be the Auto-sell toggle.
+        if ($unjudged.Count -gt 0 -and $sure.Count -eq 0) { Write-Warning "Select-SellButtonBands: $($unjudged.Count) unjudged cyan band(s) (no Auto-sell button visible below); not tapping." }
+        return @($sure)
+    }
+    finally { $bitmap.Dispose() }
+}
+
 function Invoke-F005Sell {
     $step = 'F005Sell'
     $runPid = Start-F005Run -Step $step
@@ -1726,6 +1779,7 @@ function Invoke-F005Sell {
         Invoke-Adb shell screencap -p /sdcard/journey-scratch.png | Out-Null
         Invoke-Adb pull /sdcard/journey-scratch.png $scratch | Out-Null
         $bands = @(Get-PrimaryButtonBands -Path $scratch)
+        if ($bands.Count -gt 0) { $bands = @(Select-SellButtonBands -Path $scratch -Bands $bands) }
     }
     Add-Result $step 'screenshot (Inventory card before the sale)' 'INFO' (Save-Screenshot 'f005-sell-before')
     Assert-Check $step 'Sell button located' ($bands.Count -ge 1) "primary button bands at y fractions: $(($bands | ForEach-Object { '{0:N3}' -f $_ }) -join ', ')"
@@ -1865,7 +1919,7 @@ public static class F004BlockAnalyzer
         return total == 0 ? 0.0 : (double)sums[phase] / total;
     }
 
-    public static F004BlockResult Analyze(string path, double bandTop, double bandBottom, int fixedN, int tol)
+    public static F004BlockResult Analyze(string path, double bandTop, double bandBottom, int fixedN, int tol, double bandLeft, double bandRight)
     {
         byte[] d; int w, h, stride;
         using (Bitmap bmp = new Bitmap(path))
@@ -1878,11 +1932,12 @@ public static class F004BlockAnalyzer
             bmp.UnlockBits(bits);
         }
         int y0 = Math.Max(1, (int)(bandTop * h)), y1 = Math.Min(h - 1, (int)(bandBottom * h));
+        int x0 = Math.Max(1, (int)(bandLeft * w)), x1 = Math.Min(w, (int)(bandRight * w));
         int[] ex = new int[w], ey = new int[h];
         for (int y = y0; y < y1; y += 3)
-            for (int x = 1; x < w; x++)
+            for (int x = x0; x < x1; x++)
                 if (Differs(d, y * stride + x * 4, y * stride + (x - 1) * 4, tol)) ex[x]++;
-        for (int x = 0; x < w; x += 3)
+        for (int x = x0; x < x1; x += 3)
             for (int y = y0 + 1; y < y1; y++)
                 if (Differs(d, y * stride + x * 4, (y - 1) * stride + x * 4, tol)) ey[y]++;
         F004BlockResult r = new F004BlockResult { Width = w, Height = h };
@@ -1905,11 +1960,11 @@ public static class F004BlockAnalyzer
         int by0 = y0 + ((phaseY - y0) % n + n) % n;
         for (int by = by0; by + n <= y1; by += n)
         {
-            for (int bx = phaseX; bx + n <= w; bx += n)
+            for (int bx = x0 + ((phaseX - x0) % n + n) % n; bx + n <= x1; bx += n)
             {
                 int o = by * stride + bx * 4;
                 bool informative = false;
-                if (bx + 2 * n <= w && Differs(d, o, by * stride + (bx + n) * 4, tol)) informative = true;
+                if (bx + 2 * n <= x1 && Differs(d, o, by * stride + (bx + n) * 4, tol)) informative = true;
                 if (!informative && by + 2 * n <= y1 && Differs(d, o, (by + n) * stride + bx * 4, tol)) informative = true;
                 if (!informative) continue;
                 bool uniform = true;
@@ -1928,8 +1983,8 @@ public static class F004BlockAnalyzer
 
 function Get-BlockUniformity {
     # Crispness measurement of a screenshot (FR-016, research R12): see the F004Crispness step description.
-    param([string] $Path, [double] $BandTop, [double] $BandBottom, [int] $BlockPx = 0, [int] $Tolerance = 2)
-    $r = [F004BlockAnalyzer]::Analyze($Path, $BandTop, $BandBottom, $BlockPx, $Tolerance)
+    param([string] $Path, [double] $BandTop, [double] $BandBottom, [int] $BlockPx = 0, [int] $Tolerance = 2, [double] $BandLeft = 0.0, [double] $BandRight = 1.0)
+    $r = [F004BlockAnalyzer]::Analyze($Path, $BandTop, $BandBottom, $BlockPx, $Tolerance, $BandLeft, $BandRight)
     $share = if ($r.Blocks -gt 0) { $r.UniformBlocks / $r.Blocks } else { 0.0 }
     return [pscustomobject]@{
         N = $r.N; PhaseX = $r.PhaseX; PhaseY = $r.PhaseY; ConcX = $r.ConcX; ConcY = $r.ConcY
@@ -1955,6 +2010,14 @@ function Invoke-W004VPush {
         if ($hash) { $environment.W004VHash = $hash }
     }
     Invoke-DeviceSetPush -Step $step -Set (Get-W004VSet)
+}
+
+function Get-CrispBandX {
+    param([bool] $Landscape)
+    if (-not $Landscape) { return @(0.0, 1.0) }
+    $parts = @($CrispBandLandscapeX -split ',' | ForEach-Object { [double]::Parse($_.Trim(), [Globalization.CultureInfo]::InvariantCulture) })
+    if ($parts.Count -ne 2 -or $parts[0] -lt 0 -or $parts[1] -gt 1 -or $parts[0] -ge $parts[1]) { throw "-CrispBandLandscapeX '$CrispBandLandscapeX' is not left,right fractions with 0 <= left < right <= 1." }
+    return $parts
 }
 
 function Get-CrispBand {
@@ -2020,8 +2083,9 @@ function Invoke-F004Crispness {
         Set-Sensor $case.Vector
         Start-Sleep -Seconds 2
         $shot = Save-Screenshot "f004-crisp-$($case.Name)"
-        $r = Get-BlockUniformity -Path (Join-Path $OutDir $shot) -BandTop $band[0] -BandBottom $band[1] -BlockPx $ArtBlockPx
-        $label = "$($case.Name) $($r.Width)x$($r.Height) band $CrispBand"
+        $bandX = Get-CrispBandX -Landscape ($case.Name -eq 'landscape')
+        $r = Get-BlockUniformity -Path (Join-Path $OutDir $shot) -BandTop $band[0] -BandBottom $band[1] -BlockPx $ArtBlockPx -BandLeft $bandX[0] -BandRight $bandX[1]
+        $label = "$($case.Name) $($r.Width)x$($r.Height) band $CrispBand x $($bandX[0]),$($bandX[1])"
         if ($r.N -lt 1) {
             Add-Result $step "$label art-pixel grid" 'FAIL' "no integer art-pixel grid found (edge phase concentration below 0.9 for every n in 2..16, or fewer than 200 edges): blur, a fractional scale, or the band misses the factory. Screenshot: $shot"
             continue
@@ -2141,9 +2205,11 @@ function Open-HubCard {
 
 function Invoke-BackOnce {
     # One Android Back (-BackInput) with the display size adb reports now. Only call it while a surface is open: a Back on the bare
-    # factory leaves the app (Invoke-BackGesture records that case).
+    # factory leaves the app (Invoke-BackGesture records that case). -Swipes overrides -BackSwipes for this call only (T561: the F006
+    # hub step needs two edge swipes, because in immersive mode the first one only reveals the system bars; no other caller changes).
+    param([int] $Swipes = 0)
     $g = Get-ScreenGeometry
-    Send-BackInput -Width $g.Width -Height $g.Height
+    Send-BackInput -Width $g.Width -Height $g.Height -Swipes $Swipes
     Start-Sleep -Seconds 2
 }
 
@@ -2217,10 +2283,14 @@ function Invoke-F006HubContracts {
     Start-Sleep -Seconds 2
     $contracts = Save-Screenshot 'f006-hub-2-contracts'
     Assert-Check $step 'Contracts view opened (sheet region changed)' ((Compare-Shots $hub $contracts $region) -ge 0.03) "change $(Compare-Shots $hub $contracts $region). Screenshots: $hub, $contracts"
-    Invoke-BackOnce
+    Invoke-BackOnce -Swipes 2
     $back = Save-Screenshot 'f006-hub-3-back'
-    Assert-Check $step 'Back left the Contracts view (sheet region changed)' ((Compare-Shots $contracts $back $region) -ge 0.03) "change $(Compare-Shots $contracts $back $region). Screenshots: $contracts, $back"
-    Add-Result $step 'residual difference to the factory before the hub' 'INFO' "$(Compare-Shots $factory $back $region) in the sheet region (Cash and production tick); the decisive check that the factory is back is the screenshot $back"
+    # Real Back state check (C-85): after Back the Contracts sheet is gone. The sheet region of the screenshot differs from the open Contracts view by 0.69 to 0.75
+    # when the sheet closed (T561 device runs) and by about 0.2 when only the system bars appeared and the sheet stayed (the T542 failure); 0.5 separates them.
+    # The pre-hub factory view is no reference here: it may still carry the machine card of the Upgrade step.
+    $backFromContracts = Compare-Shots $contracts $back $region
+    Assert-Check $step 'Back closed the Contracts sheet (sheet region differs from the open Contracts view)' ($backFromContracts -ge 0.5) "change $backFromContracts (closed >= 0.5; the sheet staying open reads about 0.2). Screenshots: $contracts, $back"
+    Add-Result $step 'difference to the factory view before the hub' 'INFO' "$(Compare-Shots $factory $back $region) in the sheet region (the pre-hub view may carry the machine card, so this is informational); screenshot $back"
     Assert-Check $step 'same process' ((Get-AppPid) -eq $runPid) "PID $runPid"
 }
 

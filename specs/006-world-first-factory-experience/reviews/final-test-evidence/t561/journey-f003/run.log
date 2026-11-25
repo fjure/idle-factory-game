@@ -1,0 +1,62 @@
+[INFO] Environment / emulator lease: emulator: renewed for 'issue-782' (81 min)
+[PASS] Preflight / device booted: emulator-5554
+[PASS] Preflight / expected AVD: IdleFactory_Test_API_36, API 36
+[PASS] Preflight / arm64-v8a via translation: x86_64,arm64-v8a; bridge libndk_translation.so
+[INFO] Preflight / GLES renderer: Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)
+[PASS] Install / /data free space: 3486 MB free (56 percent used), floor 400 MB
+[PASS] Install / adb install -r: Success
+[PASS] Install / pm clear: Success
+[PASS] Launch / process started: PID 16986
+[INFO] Launch / time to graphics device: 2 s after process start
+[PASS] Launch / first scene loaded (playable shell): 4 s after the graphics device
+[PASS] Launch / primary ABI: arm64-v8a
+[INFO] Launch / Unity build: Development, il2cpp, arm64-v8a
+[PASS] Launch / graphics device: Creating OpenGL ES 3.1 graphics device ; Context level  <OpenGL ES 3.1> ; Context handle -2091524336
+[INFO] Launch / time to first display: 1s641ms
+[INFO] Launch / display: ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER
+[INFO] Launch / screenshot: 01-launch.png
+[PASS] TouchBuild / touchscreen feature: android.hardware.touchscreen present
+[INFO] TouchBuild / display: ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER
+[INFO] TouchBuild / screenshot before: 02-touch-before.png
+[INFO] TouchBuild / build by touch: skipped: no -BuildTaps supplied (layout dependent; T124 supplies them from the screenshots)
+[INFO] RemoveConfirmRotation / confirmation cancelled by rotation: skipped: no taps supplied for this confirmation (layout dependent; T124 supplies them)
+[INFO] BackGesture / back gesture cancels the confirmation: skipped: no -RemoveTaps supplied (layout dependent; T124 supplies them)
+[INFO] PrestigeConfirmRotation / taps: default: Continue, hub entry, Prestige card, scroll, scroll, Sell the factory (fractions of the display size adb reports)
+[PASS] PrestigeConfirmRotation / committed prestige-ready/run-checkpoint.data-a.json: SHA-256 4849e8f8d051f114
+[PASS] PrestigeConfirmRotation / committed prestige-ready/run-checkpoint.manifest-a.bin: SHA-256 46d98136301dbc39
+[PASS] PrestigeConfirmRotation / device prestige-ready/run-checkpoint.data-a.json: SHA-256 4849e8f8d051f114 on the device
+[PASS] PrestigeConfirmRotation / device prestige-ready/run-checkpoint.manifest-a.bin: SHA-256 46d98136301dbc39 on the device
+[PASS] PrestigeConfirmRotation / prestige-ready run loaded: accepted by the player after 8 s
+[PASS] PrestigeConfirmRotation / baseline departure checkpoint: gen 2, id 0acd2242, run 1, cash 14708999, 10 machine(s), levels 400, prestige 0, data c2a14bac6c3f
+[INFO] PrestigeConfirmRotation / UI ready before the first tap: surface present after 2 s
+[INFO] PrestigeConfirmRotation / screenshot confirmation open: 03-PrestigeConfirmRotation-open.png
+[PASS] PrestigeConfirmRotation / rotated to landscape: ROTATION_90 2400x1080, requested SCREEN_ORIENTATION_FULL_USER
+[INFO] PrestigeConfirmRotation / screenshot after rotation (dialog cancelled, offline summary withheld): 04-PrestigeConfirmRotation-rotated.png
+[PASS] PrestigeConfirmRotation / same process: PID 17149
+[INFO] PrestigeConfirmRotation / return reconcile (R20: allowed): 1 ResumeAndReconcile line(s), ms: 31
+[PASS] PrestigeConfirmRotation / no coded diagnostics during the rotation: no return.blocked / save.v2.* / persistence diagnostic while the dialog was open and rotated
+[INFO] PrestigeConfirmRotation / offline summary withheld: the player logs no marker for the summary panel; judge it on the screenshots PrestigeConfirmRotation-open and PrestigeConfirmRotation-rotated (no Welcome back dialog, notice Cancelled by rotation)
+[PASS] PrestigeConfirmRotation / nothing spent: gen 2, id 0acd2242, run 1, cash 14708999, 10 machine(s), levels 400, prestige 0, data c2a14bac6c3f -> gen 6, id 66c8a350, run 1, cash 14713463, 10 machine(s), levels 400, prestige 0, data f925e33036d8
+[PASS] W003Push / committed w003-s-shipped/run-checkpoint.data-a.json: SHA-256 4f7ed559fb1a396a
+[PASS] W003Push / committed w003-s-shipped/run-checkpoint.manifest-a.bin: SHA-256 781810f0d39f3069
+[PASS] W003Push / device w003-s-shipped/run-checkpoint.data-a.json: SHA-256 4f7ed559fb1a396a on the device
+[PASS] W003Push / device w003-s-shipped/run-checkpoint.manifest-a.bin: SHA-256 781810f0d39f3069 on the device
+[PASS] OfflineReturnTiming / departure beyond the eight-hour cap: w003-s-shipped departure is 26.557 h before the device clock, so each accepted start reconciles exactly the capped 8 h
+[PASS] OfflineReturnTiming / start 1: 302 ms; accepted, reconciled from w003-s-shipped; gen 1, id 2a7eaa29, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data 31962b9bbb8b
+[PASS] OfflineReturnTiming / start 2: 312 ms; accepted, reconciled from w003-s-shipped; gen 1, id 85d55a83, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data c7390fa2d72b
+[PASS] OfflineReturnTiming / start 3: 295 ms; accepted, reconciled from w003-s-shipped; gen 1, id e8ace9d7, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data 46d9c86fbe7a
+[PASS] OfflineReturnTiming / median of accepted starts: median 302 ms of [302, 312, 295] accepted (3 of 3 starts accepted; budget <= 2000 ms, PE-2)
+[PASS] OfflineReturnTiming / w003-s-shipped keeps producing: gen 1, id e8ace9d7, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data 46d9c86fbe7a -> gen 2, id 951b58f3, run 1, cash 5682921, 12 machine(s), levels 331, prestige 0, data eca4bc05f10e
+[INFO] ProducingFps / control-1 capture: 2371 frames, 44 dropped, 40.140 fps over 60 s; same process True
+[PASS] ProducingFps / producing pushed run loaded: reconciled in 287 ms from 22222222-2222-2222-2222-000000000030; gen 1, id 34b10c64, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data e2d92df1643e
+[INFO] ProducingFps / producing capture: 2370 frames, 57 dropped, 40.144 fps over 60 s; same process True
+[INFO] ProducingFps / control-2 capture: 2355 frames, 65 dropped, 39.869 fps over 60 s; same process True
+[PASS] ProducingFps / profiler-free build: 0 Autoconnect Profiler line(s) in the producing capture (the frame-rate build must not autoconnect the profiler)
+[FAIL] ProducingFps / producing average FPS: 40,144 fps (budget >= 60, owner decision 2026-09-29)
+[INFO] ProducingFps / same-session control (context): fresh-run control mean 40 fps (controls: 40,14, 39,869); producing 40.144 fps
+[PASS] F003LogScan / no crash signatures: 0 FATAL/F DEBUG/SIGSEGV line(s) in 12545
+[PASS] F003LogScan / no coded diagnostics: 0 persistence/start-up diagnostic line(s)
+[INFO] F003LogScan / E Unity lines: 9, of which 0 outside the known benign AssetPackManager and Autoconnect Profiler probes
+
+Report: C:\Users\Domenik\ai-projects\idle-factory-game\.maqa-worktrees\issue-782-t561-t542-findings\test-results\android\r-F003\journey.md
+Journey: FAIL (1 check(s)).

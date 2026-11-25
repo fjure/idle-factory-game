@@ -1,0 +1,46 @@
+[INFO] Environment / emulator lease: emulator: renewed for 'issue-782' (37 min)
+[PASS] Preflight / device booted: emulator-5554
+[PASS] Preflight / expected AVD: IdleFactory_Test_API_36, API 36
+[PASS] Preflight / arm64-v8a via translation: x86_64,arm64-v8a; bridge libndk_translation.so
+[INFO] Preflight / GLES renderer: Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)
+[PASS] Install / /data free space: 3486 MB free (56 percent used), floor 400 MB
+[PASS] Install / adb install -r: Success
+[PASS] Install / pm clear: Success
+[PASS] Launch / process started: PID 16418
+[INFO] Launch / time to graphics device: 2 s after process start
+[PASS] Launch / first scene loaded (playable shell): 4 s after the graphics device
+[PASS] Launch / primary ABI: arm64-v8a
+[INFO] Launch / Unity build: Development, il2cpp, arm64-v8a
+[PASS] Launch / graphics device: Creating OpenGL ES 3.1 graphics device ; Context level  <OpenGL ES 3.1> ; Context handle -2091495536
+[INFO] Launch / time to first display: 1s522ms
+[INFO] Launch / display: ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER
+[INFO] Launch / screenshot: 01-launch.png
+[PASS] Rotation / sensor +x: ROTATION_90 2400x1080, requested SCREEN_ORIENTATION_FULL_USER (expected ROTATION_90, FULL_USER)
+[INFO] Rotation / screenshot: 02-landscape.png
+[PASS] Rotation / user-rotation lock 0 with sensor +x: ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER (expected ROTATION_0, FULL_USER)
+[PASS] Rotation / user-rotation free: ROTATION_90 2400x1080, requested SCREEN_ORIENTATION_FULL_USER (expected ROTATION_90, FULL_USER)
+[PASS] Rotation / sensor -x: ROTATION_270 2400x1080, requested SCREEN_ORIENTATION_FULL_USER (expected ROTATION_270, FULL_USER)
+[PASS] Rotation / sensor +y: ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER (expected ROTATION_0, FULL_USER)
+[PASS] Rotation / same process throughout: PID 16418 -> 16418
+[PASS] Home / departure checkpoint written: gen 11, id ed0e3c80, run 1, cash 37, 0 machine(s), levels 0, prestige 0, data 3764cc6e91a2 -> gen 12, id 1513b6d4, run 1, cash 37, 0 machine(s), levels 0, prestige 0, data f51c3dbc5362
+[PASS] Home / return in the same process: PID 16418 -> 16418
+[PASS] Home / return checkpoint written: gen 13, id e16183cf, run 1, cash 37, 0 machine(s), levels 0, prestige 0, data 13577dc759e1
+[INFO] Home / screenshot (offline return summary): 03-home-return.png
+[PASS] Lock / device asleep: mWakefulness=Asleep
+[PASS] Lock / departure checkpoint written: gen 14, id 2d6f28b5, run 1, cash 37, 0 machine(s), levels 0, prestige 0, data f7991b8523ef
+[PASS] Lock / awake in the same process: awake=True, PID 16418 -> 16418
+[PASS] Lock / return checkpoint written: gen 15, id 0ea48e0f, run 1, cash 37, 0 machine(s), levels 0, prestige 0, data 262eb43d5e4e
+[INFO] Lock / screenshot: 04-lock-return.png
+[PASS] ColdRestart / process stopped: PID 16418 gone
+[PASS] ColdRestart / new process: PID 16418 -> 16758
+[INFO] ColdRestart / time to graphics device: 2 s
+[PASS] ColdRestart / first scene loaded (playable shell): 4 s after the graphics device
+[PASS] ColdRestart / reconciled from the last durable checkpoint: gen 16, id eb133342, run 1, cash 37, 0 machine(s), levels 0, prestige 0, data d0be76e336ee
+[PASS] ColdRestart / machine set restored: 0 -> 0 machine(s)
+[INFO] ColdRestart / screenshot (restored factory before any input): 05-cold-restart.png
+[PASS] LogScan / no crash signatures: 0 FATAL/F DEBUG/SIGSEGV line(s) in 4638
+[PASS] LogScan / no persistence diagnostics: 0 [IdleFactory.Persistence] line(s)
+[INFO] LogScan / E Unity lines: 2 (known benign: AssetPackManager and Autoconnect Profiler probes, two per process)
+
+Report: C:\Users\Domenik\ai-projects\idle-factory-game\.maqa-worktrees\issue-782-t561-t542-findings\test-results\android\r-Default\journey.md
+Journey: PASS.

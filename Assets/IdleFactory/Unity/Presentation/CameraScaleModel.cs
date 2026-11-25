@@ -587,7 +587,13 @@ namespace IdleFactory.Unity.Presentation
             // Step 1: pan into the band at the current scale.
             if (FitsBand(slotWorldRect, scale, bandRect))
             {
-                return PanSlotIntoBand(slotWorldRect, bandRect) ? SheetOutcome.Panned : SheetOutcome.Unchanged;
+                var panned = PanSlotIntoBand(slotWorldRect, bandRect, false);
+                if (!panned)
+                {
+                    KeepCurrentViewLegal();
+                }
+
+                return panned ? SheetOutcome.Panned : SheetOutcome.Unchanged;
             }
 
             // Step 2: the largest n at or above n_min at which the slot fits the band.
@@ -596,7 +602,8 @@ namespace IdleFactory.Unity.Presentation
                 if (FitsBand(slotWorldRect, n, bandRect))
                 {
                     scale = n;
-                    PanSlotIntoBand(slotWorldRect, bandRect);
+                    // The scale changed: the position must be clamped and snapped for the new scale on every path (OD-9b C1), even when no pan is needed.
+                    PanSlotIntoBand(slotWorldRect, bandRect, true);
                     return SheetOutcome.SteppedDown;
                 }
             }
@@ -656,7 +663,43 @@ namespace IdleFactory.Unity.Presentation
             return slotWorld.width * k <= band.width + Epsilon && slotWorld.height * k <= band.height + Epsilon;
         }
 
-        private bool PanSlotIntoBand(Rect slotWorld, Rect band)
+        /// <summary>
+        /// T561 (C-60, C-80, D7): the sheet stays open while its band changes (the build card hands over to the machine card). The pan limits follow the band rectangle,
+        /// so a larger band made the same view illegal and the old code clamped it by up to the band growth (105 px measured at 1080x2400), although the slot was in view.
+        /// Visibility first: the view stays where it is and the sheet relaxation grows by exactly the overrun, so the limits contain the current position and the next pan
+        /// or layout change does not jump it. The relaxation ends with the sheet (<see cref="CloseSheet"/>), the clamp and the art-pixel snap hold on every other path.
+        /// </summary>
+        private void KeepCurrentViewLegal() => sheetRelaxWorld += OverrunWorld(position, scale);
+
+        // How far (world units) a camera position lies outside the pan limits of <see cref="Constrain"/>, 0 when it is inside them. The same limits, without the snap.
+        private float OverrunWorld(Vector2 camera, int n)
+        {
+            var rect = layout.UnobstructedRect;
+            var relax = sheetOpen ? sheetRelaxWorld : 0f;
+            var k = K(n);
+            var rectCentreOffset = (rect.center - ScreenCentre) / k;
+            var halfSpan = new Vector2(rect.width, rect.height) / (2f * k);
+            var margin = layout.Margin + relax;
+            var centre = camera + rectCentreOffset;
+            var overrun = 0f;
+            var lowX = panExtent.xMin - margin + halfSpan.x;
+            var highX = panExtent.xMax + margin - halfSpan.x;
+            if (lowX <= highX)
+            {
+                overrun = Math.Max(overrun, Math.Max(lowX - centre.x, centre.x - highX));
+            }
+
+            var lowY = panExtent.yMin - margin + halfSpan.y;
+            var highY = panExtent.yMax + margin - halfSpan.y;
+            if (lowY <= highY)
+            {
+                overrun = Math.Max(overrun, Math.Max(lowY - centre.y, centre.y - highY));
+            }
+
+            return Math.Max(0f, overrun);
+        }
+
+        private bool PanSlotIntoBand(Rect slotWorld, Rect band, bool scaleChanged)
         {
             var before = position;
             var low = WorldToScreen(slotWorld.min, position, scale);
@@ -679,6 +722,12 @@ namespace IdleFactory.Unity.Presentation
             else if (high.y > band.yMax)
             {
                 dy = band.yMax - high.y;
+            }
+
+            if (dx == 0f && dy == 0f && !scaleChanged)
+            {
+                // The slot already lies inside the band at the same scale: no pan (see KeepCurrentViewLegal for why the view is not clamped here).
+                return false;
             }
 
             // Moving the camera by -d / k moves the content by +d on screen.
