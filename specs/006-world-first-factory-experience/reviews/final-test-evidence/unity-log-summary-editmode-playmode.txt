@@ -1,0 +1,12 @@
+# Trimmed summary of the Unity Edit Mode and Play Mode logs (full logs 6.3 MB and 7.6 MB, XML 2.5 MB and 3.3 MB, not committed; per-test names are in ../final-test-names.txt)
+## EditMode.log lines: UNITY_TEST, error CS, Exception count
+0
+1494
+## PlayMode.log lines: UNITY_TEST, error CS, Exception count
+0
+3411
+## result XML root attributes
+<test-run id="2" testcasecount="3167" result="Passed" total="3167" passed="3167" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-24 22:47:27Z" end-time="2026-11-24 22:50:01Z" duration="154,4835179">
+<test-run id="2" testcasecount="3483" result="Passed" total="3483" passed="3483" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-24 22:50:38Z" end-time="2026-11-24 23:10:54Z" duration="1216,7074893">
+
+Note: the Exception counts are expected, test-injected failures (persistence, injected NullReference and similar); a test with an unexpected error log would have failed, and 0 failed. Full Unity logs and the Edit Mode and Play Mode result XML are not committed (size).

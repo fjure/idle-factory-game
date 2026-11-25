@@ -1,0 +1,40 @@
+layerName = 8a1db87 SurfaceView[com.DefaultCompany.idlefactorygame/com.idlefactory.player.IdleFactoryGameActivity](BLAST)#869
+packageName = 
+gameMode = Unsupported
+totalFrames = 2491
+droppedFrames = 102
+lateAcquireFrames = 0
+badDesiredPresentFrames = 0
+Jank payload for this layer:
+totalTimelineFrames = 0
+jankyFrames = 0
+sfLongCpuJankyFrames = 0
+sfLongGpuJankyFrames = 0
+sfUnattributedJankyFrames = 0
+appUnattributedJankyFrames = 0
+sfSchedulingJankyFrames = 0
+sfPredictionErrorJankyFrames = 0
+appBufferStuffingJankyFrames = 0
+SetFrameRate vote for this layer:
+frameRate = 60.00
+frameRateCompatibility = Undefined
+seamlessness = NotRequired
+averageFPS = 42.325
+present2present histogram is as below:
+0ms=0 1ms=0 2ms=0 3ms=58 4ms=88 5ms=13 6ms=9 7ms=14 8ms=3 9ms=3 10ms=6 11ms=5 12ms=24 13ms=32 14ms=144 15ms=542 16ms=185 17ms=61 18ms=29 19ms=9 20ms=4 21ms=2 22ms=2 23ms=2 24ms=1 25ms=2 26ms=4 27ms=15 28ms=54 29ms=81 30ms=316 31ms=367 32ms=68 33ms=38 34ms=10 36ms=4 38ms=8 40ms=34 42ms=96 44ms=44 46ms=83 48ms=25 50ms=3 54ms=1 58ms=0 62ms=2 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+latch2present histogram is as below:
+0ms=0 1ms=0 2ms=0 3ms=1623 4ms=610 5ms=137 6ms=86 7ms=22 8ms=10 9ms=2 10ms=0 11ms=1 12ms=0 13ms=0 14ms=0 15ms=0 16ms=0 17ms=0 18ms=0 19ms=0 20ms=0 21ms=0 22ms=0 23ms=0 24ms=0 25ms=0 26ms=0 27ms=0 28ms=0 29ms=0 30ms=0 31ms=0 32ms=0 33ms=0 34ms=0 36ms=0 38ms=0 40ms=0 42ms=0 44ms=0 46ms=0 48ms=0 50ms=0 54ms=0 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+desired2present histogram is as below:
+0ms=64 1ms=12 2ms=15 3ms=18 4ms=47 5ms=51 6ms=16 7ms=11 8ms=78 9ms=247 10ms=179 11ms=49 12ms=44 13ms=68 14ms=29 15ms=13 16ms=5 17ms=2 18ms=4 19ms=4 20ms=3 21ms=4 22ms=2 23ms=8 24ms=65 25ms=72 26ms=24 27ms=17 28ms=18 29ms=10 30ms=5 31ms=2 32ms=1 33ms=4 34ms=2 36ms=19 38ms=7 40ms=78 42ms=57 44ms=15 46ms=11 48ms=3 50ms=3 54ms=16 58ms=104 62ms=14 66ms=7 70ms=17 74ms=41 78ms=9 82ms=4 86ms=15 90ms=48 94ms=2 98ms=2 102ms=13 106ms=7 110ms=2 114ms=2 118ms=16 122ms=12 126ms=3 130ms=0 134ms=10 138ms=3 142ms=1 146ms=1 150ms=10 200ms=18 250ms=7 300ms=1 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+present2presentDelta histogram is as below:
+0ms=223 1ms=266 2ms=120 3ms=72 4ms=41 5ms=20 6ms=15 7ms=7 8ms=15 9ms=19 10ms=28 11ms=42 12ms=66 13ms=88 14ms=141 15ms=274 16ms=296 17ms=143 18ms=39 19ms=22 20ms=15 21ms=16 22ms=17 23ms=13 24ms=25 25ms=33 26ms=55 27ms=57 28ms=17 29ms=19 30ms=22 31ms=20 32ms=17 33ms=10 34ms=10 36ms=22 38ms=76 40ms=55 42ms=35 44ms=17 46ms=1 48ms=0 50ms=0 54ms=0 58ms=1 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+acquire2present histogram is as below:
+0ms=0 1ms=0 2ms=0 3ms=1102 4ms=561 5ms=137 6ms=77 7ms=39 8ms=11 9ms=9 10ms=0 11ms=2 12ms=0 13ms=1 14ms=2 15ms=29 16ms=7 17ms=8 18ms=165 19ms=202 20ms=25 21ms=12 22ms=3 23ms=2 24ms=1 25ms=2 26ms=0 27ms=1 28ms=0 29ms=3 30ms=27 31ms=13 32ms=4 33ms=8 34ms=25 36ms=10 38ms=2 40ms=0 42ms=0 44ms=0 46ms=0 48ms=0 50ms=1 54ms=0 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+post2present histogram is as below:
+0ms=0 1ms=0 2ms=0 3ms=0 4ms=17 5ms=5 6ms=7 7ms=39 8ms=29 9ms=15 10ms=6 11ms=13 12ms=10 13ms=14 14ms=72 15ms=120 16ms=34 17ms=18 18ms=405 19ms=476 20ms=103 21ms=47 22ms=30 23ms=48 24ms=14 25ms=12 26ms=8 27ms=8 28ms=12 29ms=21 30ms=105 31ms=62 32ms=8 33ms=37 34ms=423 36ms=224 38ms=33 40ms=1 42ms=1 44ms=0 46ms=0 48ms=0 50ms=12 54ms=2 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+post2acquire histogram is as below:
+0ms=269 1ms=8 2ms=3 3ms=34 4ms=35 5ms=9 6ms=4 7ms=9 8ms=15 9ms=14 10ms=41 11ms=226 12ms=24 13ms=2 14ms=189 15ms=932 16ms=33 17ms=1 18ms=5 19ms=70 20ms=16 21ms=5 22ms=5 23ms=3 24ms=4 25ms=7 26ms=44 27ms=23 28ms=1 29ms=8 30ms=336 31ms=110 32ms=0 33ms=0 34ms=2 36ms=0 38ms=0 40ms=0 42ms=0 44ms=0 46ms=3 48ms=1 50ms=0 54ms=0 58ms=0 62ms=0 66ms=0 70ms=0 74ms=0 78ms=0 82ms=0 86ms=0 90ms=0 94ms=0 98ms=0 102ms=0 106ms=0 110ms=0 114ms=0 118ms=0 122ms=0 126ms=0 130ms=0 134ms=0 138ms=0 142ms=0 146ms=0 150ms=0 200ms=0 250ms=0 300ms=0 350ms=0 400ms=0 450ms=0 500ms=0 550ms=0 600ms=0 650ms=0 700ms=0 750ms=0 800ms=0 850ms=0 900ms=0 950ms=0 1000ms=0
+
+displayRefreshRate = 60 fps
+renderRate = 60 fps
+uid = 10185

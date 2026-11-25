@@ -1,0 +1,366 @@
+{
+    "profile":  null,
+    "environment":  {
+                        "Serial":  "emulator-5554",
+                        "Avd":  "IdleFactory_Test_API_36",
+                        "Fingerprint":  "google/sdk_gphone64_x86_64/emu64xa:16/BP22.250325.006/13344233:user/release-keys",
+                        "Api":  "36",
+                        "Abis":  "x86_64,arm64-v8a",
+                        "NativeBridge":  "libndk_translation.so",
+                        "Gles":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)",
+                        "Display":  "1080x2400",
+                        "Apk":  "C:\\Users\\Domenik\\AppData\\Local\\Temp\\t542\\t542.apk (46722286 bytes, SHA-256 62dbdb293f522fed2b7c63b87683028e188a991a11bb638577ef3ae2960d7c5f)",
+                        "UnityBuild":  "Development, il2cpp, arm64-v8a",
+                        "W004VHash":  "1920dfafb75e69131fe43bb38f66c088762b195c46aa7916c568747c7ecca6fc"
+                    },
+    "results":  [
+                    {
+                        "Step":  "Environment",
+                        "Check":  "emulator lease",
+                        "Result":  "INFO",
+                        "Detail":  "emulator: renewed for \u0027issue-714\u0027 (77 min)"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "device booted",
+                        "Result":  "PASS",
+                        "Detail":  "emulator-5554"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "expected AVD",
+                        "Result":  "PASS",
+                        "Detail":  "IdleFactory_Test_API_36, API 36"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "arm64-v8a via translation",
+                        "Result":  "PASS",
+                        "Detail":  "x86_64,arm64-v8a; bridge libndk_translation.so"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "GLES renderer",
+                        "Result":  "INFO",
+                        "Detail":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "/data free space",
+                        "Result":  "PASS",
+                        "Detail":  "3606 MB free (54 percent used), floor 400 MB"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "adb install -r",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "pm clear",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "process started",
+                        "Result":  "PASS",
+                        "Detail":  "PID 13427"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to graphics device",
+                        "Result":  "INFO",
+                        "Detail":  "2 s after process start"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "first scene loaded (playable shell)",
+                        "Result":  "PASS",
+                        "Detail":  "4 s after the graphics device"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "primary ABI",
+                        "Result":  "PASS",
+                        "Detail":  "arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "Unity build",
+                        "Result":  "INFO",
+                        "Detail":  "Development, il2cpp, arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "graphics device",
+                        "Result":  "PASS",
+                        "Detail":  "Creating OpenGL ES 3.1 graphics device ; Context level  \u003cOpenGL ES 3.1\u003e ; Context handle -747116992"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to first display",
+                        "Result":  "INFO",
+                        "Detail":  "1s364ms"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "display",
+                        "Result":  "INFO",
+                        "Detail":  "ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "screenshot",
+                        "Result":  "INFO",
+                        "Detail":  "01-launch.png"
+                    },
+                    {
+                        "Step":  "W004VPush",
+                        "Check":  "W004-V fixture present",
+                        "Result":  "PASS",
+                        "Detail":  "Assets/IdleFactory/Tests/PlayMode/Fixtures/W004V/W004VFixture.cs"
+                    },
+                    {
+                        "Step":  "W004VPush",
+                        "Check":  "W004-V fixture hash recorded",
+                        "Result":  "PASS",
+                        "Detail":  "ExpectedHash 1920dfafb75e69131fe43bb38f66c088762b195c46aa7916c568747c7ecca6fc"
+                    },
+                    {
+                        "Step":  "W004VPush",
+                        "Check":  "committed w003-s-shipped/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 4f7ed559fb1a396a"
+                    },
+                    {
+                        "Step":  "W004VPush",
+                        "Check":  "committed w003-s-shipped/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 781810f0d39f3069"
+                    },
+                    {
+                        "Step":  "W004VPush",
+                        "Check":  "device w003-s-shipped/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 4f7ed559fb1a396a on the device"
+                    },
+                    {
+                        "Step":  "W004VPush",
+                        "Check":  "device w003-s-shipped/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 781810f0d39f3069 on the device"
+                    },
+                    {
+                        "Step":  "F004Restyled",
+                        "Check":  "W004-V base set loaded",
+                        "Result":  "PASS",
+                        "Detail":  "reconciled from 22222222-2222-2222-2222-000000000030 after 8 s; gen 1, id 7a66cce9, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data a712b9a93fa5"
+                    },
+                    {
+                        "Step":  "F004Restyled",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F004Restyled",
+                        "Check":  "screenshot (portrait, restyled factory)",
+                        "Result":  "INFO",
+                        "Detail":  "02-f004-portrait.png"
+                    },
+                    {
+                        "Step":  "F004Restyled",
+                        "Check":  "landscape reached",
+                        "Result":  "PASS",
+                        "Detail":  "ROTATION_90 2400x1080"
+                    },
+                    {
+                        "Step":  "F004Restyled",
+                        "Check":  "screenshot (landscape, restyled factory)",
+                        "Result":  "INFO",
+                        "Detail":  "03-f004-landscape.png"
+                    },
+                    {
+                        "Step":  "F004Restyled",
+                        "Check":  "portrait restored",
+                        "Result":  "PASS",
+                        "Detail":  "ROTATION_0 1080x2400"
+                    },
+                    {
+                        "Step":  "F004Restyled",
+                        "Check":  "same process",
+                        "Result":  "PASS",
+                        "Detail":  "PID 13569"
+                    },
+                    {
+                        "Step":  "F004Crispness",
+                        "Check":  "portrait 1080x2400 band 0.25,0.6 uniform blocks",
+                        "Result":  "PASS",
+                        "Detail":  "n=3 device px, phase (0,2), edge concentration x 0,991 y 0,980, 22540/22930 edge-bearing blocks uniform (98,3 %, floor 95,0 %). Screenshot: 04-f004-crisp-portrait.png"
+                    },
+                    {
+                        "Step":  "F004Crispness",
+                        "Check":  "landscape 2400x1080 band 0.25,0.6 uniform blocks",
+                        "Result":  "FAIL",
+                        "Detail":  "n=2 device px, phase (1,0), edge concentration x 0,930 y 0,948, 27260/28949 edge-bearing blocks uniform (94,2 %, floor 95,0 %). Screenshot: 05-f004-crisp-landscape.png"
+                    },
+                    {
+                        "Step":  "Home",
+                        "Check":  "departure checkpoint written",
+                        "Result":  "PASS",
+                        "Detail":  "gen 9, id 11d59074, run 1, cash 5683287, 12 machine(s), levels 331, prestige 0, data 7f4c95e3423d -\u003e gen 10, id 62eaf6ca, run 1, cash 5683413, 12 machine(s), levels 331, prestige 0, data 5170809761bf"
+                    },
+                    {
+                        "Step":  "Home",
+                        "Check":  "return in the same process",
+                        "Result":  "PASS",
+                        "Detail":  "PID 13569 -\u003e 13569"
+                    },
+                    {
+                        "Step":  "Home",
+                        "Check":  "return checkpoint written",
+                        "Result":  "PASS",
+                        "Detail":  "gen 11, id 12f55277, run 1, cash 5683875, 12 machine(s), levels 331, prestige 0, data 76442c74ead4"
+                    },
+                    {
+                        "Step":  "Home",
+                        "Check":  "screenshot (offline return summary)",
+                        "Result":  "INFO",
+                        "Detail":  "06-home-return.png"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "device asleep",
+                        "Result":  "PASS",
+                        "Detail":  "mWakefulness=Asleep"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "departure checkpoint written",
+                        "Result":  "PASS",
+                        "Detail":  "gen 12, id a87d838b, run 1, cash 5684025, 12 machine(s), levels 331, prestige 0, data ca4824c0eb00"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "awake in the same process",
+                        "Result":  "PASS",
+                        "Detail":  "awake=True, PID 13569 -\u003e 13569"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "return checkpoint written",
+                        "Result":  "PASS",
+                        "Detail":  "gen 13, id 17409fe1, run 1, cash 5684451, 12 machine(s), levels 331, prestige 0, data 7c9754c98e5e"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "screenshot",
+                        "Result":  "INFO",
+                        "Detail":  "07-lock-return.png"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "process stopped",
+                        "Result":  "PASS",
+                        "Detail":  "PID 13569 gone"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "new process",
+                        "Result":  "PASS",
+                        "Detail":  "PID 13569 -\u003e 13992"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "time to graphics device",
+                        "Result":  "INFO",
+                        "Detail":  "2 s"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "first scene loaded (playable shell)",
+                        "Result":  "PASS",
+                        "Detail":  "4 s after the graphics device"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "reconciled from the last durable checkpoint",
+                        "Result":  "PASS",
+                        "Detail":  "gen 14, id 57ad61c1, run 1, cash 5684877, 12 machine(s), levels 331, prestige 0, data 0b89bfc0c604"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "machine set restored",
+                        "Result":  "PASS",
+                        "Detail":  "12 -\u003e 12 machine(s)"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "screenshot (restored factory before any input)",
+                        "Result":  "INFO",
+                        "Detail":  "08-cold-restart.png"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "control-1 capture",
+                        "Result":  "INFO",
+                        "Detail":  "2466 frames, 111 dropped, 41.846 fps over 60 s; same process True"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "producing pushed run loaded",
+                        "Result":  "PASS",
+                        "Detail":  "reconciled in 290 ms from 22222222-2222-2222-2222-000000000030; gen 1, id 7d14daa5, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data 3e904fb5d28d"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "producing capture",
+                        "Result":  "INFO",
+                        "Detail":  "2491 frames, 102 dropped, 42.325 fps over 60 s; same process True"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "control-2 capture",
+                        "Result":  "INFO",
+                        "Detail":  "2473 frames, 101 dropped, 42.006 fps over 60 s; same process True"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "profiler-free build",
+                        "Result":  "PASS",
+                        "Detail":  "0 Autoconnect Profiler line(s) in the producing capture (the frame-rate build must not autoconnect the profiler)"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "producing average FPS",
+                        "Result":  "FAIL",
+                        "Detail":  "42,325 fps (budget \u003e= 60, owner decision 2026-09-29)"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "same-session control (context)",
+                        "Result":  "INFO",
+                        "Detail":  "fresh-run control mean 41.9 fps (controls: 41,846, 42,006); producing 42.325 fps"
+                    },
+                    {
+                        "Step":  "F004LogScan",
+                        "Check":  "no crash signatures",
+                        "Result":  "PASS",
+                        "Detail":  "0 FATAL/F DEBUG/SIGSEGV line(s) in 8787"
+                    },
+                    {
+                        "Step":  "F004LogScan",
+                        "Check":  "no coded diagnostics",
+                        "Result":  "PASS",
+                        "Detail":  "0 persistence/start-up diagnostic line(s)"
+                    },
+                    {
+                        "Step":  "F004LogScan",
+                        "Check":  "E Unity lines",
+                        "Result":  "INFO",
+                        "Detail":  "6, of which 0 outside the known benign AssetPackManager and Autoconnect Profiler probes"
+                    }
+                ]
+}

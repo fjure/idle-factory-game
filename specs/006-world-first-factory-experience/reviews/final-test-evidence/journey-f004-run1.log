@@ -1,0 +1,61 @@
+[INFO] Environment / emulator lease: emulator: renewed for 'issue-714' (77 min)
+[PASS] Preflight / device booted: emulator-5554
+[PASS] Preflight / expected AVD: IdleFactory_Test_API_36, API 36
+[PASS] Preflight / arm64-v8a via translation: x86_64,arm64-v8a; bridge libndk_translation.so
+[INFO] Preflight / GLES renderer: Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)
+[PASS] Install / /data free space: 3606 MB free (54 percent used), floor 400 MB
+[PASS] Install / adb install -r: Success
+[PASS] Install / pm clear: Success
+[PASS] Launch / process started: PID 13427
+[INFO] Launch / time to graphics device: 2 s after process start
+[PASS] Launch / first scene loaded (playable shell): 4 s after the graphics device
+[PASS] Launch / primary ABI: arm64-v8a
+[INFO] Launch / Unity build: Development, il2cpp, arm64-v8a
+[PASS] Launch / graphics device: Creating OpenGL ES 3.1 graphics device ; Context level  <OpenGL ES 3.1> ; Context handle -747116992
+[INFO] Launch / time to first display: 1s364ms
+[INFO] Launch / display: ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER
+[INFO] Launch / screenshot: 01-launch.png
+[PASS] W004VPush / W004-V fixture present: Assets/IdleFactory/Tests/PlayMode/Fixtures/W004V/W004VFixture.cs
+[PASS] W004VPush / W004-V fixture hash recorded: ExpectedHash 1920dfafb75e69131fe43bb38f66c088762b195c46aa7916c568747c7ecca6fc
+[PASS] W004VPush / committed w003-s-shipped/run-checkpoint.data-a.json: SHA-256 4f7ed559fb1a396a
+[PASS] W004VPush / committed w003-s-shipped/run-checkpoint.manifest-a.bin: SHA-256 781810f0d39f3069
+[PASS] W004VPush / device w003-s-shipped/run-checkpoint.data-a.json: SHA-256 4f7ed559fb1a396a on the device
+[PASS] W004VPush / device w003-s-shipped/run-checkpoint.manifest-a.bin: SHA-256 781810f0d39f3069 on the device
+[PASS] F004Restyled / W004-V base set loaded: reconciled from 22222222-2222-2222-2222-000000000030 after 8 s; gen 1, id 7a66cce9, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data a712b9a93fa5
+[INFO] F004Restyled / UI ready before the first tap: surface present after 2 s
+[INFO] F004Restyled / screenshot (portrait, restyled factory): 02-f004-portrait.png
+[PASS] F004Restyled / landscape reached: ROTATION_90 2400x1080
+[INFO] F004Restyled / screenshot (landscape, restyled factory): 03-f004-landscape.png
+[PASS] F004Restyled / portrait restored: ROTATION_0 1080x2400
+[PASS] F004Restyled / same process: PID 13569
+[PASS] F004Crispness / portrait 1080x2400 band 0.25,0.6 uniform blocks: n=3 device px, phase (0,2), edge concentration x 0,991 y 0,980, 22540/22930 edge-bearing blocks uniform (98,3 %, floor 95,0 %). Screenshot: 04-f004-crisp-portrait.png
+[FAIL] F004Crispness / landscape 2400x1080 band 0.25,0.6 uniform blocks: n=2 device px, phase (1,0), edge concentration x 0,930 y 0,948, 27260/28949 edge-bearing blocks uniform (94,2 %, floor 95,0 %). Screenshot: 05-f004-crisp-landscape.png
+[PASS] Home / departure checkpoint written: gen 9, id 11d59074, run 1, cash 5683287, 12 machine(s), levels 331, prestige 0, data 7f4c95e3423d -> gen 10, id 62eaf6ca, run 1, cash 5683413, 12 machine(s), levels 331, prestige 0, data 5170809761bf
+[PASS] Home / return in the same process: PID 13569 -> 13569
+[PASS] Home / return checkpoint written: gen 11, id 12f55277, run 1, cash 5683875, 12 machine(s), levels 331, prestige 0, data 76442c74ead4
+[INFO] Home / screenshot (offline return summary): 06-home-return.png
+[PASS] Lock / device asleep: mWakefulness=Asleep
+[PASS] Lock / departure checkpoint written: gen 12, id a87d838b, run 1, cash 5684025, 12 machine(s), levels 331, prestige 0, data ca4824c0eb00
+[PASS] Lock / awake in the same process: awake=True, PID 13569 -> 13569
+[PASS] Lock / return checkpoint written: gen 13, id 17409fe1, run 1, cash 5684451, 12 machine(s), levels 331, prestige 0, data 7c9754c98e5e
+[INFO] Lock / screenshot: 07-lock-return.png
+[PASS] ColdRestart / process stopped: PID 13569 gone
+[PASS] ColdRestart / new process: PID 13569 -> 13992
+[INFO] ColdRestart / time to graphics device: 2 s
+[PASS] ColdRestart / first scene loaded (playable shell): 4 s after the graphics device
+[PASS] ColdRestart / reconciled from the last durable checkpoint: gen 14, id 57ad61c1, run 1, cash 5684877, 12 machine(s), levels 331, prestige 0, data 0b89bfc0c604
+[PASS] ColdRestart / machine set restored: 12 -> 12 machine(s)
+[INFO] ColdRestart / screenshot (restored factory before any input): 08-cold-restart.png
+[INFO] ProducingFps / control-1 capture: 2466 frames, 111 dropped, 41.846 fps over 60 s; same process True
+[PASS] ProducingFps / producing pushed run loaded: reconciled in 290 ms from 22222222-2222-2222-2222-000000000030; gen 1, id 7d14daa5, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data 3e904fb5d28d
+[INFO] ProducingFps / producing capture: 2491 frames, 102 dropped, 42.325 fps over 60 s; same process True
+[INFO] ProducingFps / control-2 capture: 2473 frames, 101 dropped, 42.006 fps over 60 s; same process True
+[PASS] ProducingFps / profiler-free build: 0 Autoconnect Profiler line(s) in the producing capture (the frame-rate build must not autoconnect the profiler)
+[FAIL] ProducingFps / producing average FPS: 42,325 fps (budget >= 60, owner decision 2026-09-29)
+[INFO] ProducingFps / same-session control (context): fresh-run control mean 41.9 fps (controls: 41,846, 42,006); producing 42.325 fps
+[PASS] F004LogScan / no crash signatures: 0 FATAL/F DEBUG/SIGSEGV line(s) in 8787
+[PASS] F004LogScan / no coded diagnostics: 0 persistence/start-up diagnostic line(s)
+[INFO] F004LogScan / E Unity lines: 6, of which 0 outside the known benign AssetPackManager and Autoconnect Profiler probes
+
+Report: C:\Users\Domenik\ai-projects\idle-factory-game\.maqa-worktrees\issue-714-t542-final-qa\specs\006-world-first-factory-experience\reviews\final-test-evidence\journey-f004-run1\journey.md
+Journey: FAIL (2 check(s)).

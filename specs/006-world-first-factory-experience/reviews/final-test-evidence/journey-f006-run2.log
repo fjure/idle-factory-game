@@ -1,0 +1,76 @@
+[INFO] Environment / emulator lease: emulator: renewed for 'issue-714' (61 min)
+[PASS] Preflight / device booted: emulator-5554
+[PASS] Preflight / expected AVD: IdleFactory_Test_API_36, API 36
+[PASS] Preflight / arm64-v8a via translation: x86_64,arm64-v8a; bridge libndk_translation.so
+[INFO] Preflight / GLES renderer: Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)
+[PASS] Install / /data free space: 3606 MB free (54 percent used), floor 400 MB
+[PASS] Install / adb install -r: Success
+[PASS] Install / pm clear: Success
+[PASS] Launch / process started: PID 12107
+[INFO] Launch / time to graphics device: 2 s after process start
+[PASS] Launch / first scene loaded (playable shell): 4 s after the graphics device
+[PASS] Launch / primary ABI: arm64-v8a
+[INFO] Launch / Unity build: Development, il2cpp, arm64-v8a
+[PASS] Launch / graphics device: Creating OpenGL ES 3.1 graphics device ; Context level  <OpenGL ES 3.1> ; Context handle -747085888
+[INFO] Launch / time to first display: 1s261ms
+[INFO] Launch / display: ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER
+[INFO] Launch / screenshot: 01-launch.png
+[PASS] W003Push / committed w003-s-shipped/run-checkpoint.data-a.json: SHA-256 4f7ed559fb1a396a
+[PASS] W003Push / committed w003-s-shipped/run-checkpoint.manifest-a.bin: SHA-256 781810f0d39f3069
+[PASS] W003Push / device w003-s-shipped/run-checkpoint.data-a.json: SHA-256 4f7ed559fb1a396a on the device
+[PASS] W003Push / device w003-s-shipped/run-checkpoint.manifest-a.bin: SHA-256 781810f0d39f3069 on the device
+[PASS] F006Start / device set loaded: reconciled from 22222222-2222-2222-2222-000000000030 after 8 s; gen 1, id 498e77fa, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data ec56d07f9859
+[INFO] F006Start / UI ready before the first tap: surface present after 2 s
+[PASS] F006Start / portrait for the taps: 1080x2400; the F006 default taps are portrait fractions
+[INFO] F006Start / screenshot (after Welcome back): 02-f006-start.png
+[INFO] F006Select / tap source: select machine: 0.5,0.45 of 1080x2400 -> tap (540,1080). World band middle: between the top strip and the bottom action row of the portrait shell (FactoryRun.uss .run-body); the camera frames the depot column (T558), so the middle row of the factory is near the centre.
+[INFO] F006Select / UI ready before the first tap: surface present after 2 s
+[PASS] F006Select / machine card docked (card band changed): card band change 0.884 (floor 0.15). Screenshots: 03-f006-select-before.png, 04-f006-select-card.png
+[INFO] F006Upgrade / tap source: Upgrade: 0.5,0.815 of 1080x2400 -> tap (540,1956). Upgrade is the pinned button of the docked card in its first view (contracts/ui-surfaces-f006.md section 2), in the lower part of the bottom band, above the action bar.
+[INFO] F006Upgrade / UI ready before the first tap: surface present after 2 s
+[INFO] F006Upgrade / screenshot (after Upgrade): 05-f006-upgrade.png
+[PASS] F006Upgrade / machine level raised (checkpoint level sum): gen 1, id 498e77fa, run 1, cash 5681865, 12 machine(s), levels 331, prestige 0, data ec56d07f9859 -> gen 3, id 175d7834, run 1, cash 5682326, 12 machine(s), levels 332, prestige 0, data cbe79d6c438e
+[INFO] F006HubContracts / tap source: hub entry: 0.15,0.972 of 1080x2400 -> tap (162,2333). Persistent layer action bar, hub entry (see Get-HubTapMap).
+[INFO] F006HubContracts / UI ready before the first tap: surface present after 2 s
+[PASS] F006HubContracts / hub opened (sheet region changed): change 0.791. Screenshots: 06-f006-hub-0-factory.png, 07-f006-hub-1-open.png
+[INFO] F006HubContracts / tap source: Contracts card: 0.5,0.565 of 1080x2400 -> tap (540,1356). Hub list row 2 (HubCards order), 48 dp rows (Get-HubTapMap).
+[INFO] F006HubContracts / UI ready before the first tap: surface present after 2 s
+[PASS] F006HubContracts / Contracts view opened (sheet region changed): change 0.739. Screenshots: 07-f006-hub-1-open.png, 08-f006-hub-2-contracts.png
+[PASS] F006HubContracts / Back left the Contracts view (sheet region changed): change 0.205. Screenshots: 08-f006-hub-2-contracts.png, 09-f006-hub-3-back.png
+[INFO] F006HubContracts / residual difference to the factory before the hub: 0.419 in the sheet region (Cash and production tick); the decisive check that the factory is back is the screenshot 09-f006-hub-3-back.png
+[PASS] F006HubContracts / same process: PID 12261
+[INFO] F006Build / tap source: empty location: 0.5,0.30 of 1080x2400 -> tap (540,720). An empty unlocked location of the world band (the build card opens on a tap there, T539); the depot-column framing keeps it in the upper part of the band.
+[INFO] F006Build / UI ready before the first tap: surface present after 2 s
+[PASS] F006Build / build card docked (card band changed): change 0.452. Screenshots: 10-f006-build-0-before.png, 11-f006-build-1-card.png
+[INFO] F006Build / tap source: type row, Confirm: 0.5,0.78 0.72,0.90 of 1080x2400 -> tap (540,1872); tap (778,2160). Build card (contracts/ui-surfaces-f006.md section 5): the first type row, then Confirm on the right of the Cancel and Confirm pair at the bottom of the band.
+[INFO] F006Build / UI ready before the first tap: surface present after 2 s
+[INFO] F006Build / screenshot (after Confirm): 12-f006-build-2-confirm.png
+[FAIL] F006Build / machine built (checkpoint machine count): gen 3, id 175d7834, run 1, cash 5682326, 12 machine(s), levels 332, prestige 0, data cbe79d6c438e -> gen 6, id 0eaf2403, run 1, cash 5683832, 12 machine(s), levels 332, prestige 0, data 2f2c0cc83199
+[INFO] F006BuildRotation / UI ready before the first tap: surface present after 2 s
+[INFO] F006BuildRotation / screenshot (build card open, portrait): 13-f006-buildrot-0-portrait.png
+[PASS] F006BuildRotation / rotated to landscape with the card open: ROTATION_90 2400x1080, requested SCREEN_ORIENTATION_FULL_USER
+[INFO] F006BuildRotation / screenshot (landscape, card open: docked in the side column, selected location inside the unobstructed rectangle): 14-f006-buildrot-1-landscape.png
+[INFO] F006BuildRotation / screenshot (back in portrait): 15-f006-buildrot-2-portrait.png
+[PASS] F006BuildRotation / same process: PID 12261
+[PASS] F006BuildRotation / no coded diagnostics during the rotations: no return.blocked / save.v2.* / persistence diagnostic
+[INFO] F006BuildRotation / screenshot (after Back: card closed): 16-f006-buildrot-3-closed.png
+[INFO] F006Autosave / UI ready before the first tap: surface present after 2 s
+[INFO] F006Autosave / UI ready before the first tap: surface present after 2 s
+[INFO] F006Autosave / change made: select and Upgrade taps (same fractions as F006Select and F006Upgrade); waiting 35 s with no lifecycle event (AutosavePolicy.DefaultIntervalMs 30000)
+[PASS] F006Autosave / periodic checkpoint written without a lifecycle event: gen 11, id 47727ab1, run 1, cash 5684714, 12 machine(s), levels 332, prestige 0, data d1573740decf -> gen 13, id a396c380, run 1, cash 5683537, 12 machine(s), levels 333, prestige 0, data 406402793cb1
+[PASS] F006Autosave / same process while waiting: PID 12261
+[PASS] F006Autosave / process stopped (no HOME): PID 12261 gone
+[PASS] F006Autosave / relaunch restored the autosaved state: gen 13, id a396c380, run 1, cash 5683537, 12 machine(s), levels 333, prestige 0, data 406402793cb1 -> gen 14, id 7841faca, run 1, cash 5684059, 12 machine(s), levels 333, prestige 0, data 2d70f3c66b54
+[INFO] F006Zoom / UI ready before the first tap: surface present after 2 s
+[INFO] F006Zoom / UI ready before the first tap: surface present after 2 s
+[INFO] F006Zoom / screenshot (Settings view): 17-f006-zoom-0-settings.png
+[INFO] F006Zoom / Show zoom buttons: no -ZoomPrefTaps supplied (layout dependent); the preference is left as it is
+[INFO] F006Zoom / tap source: zoom-in: 0.063,0.86 of 1080x2400 -> tap (68,2064). Zoom column, "+" button (FactoryRun.uss .run-zoom; Get-HubTapMap).
+[INFO] F006Zoom / UI ready before the first tap: surface present after 2 s
+[INFO] F006Zoom / zoom-in changed the world band: world band change 0.374; buttons are hidden on touch without the preference, so 0 is expected. Screenshots: 18-f006-zoom-2-before.png, 19-f006-zoom-3-after.png. Pinch zoom stays Play Mode only.
+[PASS] F006LogScan / no crash signatures: 0 FATAL/F DEBUG/SIGSEGV line(s) in 7140
+[PASS] F006LogScan / no coded diagnostics: 0 persistence/start-up diagnostic line(s)
+[INFO] F006LogScan / E Unity lines: 3, of which 0 outside the known benign AssetPackManager and Autoconnect Profiler probes
+
+Report: C:\Users\Domenik\ai-projects\idle-factory-game\.maqa-worktrees\issue-714-t542-final-qa\specs\006-world-first-factory-experience\reviews\final-test-evidence\journey-f006-run2\journey.md
+Journey: FAIL (1 check(s)).

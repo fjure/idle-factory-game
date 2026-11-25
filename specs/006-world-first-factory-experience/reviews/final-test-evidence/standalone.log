@@ -1,0 +1,4 @@
+ART_PIPELINE_SKIPPED: no art-pipeline paths changed relative to the merge base with origin/main.
+Running Unity PlayerPlayMode tests...
+UNITY_TEST_PASS suite=PlayerPlayMode tests=82 passed=82 skipped=0 result=C:\Users\Domenik\ai-projects\idle-factory-game\.maqa-worktrees\issue-714-t542-final-qa\test-results\unity\20261124T231115105Z\PlayerPlayMode-results.xml log=C:\Users\Domenik\ai-projects\idle-factory-game\.maqa-worktrees\issue-714-t542-final-qa\test-results\unity\20261124T231115105Z\PlayerPlayMode.log
+EXIT=0
