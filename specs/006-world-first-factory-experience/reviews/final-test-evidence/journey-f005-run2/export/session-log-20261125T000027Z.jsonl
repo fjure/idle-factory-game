@@ -1,0 +1,8 @@
+{"t":"header","v":1,"schema":1,"contentRevision":3,"buildKind":"development","platformClass":"mobile","timeScale":1,"sessionId":"49bfe4c1a95af544f7ed215022a717b6","crc":"0970cf74"}
+{"t":"lifecycle","v":1,"event":"start","droppedEvents":0,"crc":"1fcedcdd"}
+{"t":"header","v":1,"schema":1,"contentRevision":3,"buildKind":"development","platformClass":"mobile","timeScale":1,"sessionId":"8dc5bf8c8cdc0edb0b0d470667e34a9b","crc":"041a6048"}
+{"t":"lifecycle","v":1,"event":"start","droppedEvents":0,"crc":"1fcedcdd"}
+{"t":"contract","v":1,"event":"autoDeliver","offerId":"contract.gear","index":0,"required":165,"reward":9780,"ratioPpm":1500000,"crc":"a0660373"}
+{"t":"offlineReturn","v":1,"absenceMs":95564608667,"creditedMs":28800000,"capHit":true,"completions":1721253,"storeFullStallSeconds":0,"soldUnits":7289839,"cashDelta":287958420,"reclassifiedLiveGap":false,"crc":"0a8b7c6d"}
+{"t":"contract","v":1,"event":"accept","offerId":"contract.timed-bar","index":33,"required":165,"reward":0,"ratioPpm":1500000,"crc":"a5418333"}
+{"t":"contract","v":1,"event":"autoDeliver","offerId":"contract.timed-bar","index":33,"required":165,"reward":1009,"ratioPpm":1500000,"crc":"e40bf13c"}

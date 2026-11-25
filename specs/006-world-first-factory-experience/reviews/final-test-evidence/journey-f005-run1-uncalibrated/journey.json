@@ -1,0 +1,581 @@
+{
+    "profile":  null,
+    "environment":  {
+                        "Serial":  "emulator-5554",
+                        "Avd":  "IdleFactory_Test_API_36",
+                        "Fingerprint":  "google/sdk_gphone64_x86_64/emu64xa:16/BP22.250325.006/13344233:user/release-keys",
+                        "Api":  "36",
+                        "Abis":  "x86_64,arm64-v8a",
+                        "NativeBridge":  "libndk_translation.so",
+                        "Gles":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)",
+                        "Display":  "1080x2400",
+                        "Apk":  "C:\\Users\\Domenik\\AppData\\Local\\Temp\\t542\\t542.apk (46722286 bytes, SHA-256 62dbdb293f522fed2b7c63b87683028e188a991a11bb638577ef3ae2960d7c5f)",
+                        "UnityBuild":  "Development, il2cpp, arm64-v8a"
+                    },
+    "results":  [
+                    {
+                        "Step":  "Environment",
+                        "Check":  "emulator lease",
+                        "Result":  "INFO",
+                        "Detail":  "emulator: renewed for \u0027issue-714\u0027 (99 min)"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "device booted",
+                        "Result":  "PASS",
+                        "Detail":  "emulator-5554"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "expected AVD",
+                        "Result":  "PASS",
+                        "Detail":  "IdleFactory_Test_API_36, API 36"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "arm64-v8a via translation",
+                        "Result":  "PASS",
+                        "Detail":  "x86_64,arm64-v8a; bridge libndk_translation.so"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "GLES renderer",
+                        "Result":  "INFO",
+                        "Detail":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "/data free space",
+                        "Result":  "PASS",
+                        "Detail":  "3606 MB free (54 percent used), floor 400 MB"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "adb install -r",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "pm clear",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "process started",
+                        "Result":  "PASS",
+                        "Detail":  "PID 14787"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to graphics device",
+                        "Result":  "INFO",
+                        "Detail":  "2 s after process start"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "first scene loaded (playable shell)",
+                        "Result":  "PASS",
+                        "Detail":  "4 s after the graphics device"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "primary ABI",
+                        "Result":  "PASS",
+                        "Detail":  "arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "Unity build",
+                        "Result":  "INFO",
+                        "Detail":  "Development, il2cpp, arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "graphics device",
+                        "Result":  "PASS",
+                        "Detail":  "Creating OpenGL ES 3.1 graphics device ; Context level  \u003cOpenGL ES 3.1\u003e ; Context handle -747121744"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to first display",
+                        "Result":  "INFO",
+                        "Detail":  "1s446ms"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "display",
+                        "Result":  "INFO",
+                        "Detail":  "ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "screenshot",
+                        "Result":  "INFO",
+                        "Detail":  "01-launch.png"
+                    },
+                    {
+                        "Step":  "W005Push",
+                        "Check":  "committed w005-l/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 7066eed15513d2bd"
+                    },
+                    {
+                        "Step":  "W005Push",
+                        "Check":  "committed w005-l/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 8c9d93d12a81c466"
+                    },
+                    {
+                        "Step":  "W005Push",
+                        "Check":  "device w005-l/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 7066eed15513d2bd on the device"
+                    },
+                    {
+                        "Step":  "W005Push",
+                        "Check":  "device w005-l/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 8c9d93d12a81c466 on the device"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "W005-L loaded",
+                        "Result":  "PASS",
+                        "Detail":  "reconciled from 22222222-2222-2222-2222-000000000050 after 8 s; gen 1, id def0d534, run 3, cash 289457264, 12 machine(s), levels 670, prestige 2, data d638c9289641"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "screenshot (after Welcome back)",
+                        "Result":  "INFO",
+                        "Detail":  "02-f005-start.png"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "screenshot (Inventory card before the sale)",
+                        "Result":  "INFO",
+                        "Detail":  "03-f005-sell-before.png"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "Sell button located",
+                        "Result":  "PASS",
+                        "Detail":  "primary button bands at y fractions: 0,713"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "screenshot (sold line)",
+                        "Result":  "INFO",
+                        "Detail":  "04-f005-sell-after.png"
+                    },
+                    {
+                        "Step":  "F005Sell",
+                        "Check":  "process alive",
+                        "Result":  "PASS",
+                        "Detail":  "PID 14931"
+                    },
+                    {
+                        "Step":  "F005AutoDeliver",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005AutoDeliver",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005AutoDeliver",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005AutoDeliver",
+                        "Check":  "screenshot (offers)",
+                        "Result":  "INFO",
+                        "Detail":  "05-f005-contract-offers.png"
+                    },
+                    {
+                        "Step":  "F005AutoDeliver",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005AutoDeliver",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005AutoDeliver",
+                        "Check":  "screenshot (active contract, Auto-deliver Off)",
+                        "Result":  "INFO",
+                        "Detail":  "06-f005-contract-active.png"
+                    },
+                    {
+                        "Step":  "F005AutoDeliver",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005AutoDeliver",
+                        "Check":  "screenshot (after the toggle: auto-delivered line)",
+                        "Result":  "INFO",
+                        "Detail":  "07-f005-contract-autodeliver.png"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "screenshot (Session log section)",
+                        "Result":  "INFO",
+                        "Detail":  "08-f005-log-section.png"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "screenshot (after Export tap 1)",
+                        "Result":  "INFO",
+                        "Detail":  "09-f005-log-after-tap1.png"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "Export tap 1",
+                        "Result":  "INFO",
+                        "Detail":  "no new export after the tap at 0.489,0.798; retrying"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "screenshot (after Export tap 2)",
+                        "Result":  "INFO",
+                        "Detail":  "10-f005-log-after-tap2.png"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "screenshot (in-app Last export path; compare with the pulled path)",
+                        "Result":  "INFO",
+                        "Detail":  "11-f005-log-exported.png"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "export file created",
+                        "Result":  "PASS",
+                        "Detail":  "1 new file(s) in Exports/: session-log-20261124T234326Z.jsonl"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "adb pull of the export",
+                        "Result":  "PASS",
+                        "Detail":  "/sdcard/Android/data/com.DefaultCompany.idlefactorygame/files/IdleFactory/Exports/session-log-20261124T234326Z.jsonl: 1 file pulled, 0 skipped. 0.8 MB/s (1054 bytes in 0.001s)"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "paths",
+                        "Result":  "INFO",
+                        "Detail":  "in-app path (see the screenshot): /storage/emulated/0/Android/data/com.DefaultCompany.idlefactorygame/files/IdleFactory/Exports/session-log-20261124T234326Z.jsonl; pulled from /sdcard/Android/data/com.DefaultCompany.idlefactorygame/files/IdleFactory/Exports/session-log-20261124T234326Z.jsonl to C:\\Users\\Domenik\\ai-projects\\idle-factory-game\\.maqa-worktrees\\issue-714-t542-final-qa\\specs\\006-world-first-factory-experience\\reviews\\final-test-evidence\\journey-f005-run1\\export\\session-log-20261124T234326Z.jsonl (1054 bytes)"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "export is non-empty, one JSON object per line with t and crc",
+                        "Result":  "PASS",
+                        "Detail":  "8 line(s), 1054 bytes, 0 malformed"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "export contains sale-manual-any",
+                        "Result":  "PASS",
+                        "Detail":  "events: header x2, lifecycle x3, contract-autoDeliver-contract.gear x1, offlineReturn x1, sale-manual-iron.bar x1, sale-manual-any x1"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "export contains contract-accept-contract.timed-bar",
+                        "Result":  "FAIL",
+                        "Detail":  "events: header x2, lifecycle x3, contract-autoDeliver-contract.gear x1, offlineReturn x1, sale-manual-iron.bar x1, sale-manual-any x1"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "export contains contract-autoDeliver-contract.timed-bar",
+                        "Result":  "FAIL",
+                        "Detail":  "events: header x2, lifecycle x3, contract-autoDeliver-contract.gear x1, offlineReturn x1, sale-manual-iron.bar x1, sale-manual-any x1"
+                    },
+                    {
+                        "Step":  "F005SessionLog",
+                        "Check":  "no file path in the log (SEC-1)",
+                        "Result":  "PASS",
+                        "Detail":  "0 line(s) with a path"
+                    },
+                    {
+                        "Step":  "Home",
+                        "Check":  "departure checkpoint written",
+                        "Result":  "PASS",
+                        "Detail":  "gen 4, id 851fa608, run 3, cash 290585230, 12 machine(s), levels 670, prestige 2, data 1d9206229c28 -\u003e gen 5, id 83c28c07, run 3, cash 290740702, 12 machine(s), levels 670, prestige 2, data 5683b035aaf1"
+                    },
+                    {
+                        "Step":  "Home",
+                        "Check":  "return in the same process",
+                        "Result":  "PASS",
+                        "Detail":  "PID 14931 -\u003e 14931"
+                    },
+                    {
+                        "Step":  "Home",
+                        "Check":  "return checkpoint written",
+                        "Result":  "PASS",
+                        "Detail":  "gen 6, id a5099068, run 3, cash 290858254, 12 machine(s), levels 670, prestige 2, data 81f7df2aa3d1"
+                    },
+                    {
+                        "Step":  "Home",
+                        "Check":  "screenshot (offline return summary)",
+                        "Result":  "INFO",
+                        "Detail":  "12-home-return.png"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "device asleep",
+                        "Result":  "PASS",
+                        "Detail":  "mWakefulness=Asleep"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "departure checkpoint written",
+                        "Result":  "PASS",
+                        "Detail":  "gen 7, id 22503541, run 3, cash 290899966, 12 machine(s), levels 670, prestige 2, data b2445228f736"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "awake in the same process",
+                        "Result":  "PASS",
+                        "Detail":  "awake=True, PID 14931 -\u003e 14931"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "return checkpoint written",
+                        "Result":  "PASS",
+                        "Detail":  "gen 8, id ca4b9126, run 3, cash 291006142, 12 machine(s), levels 670, prestige 2, data c151cdbb7cf6"
+                    },
+                    {
+                        "Step":  "Lock",
+                        "Check":  "screenshot",
+                        "Result":  "INFO",
+                        "Detail":  "13-lock-return.png"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "process stopped",
+                        "Result":  "PASS",
+                        "Detail":  "PID 14931 gone"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "new process",
+                        "Result":  "PASS",
+                        "Detail":  "PID 14931 -\u003e 15754"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "time to graphics device",
+                        "Result":  "INFO",
+                        "Detail":  "2 s"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "first scene loaded (playable shell)",
+                        "Result":  "PASS",
+                        "Detail":  "4 s after the graphics device"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "reconciled from the last durable checkpoint",
+                        "Result":  "PASS",
+                        "Detail":  "gen 9, id 688b1f76, run 3, cash 291114372, 12 machine(s), levels 670, prestige 2, data f0911e3f3f03"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "machine set restored",
+                        "Result":  "PASS",
+                        "Detail":  "12 -\u003e 12 machine(s)"
+                    },
+                    {
+                        "Step":  "ColdRestart",
+                        "Check":  "screenshot (restored factory before any input)",
+                        "Result":  "INFO",
+                        "Detail":  "14-cold-restart.png"
+                    },
+                    {
+                        "Step":  "W005LReturn",
+                        "Check":  "departure beyond the eight-hour cap",
+                        "Result":  "PASS",
+                        "Detail":  "w005-l departure is 26.545 h before the device clock, so each accepted start reconciles exactly the capped 8 h"
+                    },
+                    {
+                        "Step":  "W005LReturn",
+                        "Check":  "start 1",
+                        "Result":  "PASS",
+                        "Detail":  "793 ms; accepted, reconciled from w005-l; gen 1, id db484643, run 3, cash 289457264, 12 machine(s), levels 670, prestige 2, data e20aff9be4e3"
+                    },
+                    {
+                        "Step":  "W005LReturn",
+                        "Check":  "start 2",
+                        "Result":  "PASS",
+                        "Detail":  "840 ms; accepted, reconciled from w005-l; gen 1, id d600615a, run 3, cash 289457264, 12 machine(s), levels 670, prestige 2, data f071ab2e85cc"
+                    },
+                    {
+                        "Step":  "W005LReturn",
+                        "Check":  "start 3",
+                        "Result":  "PASS",
+                        "Detail":  "787 ms; accepted, reconciled from w005-l; gen 1, id d1724320, run 3, cash 289457264, 12 machine(s), levels 670, prestige 2, data 91d52e282b6f"
+                    },
+                    {
+                        "Step":  "W005LReturn",
+                        "Check":  "start 4",
+                        "Result":  "PASS",
+                        "Detail":  "791 ms; accepted, reconciled from w005-l; gen 1, id ea194da5, run 3, cash 289457264, 12 machine(s), levels 670, prestige 2, data 24c8e792247a"
+                    },
+                    {
+                        "Step":  "W005LReturn",
+                        "Check":  "start 5",
+                        "Result":  "PASS",
+                        "Detail":  "794 ms; accepted, reconciled from w005-l; gen 1, id 02508be1, run 3, cash 289457264, 12 machine(s), levels 670, prestige 2, data 99b823d4b782"
+                    },
+                    {
+                        "Step":  "W005LReturn",
+                        "Check":  "median of accepted starts",
+                        "Result":  "PASS",
+                        "Detail":  "median 793 ms of [793, 840, 787, 791, 794] accepted (5 of 5 starts accepted; budget \u003c= 2000 ms, PE-2)"
+                    },
+                    {
+                        "Step":  "W005LReturn",
+                        "Check":  "w005-l keeps producing",
+                        "Result":  "PASS",
+                        "Detail":  "gen 1, id 02508be1, run 3, cash 289457264, 12 machine(s), levels 670, prestige 2, data 99b823d4b782 -\u003e gen 2, id d8edc754, run 3, cash 289724442, 12 machine(s), levels 670, prestige 2, data 7bc71d6d8ed2"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "control-1 capture",
+                        "Result":  "INFO",
+                        "Detail":  "2381 frames, 54 dropped, 40.335 fps over 60 s; same process True"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "producing pushed run loaded",
+                        "Result":  "PASS",
+                        "Detail":  "reconciled in 798 ms from 22222222-2222-2222-2222-000000000050; gen 1, id ad944382, run 3, cash 289457264, 12 machine(s), levels 670, prestige 2, data 7600f64755ec"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "producing capture",
+                        "Result":  "INFO",
+                        "Detail":  "2365 frames, 50 dropped, 40.028 fps over 60 s; same process True"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "control-2 capture",
+                        "Result":  "INFO",
+                        "Detail":  "2376 frames, 63 dropped, 40.296 fps over 60 s; same process True"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "profiler-free build",
+                        "Result":  "PASS",
+                        "Detail":  "0 Autoconnect Profiler line(s) in the producing capture (the frame-rate build must not autoconnect the profiler)"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "producing average FPS",
+                        "Result":  "FAIL",
+                        "Detail":  "40,028 fps (budget \u003e= 60, owner decision 2026-09-29)"
+                    },
+                    {
+                        "Step":  "ProducingFps",
+                        "Check":  "same-session control (context)",
+                        "Result":  "INFO",
+                        "Detail":  "fresh-run control mean 40.3 fps (controls: 40,335, 40,296); producing 40.028 fps"
+                    },
+                    {
+                        "Step":  "F005LogScan",
+                        "Check":  "no crash signatures",
+                        "Result":  "PASS",
+                        "Detail":  "0 FATAL/F DEBUG/SIGSEGV line(s) in 13501"
+                    },
+                    {
+                        "Step":  "F005LogScan",
+                        "Check":  "no coded diagnostics",
+                        "Result":  "PASS",
+                        "Detail":  "0 persistence/start-up diagnostic line(s)"
+                    },
+                    {
+                        "Step":  "F005LogScan",
+                        "Check":  "E Unity lines",
+                        "Result":  "INFO",
+                        "Detail":  "12, of which 0 outside the known benign AssetPackManager and Autoconnect Profiler probes"
+                    }
+                ]
+}

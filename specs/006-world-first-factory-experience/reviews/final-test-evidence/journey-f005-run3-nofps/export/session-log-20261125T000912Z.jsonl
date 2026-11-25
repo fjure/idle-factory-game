@@ -1,0 +1,9 @@
+{"t":"header","v":1,"schema":1,"contentRevision":3,"buildKind":"development","platformClass":"mobile","timeScale":1,"sessionId":"9611a566e40acd02aba6431e31e539a5","crc":"ef0b23b5"}
+{"t":"lifecycle","v":1,"event":"start","droppedEvents":0,"crc":"1fcedcdd"}
+{"t":"header","v":1,"schema":1,"contentRevision":3,"buildKind":"development","platformClass":"mobile","timeScale":1,"sessionId":"5539ff6bde2e27988b73b53344899497","crc":"74f1347f"}
+{"t":"lifecycle","v":1,"event":"start","droppedEvents":0,"crc":"1fcedcdd"}
+{"t":"contract","v":1,"event":"autoDeliver","offerId":"contract.gear","index":0,"required":165,"reward":9780,"ratioPpm":1500000,"crc":"a0660373"}
+{"t":"offlineReturn","v":1,"absenceMs":95565143674,"creditedMs":28800000,"capHit":true,"completions":1721253,"storeFullStallSeconds":0,"soldUnits":7289839,"cashDelta":287958420,"reclassifiedLiveGap":false,"crc":"83755078"}
+{"t":"sale","v":1,"resourceId":"iron.bar","units":1,"cash":4,"manual":true,"crc":"9f6d64cf"}
+{"t":"contract","v":1,"event":"accept","offerId":"contract.timed-bar","index":33,"required":165,"reward":0,"ratioPpm":1500000,"crc":"a5418333"}
+{"t":"contract","v":1,"event":"autoDeliver","offerId":"contract.timed-bar","index":33,"required":165,"reward":1009,"ratioPpm":1500000,"crc":"e40bf13c"}

@@ -298,7 +298,7 @@ param(
     # T541 F006: hub-entry tap overrides and the F006 scenario taps (fractions of the current display, see .PARAMETER HubTaps).
     [string] $HubTaps,
     [string[]] $F006SelectTaps = @('0.5,0.45'),
-    [string[]] $F006UpgradeTaps = @('0.5,0.84'),
+    [string[]] $F006UpgradeTaps = @('0.5,0.815'),
     [string[]] $F006EmptySlotTaps = @('0.5,0.30'),
     [string[]] $F006BuildTaps = @('0.5,0.78', '0.72,0.90'),
     [string[]] $ZoomPrefTaps = @(),
@@ -1745,7 +1745,7 @@ function Invoke-F005AutoDeliver {
     # the active contract card shows "Auto-deliver: Off".
     Invoke-Taps -Taps @('swipe:0.5,0.875,0.5,0.583,300', 'swipe:0.5,0.875,0.5,0.583,300', 'swipe:0.5,0.875,0.5,0.583,300') -Step $step
     Add-Result $step 'screenshot (offers)' 'INFO' (Save-Screenshot 'f005-contract-offers')
-    Invoke-Taps -Taps @('0.133,0.885') -Step $step
+    Invoke-Taps -Taps @('0.133,0.70') -Step $step
     Invoke-Taps -Taps @('swipe:0.5,0.542,0.5,0.875,400', 'swipe:0.5,0.542,0.5,0.875,400') -Step $step
     Add-Result $step 'screenshot (active contract, Auto-deliver Off)' 'INFO' (Save-Screenshot 'f005-contract-active')
     Invoke-Taps -Taps @('0.426,0.653') -Step $step
@@ -1987,7 +1987,7 @@ function Start-SetRun {
     Assert-Check $Step $Label $ok $(if ($ok) { "reconciled from $($set.CheckpointId) after $($ready.Seconds) s; $(Format-CheckpointV2 $cp)" } elseif ($rejected.Count) { "the player rejected the set: $($rejected[0].Trim())" } else { "no accepted reconcile ($(Format-CheckpointV2 $cp))" })
     if (-not $ok) { return $null }
     # Welcome back (credited 8 h): Continue (same position as the F005 journey, 1080x2400 portrait AVD).
-    Invoke-Taps -Taps @('0.85,0.738') -Step $Step
+    Invoke-Taps -Taps @('0.855,0.766') -Step $Step
     Start-Sleep -Seconds 2
     return $runPid
 }
@@ -2337,7 +2337,7 @@ function Invoke-F006Autosave {
     $newPid = Start-App
     $ready = if ($newPid) { Wait-UiReady -ProcessId $newPid -RequireLoaded } else { $null }
     $restored = Wait-CheckpointV2 -After $periodic -Label 'f006-autosave-2-restored' -TimeoutSeconds 45
-    $kept = [bool] ($restored -and $periodic -and $restored.LevelSum -ge $periodic.LevelSum -and $restored.Machines -ge $periodic.Machines)
+    $kept = [bool] ($restored -and $periodic -and $restored.Generation -gt $periodic.Generation -and $restored.LevelSum -ge $periodic.LevelSum -and $restored.Machines -ge $periodic.Machines)
     Assert-Check $step 'relaunch restored the autosaved state' ($kept -and $ready -and $ready.Loaded) ("{0} -> {1}" -f (Format-CheckpointV2 $periodic), (Format-CheckpointV2 $restored))
     if ($newPid) { $null = Wait-UiReady -ProcessId $newPid -TimeoutSeconds 60 }
     if ($restored) { $script:f006Last = $restored }
