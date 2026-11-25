@@ -314,3 +314,17 @@ Result: the world draws the reused F003-UI-ICON-UPGRADE (16x15 opaque, near whit
 | C-98 | T563 UI/UX | Device evidence only at 1080x2400 portrait (no landscape, tablet, small phone, full 12-machine grid, neutral-badge state); state which supported classes fall below 24 px per cell and lose the marker. Owner to acknowledge: the marker is hidden on boosted machines (ART-2 trade-off). | Final T543 (captures); T562 (upgrade tile); owner |
 
 **Owner decisions 2026-11-25 (evening):** (1) T562 runs before T544, because the host is not quiet yet; T544 follows on a quiet host. (2) C-98: the upgrade marker stays hidden on boosted machines (ART-2 trade-off accepted). (3) Marker salience (22 px resource icon) and C-97 go to the Art Director decision with C-75 after P4; the C-68 deep-profile Issue is created after the P4 gates.
+
+### T562 (emuP trial captures)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T562 | #783 | #788 | `31a18f6`, merged as `4d79538` | PASS with minor findings: Edit Mode 3187/3187, Play Mode 3522/3522, Windows player 83/83, art pipeline 378 passed; keys outside the repo and 1:1 with the taker files; SC-004 emuP 10/10 valid; SC-006 emuP consistent; SC-005 P3 cues shown for emuP, phoneP, phoneL and tabL; timed standard and reduced-motion sets match their keys |
+
+Result: emuP sets for SC-004 (seed 6044) and SC-006 (seed 6064) are separate from the T545 Windows sets, so T546 scores two sets each. SC-005 emuP has 22 F004 tiles and 7 P3 tiles; the P3 series of phoneP, phoneL and tabL is re-captured with the T563 upgrade marker. The timed cue trial (standard APNG, reduced-motion frozen frame) is built from emuP composites. C-90 and C-92 closed; C-93 re-staged or noted per tile. The captures are in-player ScreenCapture from a development build with test assemblies on the AVD (watermark visible), not adb screencap of a shipping APK.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-99 | T562 QA 1 | The SC-005 card tile (emuP, phoneL, tabL) also shows upgrade chevrons and store-full or shortage markers; the C-93 note does not say so. A taker could name another cue. | T546 (score the card tile with this note) |
+| C-100 | T562 QA 2 | The shortage tile is a very small crop (ore-drop icon only, no row context), weak in grayscale. | T546 (a miss is a tile-quality limit, not a product defect) |
+| C-101 | T562 QA 3 | `Editor/F006EmulatorCaptureBuild.cs` is not `#if`-gated (Editor-only and run only through `-executeMethod`, so safe). | Later tidy-up |
