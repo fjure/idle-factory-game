@@ -57,6 +57,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             public bool overdrive;
             public bool selected;
             public bool hidden;
+            public bool upgrade;
         }
 
         [Serializable]
@@ -83,6 +84,8 @@ namespace IdleFactory.Tests.PlayMode.F006
             public string expectShortage;
             public SpecSlot[] slots;
             public SpecShot shot;
+            public int frames;
+            public bool frozen;
         }
 
         [Serializable]
@@ -107,6 +110,30 @@ namespace IdleFactory.Tests.PlayMode.F006
             public int lift;
             public Pt[] centres;
             public string notes;
+            public bool cueShown = true;
+        }
+
+        [Serializable]
+        private sealed class TimedShot
+        {
+            public string id;
+            public int frames;
+        }
+
+        [Serializable]
+        private sealed class TimedInfo
+        {
+            public string id;
+            public int w;
+            public int h;
+            public int scale;
+            public float pixelsPerPoint;
+            public bool hasFloor;
+            public bool belowFloor;
+            public float fps;
+            public int frameCount;
+            public Pt[] pivots;
+            public TimedShot[] shots;
         }
 
         private static void Log(string line)
@@ -126,6 +153,15 @@ namespace IdleFactory.Tests.PlayMode.F006
                 yield break;
             }
 
+            yield return CaptureAll(specPath, outDir);
+        }
+
+        /// <summary>
+        /// The capture loop shared by the Windows test above and the emulator launcher (T562, <c>F006TrialCaptureAndroidLauncher</c>): the same scene, the same forcing and
+        /// the same read-back, so the emuP images come from the same method as the Windows classes. On Android the window is the device's own (no SetResolution).
+        /// </summary>
+        internal static IEnumerator CaptureAll(string specPath, string outDir)
+        {
             var spec = JsonUtility.FromJson<Spec>(File.ReadAllText(specPath));
             Assert.That(spec.jobs, Is.Not.Null.And.Not.Empty, "the capture specification has jobs");
             Directory.CreateDirectory(outDir);
@@ -148,7 +184,11 @@ namespace IdleFactory.Tests.PlayMode.F006
             foreach (var group in spec.jobs.GroupBy(j => j.w + "x" + j.h))
             {
                 var first = group.First();
-                Screen.SetResolution(first.w, first.h, FullScreenMode.Windowed);
+                if (Application.platform != RuntimePlatform.Android)
+                {
+                    Screen.SetResolution(first.w, first.h, FullScreenMode.Windowed);
+                }
+
                 for (var i = 0; i < 90; i++) yield return null; // the window and the panel settle
 
                 var load = SceneManager.LoadSceneAsync(ScenePath, LoadSceneMode.Additive);
@@ -183,7 +223,7 @@ namespace IdleFactory.Tests.PlayMode.F006
 
             DeleteIfExists(checkpoints);
             DeleteIfExists(runCheckpoints);
-            Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
+            if (Application.platform != RuntimePlatform.Android) Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
             MoveBack(backup1, checkpoints);
             MoveBack(backup2, runCheckpoints);
             if (failure != null) throw failure;
@@ -221,17 +261,40 @@ namespace IdleFactory.Tests.PlayMode.F006
             // Forced-visual jobs first; the P3 jobs change the real session (removals, an upgrade), so they run last in a fixed order.
             var isP3 = new Func<Job, bool>(j => j.trial == "sc005" && j.shot != null && !string.IsNullOrEmpty(j.shot.p3));
             var ordered = jobs.Where(j => !isP3(j)).Concat(jobs.Where(isP3).OrderBy(j => Array.IndexOf(P3Order, j.shot.id))).ToList();
+            var timedPivots = new Dictionary<string, TimedInfo>();
+            var reducedBefore = bootstrap.DisplayPreferences.Preference;
+            var reducedNow = reducedBefore;
             foreach (var job in ordered)
             {
                 if (isP3(job))
                 {
                     yield return CaptureP3(bootstrap, job, outDir);
                 }
+                else if (job.trial == "sc002")
+                {
+                    // T562 (C-90): the SC-005 timed cue trial. The reduced-motion variant sets the shipped preference for its jobs and puts the previous one back at the end.
+                    var wantReduced = job.frozen ? ReducedMotionPreference.On : ReducedMotionPreference.Off;
+                    if (reducedNow != wantReduced)
+                    {
+                        bootstrap.DisplayPreferences.TrySave(wantReduced);
+                        reducedNow = wantReduced;
+                        for (var i = 0; i < 30; i++) yield return null;
+                    }
+
+                    yield return CaptureTimed(bootstrap, job, outDir, timedPivots);
+                }
                 else
                 {
                     var slots = job.trial == "sc005" ? job.shot.slots : job.slots;
                     yield return CaptureForced(bootstrap, job, slots, outDir);
                 }
+            }
+
+            if (reducedNow != reducedBefore) bootstrap.DisplayPreferences.TrySave(reducedBefore);
+            foreach (var pair in timedPivots)
+            {
+                var dir = Path.Combine(outDir, "sc002-" + pair.Key);
+                File.WriteAllText(Path.Combine(dir, "job.json"), JsonUtility.ToJson(pair.Value));
             }
         }
 
@@ -257,7 +320,9 @@ namespace IdleFactory.Tests.PlayMode.F006
                     var active = s.state != "inactive";
                     var badge = SlotGridModel.BadgeFor(active, blocker, phase, out var text, out var word);
                     var machineKey = catalog.Machines["machine." + s.machine].PresentationKey;
-                    visuals[i] = new SlotVisual(i, SlotCondition.Occupied, SlotGridModel.SlotOccupiedKey, machineKey, badge, text, s.boosted, s.overdrive, s.selected || i == selected, 0, label + ", " + word);
+                    var upgrade = s.upgrade && !s.boosted && blocker == MachineBlocker.None && active;
+                    visuals[i] = new SlotVisual(i, SlotCondition.Occupied, SlotGridModel.SlotOccupiedKey, machineKey, badge, text, s.boosted, s.overdrive, s.selected || i == selected, 0,
+                        label + ", " + word + (upgrade ? ", upgrade available" : string.Empty), upgrade, upgrade ? 10L : SlotGridModel.NoUpgradeCost);
                 }
                 else
                 {
@@ -293,11 +358,31 @@ namespace IdleFactory.Tests.PlayMode.F006
             yield return new WaitForEndOfFrame();
         }
 
+        /// <summary>T562 (C-93): the world attention markers of the W005-L session are not the forced states, so a tile or a timed screen that tests a different cue hides the marker view.</summary>
+        private static void ShowAttentionMarkers(CoreGameFoundationBootstrap bootstrap, bool on)
+        {
+            if (bootstrap.MarkerView != null) bootstrap.MarkerView.gameObject.SetActive(on);
+        }
+
+        private static SpecSlot[] Quiet(int count, int target, string machine, bool upgrade)
+        {
+            var slots = new SpecSlot[count];
+            for (var i = 0; i < slots.Length; i++)
+            {
+                slots[i] = i == target
+                    ? new SpecSlot { cond = "occupied", machine = machine, state = "running", level = 2, upgrade = upgrade }
+                    : new SpecSlot { cond = "empty", hidden = true };
+            }
+
+            return slots;
+        }
+
         // ---- captures ------------------------------------------------------------------------------------------------------------------
 
         private static IEnumerator CaptureForced(CoreGameFoundationBootstrap bootstrap, Job job, SpecSlot[] slots, string outDir)
         {
             var stage = job.trial == "sc006" ? job.expectStage : 2;
+            ShowAttentionMarkers(bootstrap, job.trial != "sc005");
             yield return Apply(bootstrap, slots, stage);
             var texture = ScreenCapture.CaptureScreenshotAsTexture();
             try
@@ -323,7 +408,64 @@ namespace IdleFactory.Tests.PlayMode.F006
             finally
             {
                 UnityEngine.Object.Destroy(texture);
+                ShowAttentionMarkers(bootstrap, true);
             }
+        }
+
+        /// <summary>
+        /// T562 (C-90): one screen of the SC-005 timed cue trial (the F004 builder's raw layout <c>sc002-&lt;variant&gt;/&lt;id&gt;_f&lt;k&gt;.png</c> and <c>job.json</c>): the forced 12-slot
+        /// screen with the world attention markers hidden, one frame per 100 ms (six frames, running machines animate) or one frozen frame under reduced motion.
+        /// </summary>
+        private static IEnumerator CaptureTimed(CoreGameFoundationBootstrap bootstrap, Job job, string outDir, Dictionary<string, TimedInfo> infos)
+        {
+            const float Fps = 10f;
+            var dir = Path.Combine(outDir, "sc002-" + job.set);
+            Directory.CreateDirectory(dir);
+            var visuals = Visuals(bootstrap, job.slots, -1);
+            var development = Development(job.slots, 2);
+            var frames = Mathf.Max(1, job.frozen ? 1 : job.frames);
+            ShowAttentionMarkers(bootstrap, false);
+            for (var k = 0; k < frames; k++)
+            {
+                if (k == 0)
+                {
+                    yield return Apply(bootstrap, job.slots, 2);
+                }
+                else
+                {
+                    yield return new WaitForSeconds(1f / Fps);
+                    bootstrap.SlotGrid.Render(visuals);
+                    bootstrap.DeckView.SetDevelopment(development);
+                    yield return new WaitForEndOfFrame();
+                }
+
+                var texture = ScreenCapture.CaptureScreenshotAsTexture();
+                try
+                {
+                    File.WriteAllBytes(Path.Combine(dir, job.id + "_f" + k + ".png"), texture.EncodeToPNG());
+                    if (!infos.TryGetValue(job.set, out var info))
+                    {
+                        var side = Geometry(bootstrap, job, texture, job.slots, 2);
+                        var n = side.n;
+                        var pivots = new Pt[side.centres.Length];
+                        for (var i = 0; i < pivots.Length; i++) pivots[i] = new Pt { x = side.centres[i].x, y = side.centres[i].y + 12 * n }; // the timing page lifts the pivot by 12 n to the machine body
+                        info = new TimedInfo
+                        {
+                            id = "sc002-" + job.set, w = texture.width, h = texture.height, scale = n, pixelsPerPoint = Screen.dpi / 160f, hasFloor = true, belowFloor = false, fps = Fps,
+                            frameCount = Mathf.Max(1, job.frozen ? 1 : job.frames), pivots = pivots, shots = new TimedShot[0],
+                        };
+                        infos[job.set] = info;
+                    }
+
+                    if (k == 0) info.shots = info.shots.Concat(new[] { new TimedShot { id = job.id, frames = frames } }).ToArray();
+                }
+                finally
+                {
+                    UnityEngine.Object.Destroy(texture);
+                }
+            }
+
+            ShowAttentionMarkers(bootstrap, true);
         }
 
         // ---- P3 tiles: REAL session states (no forced visuals) ----------------------------------------------------------------------------
@@ -388,6 +530,44 @@ namespace IdleFactory.Tests.PlayMode.F006
             return Around(bootstrap.FactoryCamera.WorldToScreenPoint(new Vector3(position.x, position.y, 0f)), half);
         }
 
+        /// <summary>The first marker of a kind (T562, C-93: the tile of one marker kind frames that marker, not the first one of the model).</summary>
+        private static int MarkerIndexOf(CoreGameFoundationBootstrap bootstrap, AttentionKind kind)
+        {
+            var model = bootstrap.ShellPresenter.AttentionModel;
+            for (var i = 0; i < model.MarkerCount; i++)
+            {
+                if (model.GetMarker(i).Kind == kind) return i;
+            }
+
+            return -1;
+        }
+
+        private static Rect AroundMarkerOf(CoreGameFoundationBootstrap bootstrap, AttentionKind kind, int half)
+        {
+            var index = MarkerIndexOf(bootstrap, kind);
+            if (index < 0) return bootstrap.FactoryCamera.pixelRect;
+            var position = bootstrap.ShellPresenter.AttentionModel.GetMarker(index).Position;
+            return Around(bootstrap.FactoryCamera.WorldToScreenPoint(new Vector3(position.x, position.y, 0f)), half);
+        }
+
+        /// <summary>Hides every drawn marker that is not of the wanted kind for the frame that is captured next (a store-full tile shows no shortage arrow and the reverse).</summary>
+        private static IEnumerator OnlyMarkerKind(CoreGameFoundationBootstrap bootstrap, AttentionKind kind)
+        {
+            for (var pass = 0; pass < 2; pass++)
+            {
+                yield return null;
+                var model = bootstrap.ShellPresenter.AttentionModel;
+                for (var i = 0; i < model.MarkerCount; i++)
+                {
+                    if (model.GetMarker(i).Kind != kind) bootstrap.MarkerView.RendererOf(i).enabled = false;
+                }
+            }
+
+            yield return new WaitForEndOfFrame();
+        }
+
+        private static int ArtN(CoreGameFoundationBootstrap bootstrap) => ArtScale(bootstrap.FactoryCamera, SlotGridLayout.ColumnsFor(Screen.width, Screen.height));
+
         private static Rect OfficeRect(CoreGameFoundationBootstrap bootstrap)
         {
             var shell = bootstrap.RunShell;
@@ -415,6 +595,8 @@ namespace IdleFactory.Tests.PlayMode.F006
             var world = bootstrap.FactoryCamera.pixelRect;
             var mid = 4;
             var atEndOfFrame = false;
+            var canvasSlot = -1;
+            var cueShown = true;
 
             if (id == "p3-hub-dot" || id == "p3-hub-no-dot")
             {
@@ -432,9 +614,10 @@ namespace IdleFactory.Tests.PlayMode.F006
             else if (id == "p3-attention-store-full")
             {
                 yield return Until(() => presenter.AttentionModel.StoreFull && bootstrap.MarkerView.VisibleMarkerCount > 0, 180f);
+                yield return OnlyMarkerKind(bootstrap, AttentionKind.StoreFull);
                 atEndOfFrame = true;
-                region = AroundMarker(bootstrap, 200);
-                notes = "real store-full state of the W005-L run, no forcing";
+                region = AroundMarkerOf(bootstrap, AttentionKind.StoreFull, 40 * ArtN(bootstrap));
+                notes = "real store-full state of the W005-L run; shortage markers hidden for the frame so the tile shows only the store-full marker (C-93)";
             }
             else if (id == "p3-card-next-to-machine")
             {
@@ -445,19 +628,20 @@ namespace IdleFactory.Tests.PlayMode.F006
             }
             else if (id == "p3-upgrade-marker")
             {
-                // The shipped build draws no persistent world upgrade marker: MachinePresentationModel.UpgradeMarkerVisible has no renderer. The shipped upgrade cue is the
-                // one-shot glint on the body after a real Upgrade, so that is what the tile shows.
-                var machine = session.State.Machines.First(m => m.SlotIndex == mid);
-                var before = machine.Level;
-                var upgraded = bootstrap.RunCommands.Upgrade(machine.InstanceId);
-                yield return null;
-                bootstrap.WorldEffects.Pool.Spawn(MachineResponseKind.UpgradeGlint, mid);
-                yield return new WaitForSeconds(0.2f);
-                region = AroundSlot(bootstrap, mid, 220);
-                notes = "NO persistent world upgrade marker exists in the shipped build; tile = the upgrade glint after a real Upgrade (ok=" + upgraded.IsSuccess + ", level " + before + " to " + machine.Level + ")";
+                // T563 draws the FR-027 marker (the reused upgrade icon) for an affordable upgrade without a problem badge. T562 re-captures the tile on a QUIET screen: one running,
+                // not boosted machine with the marker forced on through the shipped SlotVisual, every other location an empty plate, the world attention markers hidden (C-93).
+                ShowAttentionMarkers(bootstrap, false);
+                yield return Apply(bootstrap, Quiet(bootstrap.SlotGrid.Layout.LocationCount, mid, "miner", true), 2);
+                atEndOfFrame = true;
+                canvasSlot = mid;
+                var marker = bootstrap.SlotGrid.RendererOf(mid, SlotGridView.SlotRendererRole.UpgradeMarker);
+                cueShown = marker != null && marker.enabled;
+                notes = "forced visual (SlotVisual.UpgradeMarker on a running level-2 miner at slot " + mid + ", not boosted, no badge); upgrade marker renderer enabled=" + cueShown
+                    + " (the marker is hidden below 24 points per cell, SlotGridView.MarkersVisibleAt); attention markers hidden";
             }
             else if (id == "p3-ghost-preview")
             {
+                ShowAttentionMarkers(bootstrap, false);
                 shell.HandleBack();
                 yield return null;
                 var last = session.State.Machines.OrderBy(m => m.SlotIndex).Last();
@@ -467,16 +651,18 @@ namespace IdleFactory.Tests.PlayMode.F006
                 bootstrap.SlotGrid.ShowPreview(slot, session.Catalog.Machines["machine.miner"].PresentationKey);
                 yield return null;
                 yield return null;
-                region = AroundSlot(bootstrap, slot, 260);
-                notes = "one ghost miner at location " + slot + " (real removal ok=" + removed.IsSuccess + "); no available-locations highlight; the shipped preview mutes the other machines";
+                region = AroundSlot(bootstrap, slot, 45 * ArtN(bootstrap));
+                notes = "one ghost miner at location " + slot + " (real removal ok=" + removed.IsSuccess + "); no available-locations highlight; the shipped preview mutes the other machines; attention markers hidden (C-93)";
             }
             else if (id == "p3-attention-shortage")
             {
                 foreach (var miner in session.State.Machines.Where(m => m.MachineId == "machine.miner").ToList()) bootstrap.RunCommands.Remove(miner.InstanceId, true);
+                ShowAttentionMarkers(bootstrap, true);
                 yield return Until(() => presenter.AttentionModel.ShortageCount > 0 && bootstrap.MarkerView.VisibleMarkerCount > 0, 180f);
+                yield return OnlyMarkerKind(bootstrap, AttentionKind.Shortage);
                 atEndOfFrame = true;
-                region = AroundMarker(bootstrap, 200);
-                notes = "real shortage after removing every miner (no forcing)";
+                region = AroundMarkerOf(bootstrap, AttentionKind.Shortage, 40 * ArtN(bootstrap));
+                notes = "real shortage after removing every miner; store-full markers hidden for the frame so the tile shows only the shortage marker (C-93)";
             }
 
             if (!atEndOfFrame) yield return new WaitForEndOfFrame();
@@ -484,10 +670,11 @@ namespace IdleFactory.Tests.PlayMode.F006
             try
             {
                 var side = Geometry(bootstrap, job, texture, BaseSlots(bootstrap.SlotGrid.Layout.LocationCount), 2);
+                side.cueShown = cueShown;
                 side.notes += " p3=" + id + " " + AttentionState(bootstrap) + " cardOpen=" + shell.IsCardOpen + " selected=" + shell.SelectedSlot + " " + notes + " D6=marker-captured-as-shipped";
                 var dir = Path.Combine(outDir, job.set);
                 Directory.CreateDirectory(dir);
-                var crop = Region(texture, region, id.StartsWith("p3-hub") ? 24 : 0);
+                var crop = canvasSlot >= 0 ? Crop(bootstrap, texture, canvasSlot, out _) : Region(texture, region, id.StartsWith("p3-hub") ? 24 : 0);
                 File.WriteAllBytes(Path.Combine(dir, id + ".png"), (id == "p3-card-next-to-machine" ? texture : crop).EncodeToPNG());
                 File.WriteAllText(Path.Combine(dir, id + ".json"), JsonUtility.ToJson(side));
                 UnityEngine.Object.Destroy(crop);
@@ -495,6 +682,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             finally
             {
                 UnityEngine.Object.Destroy(texture);
+                ShowAttentionMarkers(bootstrap, true);
             }
 
             if (id == "p3-card-next-to-machine")
