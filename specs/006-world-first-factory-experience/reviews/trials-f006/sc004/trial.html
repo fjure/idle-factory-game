@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SC-004 problems at a glance</title>
+<style>
+ body{margin:0;background:#16161c;color:#e8e8ee;font:16px system-ui,sans-serif;text-align:center}
+ #stage{display:inline-block;position:relative;margin-top:4px}
+ #shot{display:block;height:84vh;max-width:100vw;object-fit:contain;cursor:crosshair}
+ .tag{position:absolute;transform:translate(-50%,-50%);background:#000c;color:#fff;font-size:13px;padding:2px 6px;border-radius:4px;pointer-events:none}
+ #panel,#bar{padding:14px} button{font:inherit;padding:8px 16px;margin:4px} textarea{width:90%;height:8em}
+</style></head><body>
+<div id="panel"><p id="msg"></p><button id="go">Start practice</button></div>
+<div id="stage" hidden><img id="shot" alt="factory screen" draggable="false"></div>
+<div id="bar" hidden><span>Click each stopped machine: one click = missing input, two = storage full, three = clear.</span><br>
+<button id="doneA">Stopped machines named (Enter)</button><span id="resBtns" hidden></span></div>
+<div id="result" hidden></div>
+<script>
+const D={"practice": {"file": "practice.png", "w": 720, "h": 1280, "centres": [[196.0, 451.0], [336.0, 451.0], [476.0, 451.0], [196.0, 559.0], [336.0, 559.0], [476.0, 559.0], [196.0, 667.0], [336.0, 667.0], [476.0, 667.0], [196.0, 775.0], [336.0, 775.0], [476.0, 775.0]], "lift": 0}, "trials": [{"file": "trial_01.png", "w": 720, "h": 1280, "centres": [[196.0, 451.0], [336.0, 451.0], [476.0, 451.0], [196.0, 559.0], [336.0, 559.0], [476.0, 559.0], [196.0, 667.0], [336.0, 667.0], [476.0, 667.0], [196.0, 775.0], [336.0, 775.0], [476.0, 775.0]], "lift": 0}, {"file": "trial_02.png", "w": 1280, "h": 720, "centres": [[255.99998474121094, 261.0], [396.0, 261.0], [536.0, 261.0], [676.0, 261.0], [255.99998474121094, 369.0], [396.0, 369.0], [536.0, 369.0], [676.0, 369.0], [255.99998474121094, 477.0], [396.0, 477.0], [536.0, 477.0], [676.0, 477.0]], "lift": 0}, {"file": "trial_03.png", "w": 1280, "h": 720, "centres": [[255.99998474121094, 261.0], [396.0, 261.0], [536.0, 261.0], [676.0, 261.0], [255.99998474121094, 369.0], [396.0, 369.0], [536.0, 369.0], [676.0, 369.0], [255.99998474121094, 477.0], [396.0, 477.0], [536.0, 477.0], [676.0, 477.0]], "lift": 0}, {"file": "trial_04.png", "w": 720, "h": 1280, "centres": [[196.0, 451.0], [336.0, 451.0], [476.0, 451.0], [196.0, 559.0], [336.0, 559.0], [476.0, 559.0], [196.0, 667.0], [336.0, 667.0], [476.0, 667.0], [196.0, 775.0], [336.0, 775.0], [476.0, 775.0]], "lift": 0}, {"file": "trial_05.png", "w": 2048, "h": 1536, "centres": [[380.00006103515625, 618.5], [590.0, 618.5], [800.0, 618.5], [1009.9999389648438, 618.5], [380.00006103515625, 780.5], [590.0, 780.5], [800.0, 780.5], [1009.9999389648438, 780.5], [380.00006103515625, 942.5], [590.0, 942.5], [800.0, 942.5], [1009.9999389648438, 942.5]], "lift": 0}, {"file": "trial_06.png", "w": 1536, "h": 2048, "centres": [[241.99996948242188, 797.5], [451.9999694824219, 797.5], [662.0, 797.5], [241.99996948242188, 959.5], [451.9999694824219, 959.5], [662.0, 959.5], [241.99996948242188, 1121.5], [451.9999694824219, 1121.5], [662.0, 1121.5], [241.99996948242188, 1283.5], [451.9999694824219, 1283.5], [662.0, 1283.5]], "lift": 0}, {"file": "trial_07.png", "w": 1536, "h": 2048, "centres": [[241.99996948242188, 797.5], [451.9999694824219, 797.5], [662.0, 797.5], [241.99996948242188, 959.5], [451.9999694824219, 959.5], [662.0, 959.5], [241.99996948242188, 1121.5], [451.9999694824219, 1121.5], [662.0, 1121.5], [241.99996948242188, 1283.5], [451.9999694824219, 1283.5], [662.0, 1283.5]], "lift": 0}, {"file": "trial_08.png", "w": 1280, "h": 720, "centres": [[255.99998474121094, 261.0], [396.0, 261.0], [536.0, 261.0], [676.0, 261.0], [255.99998474121094, 369.0], [396.0, 369.0], [536.0, 369.0], [676.0, 369.0], [255.99998474121094, 477.0], [396.0, 477.0], [536.0, 477.0], [676.0, 477.0]], "lift": 0}, {"file": "trial_09.png", "w": 2048, "h": 1536, "centres": [[380.00006103515625, 618.5], [590.0, 618.5], [800.0, 618.5], [1009.9999389648438, 618.5], [380.00006103515625, 780.5], [590.0, 780.5], [800.0, 780.5], [1009.9999389648438, 780.5], [380.00006103515625, 942.5], [590.0, 942.5], [800.0, 942.5], [1009.9999389648438, 942.5]], "lift": 0}, {"file": "trial_10.png", "w": 720, "h": 1280, "centres": [[196.0, 451.0], [336.0, 451.0], [476.0, 451.0], [196.0, 559.0], [336.0, 559.0], [476.0, 559.0], [196.0, 667.0], [336.0, 667.0], [476.0, 667.0], [196.0, 775.0], [336.0, 775.0], [476.0, 775.0]], "lift": 0}], "categories": ["missing-input", "storage-full"], "resources": ["iron.ore", "iron.bar", "iron.plate", "iron.gear"]}; const $=id=>document.getElementById(id); let i=-1,t0=0,live=false,marks={},tA=null,tB=null,res=null,cur=null; const log=[];
+$("msg").textContent="Practice first (not scored). Then "+D.trials.length+" timed screens. Name the stopped machines and their problem, then the shared missing resource.";
+function entry(){return i<0?D.practice:D.trials[i];}
+function nearest(e,x,y){let b=0,bd=1e18;e.centres.forEach((c,j)=>{const d=(c[0]-x)**2+(c[1]-e.lift-y)**2;if(d<bd){bd=d;b=j;}});return b;}
+function tags(){document.querySelectorAll(".tag").forEach(t=>t.remove());const e=entry(),r=$("shot").getBoundingClientRect(),k=r.width/e.w;
+ Object.keys(marks).forEach(s=>{const c=e.centres[s],d=document.createElement("div");d.className="tag";d.textContent=marks[s]==="missing-input"?"missing input":"storage full";
+  d.style.left=(c[0]*k)+"px";d.style.top=((c[1]-e.lift)*k)+"px";$("stage").appendChild(d);});}
+function show(){$("panel").hidden=true;$("result").hidden=true;marks={};tA=tB=res=null;$("resBtns").hidden=true;$("doneA").hidden=false;live=false;const im=$("shot");
+ im.onload=()=>requestAnimationFrame(()=>{$("stage").hidden=false;$("bar").hidden=false;t0=performance.now();live=true;tags();});im.src=entry().file;}
+$("go").onclick=show;
+$("shot").addEventListener("click",ev=>{if(!live||tA!==null)return;const e=entry(),r=$("shot").getBoundingClientRect(),k=e.w/r.width,s=nearest(e,(ev.clientX-r.left)*k,(ev.clientY-r.top)*k);
+ const cur=marks[s];if(!cur)marks[s]="missing-input";else if(cur==="missing-input")marks[s]="storage-full";else delete marks[s];tags();});
+function doneA(){if(!live||tA!==null)return;tA=performance.now()-t0;$("doneA").hidden=true;const box=$("resBtns");box.hidden=false;box.innerHTML="Shared missing resource: ";
+ D.resources.concat(["none"]).forEach(rname=>{const b=document.createElement("button");b.textContent=rname==="none"?"no shared resource":rname;b.onclick=()=>pick(rname);box.appendChild(b);});}
+$("doneA").onclick=doneA;addEventListener("keydown",ev=>{if(ev.key==="Enter")doneA();});
+function pick(rname){if(tB!==null)return;tB=performance.now()-t0;res=rname;live=false;const stopped=Object.keys(marks).map(s=>({slot:+s,category:marks[s]})).sort((a,b)=>a.slot-b.slot);
+ if(i>=0)log.push({trial:i+1,stopped:stopped,stoppedMs:Math.round(tA*10)/10,resource:res,resourceMs:Math.round(tB*10)/10});
+ i++;$("stage").hidden=true;$("bar").hidden=true;
+ if(i<D.trials.length){$("panel").hidden=false;$("msg").textContent=(i===0?"Practice recorded. ":"Recorded. ")+"Ready for the next one.";$("go").textContent="Start trial "+(i+1);}else finish();}
+function finish(){const out={trials:log,env:{dpr:devicePixelRatio,innerWidth:innerWidth,innerHeight:innerHeight,ua:navigator.userAgent,finished:new Date().toISOString()}};
+ const txt=JSON.stringify(out,null,2),res=$("result");res.hidden=false;res.innerHTML="<h2>Done</h2><button id='save'>Save log</button><br><textarea readonly></textarea>";
+ res.querySelector("textarea").value=txt;$("save").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"application/json"}));a.download="sc004-log.json";a.click();};}
+</script></body></html>
