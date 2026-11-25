@@ -90,13 +90,20 @@ namespace IdleFactory.Tests.PlayMode.F006
         }
 
         [Serializable]
+        private sealed class Pt
+        {
+            public float x;
+            public float y;
+        }
+
+        [Serializable]
         private sealed class Sidecar
         {
             public int w;
             public int h;
             public int n;
             public int lift;
-            public float[][] centres;
+            public Pt[] centres;
             public string notes;
         }
 
@@ -113,7 +120,8 @@ namespace IdleFactory.Tests.PlayMode.F006
             var outDir = Environment.GetEnvironmentVariable(OutVariable);
             if (string.IsNullOrEmpty(specPath) || string.IsNullOrEmpty(outDir))
             {
-                Assert.Ignore("T545 capture driver: " + SpecVariable + " and " + OutVariable + " are not set.");
+                Log("T545 capture driver: " + SpecVariable + " and " + OutVariable + " are not set; nothing captured (the runner counts an ignored test as skipped, so this passes).");
+                yield break;
             }
 
             var spec = JsonUtility.FromJson<Spec>(File.ReadAllText(specPath));
@@ -194,6 +202,13 @@ namespace IdleFactory.Tests.PlayMode.F006
             var shell = bootstrap.RunShell;
             Assert.That(shell.IsReady, Is.True, shell.Error);
             for (var i = 0; i < 120; i++) yield return null;
+            // The offline return summary ("Welcome back") is a surface of its own, not a shell sheet: dismiss it first.
+            if (bootstrap.OfflinePanel != null && bootstrap.OfflinePanel.IsOpen)
+            {
+                bootstrap.OfflinePanel.Dismiss();
+                for (var i = 0; i < 30; i++) yield return null;
+            }
+
             for (var back = 0; back < 6 && (shell.IsSheetOpen || shell.IsCardOpen); back++)
             {
                 shell.HandleBack(); // the Welcome back sheet of the offline return
@@ -312,7 +327,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             var presenter = bootstrap.ShellPresenter;
             var id = job.shot.id;
             // All P3 tiles start from the same forced running factory so the cue is the only difference; the base slots come from the first SC-005 tile of the class.
-            var slots = BaseSlots();
+            var slots = BaseSlots(bootstrap.SlotGrid.Layout.LocationCount);
             Action extra = null;
             if (id == "p3-hub-dot")
             {
@@ -324,8 +339,8 @@ namespace IdleFactory.Tests.PlayMode.F006
             }
             else if (id == "p3-ghost-preview")
             {
-                slots[11] = new SpecSlot { cond = "empty" };
-                extra = () => bootstrap.SlotGrid.ShowPreview(11, bootstrap.RunSession.Catalog.Machines["machine.miner"].PresentationKey);
+                slots[slots.Length - 1] = new SpecSlot { cond = "empty" };
+                extra = () => bootstrap.SlotGrid.ShowPreview(slots.Length - 1, bootstrap.RunSession.Catalog.Machines["machine.miner"].PresentationKey);
             }
 
             yield return Apply(bootstrap, slots, 2, extra);
@@ -363,10 +378,10 @@ namespace IdleFactory.Tests.PlayMode.F006
             bootstrap.SlotGrid.ClearBuildPreview();
         }
 
-        private static SpecSlot[] BaseSlots()
+        private static SpecSlot[] BaseSlots(int count)
         {
             var machines = new[] { "miner", "smelter", "press", "assembler" };
-            var slots = new SpecSlot[SlotGridLayout.SlotCount];
+            var slots = new SpecSlot[count];
             for (var i = 0; i < slots.Length; i++)
             {
                 slots[i] = new SpecSlot { cond = "occupied", machine = machines[i % machines.Length], state = "running", level = 2 };
@@ -381,14 +396,13 @@ namespace IdleFactory.Tests.PlayMode.F006
         {
             var camera = bootstrap.FactoryCamera;
             var columns = SlotGridLayout.ColumnsFor(Screen.width, Screen.height);
-            var ppc = RunCameraFraming.PixelsPerCell(camera, Screen.dpi > 0 ? Screen.dpi / 160f : 1f); // UNVERIFIED: the shell's own pixels-per-point is not exposed to the test
-            var n = Mathf.Max(1, Mathf.RoundToInt(ppc / CellArtPixels));
-            var centres = new float[SlotGridLayout.SlotCount][];
+            var n = ArtScale(camera, columns);
+            var centres = new Pt[bootstrap.SlotGrid.Layout.LocationCount];
             for (var slot = 0; slot < centres.Length; slot++)
             {
                 var rect = SlotGridLayout.SlotRect(slot, columns);
                 var p = camera.WorldToScreenPoint(new Vector3(rect.center.x, rect.center.y, 0f));
-                centres[slot] = new[] { p.x, texture.height - p.y }; // image rows run top to bottom
+                centres[slot] = new Pt { x = p.x, y = texture.height - p.y }; // image rows run top to bottom
             }
 
             var value = Development(slots, stage);
@@ -404,13 +418,20 @@ namespace IdleFactory.Tests.PlayMode.F006
             };
         }
 
+        /// <summary>The integer art-pixel scale n: the screen distance of two neighbouring slot centres in one row over the 70 art px cell width.</summary>
+        private static int ArtScale(Camera camera, int columns)
+        {
+            var a = camera.WorldToScreenPoint(new Vector3(SlotGridLayout.SlotRect(0, columns).center.x, 0f, 0f));
+            var b = camera.WorldToScreenPoint(new Vector3(SlotGridLayout.SlotRect(1, columns).center.x, 0f, 0f));
+            return Mathf.Max(1, Mathf.RoundToInt(Mathf.Abs(b.x - a.x) / CellArtPixels));
+        }
+
         private static Texture2D Crop(CoreGameFoundationBootstrap bootstrap, Texture2D full, int slot, out RectInt rect)
         {
             var columns = SlotGridLayout.ColumnsFor(Screen.width, Screen.height);
             var world = SlotGridLayout.SlotRect(slot, columns);
             var p = bootstrap.FactoryCamera.WorldToScreenPoint(new Vector3(world.center.x, world.center.y, 0f));
-            var ppc = RunCameraFraming.PixelsPerCell(bootstrap.FactoryCamera, Screen.dpi > 0 ? Screen.dpi / 160f : 1f);
-            var n = Mathf.Max(1, Mathf.RoundToInt(ppc / CellArtPixels));
+            var n = ArtScale(bootstrap.FactoryCamera, columns);
             // The 80 x 64 art px canvas around the slot pivot (40 px left of the pivot, 49 px above the bottom edge pivot row), at integer scale n.
             var width = 80 * n;
             var height = 64 * n;

@@ -339,16 +339,13 @@ def parse_p3_naming(text: str) -> dict[tuple[str, str], dict[int, str]]:
 def score_sc005(key: dict, named: dict, p3_named: dict) -> dict:
     """The nine cue states and every F004 attribute are scored by final_readability.score_sc001 on the F004 tiles (binding: 9/9 per filter); the P3 cues are scored
     by id (binding for T546 as well: every P3 cue named). `pass` needs both for every filter."""
-    base_key = {"set": key["set"], "filters": {f: [c for c in cells if "cue" not in c] for f, cells in key["filters"].items()}}
-    result = fr.score_sc001(base_key, named)
+    result = fr.score_sc001({"set": key["set"], "filters": key["filters"]}, named)
     result["p3"] = {}
-    for flt, cells in key["filters"].items():
-        rows = p3_named.get((key["set"], flt), {})
+    for flt, cells in key["p3Filters"].items():
+        rows = p3_named.get((key["set"] + "-p3", flt), {})  # the P3 sheets are a second numbered series under the heading `<set>-p3 / <filter>`
         wrong = []
         total = 0
         for c in cells:
-            if "cue" not in c:
-                continue
             total += 1
             got = rows.get(c["number"])
             if got != c["id"]:
@@ -376,14 +373,20 @@ def build_sc005(raw_dir: Path, out_dir: Path, keys_dir: Path, profile: str = "wi
             raise SystemExit(f"set {name}: missing tiles {missing}")
         tiles = {tid: Image.open(set_dir / f"{tid}.png").convert("RGB") for tid in tiles_by_id}
         seed = cfg["seedBase"] + 10 * index
-        orders = fr.build_sheets(tiles, seed, out_dir / name)
-        meta = {"set": name, "tileCount": len(tiles), "columns": fr.SC001_COLUMNS, "filters": FILTERS, "seed": seed,
-                "shuffle": "per filter: random.Random(seed + filter index).shuffle(sorted tile ids)"}
+        base = {tid: img for tid, img in tiles.items() if "cue" not in tiles_by_id[tid]}
+        p3 = {tid: img for tid, img in tiles.items() if "cue" in tiles_by_id[tid]}
+        # Two numbered series: the F004 tiles at their small slot size, and the P3 tiles (frame-sized captures) on their own sheets, three columns.
+        orders = fr.build_sheets(base, seed, out_dir / name)
+        p3_orders = fr.build_sheets(p3, seed + 5, out_dir / name / "p3", columns=3)
+        meta = {"set": name, "tileCount": len(tiles), "columns": fr.SC001_COLUMNS, "p3Columns": 3, "filters": FILTERS, "seed": seed,
+                "shuffle": "per filter: random.Random(seed + filter index).shuffle(sorted tile ids); the P3 series uses seed + 5",
+                "note": "D6: the shortage marker is captured as shipped in the build named in the capture notes"}
         write_json(out_dir / name / "meta.json", meta)
-        key = {"schema": 3, "set": name, "seed": seed, "columns": fr.SC001_COLUMNS,
-               "filters": {mode: [{"number": i + 1} | {k: tiles_by_id[tid][k] for k in ("id", "cond", "machine", "state", "markers", "selected", "level")}
-                                  | ({"cue": tiles_by_id[tid]["cue"]} if "cue" in tiles_by_id[tid] else {}) for i, tid in enumerate(order)]
-                           for mode, order in orders.items()}}
+        cell = lambda order: [{"number": i + 1} | {k: tiles_by_id[tid][k] for k in ("id", "cond", "machine", "state", "markers", "selected", "level")}
+                              | ({"cue": tiles_by_id[tid]["cue"]} if "cue" in tiles_by_id[tid] else {}) for i, tid in enumerate(order)]
+        key = {"schema": 4, "set": name, "seed": seed, "columns": fr.SC001_COLUMNS,
+               "filters": {mode: cell(order) for mode, order in orders.items()},
+               "p3Filters": {mode: cell(order) for mode, order in p3_orders.items()}}
         write_json(keys_dir / f"sc005-{name}-key.json", key)
         summary[name] = {"tiles": len(tiles), "seed": seed}
     return summary
@@ -512,7 +515,7 @@ def build_sc004(raw_dir: Path, out_dir: Path, keys_dir: Path) -> dict:
         meta_path = raw_dir / f"{stem}.json"
         if meta_path.exists():
             m = json.loads(meta_path.read_text(encoding="utf-8"))
-            return {"w": m["w"], "h": m["h"], "centres": m["centres"], "lift": m.get("lift", 12 * m.get("n", 1))}
+            return {"w": m["w"], "h": m["h"], "centres": [[c["x"], c["y"]] if isinstance(c, dict) else c for c in m["centres"]], "lift": m.get("lift", 12 * m.get("n", 1))}
         lay = next(L for L in layouts if L["class"] == CAPTURE_CLASSES[cls]["layoutClass"] and L["mode"] == "nmin")
         return {"w": lay["w"], "h": lay["h"], "centres": lay["slots"], "lift": 12 * lay["n"]}
 

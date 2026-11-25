@@ -1,0 +1,15 @@
+{
+  "set": "phoneL",
+  "tileCount": 29,
+  "columns": 5,
+  "p3Columns": 3,
+  "filters": [
+    "grayscale",
+    "deuteranopia",
+    "protanopia",
+    "tritanopia"
+  ],
+  "seed": 6070,
+  "shuffle": "per filter: random.Random(seed + filter index).shuffle(sorted tile ids); the P3 series uses seed + 5",
+  "note": "D6: the shortage marker is captured as shipped in the build named in the capture notes"
+}

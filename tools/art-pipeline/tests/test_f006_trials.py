@@ -192,13 +192,14 @@ def _transcript(keys: Path, flip_p3: bool = False, flip_state: bool = False) -> 
         if "timed" in path.name:
             continue
         key = json.loads(path.read_text(encoding="utf-8"))
+        for flt, cells in key["p3Filters"].items():
+            lines.append(f"## {key['set']}-p3 / {flt}")
+            for cell in cells:
+                cue = "ghost preview" if flip_p3 and cell["id"] == "p3-upgrade-marker" else cell["cue"]
+                lines.append(f"| {cell['number']} | {cue} |")
         for flt, cells in key["filters"].items():
             lines.append(f"## {key['set']} / {flt}")
             for cell in cells:
-                if "cue" in cell:
-                    cue = "ghost preview" if flip_p3 and cell["id"] == "p3-upgrade-marker" else cell["cue"]
-                    lines.append(f"| {cell['number']} | {cue} |")
-                    continue
                 cond = {"occupied": "occupied", "empty": "empty", "locked": f"locked {cell['level']}"}[cell["cond"]]
                 state = cell["state"].replace("-", " ") if cell["cond"] == "occupied" else ""
                 if flip_state and cell["id"] == "miner-running":
@@ -219,6 +220,7 @@ def test_sc005_sheets_cover_four_filters_and_the_oracle_scores_a_blind_transcrip
     assert set(summary) == set(ft.sets_for("windows")) and "emuP" not in summary
     for name in summary:
         assert sorted(p.name for p in (out / name).glob("sheet_*.png")) == sorted(f"sheet_{m}.png" for m in ft.FILTERS)
+        assert sorted(p.name for p in (out / name / "p3").glob("sheet_*.png")) == sorted(f"sheet_{m}.png" for m in ft.FILTERS)
     assert not list(out.rglob("*key*"))
     res = _score_set(keys, _transcript(keys))
     assert res["pass"] and res["passP3"] and res["passGateFields"]
