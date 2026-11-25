@@ -1,0 +1,473 @@
+{
+    "profile":  null,
+    "environment":  {
+                        "Serial":  "emulator-5554",
+                        "Avd":  "IdleFactory_Test_API_36",
+                        "Fingerprint":  "google/sdk_gphone64_x86_64/emu64xa:16/BP22.250325.006/13344233:user/release-keys",
+                        "Api":  "36",
+                        "Abis":  "x86_64,arm64-v8a",
+                        "NativeBridge":  "libndk_translation.so",
+                        "Gles":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)",
+                        "Display":  "1080x2400",
+                        "Apk":  "C:\\Users\\Domenik\\AppData\\Local\\Temp\\t561\\t561.apk (46722918 bytes, SHA-256 71cbaa6eefb83e537645ffee5c108382daa122f146e932b11509de5956de463d)",
+                        "UnityBuild":  "Development, il2cpp, arm64-v8a"
+                    },
+    "results":  [
+                    {
+                        "Step":  "Environment",
+                        "Check":  "emulator lease",
+                        "Result":  "INFO",
+                        "Detail":  "emulator: renewed for \u0027issue-782\u0027 (61 min)"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "device booted",
+                        "Result":  "PASS",
+                        "Detail":  "emulator-5554"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "expected AVD",
+                        "Result":  "PASS",
+                        "Detail":  "IdleFactory_Test_API_36, API 36"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "arm64-v8a via translation",
+                        "Result":  "PASS",
+                        "Detail":  "x86_64,arm64-v8a; bridge libndk_translation.so"
+                    },
+                    {
+                        "Step":  "Preflight",
+                        "Check":  "GLES renderer",
+                        "Result":  "INFO",
+                        "Detail":  "Google (NVIDIA Corporation), Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5070 Ti/PCIe/SSE2), OpenGL ES 3.1 (4.5.0 NVIDIA 621.01)"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "/data free space",
+                        "Result":  "PASS",
+                        "Detail":  "3369 MB free (57 percent used), floor 400 MB"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "adb install -r",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Install",
+                        "Check":  "pm clear",
+                        "Result":  "PASS",
+                        "Detail":  "Success"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "process started",
+                        "Result":  "PASS",
+                        "Detail":  "PID 11456"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to graphics device",
+                        "Result":  "INFO",
+                        "Detail":  "2 s after process start"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "first scene loaded (playable shell)",
+                        "Result":  "PASS",
+                        "Detail":  "4 s after the graphics device"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "primary ABI",
+                        "Result":  "PASS",
+                        "Detail":  "arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "Unity build",
+                        "Result":  "INFO",
+                        "Detail":  "Development, il2cpp, arm64-v8a"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "graphics device",
+                        "Result":  "PASS",
+                        "Detail":  "Creating OpenGL ES 3.1 graphics device ; Context level  \u003cOpenGL ES 3.1\u003e ; Context handle -2091462272"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "time to first display",
+                        "Result":  "INFO",
+                        "Detail":  "1s527ms"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "display",
+                        "Result":  "INFO",
+                        "Detail":  "ROTATION_0 1080x2400, requested SCREEN_ORIENTATION_FULL_USER"
+                    },
+                    {
+                        "Step":  "Launch",
+                        "Check":  "screenshot",
+                        "Result":  "INFO",
+                        "Detail":  "01-launch.png"
+                    },
+                    {
+                        "Step":  "W003Push",
+                        "Check":  "committed empty-location/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 943f5931ca17827c"
+                    },
+                    {
+                        "Step":  "W003Push",
+                        "Check":  "committed empty-location/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 77b1a94ece319469"
+                    },
+                    {
+                        "Step":  "W003Push",
+                        "Check":  "device empty-location/run-checkpoint.data-a.json",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 943f5931ca17827c on the device"
+                    },
+                    {
+                        "Step":  "W003Push",
+                        "Check":  "device empty-location/run-checkpoint.manifest-a.bin",
+                        "Result":  "PASS",
+                        "Detail":  "SHA-256 77b1a94ece319469 on the device"
+                    },
+                    {
+                        "Step":  "F006Start",
+                        "Check":  "device set loaded",
+                        "Result":  "PASS",
+                        "Detail":  "reconciled from 22222222-2222-2222-2222-000000000032 after 8 s; gen 1, id 7e40fb99, run 1, cash 5735196, 11 machine(s), levels 298, prestige 0, data 519aded06fae"
+                    },
+                    {
+                        "Step":  "F006Start",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Start",
+                        "Check":  "portrait for the taps",
+                        "Result":  "PASS",
+                        "Detail":  "1080x2400; the F006 default taps are portrait fractions"
+                    },
+                    {
+                        "Step":  "F006Start",
+                        "Check":  "screenshot (after Welcome back)",
+                        "Result":  "INFO",
+                        "Detail":  "02-f006-start.png"
+                    },
+                    {
+                        "Step":  "F006Select",
+                        "Check":  "tap source: select machine",
+                        "Result":  "INFO",
+                        "Detail":  "0.5,0.45 of 1080x2400 -\u003e tap (540,1080). World band middle: between the top strip and the bottom action row of the portrait shell (FactoryRun.uss .run-body); the camera frames the depot column (T558), so the middle row of the factory is near the centre."
+                    },
+                    {
+                        "Step":  "F006Select",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Select",
+                        "Check":  "machine card docked (card band changed)",
+                        "Result":  "PASS",
+                        "Detail":  "card band change 0.665 (floor 0.15). Screenshots: 03-f006-select-before.png, 04-f006-select-card.png"
+                    },
+                    {
+                        "Step":  "F006Upgrade",
+                        "Check":  "tap source: Upgrade",
+                        "Result":  "INFO",
+                        "Detail":  "0.5,0.815 of 1080x2400 -\u003e tap (540,1956). Upgrade is the pinned button of the docked card in its first view (contracts/ui-surfaces-f006.md section 2), in the lower part of the bottom band, above the action bar."
+                    },
+                    {
+                        "Step":  "F006Upgrade",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Upgrade",
+                        "Check":  "screenshot (after Upgrade)",
+                        "Result":  "INFO",
+                        "Detail":  "05-f006-upgrade.png"
+                    },
+                    {
+                        "Step":  "F006Upgrade",
+                        "Check":  "machine level raised (checkpoint level sum)",
+                        "Result":  "PASS",
+                        "Detail":  "gen 1, id 7e40fb99, run 1, cash 5735196, 11 machine(s), levels 298, prestige 0, data 519aded06fae -\u003e gen 3, id 0425d508, run 1, cash 5735681, 11 machine(s), levels 299, prestige 0, data e627869dfaec"
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "tap source: hub entry",
+                        "Result":  "INFO",
+                        "Detail":  "0.15,0.972 of 1080x2400 -\u003e tap (162,2333). Persistent layer action bar, hub entry (see Get-HubTapMap)."
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "hub opened (sheet region changed)",
+                        "Result":  "PASS",
+                        "Detail":  "change 0.767. Screenshots: 06-f006-hub-0-factory.png, 07-f006-hub-1-open.png"
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "tap source: Contracts card",
+                        "Result":  "INFO",
+                        "Detail":  "0.5,0.565 of 1080x2400 -\u003e tap (540,1356). Hub list row 2 (HubCards order), 48 dp rows (Get-HubTapMap)."
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "Contracts view opened (sheet region changed)",
+                        "Result":  "PASS",
+                        "Detail":  "change 0.736. Screenshots: 07-f006-hub-1-open.png, 08-f006-hub-2-contracts.png"
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "Back left the Contracts view (sheet region changed)",
+                        "Result":  "PASS",
+                        "Detail":  "change 0.196. Screenshots: 08-f006-hub-2-contracts.png, 09-f006-hub-3-back.png"
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "tap source: sheet Close",
+                        "Result":  "INFO",
+                        "Detail":  "0.936,0.770 of 1080x2400 -\u003e tap (1011,1848). Close button in the header of the bottom sheet (portrait, calibrated on the 1080x2400 AVD, T561)."
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "sheet closed (sheet region changed)",
+                        "Result":  "PASS",
+                        "Detail":  "change 0.691. Screenshots: 09-f006-hub-3-back.png, 10-f006-hub-4-closed.png"
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "residual difference to the factory before the hub",
+                        "Result":  "INFO",
+                        "Detail":  "0.578 in the sheet region (Cash and production tick); the decisive check that the factory is back is the screenshot 09-f006-hub-3-back.png"
+                    },
+                    {
+                        "Step":  "F006HubContracts",
+                        "Check":  "same process",
+                        "Result":  "PASS",
+                        "Detail":  "PID 11605"
+                    },
+                    {
+                        "Step":  "F006Build",
+                        "Check":  "tap source: empty location",
+                        "Result":  "INFO",
+                        "Detail":  "0.715,0.572 of 1080x2400 -\u003e tap (772,1373). An empty unlocked location of the world band (the build card opens on a tap there, T539); the depot-column framing keeps it in the upper part of the band."
+                    },
+                    {
+                        "Step":  "F006Build",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Build",
+                        "Check":  "build card docked (card band changed)",
+                        "Result":  "PASS",
+                        "Detail":  "change 0.949. Screenshots: 11-f006-build-0-before.png, 12-f006-build-1-card.png"
+                    },
+                    {
+                        "Step":  "F006Build",
+                        "Check":  "tap source: type row, Confirm",
+                        "Result":  "INFO",
+                        "Detail":  "0.5,0.78 0.72,0.90 of 1080x2400 -\u003e tap (540,1872); tap (778,2160). Build card (contracts/ui-surfaces-f006.md section 5): the first type row, then Confirm on the right of the Cancel and Confirm pair at the bottom of the band."
+                    },
+                    {
+                        "Step":  "F006Build",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Build",
+                        "Check":  "screenshot (after Confirm)",
+                        "Result":  "INFO",
+                        "Detail":  "13-f006-build-2-confirm.png"
+                    },
+                    {
+                        "Step":  "F006Build",
+                        "Check":  "machine built (checkpoint machine count)",
+                        "Result":  "PASS",
+                        "Detail":  "gen 3, id 0425d508, run 1, cash 5735681, 11 machine(s), levels 299, prestige 0, data e627869dfaec -\u003e gen 7, id 6b3f0d78, run 1, cash 5737467, 12 machine(s), levels 300, prestige 0, data 207d382ce1b1"
+                    },
+                    {
+                        "Step":  "F006BuildRotation",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006BuildRotation",
+                        "Check":  "screenshot (build card open, portrait)",
+                        "Result":  "INFO",
+                        "Detail":  "14-f006-buildrot-0-portrait.png"
+                    },
+                    {
+                        "Step":  "F006BuildRotation",
+                        "Check":  "rotated to landscape with the card open",
+                        "Result":  "PASS",
+                        "Detail":  "ROTATION_90 2400x1080, requested SCREEN_ORIENTATION_FULL_USER"
+                    },
+                    {
+                        "Step":  "F006BuildRotation",
+                        "Check":  "screenshot (landscape, card open: docked in the side column, selected location inside the unobstructed rectangle)",
+                        "Result":  "INFO",
+                        "Detail":  "15-f006-buildrot-1-landscape.png"
+                    },
+                    {
+                        "Step":  "F006BuildRotation",
+                        "Check":  "screenshot (back in portrait)",
+                        "Result":  "INFO",
+                        "Detail":  "16-f006-buildrot-2-portrait.png"
+                    },
+                    {
+                        "Step":  "F006BuildRotation",
+                        "Check":  "same process",
+                        "Result":  "PASS",
+                        "Detail":  "PID 11605"
+                    },
+                    {
+                        "Step":  "F006BuildRotation",
+                        "Check":  "no coded diagnostics during the rotations",
+                        "Result":  "PASS",
+                        "Detail":  "no return.blocked / save.v2.* / persistence diagnostic"
+                    },
+                    {
+                        "Step":  "F006BuildRotation",
+                        "Check":  "screenshot (after Back: card closed)",
+                        "Result":  "INFO",
+                        "Detail":  "17-f006-buildrot-3-closed.png"
+                    },
+                    {
+                        "Step":  "F006Autosave",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Autosave",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Autosave",
+                        "Check":  "change made",
+                        "Result":  "INFO",
+                        "Detail":  "select and Upgrade taps (same fractions as F006Select and F006Upgrade); waiting 35 s with no lifecycle event (AutosavePolicy.DefaultIntervalMs 30000)"
+                    },
+                    {
+                        "Step":  "F006Autosave",
+                        "Check":  "periodic checkpoint written without a lifecycle event",
+                        "Result":  "PASS",
+                        "Detail":  "gen 12, id ca772fdf, run 1, cash 5738369, 12 machine(s), levels 300, prestige 0, data 8eb0486a80fb -\u003e gen 14, id 72b562ac, run 1, cash 5739788, 12 machine(s), levels 301, prestige 0, data 0021b0ec0e8f"
+                    },
+                    {
+                        "Step":  "F006Autosave",
+                        "Check":  "same process while waiting",
+                        "Result":  "PASS",
+                        "Detail":  "PID 11605"
+                    },
+                    {
+                        "Step":  "F006Autosave",
+                        "Check":  "process stopped (no HOME)",
+                        "Result":  "PASS",
+                        "Detail":  "PID 11605 gone"
+                    },
+                    {
+                        "Step":  "F006Autosave",
+                        "Check":  "relaunch restored the autosaved state",
+                        "Result":  "PASS",
+                        "Detail":  "gen 14, id 72b562ac, run 1, cash 5739788, 12 machine(s), levels 301, prestige 0, data 0021b0ec0e8f -\u003e gen 15, id c9a2e329, run 1, cash 5740310, 12 machine(s), levels 301, prestige 0, data 7450a4e986b7"
+                    },
+                    {
+                        "Step":  "F006Zoom",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Zoom",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Zoom",
+                        "Check":  "screenshot (Settings view)",
+                        "Result":  "INFO",
+                        "Detail":  "18-f006-zoom-0-settings.png"
+                    },
+                    {
+                        "Step":  "F006Zoom",
+                        "Check":  "Show zoom buttons",
+                        "Result":  "INFO",
+                        "Detail":  "no -ZoomPrefTaps supplied (layout dependent); the preference is left as it is"
+                    },
+                    {
+                        "Step":  "F006Zoom",
+                        "Check":  "tap source: zoom-in",
+                        "Result":  "INFO",
+                        "Detail":  "0.063,0.86 of 1080x2400 -\u003e tap (68,2064). Zoom column, \"+\" button (FactoryRun.uss .run-zoom; Get-HubTapMap)."
+                    },
+                    {
+                        "Step":  "F006Zoom",
+                        "Check":  "UI ready before the first tap",
+                        "Result":  "INFO",
+                        "Detail":  "surface present after 2 s"
+                    },
+                    {
+                        "Step":  "F006Zoom",
+                        "Check":  "zoom-in changed the world band",
+                        "Result":  "INFO",
+                        "Detail":  "world band change 0.376; buttons are hidden on touch without the preference, so 0 is expected. Screenshots: 19-f006-zoom-2-before.png, 20-f006-zoom-3-after.png. Pinch zoom stays Play Mode only."
+                    },
+                    {
+                        "Step":  "F006LogScan",
+                        "Check":  "no crash signatures",
+                        "Result":  "PASS",
+                        "Detail":  "0 FATAL/F DEBUG/SIGSEGV line(s) in 7008"
+                    },
+                    {
+                        "Step":  "F006LogScan",
+                        "Check":  "no coded diagnostics",
+                        "Result":  "PASS",
+                        "Detail":  "0 persistence/start-up diagnostic line(s)"
+                    },
+                    {
+                        "Step":  "F006LogScan",
+                        "Check":  "E Unity lines",
+                        "Result":  "INFO",
+                        "Detail":  "3, of which 0 outside the known benign AssetPackManager and Autoconnect Profiler probes"
+                    }
+                ]
+}

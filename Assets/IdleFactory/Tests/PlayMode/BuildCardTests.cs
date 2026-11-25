@@ -59,10 +59,10 @@ namespace IdleFactory.Tests.PlayMode
         private static ShellScreen PhoneScreen() => ShellScreens.All().First(screen => screen.Name.StartsWith("phone-portrait 390", StringComparison.Ordinal));
 
         private IEnumerator Make(ShellScreen screen, int percent, long cash, bool unlockEverything = false, bool withEffects = false, bool reduced = false,
-            int factoryLevel = 1)
+            int factoryLevel = 1, ShellDeviceProfile? deviceProfile = null)
         {
             CardHarness made = null;
-            yield return CardHarness.Create(screen, percent, cash, built => made = built, reduced, withEffects, factoryLevel, unlockEverything);
+            yield return CardHarness.Create(screen, percent, cash, built => made = built, reduced, withEffects, factoryLevel, unlockEverything, deviceProfile);
             harnesses.Add(made);
             h = made;
             preview = new RecordingPreview();
@@ -339,6 +339,113 @@ namespace IdleFactory.Tests.PlayMode
                 }
 
                 Assert.That(button.worldBound.height, Is.GreaterThanOrEqualTo(48f - Tolerance), button.name + " at " + screen.Name + " " + percent + " %");
+            }
+        }
+
+        public static IEnumerable<ShellScreen> HandOverScreens() => CompactScreens().Concat(ShellScreens.All().Where(item => item.Name.StartsWith("phone-portrait 390", StringComparison.Ordinal)));
+
+        // The device the T542 sweep ran on: 1080x2400 at 420 dpi in both orientations, with the authored panel settings (2.63 px per point after the touch-target raise).
+        private const float DeviceDpi = 420f;
+
+        public static IEnumerable<ShellScreen> DeviceScreens()
+        {
+            yield return new ShellScreen("device portrait 1080x2400", 1080, 2400, 0, 0, 0, 0, FactoryHudLayout.CompactPortrait);
+            yield return new ShellScreen("device landscape 2400x1080", 2400, 1080, 0, 0, 0, 0, FactoryHudLayout.CompactLandscape);
+        }
+
+        private static ShellDeviceProfile DeviceProfileOf(ShellScreen screen) => ShellDeviceProfile.Touch(screen.Width, screen.Height, DeviceDpi);
+
+        // T561 (C-60, C-80, D7): the hand-over from the build card to the new machine's card is a pan the camera needs only when the machine card leaves a smaller band
+        // than the build card did. T542 measured about 180 px on the device; the world must move by no more than the difference of the two bands (and so never by more
+        // than the card band itself). The camera is driven by the same RunViewportDriver the bootstrap uses.
+        [UnityTest]
+        public IEnumerator TheHandOverToTheMachineCardMovesTheWorldByNoMoreThanTheCardBandsDifference(
+            [ValueSource(nameof(HandOverScreens))] ShellScreen screen, [Values(100, 200)] int percent, [Values(0, 11)] int slot) =>
+            HandOver(screen, percent, slot, null);
+
+        // The same on the device of the T542 sweep (1080x2400 at 420 dpi, authored panel settings, several zoom levels): the real scale range is where the camera has choices.
+        [UnityTest]
+        public IEnumerator OnTheDeviceTheHandOverToTheMachineCardMovesTheWorldByNoMoreThanTheCardBandsDifference(
+            [ValueSource(nameof(DeviceScreens))] ShellScreen screen, [Values(100, 200)] int percent, [Values(0, 11)] int slot) =>
+            HandOver(screen, percent, slot, DeviceProfileOf(screen));
+
+        private IEnumerator HandOver(ShellScreen screen, int percent, int slot, ShellDeviceProfile? profile)
+        {
+            yield return Make(screen, percent, RunShellFixtures.ComfortableCash, unlockEverything: true, factoryLevel: RunShellFixtures.FactoryLevelCount, deviceProfile: profile);
+            var host = new GameObject("handover-camera");
+            objects.Add(host);
+            host.transform.position = new Vector3(0f, 0f, -10f);
+            var camera = host.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.targetTexture = h.Rig.Texture;
+            camera.enabled = false;
+            var controller = host.AddComponent<FactoryCameraController>();
+            controller.Configure(camera, new RunZoomSettings().ToScaleSettings());
+            var framing = new RunCameraFraming(new RunZoomSettings());
+            var driver = new RunViewportDriver(controller);
+            var layout = LatticeLayoutBuilder.ShippedForColumns(SlotGridLayout.ColumnsFor(screen.Width, screen.Height));
+            var ppp = h.Rig.PixelsPerPoint;
+            var context = $"{screen} @{percent}% slot {slot}";
+
+            Assert.That(h.Shell.TryGetUnobstructedScreenRect(screen.Height, out var closedArea), Is.True, context);
+            driver.Apply(RunCameraFraming.Layout(camera, layout, ppp, closedArea), closedArea, false, default);
+
+            yield return OpenBuild(slot);
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.TryGetUnobstructedScreenRect(screen.Height, out var buildArea), Is.True, context);
+            driver.Apply(RunCameraFraming.Layout(camera, layout, ppp, buildArea), buildArea, true, framing.FrameMachine(slot, layout));
+            var scaleBefore = controller.Scale;
+            var before = camera.WorldToScreenPoint(layout.Bounds.center);
+
+            Press(card.ConfirmButton);
+            yield return ShellRig.Settle();
+            yield return ShellRig.Settle();
+            Assert.That(h.Shell.IsCardOpen && !h.Shell.IsBuildCardOpen, Is.True, context + ": the machine card is open");
+            Assert.That(h.Shell.TryGetUnobstructedScreenRect(screen.Height, out var machineArea), Is.True, context);
+            driver.Apply(RunCameraFraming.Layout(camera, layout, ppp, machineArea), machineArea, true, framing.FrameMachine(slot, layout));
+            var after = camera.WorldToScreenPoint(layout.Bounds.center);
+
+            var moved = Mathf.Abs(after.y - before.y) + Mathf.Abs(after.x - before.x);
+            var allowed = Mathf.Max(0f, buildArea.height - machineArea.height);
+            TestContext.Out.WriteLine($"T561-HANDOVER | {context} ppp {ppp:0.00} | build band {buildArea.height:0} machine band {machineArea.height:0} | moved {moved:0.0} px | allowed {allowed:0.0} | scale {scaleBefore} -> {controller.Scale}");
+            Assert.That(controller.Scale, Is.EqualTo(scaleBefore), context + ": the hand-over never changes the zoom");
+            Assert.That(moved, Is.LessThanOrEqualTo(allowed + 1.5f), context + ": the world moves by no more than the shrink of the band");
+            Assert.That(moved, Is.LessThanOrEqualTo(closedArea.height - Mathf.Min(buildArea.height, machineArea.height) + 1.5f), context + ": and never by more than the card band");
+        }
+
+        // T561 (C-81, D8): the same 48 floor measured in DEVICE pixels at the applied scale of the device the T542 sweep used (1080x2400 at 420 dpi, 2.63 px per point), at
+        // 100 and 200 % text: every build-card control and every machine-card control is at least 48 dp (126 px at 420 dpi) tall, so a screenshot read in dp shows 48.
+        [UnityTest]
+        public IEnumerator OnTheDeviceEveryCardControlIsAtLeastFortyEightDpInDevicePixels(
+            [ValueSource(nameof(DeviceScreens))] ShellScreen screen, [Values(100, 200)] int percent)
+        {
+            yield return Make(screen, percent, RunShellFixtures.ComfortableCash, unlockEverything: true, factoryLevel: RunShellFixtures.FactoryLevelCount, deviceProfile: DeviceProfileOf(screen));
+            var ppp = h.Rig.PixelsPerPoint;
+            var floor = 48f * DeviceDpi / 160f - 1f;
+            h.Build(1, "machine.miner");
+            yield return OpenBuild(0);
+            var context = screen.Name + " " + percent + " % (" + ppp.ToString("0.00") + " px per point)";
+            var measured = 0;
+            foreach (var button in new[] { card.ConfirmButton, card.CancelButton }.Concat(card.TypeButtons))
+            {
+                if (!IsDisplayed(button) || button.worldBound.height <= 0f)
+                {
+                    continue;
+                }
+
+                measured++;
+                Assert.That(button.worldBound.height * ppp, Is.GreaterThanOrEqualTo(floor), "build card " + button.name + " at " + context);
+            }
+
+            Assert.That(measured, Is.GreaterThanOrEqualTo(3), "Confirm, Cancel and at least one type row were measured");
+            Assert.That(h.Shell.OpenSlot(1, SlotCondition.Occupied), Is.True);
+            yield return ShellRig.Settle();
+            h.Shell.RefreshCard();
+            h.Card.More.ScrollTo(h.Card.DetailsButton);
+            yield return ShellRig.Settle();
+            foreach (var button in new[] { h.Card.UpgradeButton, h.Card.DetailsButton, h.Card.CloseButton })
+            {
+                Assert.That(button.worldBound.height * ppp, Is.GreaterThanOrEqualTo(floor), "machine card " + button.name + " at " + context);
             }
         }
 

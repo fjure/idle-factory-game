@@ -56,6 +56,7 @@ namespace IdleFactory.Tests.EditMode
         {
             if (directory == ShippedDeviceSets.W003SShippedDirectory) return ShippedDeviceSets.BuildW003SShipped();
             if (directory == ShippedDeviceSets.PrestigeReadyDirectory) return ShippedDeviceSets.BuildPrestigeReady();
+            if (directory == ShippedDeviceSets.EmptyLocationDirectory) return ShippedDeviceSets.BuildEmptyLocation();
             throw new ArgumentException("Unknown device set " + directory);
         }
 
@@ -83,6 +84,7 @@ namespace IdleFactory.Tests.EditMode
 
         [TestCase(ShippedDeviceSets.W003SShippedDirectory)]
         [TestCase(ShippedDeviceSets.PrestigeReadyDirectory)]
+        [TestCase(ShippedDeviceSets.EmptyLocationDirectory)]
         public void DeviceSet_IsByteIdenticalToTheStoreRegeneration(string setDirectory)
         {
             ShippedDeviceScenario scenario = Scenario(setDirectory);
@@ -186,6 +188,7 @@ namespace IdleFactory.Tests.EditMode
 
         [TestCase(ShippedDeviceSets.W003SShippedDirectory)]
         [TestCase(ShippedDeviceSets.PrestigeReadyDirectory)]
+        [TestCase(ShippedDeviceSets.EmptyLocationDirectory)]
         public void DeviceSet_ColdStartsOverTheShippedCatalogAndReconcilesTheCappedEightHours(string setDirectory)
         {
             RunCatalog catalog = ShippedDeviceSets.LoadShippedCatalog();

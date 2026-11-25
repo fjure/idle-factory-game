@@ -95,6 +95,12 @@ namespace IdleFactory.Tests.PlayMode.F006
             var renderer = markers.RendererOf(0);
             Assert.That(renderer.enabled, Is.True);
             Assert.That(renderer.sprite, Is.Not.Null, "the marker draws the resource icon");
+            // T561 (C-77, D6): the marker is the missing resource's own icon, never the generic down-arrow of the per-machine Missing-input badge.
+            var resourceKey = bootstrap.RunCatalog.Resources[marker.ResourceId].PresentationKey;
+            Assert.That(bootstrap.SpriteCatalog.TryGetEntry(resourceKey, out var resourceEntry), Is.True, resourceKey);
+            Assert.That(renderer.sprite, Is.SameAs(resourceEntry.Sprite), "the marker shows the icon of " + marker.ResourceId);
+            Assert.That(bootstrap.SpriteCatalog.TryGetEntry(SlotGridModel.BadgeMissingInputKey, out var arrowEntry), Is.True);
+            Assert.That(renderer.sprite, Is.Not.SameAs(arrowEntry.Sprite), "the marker is not the generic Missing-input arrow");
             Assert.That(renderer.sortingLayerID, Is.EqualTo(SortingLayer.NameToID(SlotGridView.OverlaySortingLayer)), "markers sit on the Overlay layer");
             Assert.That(renderer.transform.position.x, Is.EqualTo(marker.Position.x).Within(1e-3f));
             Assert.That(renderer.transform.position.y, Is.EqualTo(marker.Position.y).Within(1e-3f));
@@ -115,6 +121,17 @@ namespace IdleFactory.Tests.PlayMode.F006
 
             Assert.That(WorldTapResolver.Resolve(layout, markers, marker.Position, out var viaIcon), Is.EqualTo(WorldTapSource.MarkerIcon));
             Assert.That(viaIcon, Is.EqualTo(marker.FirstAffected));
+            // T561 (C-78, marker checklist 7a, 7c): the same through a screen point, the way a finger arrives (camera projection and back), on the icon centre and
+            // a few points beside it inside the 48 pt circle.
+            foreach (var offsetPoints in new[] { 0f, 6f })
+            {
+                var screenPoint = bootstrap.FactoryCamera.WorldToScreenPoint(new Vector3(marker.Position.x, marker.Position.y, 0f)) + new Vector3(offsetPoints, 0f, 0f);
+                var world = bootstrap.FactoryCamera.ScreenToWorldPoint(new Vector3(screenPoint.x, screenPoint.y, -bootstrap.FactoryCamera.transform.position.z));
+                var source = WorldTapResolver.Resolve(layout, markers, new Vector2(world.x, world.y), out var viaScreen);
+                Assert.That(source, Is.EqualTo(WorldTapSource.MarkerIcon).Or.EqualTo(WorldTapSource.MarkerHalo), "a finger at +" + offsetPoints + " px reaches the marker");
+                Assert.That(viaScreen, Is.EqualTo(marker.FirstAffected));
+            }
+
             Assert.That(bootstrap.ShellPresenter.HandleWorldTap(marker.Position), Is.True, "a tap on the marker icon opens its location");
             yield return null;
             Assert.That(shell.SelectedSlot, Is.EqualTo(marker.FirstAffected.Value), "the tap selected the first affected location");

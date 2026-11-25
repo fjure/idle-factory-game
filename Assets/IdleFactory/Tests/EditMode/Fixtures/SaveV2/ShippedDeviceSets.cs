@@ -46,6 +46,7 @@ namespace IdleFactory.Tests.EditMode
         public const string ContentPath = "Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV2/FrozenCatalog/iron-factory-content-r2.json";
         public const string W003SShippedDirectory = "device/w003-s-shipped";
         public const string PrestigeReadyDirectory = "device/prestige-ready";
+        public const string EmptyLocationDirectory = "device/empty-location";
 
         public static readonly string[] Files = SaveV2DeviceSets.W003SFiles;
 
@@ -122,6 +123,27 @@ namespace IdleFactory.Tests.EditMode
             AutoSellEverything = false,
             ItemAndOverdrive = false,
             FinalAdvanceTicks = 127_000_000,
+        });
+
+        /// <summary>
+        /// T561 (C-82): the W003-S shipped state with one Assembler fewer, so the last of the twelve locations (index 11, bottom right of the lattice) is
+        /// empty and unlocked. The journey's F006Build step and the build-card rotation tap it to open the build card; every other committed set has a machine
+        /// on every unlocked location.
+        /// </summary>
+        public static ShippedDeviceScenario BuildEmptyLocation() => Build(new Plan
+        {
+            Name = "Empty location",
+            Directory = EmptyLocationDirectory,
+            CheckpointNumber = 32,
+            Summary = "the W003-S shipped state with the last location empty",
+            StartingCash = 5_000_000,
+            FactoryExpansions = 4,
+            StorageExpansions = 4,
+            Counts = new[] { 3, 4, 3, 1 },
+            Levels = new[] { 25, 25, 30, 33 },
+            AutoSellEverything = true,
+            ItemAndOverdrive = true,
+            FinalAdvanceTicks = 83_000_000,
         });
 
         private static T Ok<T>(RunCommandResult<T> result, string what)
@@ -286,13 +308,15 @@ namespace IdleFactory.Tests.EditMode
         {
             var rows = new StringBuilder();
             var notes = new StringBuilder();
-            foreach (ShippedDeviceScenario scenario in new[] { BuildW003SShipped(), BuildPrestigeReady() })
+            foreach (ShippedDeviceScenario scenario in new[] { BuildW003SShipped(), BuildPrestigeReady(), BuildEmptyLocation() })
             {
                 FactoryValueBreakdown value = FactoryValueOf(scenario);
                 RunState state = scenario.Session.State;
                 string what = scenario.Name == "Prestige ready"
                     ? "Prestige ready (shipped catalog): a mid-run whose Factory Value " + N(value.Total) + " meets the Sale threshold " +
                       N(scenario.Catalog.Prestige.ThresholdFactoryValue) + ", so the Prestige confirmation can open; "
+                    : scenario.Name == "Empty location"
+                    ? "W003-S shipped state with one Assembler fewer (eleven machines on twelve unlocked locations; location 11 is empty, so a tap there opens the build card), "
                     : "W003-S intent on the shipped catalog: twelve slots, every machine family producing, auto-sell on every resource, the Item effect `" +
                       OverclockCore + "` and Overdrive active; ";
                 string scenarioText = what + "checkpoint `" + SaveV2Scenarios.Uuid(scenario.CheckpointNumber).ToString("D") + "`, generation 0, departure `" +
@@ -317,7 +341,7 @@ namespace IdleFactory.Tests.EditMode
             text.Append("\n### Shipped-catalog sets (T245)\n\n");
             text.Append("`device/w003-s` above is generated against the test-local catalog of `W003Workload` (Presses and Assemblers in slots 7 to 11 at factory level 1) ");
             text.Append("and is kept unchanged for the byte-identity test; the shipped content has four slots at factory level 1 and unlocks the Assembler at level 3, so the real ");
-            text.Append("player rejects it (`save.v2.invariant`, then `return.blocked`; `DeviceSetShippedCatalogTests` pins this). The two sets below are built against the catalog ");
+            text.Append("player rejects it (`save.v2.invariant`, then `return.blocked`; `DeviceSetShippedCatalogTests` pins this). The sets below are built against the catalog ");
             text.Append("the player builds with `RunCatalogBuilder` from the frozen revision 2 catalog `Assets/IdleFactory/Tests/EditMode/Fixtures/SaveV2/FrozenCatalog/iron-factory-content-r2.json` (a byte copy of the shipped content at schema version 3, contentRevision 2, taken by T313 so that later content revisions do not invalidate these sets), through the real ");
             text.Append("`RunCommands` from a fresh run, and written through `JsonRunCheckpointStore`. `DeviceSetShippedCatalogTests` regenerates them byte for byte (drift fails, ");
             text.Append("never skips, OPS-5; `IDLEFACTORY_REGENERATE_SAVEV2_FIXTURES=1` rewrites the files, and `SaveV2FixtureTests` rewrites this README) and loads them through the player cold-start path.\n\n");
@@ -335,6 +359,7 @@ namespace IdleFactory.Tests.EditMode
                         (catalogW.Overdrive.DurationMs / 1000) + " s (shipped values) instead of x2 effects for ten hours. Both expire a few minutes into the eight offline hours, so the reconcile has boundaries that W003-S avoids; this is the shipped content, not a choice.\n");
             text.Append("- The state is the result of commands from a fresh run (Cash 5_000_000 at the start), so the unlock order, invested Cash and a few seconds of production (mid-cycle machines) are the ones the shipped rules produce; W003-S was constructed directly. The inventory holds what the production left (auto-sell empties it).\n");
             text.Append("\nDeviations of `device/prestige-ready`: it is not a W003 variant. Starting Cash 10_000_000 spent through the commands keeps the Factory Value at the threshold (Cash and invested amounts both count), so the Factory Value only meets it because of the production of the first seconds; the machines are level 40, auto-sell is on Gear only, no Item effect and no Overdrive are active.\n");
+            text.Append("\nDeviations of `device/empty-location` (T561): the same plan as `device/w003-s-shipped` with one Assembler fewer, so location 11 (the last, bottom right) is empty while all twelve locations are unlocked; it is the set on which the F006 journey opens the build card.\n");
             return text.ToString();
         }
     }

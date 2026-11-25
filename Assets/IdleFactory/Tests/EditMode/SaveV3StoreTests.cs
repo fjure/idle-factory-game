@@ -135,6 +135,7 @@ namespace IdleFactory.Tests.EditMode
                 (SaveV2DeviceSets.W003SDirectory, w003),
                 (ShippedDeviceSets.W003SShippedDirectory, shipped),
                 (ShippedDeviceSets.PrestigeReadyDirectory, shipped),
+                (ShippedDeviceSets.EmptyLocationDirectory, shipped),
             };
 
             foreach (var set in sets)

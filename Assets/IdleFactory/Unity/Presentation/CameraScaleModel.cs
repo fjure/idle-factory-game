@@ -681,6 +681,13 @@ namespace IdleFactory.Unity.Presentation
                 dy = band.yMax - high.y;
             }
 
+            if (dx == 0f && dy == 0f)
+            {
+                // T561 (C-60, C-80): the slot already lies inside the band, so the view stays where it is. Clamping it anyway moved the world by up to about 180 px on the
+                // hand-over from the build card to the (shorter) machine card: the pan limits follow the band rectangle, so the larger band pulled the same view in.
+                return false;
+            }
+
             // Moving the camera by -d / k moves the content by +d on screen.
             position = Constrain(position - new Vector2(dx, dy) / K(scale), scale);
             return position != before;
