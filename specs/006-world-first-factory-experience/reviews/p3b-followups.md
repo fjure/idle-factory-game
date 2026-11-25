@@ -285,3 +285,14 @@ Owner decisions 2026-11-25 (continued):
 | C-89 | T545 worker, parent check | FR-027 upgrade marker has a model but no world renderer. | T563 |
 | C-90 | T545 worker | SC-005 timed cue trial captures (keys `sc005-timed-standard`, `sc005-timed-reduced-motion`) not produced; the F004 builder takes emuP-class composites. | T562 |
 | C-91 | T545 QA | tabP SC-004 trials 6 and 7 clipped on the right by the side panel; "Development Build" watermark over the Overdrive button; low SC-006 layout variety (triptych_08 B and C differ only in the wall style). | T546 (note when running); T562 if re-captured |
+
+### T545 (trial seeds, oracles and Windows-class captures)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T545 | #717 | #785 | `2a0f85d` (fix round on `5d9ae70`), merged as `cad6d41` | PASS with minor findings: Edit Mode 3175/3175, Play Mode 3516/3516, Windows player 83/83, art pipeline 371 passed, f006 pytest 21; keys outside the repo and 1:1 with the taker files; SC-004 10/10 and SC-006 10/10 valid; P3 cues shown except the upgrade marker (C-89, T563) |
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-92 | T545 re-QA | The upgrade-marker P3 tile (a glint) is scored by the oracle as a normal cue and its key carries no "cue not shown" mark. Mark it in the key and the oracle; re-capture it after T563. T546 must not score the T545 upgrade tile. | T562 (after T563); T546 note |
+| C-93 | T545 re-QA | Real confounding markers on some P3 tiles (phoneP store-full tile has a red arrow; upgrade tiles show shortage arrows or store-full stacks; phoneL ghost tile shows store-full stacks); the phoneP shortage crop shows only the ore icon. | T562 (re-crop or accept with a note) |
