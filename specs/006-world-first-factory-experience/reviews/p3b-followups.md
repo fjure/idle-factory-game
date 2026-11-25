@@ -274,3 +274,14 @@ Owner decisions 2026-11-25 (continued):
 | C-86 | T561 UI/UX re-read | Device Back re-check; focus ring on Upgrade after the strip-chip tap; compact-class card re-captures (D1, tablet). | Final T543 |
 | C-87 | T561 architect | Fit-all degenerate axis at the hand-over is untested; document the multi-keyboard Escape assumption; `HubContractsBackSceneTests` does not discriminate the old `Keyboard.current` polling; optional zero-alloc test for the Escape polling. | T548 (architect review) |
 | C-88 | T561 QA | Marker tap at 40 px covered only by a device capture (scene test 0 and 6 px); Back-state threshold 0.5 from few runs; landscape crop right edge 0.90 close to the HUD column (~0.904); landscape, zoom and hub tap fractions still provisional (C-82 remainder). | Final T543 / T548 |
+
+### T545 QA and FR-027 (owner decision 2026-11-25)
+
+- T545 #717 first QA FAIL on `5d9ae70`: the SC-004 and SC-006 inputs were valid (10/10 each), but the SC-005 P3 cue tiles did not show their cues (the hub dot appeared in the no-dot control; the upgrade, shortage and store-full markers were not on screen; the card was not beside its machine). The fix round `2a0f85d` captures the P3 tiles from real session states.
+- **FR-027 gap**: the shipped world draws no "upgrade available" marker. `MachinePresentationModel.UpgradeMarkerVisible` is computed and tested, but no view renders it (confirmed by the parent on origin/main 9e17bf3). Owner decision: **new fix task T563 #786**, after T561 and before T544, T562, the final T543 and T548. The SC-005 upgrade-marker tile is re-captured in T562 for every class; the T545 Windows tile records "cue not shown".
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-89 | T545 worker, parent check | FR-027 upgrade marker has a model but no world renderer. | T563 |
+| C-90 | T545 worker | SC-005 timed cue trial captures (keys `sc005-timed-standard`, `sc005-timed-reduced-motion`) not produced; the F004 builder takes emuP-class composites. | T562 |
+| C-91 | T545 QA | tabP SC-004 trials 6 and 7 clipped on the right by the side panel; "Development Build" watermark over the Overdrive button; low SC-006 layout variety (triptych_08 B and C differ only in the wall style). | T546 (note when running); T562 if re-captured |
