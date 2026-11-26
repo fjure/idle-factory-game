@@ -587,4 +587,72 @@ Blocker 0 / Major 0 / Minor 3 / Info 4 / Conditions 2
 
 ## 5. T549 owner visual acceptance
 
-Pending (appended by T549).
+**Date**: 2026-11-26. **Commit judged**: main `ac49f6c8` (final F006 main, PR #791). **Evidence**: `visual-acceptance-f006.md` and the sheets in `visual-acceptance-f006/sheets/` (merged into the coordination branch at `c3e0e41c`). A capture agent (Test/QA, Asset Artist lens, sonnet) produced the evidence and gave no verdict. The verdicts below are the owner's, given in the parent session.
+
+| Method | Coverage |
+|---|---|
+| Rig | The T502 `BaselineRig`. 10 classes x 100/200 % x 7 states. The before and after pairs are like for like. |
+| Windows player, real scene | The stage triptych and the P3 stills for 8 classes. |
+| Real APK on AVD `IdleFactory_Test_API_36` | Portrait and landscape x 100/200 % x 7 states. Also the stage triptychs, reduced motion, the look points and the play-through stills. |
+
+### 5.1 Verdicts per surface and screen class
+
+| Surface | Phone classes (emuP, emuL, 360x640, 640x360, 390x844, 844x390) | Tablet (768x1024, 1024x768) | Desktop (1280x720, 1920x1080) |
+|---|---|---|---|
+| No panel | Accepted (100 % and 200 %) | Accepted | Accepted |
+| Card | Accepted | Accepted | Accepted |
+| Details | Accepted | Accepted | Accepted |
+| Building (build card + ghost) | Accepted | Accepted | Accepted |
+| Hub (Office) | Accepted | Accepted | Accepted |
+| System view (Contracts) | Accepted | Accepted | Accepted |
+| Offline summary | Accepted | Accepted | Accepted |
+| 200 % text | Accepted | Accepted | Accepted |
+| Stage triptych (FR-036, no before) | Accepted (device portrait and landscape; Windows 360x640, 640x360, 390x844, 844x390) | Accepted (Windows) | Accepted (Windows) |
+| Reduced motion | Accepted. Measured on the device, portrait 100 %, no panel: 3,150 and 4,410 changed pixels with motion; 0 and 0 with reduced motion On. | Not captured separately. The same setting applies. | Not captured separately. The same setting applies. |
+
+The owner accepts the play-through stills as evidence of the GD/PO moments, with the known limits:
+- **Upgrade**: a level-25 smelter on the W003-S set. It is not the first upgrade of a fresh run.
+- **Hand-delivered contract**: "Delivered 167" on the W005-L checkpoint.
+- **Real offline returns**: cold starts of pushed checkpoints on the device.
+
+### 5.2 Look points (section 2 rows 2 and 8, C-108)
+
+| Look point | Evidence | Disposition |
+|---|---|---|
+| Smallest phone (360x640, 640x360): the upgrade marker at about 24 pt | `lookpoints-smallest-phone.png`, `p3-stills-phone-*` | Accepted |
+| Deck edge and void | Triptychs and device sheets | Accepted for F006. The art task follows after P4 (owner decision 2026-11-26; post-gate Issue). |
+| "Development Build" label over Confirm (640x360, 200 %) and over Overdrive (360x640) | `lookpoints-smallest-phone.png` | Accepted. Development builds only. |
+| Tablet hint wrap | `lookpoints-tablet-hint.png` | Accepted |
+| 48-pt touch-target overlay crop | Not captured. Play Mode tests remain the evidence; the device reads 45 to 47 dp (C-108). | Gap accepted by the owner |
+| Live stage change | Not captured: no fixture crosses a threshold. The stages are shown by the triptychs. | Gap accepted by the owner |
+
+### 5.3 Guidance measurements versus the baseline (owner: acceptable for F006)
+
+Re-measured on this run by the T502 probe. The values equal the T542 section of `baseline.md`; the full tables are in `visual-acceptance-f006.md`. Each row is owner-accepted as measured, under the spec clarification that these thresholds are guidance only and the owner decision of 2026-11-26.
+
+| Guidance | Baseline to after | Status |
+|---|---|---|
+| SC-001 world share >= 60 % | Met at 1920x1080, 390x844, 844x390, 360x640 and emulator portrait/landscape at 100 %. Not met at 640x360, tablet and 1280x720. | Accepted as measured |
+| SC-001 chrome at 100 % <= 15 % | Met at tablet, desktop and emulator portrait. Not met on the other phone classes. | Accepted as measured |
+| SC-001 chrome at 200 % <= 20 % | Not met on any phone class: after 21.8 to 55.8 %, baseline 27.4 to 62.0 %. Tablet and desktop meet it. | Accepted as measured |
+| SC-002 unobscured share with the card open | Rig probe (docked card), after vs baseline: phone portrait 0.55 to 0.82 (baseline 0.45 to 0.53), phone landscape 0.75 to 1.03 (baseline 0.53 to 0.71). Every phone class meets 50 % portrait and 70 % landscape on this probe. `baseline.md` T542 records 44 to 51 % (portrait) and 66 to 67 % (landscape) by its own method. | Accepted as measured |
+| SC-003 upgrade | 3 steps vs 2 | Accepted |
+| SC-003 stopped-machine category | 4 steps vs 0 | Accepted |
+| SC-003 other journeys | One stopped machine: 1. System views: reach 2, return 1 (3 counted). Build: 3. | Met |
+| SC-010 persistent labels | 13 to 10 vs 6, on every class and scale | Accepted |
+
+The emulator FPS budgets 1 to 3 and the missing physical-device data (PERF-9) stay open under the SC-008 deviation in section 3. They go to the C-68 and device-measurement Issue.
+
+### 5.4 A-9 limitation
+
+A-9 (p3a-followups): the Android development APK was 82 MB with 46 MB of dead zip entries, and `adb install` failed on the near-full emulator.
+
+The T549 build of `ac49f6c8` (`BuildAndroidArm64DevelopmentGles3 -noProfilerAutoconnect`) measures 46,723,142 B, which is under the F004 APK budget of 47.3 MB. It installed on the AVD without error. The capture APK (with test assemblies) measures 48,636,807 B.
+
+The owner accepts A-9 as resolved for F006. Remaining limitation: there is no release-build size measurement in this record (see C-109 for the release-build checks).
+
+### 5.5 Verdict
+
+**T549 PASS (owner, 2026-11-26)**: visual acceptance is given for every surface on every captured screen class. Conditions 2 and 8 of section 2 are satisfied as far as T549 is concerned. The art and record parts of row 8 go with the post-gate Issues.
+
+Separate result in the same session: `scripts/test-unity.ps1 -StandaloneWindowsPlayer` on `ac49f6c8` passed 85/85.
