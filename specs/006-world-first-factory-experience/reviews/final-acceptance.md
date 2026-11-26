@@ -643,6 +643,8 @@ Re-measured on this run by the T502 probe. The values equal the T542 section of 
 
 The emulator FPS budgets 1 to 3 and the missing physical-device data (PERF-9) stay open under the SC-008 deviation in section 3. They go to the C-68 and device-measurement Issue.
 
+TESTQA C4: no scripted emulator journey reaches the `ProducingFps` threshold on this host. The Default, F003 and F005 journey runs predate T561 and T563. The journey frame data is therefore environmental and stale for those scenarios, and it is not F006 evidence; owner-accepted under the same deviation.
+
 ### 5.4 A-9 limitation
 
 A-9 (p3a-followups): the Android development APK was 82 MB with 46 MB of dead zip entries, and `adb install` failed on the near-full emulator.

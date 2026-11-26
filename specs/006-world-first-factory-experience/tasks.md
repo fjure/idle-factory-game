@@ -908,7 +908,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units; 64 afte
   3. `$speckit-learn-review`
   4. `$speckit-wiki-lint`
   - **Covers**: constitution X.
-- [ ] T551 *Parent* after T550:
+- [X] T551 *Parent* after T550:
   1. `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/006-world-first-factory-experience`
   2. `$speckit-converge` until no work remains
   3. `scripts/maqa-stale-worktrees.ps1`, with the removal commands handed to the user.
