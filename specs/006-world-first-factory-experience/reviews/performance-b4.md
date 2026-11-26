@@ -1,4 +1,108 @@
-# B4a performance measurement, W006-V (T531)
+# B4 performance measurement, W006-V (T531 B4a, T544 B4b)
+
+This record has two parts. **Part B4b (T544, below) is the final reading on the current main**; **Part B4a (T531) follows unchanged as history** (its numbers stand for the main of 2026-11-19, `b44b87d`). Evidence for FR-006, SC-008 and research R16. Budgets are the frozen F004 ones of `specs/004-visual-identity/reviews/performance-budgets.md` section 4 (row 8 as restated 2026-11-05 and 2026-11-19).
+
+**Every number is exploratory evidence from one workstation (FR-027). There is no physical-device, battery or thermal measurement; that gap stays open.** Nothing in T531 or T544 changes production code. Art Bible 21.12 is confirmed by the owner (v1.1.2, worst-case ceiling 110); the census is also reported against the signed 95.
+
+# Part B4b (T544, Issue #716)
+
+Performance Engineer (Medium tier). Base `origin/main` 4d795384 (T560, T561 camera/marker/Back, T563 upgrade marker and the per-frame affordability mask of `RunShellPresenter` are in). Unity 6000.6.0f1, Windows 11 host (AMD Ryzen 7 7800X3D, RTX 5070 Ti, NVIDIA driver 621.01), emulator AVD `IdleFactory_Test_API_36` (GLES 3.1, host GPU, 1080x2400), method of Part B4a (its sections 1 to 8). Worktree `.maqa-worktrees/issue-716-t544-performance-b4b`. Raw evidence of this part: `performance-b4/b4b/` (Windows player log lines, device probe lines, SurfaceFlinger capture summaries, the autosave journey report, the GPU samples).
+
+## B4b.1 Budget table (B4b)
+
+W006-V as in B4a section 1 (card open = the real docked machine card of the packaged scene, build card = 11 machines). New in B4b: the upgrade marker (T563) is part of the shipped world, so SetPass and census are also read with the marker forced on all 12 slots.
+
+| # | Budget (frozen) | B4b measured | Status | Method |
+|---|---|---|---|---|
+| 1 | Emulator avg FPS >= 60 (exploratory; **not on R16's list**, see B4b.5) | W005-L producing **46.3** (first session), 44.6 (ABA, session 2), 46.6 (cold boot); W003-S producing 46.7; fresh-run controls 44.4 to 47.9. **ABA with the B4a-era build (`b44b87d`) on the same emulator and host: 44.8 and 43.8** | **Not met in this session, by either build** (B4a read 61.4 in its session) | `android-emulator-journey.ps1 -Scenario F005 -Steps ...W005LFps` and `-Scenario F003 ... ProducingFps`, profiler-free dev APK, SurfaceFlinger TimeStats 60 s. Host: B4b.4 |
+| 2 | p95 bucket <= 19 ms (emulator, exploratory; not on R16's list) | p50 16 ms, **p95 33 to 44 ms**, p99 46 to 48 ms (B4a-era build in the same session: p95 34 to 44) | **Not met in this session, by either build** | same captures |
+| 3 | 0 intervals >= 50 ms per 60 s (exploratory; not on R16's list) | producing captures: 0, 0, 2, 3 (B4b) and 4, 4 (B4a-era build); controls 0 to 7 | **Not met reliably, by either build** | same captures (`fps-captures.tsv`) |
+| 4 | Windows host frame p95 in 0.02 to 0.04 ms (ceiling 1 ms) | **W003 (the budget's workload): S 0.016, B 0.040, R 0.021 ms**. **W006-V** (new, C-69): synthetic world frame (clock, deck, links, deposit, effects; 600 frames) p50 0.018, **p95 0.022**, p99 0.025, max 0.072 ms; real scene `RunShellPresenter.Refresh` per frame: steady frames p95 0.052 to 0.060 ms, all frames p95 0.20 to 0.37 ms (the 18 to 31 % of frames that rebuild the snapshot), single worst frames 1.3 to 3.5 ms | **PASS** (W003 and the W006-V world frame inside 0.02 to 0.04; the real-scene Refresh including rebuilds is above that range, its p95 is below the 1 ms ceiling, and single rebuild frames reach 1.3 to 3.5 ms) | official player suite `W003-HOSTFRAME`, `B4B-W006V-600`, `B4B-REFRESH-REAL` |
+| 5 | 0 steady-state GC allocations (advance path, presentation paths, 600-frame player run) | W006-V synthetic 600 frames: **0** (no contract; 540 non-rebuild frames with a contract: 0). **C-94: 600 `RunShellPresenter.Refresh` calls over an unchanged run: 0 allocations**, in the real packaged scene with the card closed (asserted) and with a card open (0 as well), in the Windows player and in Play Mode; moving cash without crossing a cost: 0 in Play Mode. Whole host frame in the real scene at 60 FPS: **steady about 20 per frame card closed, 17 to 21 card open, 15.5 build card** (B4a: 21.5, **403**, 280) | **PASS for the defined paths and for `Refresh`; whole real-scene frame still not 0** (about 20 per steady frame, unattributed, C-68). **The card-open cost of B4a (C-41 extension) is gone** (T560) | `GcAllocationCounter`, per-frame `GC.Alloc` recorder, player (B4b.3) |
+| 6 | World-art texture memory <= 8 MB | build report **3.54 MB** (F004 pages 2.23, F006 world and FX 1.31; identical to B4a); player runtime of the pages in use 3.01 to 3.26 MiB, **3.39 MiB with the markers forced** (the 24x24 upgrade icon is its own texture); device 3.01 to 3.26 MiB | **PASS** | build report, `Profiler.GetRuntimeMemorySizeLong` |
+| 7 | Atlas pages <= 1024 x 1024 | largest **512x512**, all RGBA32 (also the 512 and 1 MiB rule of Art Bible 21.9) | **PASS** | player, build report |
+| 8 | SetPass per world-camera render, restated: F006 delta at most **+12 over the F004-only 34**, `camera.Render()` CPU tier bound | all **42.1** (landscape), 44.0 (portrait), 42.7 / 45.9 (card open), 38.6 (build card); F004 pages only in the same state 33.6, 34.2, 33.3, 35.5, 27.2: **F006 delta +8.5 to +11.4**. **With the upgrade marker forced on all 12 slots: 46.5 / 48.7; F004-only in that state 35.1 / 39.1; delta +11.4 / +9.7.** `camera.Render()` CPU 0.16 to 0.22 ms mean (p95 0.18 to 0.26; 0.24 with markers) | **PASS on the restated reading (delta over the F004-only value measured in the same state). Reading it against the fixed 34, the marker worst case is +12.5 (landscape) and +14.7 (portrait), over +12: owner reading needed (B4b.2)** | player SetPass differential, 20 renders per frame, `ProfilerRecorder` |
+| 9 | Phase-0 guest CPU against a paired B1 (not on R16's list) | not measured | **Gap** (no paired B1 build or CPU capture; B4b.5) | - |
+| 10 | APK <= 150 MB | **46,778,974 B** (44.6 MiB, 31 % of the cap; +11,484 B on the B4a build), sha256 `34e3a24d516516d123df25a23c9ebcd15767b6b71266407fe60f7e91e434a4f8` | **PASS** | `scripts/f004-b1/run-build.ps1`, dev IL2CPP GLES3 |
+| 11 | Shader variants <= 490, no unexplained growth | **356** (176 snippets, 79 shaders), identical to B4a and B3 | **PASS** | `IPreprocessShaders` dump |
+
+Player census (enabled sprite renderers plus 3 Tilemap renderers, 12 locations): synthetic portrait 80 / landscape 82 (B4a: 80 / 82); real scene natural 66 to 81; **worst cases in B4b.2**.
+
+## B4b.2 Upgrade marker: census, SetPass (C-94)
+
+T563 draws one marker renderer per location on the Overlay layer; it yields to the Item boost (at most two markers per location, ART-2). It is the F003 upgrade icon, **a single 24x24 texture of its own (`f003-ui-icon-upgrade_00`), not on the markers atlas**.
+
+Worst-case census (all 12 slots at the overlay cap of 61 slot renderers, 12 pips, 3 FX, plus the 5 draining tails of the pool as design maximum), synthetic layouts:
+
+| Variant | portrait (3 col) | landscape (4 col) | vs signed 95 | vs 21.12 ceiling 110 |
+|---|---|---|---|---|
+| boosted + Overdrive (T531 case) | 99 | 101 | +4 / +6 | -11 / -9 |
+| boosted + Overdrive + upgrade marker on all 12 | **99** | **101** | +4 / +6 | -11 / -9 |
+| Overdrive + upgrade marker on all 12 (2 markers each) | 99 | 101 | +4 / +6 | -11 / -9 |
+| upgrade marker only | 87 | 89 | -8 / -6 | -23 / -21 |
+
+**The marker on all 12 slots does not raise the worst case** (equal to the boosted + Overdrive case, as expected; asserted in `W006VWorldPlayerTests` and, in the real scene with the real catalog, in `W006VRealScenePlayerTests`). In the real packaged scene (3 FX active, natural pips, no draining tails) the same variants count 91 (landscape) and 88 to 89 (portrait); add the 5 tails for the design maximum: 96 and 93 to 94. Everything is below 110 and far below the 173 tier; against the signed 95 only the synthetic worst case is above it (+4, +6), as in B4a.
+
+SetPass with the marker (real scene, player, forced W004-V visuals): the marker adds **+4.4 (landscape) and +4.7 (portrait) passes** to the all-state value (42.1 -> 46.5, 44.0 -> 48.7). Cause, from the per-texture deltas: the marker sprite is an unatlased texture, so its twelve renderers, interleaved with the slot and cue draws by sort order, each force a texture change (the icon's own delta reads 5.4 to 5.8 passes at 12 markers, 0.5 to 1.9 at the 4 to 10 markers of a natural W005-L run); on the device GLES3 the natural state shows +1.2 to +1.4 against B4a (the icon's own delta -0.4 to 1.1). The FX atlas delta is +1.2 to +3.7 (B4a +0.6 to +3.1, within the same +-1.5 run-to-run noise): C-33 stays "within noise". The world atlas delta is +7.0 to +9.4 (B4a +7.7 to +8.7). **Option (Performance role, not done): put the upgrade icon on the markers atlas (like the boosted and Overdrive markers); expected gain about -4 to -5 passes at the 12-marker worst case, about -1 in a natural run; complexity low; needs an Art/Technical Art decision. Recommend; the owner decides.**
+
+## B4b.3 Allocations (budget 5, C-94, C-68)
+
+Real packaged scene, Windows player, W005-L (12 running machines, Established), whole host frame per 600 frames at the production 60 FPS cadence (control with no scene: 1.8 per frame):
+
+| State | per frame | structural frames (rebuild) | per structural frame | steady frames: per frame | B4a steady per frame |
+|---|---|---|---|---|---|
+| card closed, landscape / portrait | 76 / 73 | 114 / 109 | 314 / 306 | **20.7 / 21.7** | 21.5 |
+| machine card open | 123 / 122 | 111 / 115 | 577 / 565 | **20.6 / 17.2** | **403** |
+| build card open | 101 | 185 | 293 | **15.5** | **280** |
+
+Uncapped (frame cost): 5 to 8 per frame, steady 2.4 to 2.6. The card-open steady cost moved from about 400 to about 20 per frame: `MachineCard.Refresh` now rebuilds only when a displayed value changes (T560). The remaining about 20 per steady frame at 60 FPS (about 2.5 uncapped, so a function of time) is C-68 and stays open: unattributed, a deep-profile Issue after the gates (owner decision).
+
+C-94, `RunShellPresenter.Refresh` (the per-frame affordability mask loop over the cached visuals):
+- `RunShellPresenterAllocationTests` (Play Mode, real scene, 12 locations, the mask loop with at least one affordable upgrade): 600 `Refresh` calls (one per frame) **0 allocations** with the cash still, and 0 with the cash moving by 1 every frame (no cost crossed, no rebuild).
+- `W006VRealScenePlayerTests` (Windows player): `B4B-REFRESH-STILL` 600 consecutive `Refresh` calls over an unchanged run **0 allocations**, card closed (asserted), card open (0), mean 0.0008 to 0.0011 ms per call. `B4B-REFRESH-REAL` (one extra `Refresh` after each frame for 600 frames): the frames in which the presenter rebuilt its snapshot are structural (allocations as in the table); of the other frames 7 to 9 % allocate (50 to 90 allocations on such a frame, one in which a displayed value changed), the rest none. The mask itself allocates nothing.
+
+## B4b.4 Emulator (exploratory), C-83, ABA
+
+Host load (PF-9): the owner confirmed a quiet host. Processes: the emulator (`emulator.exe`, `qemu-system-x86_64-headless.exe`), one `adb` server, no Unity process during any timed capture (Unity CLI runs and builds finished first; the only Unity run during the emulator session was the older-build APK build, with no capture running); idle background applications (Discord, iCUE, Battle.net, CurseForge, Epic launcher, NVIDIA overlay, JBL QuantumENGINE, an idle Chrome; blender-mcp and comfy-mcp servers, idle); host CPU 0 to 17 % between captures (the emulator itself about 0.7 core). Windows power plan "Hoechstleistung" (high performance). The Windows player runs: CPU 7 % at the start, same applications.
+
+- Cold-booted headless (`-no-snapshot-load -no-snapshot-save`, host GPU) twice: first session (B4b build, then F003 and the older build ABA), then again for the "cold B" capture. Dev APKs, profiler-free (`profiler autoconnect False`).
+- **C-83 (ProducingFps about 40 on a loaded host): on the quiet host and cold-booted emulator it is about 46 to 47, not 60, in every capture, and the fresh-run controls read the same.** The present-to-present histogram is bimodal: the main mode at 15 to 16 ms, a second mode at 29 to 32 ms (about 850 of 2,700 intervals) and a tail at 42 to 48 ms (about 120); a frame that misses the 16.7 ms present waits for the next one. The device probe says the same: main thread mean 20.2 to 21.5 ms, p95 31.3 to 31.7 ms, deltas p50 16.67 ms, p95 33.3 ms (B4a probe: 60.0 FPS, main thread p95 17.8 to 18.7 ms). The guest is CPU-bound at about 20 ms per frame.
+- **ABA (A = B4a-era main `b44b87d` plus the B4a probe, B = this main), same emulator, same session, W005-L producing, controls in brackets: A1 44.8 (47.9, 45.2), B 44.6 (45.0, 44.9), A2 43.8 (44.4, 44.0).** The F006 code of P3 and P4 (T560, T561, T563) therefore costs nothing measurable on this emulator; the drop from B4a's 61.4 is the session (host or emulator environment), not the code. What differs in the environment is not isolated: during the cold-boot capture the host GPU stayed in P8 at about 880 MHz and 8 % utilization (never above P8, `b4b/cold-B-gpu-samples.csv`); that is an observation, not shown to be the cause. The 61.4 of B4a is not reproducible today.
+- Fresh-run controls: 46.9 / 46.9 (first), 45.0 / 44.9, 46.2 / 47.0 (cold boot), 46.6 / 46.0 (W003-S).
+- Device probe (`B4bRuntimeProbe`, flag-gated, 1080x2400, natural W005-L, vein hold, 3 pops, 600-frame windows): card closed 46.5 FPS, natural markers (10 of 12 on) 49.5, machine card open 49.2, build card 49.5; 0 intervals >= 50 ms in three windows and 1 in the build-card window (max 50.0 ms); census 70, 65 (natural markers), 82, 67; textures 3.01 to 3.26 MiB; SetPass per render 37.2, 37.0, 37.9, 37.5 (B4a 35.8, 36.7, 36.1; **+1.2 to +1.4, the unatlased marker texture**), upgrade icon delta -0.4 to 1.1.
+- Not covered: forced W004-V visuals on the device (a player has no such seam), a physical device, battery and thermal behaviour, a paired B1 build.
+
+## B4b.5 Carried items
+
+| Item | Result |
+|---|---|
+| **C-83** | B4b.4: 46 to 47 FPS on a quiet host, same for the B4a-era build and the fresh-run controls; not a loaded-host effect and not an F006 regression; a 60 FPS emulator session needs a changed environment (open). |
+| **C-94** | B4b.2 and B4b.3: `Refresh` zero-alloc test added (Play Mode and Windows player), worst-case census with the marker on all 12 slots equals the boosted + Overdrive case. |
+| **C-65** | Added `AutosavePoolThreadPlayerTests` (`StandalonePlayer`): the production `RunPersistence` over the real `JsonRunCheckpointStore`, packaged Iron catalog, isolated temp root, a clock the test moves and the default thread-pool executor; two periodic writes publish generations 2 and 3, the previous generation is retained and the files read back (the first write after the cold start already takes the pool thread; time to applied 32 to 39 ms; main-thread tick 2.7 ms first (includes first-call work), 0.09 ms second). **C-74's "no player-compatible rig" is resolved.** Device: `-Scenario F006 -AutosaveCheck` **PASS**: generation 11 -> 13 with no lifecycle event, same process, force-stop without HOME, relaunch restored generation 13 and its machines and levels. |
+| **C-66** | Emulator, 60 s idle window against 60 s with 27 remove/rebuild commands (one every 2.2 s, each one autosave at the 2 s spacing, about 27 writes a minute): 49.9 vs 49.4 FPS, deltas p95 33.3 vs 33.3 ms, 1 frame above 33.4 ms (max 50.0 ms) vs 0, allocation samples not higher (363,897 vs 373,136). Bytes the process sent to storage (`/proc/self/io` `write_bytes`): **49,152 idle, 561,152 in the burst: about 512 KB in the minute, about 19 KB per write**. So a sustained burst of that rate is about 0.56 MB per minute (about 34 MB an hour), and the cadence of one write per 30 s while the run changes (about 120 writes an hour) is about 2.3 MB an hour. Emulator storage only; no physical-flash wear figure. `AutosaveWriteCostTests` asserts `mainMedian < 8 ms` on wall-clock time over 60 rounds; it is host-timing sensitive, as the test's own comment says, and passed in the final Edit Mode run; not changed. |
+| **C-69** | Text fixes, see B4b.6. |
+| C-33 | Closed as within noise (B4b.2). |
+| C-68 | Open, owner: separate Issue after the gates (about 20 per steady frame). |
+| Budget 9, ABA of 1 to 3 | The ABA of 1 to 3 was done against the B4a-era build (B4b.4). Budget 9 (guest CPU against a paired B1) was not measured: it needs a B1 build and a CPU capture, and is not on R16's list. |
+
+## B4b.6 Corrections to the B4a text (C-69)
+
+- **Budget 4 in B4a was read on W003, not on W006-V.** It still is the budget's definition (the W003 host frame, `W003-HOSTFRAME`); B4b adds the W006-V reading (B4b.1 row 4).
+- **Budget 9 is outside R16's list** (R16 names #4, #5, #6, #7, #8, #10, #11); so are 1 to 3 as gates ("Emulator FPS stays exploratory"). The B4a statement "not measured" for 9 is a scope statement, not a failure.
+- **The B4a probe's with/without labels were swapped** (its first schedule alternated one frame at a time against a recorder that lags two frames); B4a used the absolute values, which were right. `B4bRuntimeProbe` uses the block schedule of the player test (12 blocks of 10 frames, the first 4 readings dropped); its values are consistent with the player method.
+- C-33 is closed as within noise.
+- The B4a `perTexture` and "card open" reading stands as history; the card-open allocation of B4a section 5 (about 400 per frame) no longer holds on the current main (B4b.3).
+
+## B4b.7 Tests, preflight, deviations
+
+- Leases `unity,emulator,gpu` held by `issue-716` for the whole task. `Library/Bee` DAG files with foreign paths and `Library/Bee/Android` were deleted before each Android build; disk 19 to 22 GB free during builds. Emulator and adb server killed, game uninstalled at the end. Build outputs (both APKs) deleted after use.
+- Tests (final test code, commit `19901958`): Edit Mode **3187 of 3187**, full Play Mode **3526 of 3526**, tagged Windows player suite **85 of 85** (the run of the same test code; a later edit of the editor-only `RunShellPresenterAllocationTests` for the fixed-slot-count guard changes no player code). A first player run failed three cases: the new autosave case (no checkpoint to read before a first save, fixed in the test), the real-scene worst-case census (the presenter re-rendered the natural visuals between the forced render and the count, fixed by counting in the render's own frame) and `HubPlayerTests` (a consequence of the failed real-scene case; it passed on every later run). `scripts/check-settings-noise.ps1 -Commit` run on the final commit.
+- Deviations: SetPass and census with forced visuals only in the SetPass and census blocks (as B4a); the portrait case is a 540x960 window; **no B1 build, no physical device, no forced W004-V visuals on the device**; the device probe cannot grant cash (the setter is internal to Core), so the marker state on the device is the natural one (4 to 10 markers). The older-build APK was built by checking out `b44b87d` in this worktree (HEAD restored afterwards) with the B4a probe; its size 44.6 MiB.
+- Probes: `probes/B4bRuntimeProbe.cs.txt` (device probe of this part, with the burst and the block SetPass schedule) with `probes/B4Probe.asmdef.txt`; copy both into `Assets/TempB4Probe/` for one development build and delete them afterwards. The B4a probe stays as history.
+- Test code added (no production change): `RunShellPresenterAllocationTests`, `AutosavePoolThreadPlayerTests`, additions to `W006VRealScenePlayerTests` (Refresh runs, worst-case census with the marker, marker SetPass block, `B4B-*` log prefix) and `W006VWorldPlayerTests` (worst case with the marker, world frame time), the upgrade icon added to `DeckTestRig`'s flat-colour catalog.
+
+
+# Part B4a (T531, Issue #704): history. B4a performance measurement, W006-V
 
 Issue #704, Performance Engineer (Medium tier, high reasoning for the measurement design). Base `origin/main` b44b87d; worktree `.maqa-worktrees/issue-704-t531-performance-b4a`. Unity 6000.6.0f1, Windows 11 host (AMD Ryzen 7 7800X3D, RTX 5070 Ti), emulator AVD `IdleFactory_Test_API_36` (GLES 3.1, host GPU, 1080x2400). Evidence for FR-006, SC-008, research R16. Budgets are the frozen F004 ones of `specs/004-visual-identity/reviews/performance-budgets.md` section 4 (row 8 as restated 2026-11-05); the method is that of `performance-b3.md` with the deviations in section 8.
 
