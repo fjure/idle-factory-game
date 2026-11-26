@@ -25,8 +25,9 @@ namespace IdleFactory.Tests.PlayMode.F006
     /// of T534 and the real build card. The run starts from the committed W005-L checkpoint (12 running machines, Established stage), so the scene composes the deck, the 12
     /// branches with pips, the vein and the effects itself; the test adds what the checkpoint does not carry: the forced W004-V visuals (SetPass blocks only), the ore-vein hold and
     /// 3 pops. It measures SetPass per world-camera render and per atlas (budget 8), the texture memory and pages (budgets 6 and 7), the renderer census, and 600 frames each with the
-    /// card closed, the machine card open and the build card open (budget 5, C-20, C-41). Every measurement is a <c>B4A-*</c> log line; the verdicts are in
-    /// <c>reviews/performance-b4.md</c>. Nothing here asserts a budget except robust facts, so a miss never fails the suite.
+    /// card closed, the machine card open and the build card open (budget 5, C-20, C-41). T544 (B4b) re-runs it on the main that holds T560, T561 and T563 and adds the
+    /// <c>RunShellPresenter.Refresh</c> allocation per frame (C-94) and the worst-case census and SetPass with the upgrade marker on every slot. Every measurement is a
+    /// <c>B4B-*</c> log line; the verdicts are in <c>reviews/performance-b4.md</c>. Nothing here asserts a budget except robust facts, so a miss never fails the suite.
     /// </summary>
     [Category("StandalonePlayer")]
     public sealed class W006VRealScenePlayerTests
@@ -69,7 +70,7 @@ namespace IdleFactory.Tests.PlayMode.F006
         private static string MoveAside(string path)
         {
             if (!Directory.Exists(path)) return null;
-            var backup = path + ".b4a-backup";
+            var backup = path + ".b4b-backup";
             DeleteIfExists(backup);
             Directory.Move(path, backup);
             return backup;
@@ -106,10 +107,10 @@ namespace IdleFactory.Tests.PlayMode.F006
             var control = new Controls();
             Application.targetFrameRate = 60;
             yield return FrameRun("control-no-scene@60fps", 300, null, null, control.Capped);
-            LogFrames("B4A-REAL-FRAMES", control.Capped, null);
+            LogFrames("B4B-REAL-FRAMES", control.Capped, null);
             Application.targetFrameRate = -1;
             yield return FrameRun("control-no-scene@uncapped", 300, null, null, control.Uncapped);
-            LogFrames("B4A-REAL-FRAMES", control.Uncapped, null);
+            LogFrames("B4B-REAL-FRAMES", control.Uncapped, null);
 
             var catalog = RunPlayerFixtures.IronCatalog();
             var asset = Resources.Load<TextAsset>(FixtureResource);
@@ -295,13 +296,134 @@ namespace IdleFactory.Tests.PlayMode.F006
             Application.targetFrameRate = 60;
             var capped = new FrameStats();
             yield return FrameRun(label + "@60fps", Frames, perFrame, bootstrap, capped);
-            LogFrames("B4A-REAL-FRAMES", capped, control.Capped);
+            LogFrames("B4B-REAL-FRAMES", capped, control.Capped);
             Assert.That(capped.Frames, Is.EqualTo(Frames));
             Application.targetFrameRate = -1;
             var uncapped = new FrameStats();
             yield return FrameRun(label + "@uncapped", Frames, perFrame, bootstrap, uncapped);
-            LogFrames("B4A-REAL-FRAMES", uncapped, control.Uncapped);
+            LogFrames("B4B-REAL-FRAMES", uncapped, control.Uncapped);
             Assert.That(uncapped.Frames, Is.EqualTo(Frames));
+        }
+
+        // C-94: the allocation of RunShellPresenter.Refresh alone (it also runs inside the bootstrap's own Update; this is an extra call per frame, measured by itself), over 600
+        // frames at the production cadence. A frame in which the presenter rebuilt its snapshot is structural and counted apart; every other frame is the steady state.
+        private static IEnumerator RefreshRun(string label, Action perFrame, CoreGameFoundationBootstrap bootstrap)
+        {
+            var presenter = bootstrap.ShellPresenter;
+            var recorder = Recorder.Get("GC.Alloc");
+            var snapshot = presenter.Snapshot;
+            long steady = 0;
+            long structural = 0;
+            var steadyFrames = 0;
+            var structuralFrames = 0;
+            var steadyWithAllocations = 0;
+            var maxSteady = 0;
+            var refreshMs = new List<double>();
+            var steadyMs = new List<double>();
+            Application.targetFrameRate = 60;
+            for (var i = 0; i < Frames; i++)
+            {
+                perFrame?.Invoke();
+                yield return null;
+                recorder.enabled = false;
+                recorder.FilterToCurrentThread();
+                recorder.enabled = true;
+                var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                presenter.Refresh();
+                var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                recorder.enabled = false;
+                recorder.CollectFromAllThreads();
+                var count = recorder.sampleBlockCount;
+                refreshMs.Add(ms);
+                if (!ReferenceEquals(presenter.Snapshot, snapshot))
+                {
+                    snapshot = presenter.Snapshot;
+                    structural += count;
+                    structuralFrames++;
+                    continue;
+                }
+
+                steadyMs.Add(ms);
+                steady += count;
+                steadyFrames++;
+                steadyWithAllocations += count > 0 ? 1 : 0;
+                maxSteady = Math.Max(maxSteady, count);
+            }
+
+            Application.targetFrameRate = -1;
+            var markers = 0;
+            for (var i = 0; i < presenter.Visuals.Count; i++) markers += presenter.Visuals[i].UpgradeMarker ? 1 : 0;
+            Log("B4B-REFRESH-REAL label=" + label + " frames=" + Frames + " steadyFrames=" + steadyFrames + " steadyAllocations=" + steady + " steadyFramesWithAllocations=" + steadyWithAllocations +
+                " maxSteadyPerFrame=" + maxSteady + " structuralFrames=" + structuralFrames + " structuralAllocations=" + structural + " upgradeMarkersOn=" + markers + " cardOpen=" + bootstrap.RunShell.IsCardOpen +
+                " refreshMs(all) mean/p50/p95/p99/max=" + Stat(refreshMs) + " refreshMs(steady) mean/p50/p95/p99/max=" + Stat(steadyMs));
+        }
+
+        // C-94: 600 consecutive Refresh calls with nothing changing between them (no frame passes, so no machine state, cash or structure moves): the per-frame work of the affordability
+        // mask comparison and the other per-frame reads, alone. With the card closed this is asserted to allocate nothing; with a card open the card's own refresh is part of the call.
+        private static IEnumerator RefreshStill(string label, CoreGameFoundationBootstrap bootstrap, bool assertZero)
+        {
+            yield return null;
+            var presenter = bootstrap.ShellPresenter;
+            for (var warm = 0; warm < 10; warm++) presenter.Refresh();
+            var snapshot = presenter.Snapshot;
+            var recorder = Recorder.Get("GC.Alloc");
+            recorder.enabled = false;
+            recorder.FilterToCurrentThread();
+            recorder.enabled = true;
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            for (var i = 0; i < Frames; i++) presenter.Refresh();
+            var totalMs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            recorder.enabled = false;
+            recorder.CollectFromAllThreads();
+            var count = recorder.sampleBlockCount;
+            var markers = 0;
+            for (var i = 0; i < presenter.Visuals.Count; i++) markers += presenter.Visuals[i].UpgradeMarker ? 1 : 0;
+            Log("B4B-REFRESH-STILL label=" + label + " calls=" + Frames + " allocations=" + count + " rebuilt=" + !ReferenceEquals(presenter.Snapshot, snapshot) + " upgradeMarkersOn=" + markers +
+                " cardOpen=" + bootstrap.RunShell.IsCardOpen + " meanMsPerCall=" + Num(totalMs / Frames, "F4"));
+            if (assertZero)
+            {
+                Assert.That(count, Is.Zero, "C-94: 600 Refresh calls over an unchanged run allocate nothing (the per-frame affordability mask included)");
+            }
+        }
+
+        private static SlotVisual[] WithMarkers(IReadOnlyList<SlotVisual> forced, bool boosted, bool overdrive, bool marker)
+        {
+            var result = new SlotVisual[forced.Count];
+            for (var i = 0; i < result.Length; i++)
+            {
+                var v = forced[i];
+                result[i] = new SlotVisual(v.Index, v.Condition, v.BaseKey, v.MachineKey, v.BadgeKey, v.BadgeText, boosted, overdrive, v.Selected, v.UnlockLevel, v.Description, marker,
+                    marker ? 10 : SlotGridModel.NoUpgradeCost);
+            }
+
+            return result;
+        }
+
+        // C-94: the worst-case census in the real scene with the upgrade marker on all 12 slots (the forced W004-V states, the real catalog and the real art).
+        private static IEnumerator WorstCaseCensus(string screenLabel, CoreGameFoundationBootstrap bootstrap, IReadOnlyList<SlotVisual> forced)
+        {
+            var grid = bootstrap.SlotGrid;
+            var results = new Dictionary<string, int>();
+            foreach (var variant in new[] { "boosted+overdrive", "boosted+overdrive+upgrade-marker", "overdrive+upgrade-marker", "upgrade-marker only" })
+            {
+                var visuals = WithMarkers(forced, variant.StartsWith("boosted"), variant.Contains("overdrive"), variant.Contains("upgrade-marker"));
+                for (var settle = 0; settle < 3; settle++)
+                {
+                    grid.Render(visuals);
+                    yield return null;
+                }
+
+                // The presenter re-renders the natural visuals whenever it rebuilds (about 11 times a second): render the forced ones again and count in the same frame, with no frame between.
+                grid.Render(visuals);
+                var census = RendererCensus.OfLoadedScenes();
+                var on = 0;
+                for (var i = 0; i < visuals.Length; i++) on += grid.RendererOf(i, SlotGridView.SlotRendererRole.UpgradeMarker).enabled ? 1 : 0;
+                results[variant] = census.Total;
+                Log("B4B-CENSUS-REAL-WORST screen=" + screenLabel + " variant=\"" + variant + "\" " + census + " upgradeMarkerRenderersOn=" + on + " vsSigned95=" + (census.Total - 95) + " vsDraft105=" +
+                    (census.Total - 105) + " vsTier173=" + (census.Total - 173));
+            }
+
+            Assert.That(results["boosted+overdrive+upgrade-marker"], Is.EqualTo(results["boosted+overdrive"]), "C-94: the upgrade marker on all 12 slots does not raise the worst case");
         }
 
         private static IEnumerator Body(Scene scene, Controls control)
@@ -338,7 +460,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             var session = bootstrap.RunSession;
             var presenter = bootstrap.ShellPresenter;
             var occupied = session.State.Machines.Count;
-            Log("B4A-REAL-STATE machines=" + occupied + " stage=" + presenter.Development.Stage + " screen=" + Screen.width + "x" + Screen.height + " dpi=" + Screen.dpi + " gfx=" + SystemInfo.graphicsDeviceType +
+            Log("B4B-REAL-STATE machines=" + occupied + " stage=" + presenter.Development.Stage + " screen=" + Screen.width + "x" + Screen.height + " dpi=" + Screen.dpi + " gfx=" + SystemInfo.graphicsDeviceType +
                 " cameraPixelRect=" + bootstrap.FactoryCamera.pixelRect + " orthoSize=" + Num(bootstrap.FactoryCamera.orthographicSize) + " columns=" + bootstrap.SlotGrid.Layout.LayoutId + " sheetOpen=" + shell.IsSheetOpen + " cardOpen=" + shell.IsCardOpen +
                 " platform=" + Application.platform + " dev=" + Debug.isDebugBuild + " unity=" + Application.unityVersion + " cpu=" + SystemInfo.processorType + " gpu=" + SystemInfo.graphicsDeviceName);
             Assert.That(occupied, Is.EqualTo(12), "the W005-L checkpoint was accepted: 12 machines");
@@ -373,7 +495,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             // ---- a portrait window (the shipped phone orientation): the same two states ----
             Screen.SetResolution(540, 960, FullScreenMode.Windowed);
             yield return Settle(90);
-            Log("B4A-REAL-RESIZE screen=" + Screen.width + "x" + Screen.height + " cameraPixelRect=" + bootstrap.FactoryCamera.pixelRect + " layout=" + bootstrap.SlotGrid.Layout.LayoutId);
+            Log("B4B-REAL-RESIZE screen=" + Screen.width + "x" + Screen.height + " cameraPixelRect=" + bootstrap.FactoryCamera.pixelRect + " layout=" + bootstrap.SlotGrid.Layout.LayoutId);
             yield return Settle(60);
             HoldVein();
             yield return Phase((Screen.width > Screen.height ? "landscape-" : "portrait-") + Screen.width + "x" + Screen.height, bootstrap, control, true, HoldVein, ThreePops);
@@ -386,9 +508,10 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(presenter.OpenSlot(freeSlot), Is.True, "a tap on the free location opens the build card");
             Assert.That(shell.IsBuildCardOpen, Is.True, "the build card, docked");
             yield return Settle(60);
-            Log("B4A-REAL-BUILDCARD open=" + shell.IsBuildCardOpen + " slot=" + freeSlot + " machines=" + session.State.Machines.Count + " screen=" + Screen.width + "x" + Screen.height);
+            Log("B4B-REAL-BUILDCARD open=" + shell.IsBuildCardOpen + " slot=" + freeSlot + " machines=" + session.State.Machines.Count + " screen=" + Screen.width + "x" + Screen.height);
             yield return SetPassBlock("build-card-open-11-machines", bootstrap, null, null, ThreePops);
             yield return FrameRuns("build-card-open", ThreePops, bootstrap, control);
+            yield return RefreshRun("build-card-open", ThreePops, bootstrap);
             shell.HandleBack();
             yield return Settle(30);
         }
@@ -401,22 +524,34 @@ namespace IdleFactory.Tests.PlayMode.F006
             var vein = shell.OreVein;
             holdVein();
             yield return Settle(30);
-            Log("B4A-REAL-VEIN screen=" + screenLabel + " holding=" + vein.IsHolding + " depositMode=" + bootstrap.DepositView.Mode + " chipFrame=" + bootstrap.DepositView.ChipFrame);
+            Log("B4B-REAL-VEIN screen=" + screenLabel + " holding=" + vein.IsHolding + " depositMode=" + bootstrap.DepositView.Mode + " chipFrame=" + bootstrap.DepositView.ChipFrame);
             var forced = forcedVisuals ? W004VFixture.Apply(bootstrap.SlotGrid.Visuals) : null;
             yield return SetPassBlock(screenLabel + "/card-closed", bootstrap, forced, holdVein, pops);
+            yield return WorstCaseCensus(screenLabel, bootstrap, forced);
+            yield return SetPassBlock(screenLabel + "/card-closed+upgrade-marker", bootstrap, WithMarkers(forced, false, true, true), holdVein, pops);
+            presenter.Invalidate();
+            yield return Settle(30);
             yield return FrameRuns(screenLabel + "/card-closed", () =>
             {
                 holdVein();
                 pops();
             }, bootstrap, control);
+            yield return RefreshRun(screenLabel + "/card-closed", () =>
+            {
+                holdVein();
+                pops();
+            }, bootstrap);
+            yield return RefreshStill(screenLabel + "/card-closed", bootstrap, true);
 
             // ---- machine card open (the real docked card of T534) ----
             Assert.That(presenter.OpenSlot(W006VFixture.CardSlot), Is.True, "a tap on the machine opens the card");
             Assert.That(shell.IsCardOpen, Is.True, "the docked card, not a sheet");
             yield return Settle(60);
-            Log("B4A-REAL-CARD screen=" + screenLabel + " open=" + shell.IsCardOpen + " slot=" + shell.CardSlot + " veinHidden=" + vein.IsHidden + " veinHolding=" + vein.IsHolding);
+            Log("B4B-REAL-CARD screen=" + screenLabel + " open=" + shell.IsCardOpen + " slot=" + shell.CardSlot + " veinHidden=" + vein.IsHidden + " veinHolding=" + vein.IsHolding);
             yield return SetPassBlock(screenLabel + "/machine-card-open", bootstrap, forced, null, pops);
             yield return FrameRuns(screenLabel + "/machine-card-open", pops, bootstrap, control);
+            yield return RefreshRun(screenLabel + "/machine-card-open", pops, bootstrap);
+            yield return RefreshStill(screenLabel + "/machine-card-open", bootstrap, false);
             Assert.That(shell.HandleBack(), Is.True, "Back closes the card");
             yield return Settle(60);
             Assert.That(shell.IsCardOpen, Is.False);
@@ -488,7 +623,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             {
                 if (!setPass.Valid)
                 {
-                    Log("B4A-SETPASS label=" + label + " recorder=unavailable");
+                    Log("B4B-SETPASS label=" + label + " recorder=unavailable");
                     yield break;
                 }
 
@@ -503,7 +638,7 @@ namespace IdleFactory.Tests.PlayMode.F006
 
                 var census = RendererCensus.OfLoadedScenes();
                 var groups = GroupsOfLiveRenderers();
-                Log("B4A-CENSUS-REAL label=" + label + " " + census + " vsSigned95=" + (census.Total - 95) + " vsDraft105=" + (census.Total - 105) + " vsTier173=" + (census.Total - 173) +
+                Log("B4B-CENSUS-REAL label=" + label + " " + census + " vsSigned95=" + (census.Total - 95) + " vsDraft105=" + (census.Total - 105) + " vsTier173=" + (census.Total - 173) +
                     " atlasTextures=" + groups.Count + " perTexture=" + string.Join(";", groups.Select(g => g.Name + "=" + g.Renderers.Count)));
 
                 // Configurations: all renderers; each atlas texture's renderers disabled; F004 pages only; F006 atlases only. The extra renders go to an exact-size RenderTexture.
@@ -521,7 +656,7 @@ namespace IdleFactory.Tests.PlayMode.F006
                 }
 
                 camera.targetTexture = previousTarget;
-                Log("B4A-CAMERA-RENDER label=" + label + " renders=200 cpuMs mean/p50/p95/p99/max=" + Stat(renderMs) + " renderers=" + census.Total);
+                Log("B4B-CAMERA-RENDER label=" + label + " renders=200 cpuMs mean/p50/p95/p99/max=" + Stat(renderMs) + " renderers=" + census.Total);
                 var configs = new List<KeyValuePair<string, List<Renderer>>> { new KeyValuePair<string, List<Renderer>>("all", null) };
                 foreach (var group in groups) configs.Add(new KeyValuePair<string, List<Renderer>>("without " + group.Name, group.Renderers));
                 configs.Add(new KeyValuePair<string, List<Renderer>>("F004 pages only (F006 atlases off)", groups.Where(g => g.IsF006).SelectMany(g => g.Renderers).ToList()));
@@ -559,7 +694,7 @@ namespace IdleFactory.Tests.PlayMode.F006
                     var meanWith = withValues.Average();
                     var meanWithout = withoutValues.Average();
                     perRender[config.Key] = (meanWith - meanWithout) / Renders;
-                    Log("B4A-SETPASS label=" + label + " config=\"" + config.Key + "\" passesPerRender=" + Num(perRender[config.Key], "F2") + " frameWith mean/min/max=" + Num(meanWith, "F1") + "/" + Num(withValues.Min(), "F0") + "/" + Num(withValues.Max(), "F0") +
+                    Log("B4B-SETPASS label=" + label + " config=\"" + config.Key + "\" passesPerRender=" + Num(perRender[config.Key], "F2") + " frameWith mean/min/max=" + Num(meanWith, "F1") + "/" + Num(withValues.Min(), "F0") + "/" + Num(withValues.Max(), "F0") +
                         " frameWithout(natural frame, UI included) mean/min/max=" + Num(meanWithout, "F1") + "/" + Num(withoutValues.Min(), "F0") + "/" + Num(withoutValues.Max(), "F0"));
                     if (config.Value != null)
                     {
@@ -569,7 +704,7 @@ namespace IdleFactory.Tests.PlayMode.F006
 
                 foreach (var group in groups)
                 {
-                    Log("B4A-SETPASS-ATLAS label=" + label + " atlas=\"" + group.Name + "\" renderers=" + group.Renderers.Count + " f006=" + group.IsF006 +
+                    Log("B4B-SETPASS-ATLAS label=" + label + " atlas=\"" + group.Name + "\" renderers=" + group.Renderers.Count + " f006=" + group.IsF006 +
                         " deltaPassesPerRender=" + Num(perRender["all"] - perRender["without " + group.Name], "F2") + " memoryBytes=" + Profiler.GetRuntimeMemorySizeLong(group.Texture));
                 }
 
@@ -583,11 +718,11 @@ namespace IdleFactory.Tests.PlayMode.F006
                     total += bytes;
                     pages++;
                     largest = Math.Max(largest, Math.Max(group.Texture.width, group.Texture.height));
-                    Log("B4A-TEXTURE label=" + label + " name=\"" + group.Texture.name + "\" size=" + group.Texture.width + "x" + group.Texture.height + " format=" + (group.Texture is Texture2D t2 ? t2.format.ToString() : "?") +
+                    Log("B4B-TEXTURE label=" + label + " name=\"" + group.Texture.name + "\" size=" + group.Texture.width + "x" + group.Texture.height + " format=" + (group.Texture is Texture2D t2 ? t2.format.ToString() : "?") +
                         " runtimeBytes=" + bytes + " renderers=" + group.Renderers.Count);
                 }
 
-                Log("B4A-TEXTURE-TOTAL label=" + label + " pages=" + pages + " largestSide=" + largest + " runtimeBytes=" + total + " mib=" + Num(total / 1048576.0, "F2"));
+                Log("B4B-TEXTURE-TOTAL label=" + label + " pages=" + pages + " largestSide=" + largest + " runtimeBytes=" + total + " mib=" + Num(total / 1048576.0, "F2"));
             }
             finally
             {
