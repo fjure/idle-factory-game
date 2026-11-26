@@ -17,21 +17,24 @@ Issue #719 (T548) records the independent final reviews of Feature 006 World-Fir
 | Security and Privacy | ACCEPT WITH CONDITIONS | 0 | 0 | 3 | 4 | 2 |
 | Game Systems / Economy (Low tier) | ACCEPT WITH CONDITIONS | 0 | 0 | 3 | 4 | 3 |
 
-No lens rejects F006, and no lens reports a blocker. The five Majors are PERF-1 and TESTQA-3 (SC-008 steady allocations), PERF-9 (no physical-device data), TESTQA-4 (SC-005 pending T546) and AD-1 (upgrade marker art). Section 3 records the owner's disposition for each.
+No lens rejects F006, and no lens reports a blocker. The five Majors are PERF-1 and TESTQA-3 (SC-008 steady allocations), PERF-9 (no physical-device data), TESTQA-4 (SC-005 pending T546) and AD-1 (upgrade marker art). Section 3 records the owner's disposition for PERF-1, TESTQA-3, PERF-9 and AD-1. TESTQA-4 has no disposition: it closes when the T546 record exists (section 2, row 1).
 
 UIUX-F3: the owner asked T548 to reproduce the T543 UI/UX F-3 report ("first world tap ignored after a cold start"). The UI/UX lens did not reproduce it: 0 of 12 taps were ignored, and 14 of 14 including two trial attempts selected. Under the owner's rule it is not filed.
+
+Exception to read-only: for that reproduction only, the parent authorised the UI/UX lens to build one profiler-free development APK of `945b1557` and drive the AVD `IdleFactory_Test_API_36` via adb. The parent acquired the `unity,emulator` leases for owner `issue-719` before the spawn and released them after the lens returned. The lens changed no tracked file, and its worktree was left clean.
 
 ## 2. Conditions before feature completion
 
 | # | Condition | Source | Owner of the step |
 |---|---|---|---|
 | 1 | `reviews/readability-f006.md` written with the SC-004, SC-005 (blind, P3, hub re-test, timed) and SC-006 results, and the owner's timed trials scored | TESTQA-4, GDPO, UI/UX C1, WD C1 | T546 (parent and owner) |
-| 2 | T549 owner visual acceptance per surface and screen class, including the looks each lens lists and the GD/PO play-through (first upgrade, hand-delivered contract, stage change, real offline return) | GDPO C4, UI/UX C2, TESTQA C4 | T549 (owner) |
-| 3 | Owner dispositions recorded for SC-008, the missed guidance thresholds and AD-1 | PERF C1, TESTQA C2, GDPO C1, AD | done 2026-11-26, section 3 |
+| 2 | T549 owner visual acceptance per surface and screen class, including the looks each lens lists and the GD/PO play-through (first upgrade, hand-delivered contract, stage change, real offline return) | GDPO C1, GDPO C4, UI/UX C2, TESTQA C4 | T549 (owner) |
+| 3 | Owner dispositions recorded for SC-008, the missed guidance thresholds and AD-1 | PERF C1, TESTQA C2, GDPO C3, AD | done 2026-11-26, section 3 |
 | 4 | Open carries kept in `reviews/p3b-followups.md` on main: C-77 to C-101, the T544 QA text findings, ARCH, UIUX, SECURITY, GS, TA and AD items marked "later" | ARCH C2, UI/UX C3, SECURITY C1, GDPO-12 | parent (coordination branch to main) |
 | 5 | Final suite counts and the test manifest note (EM 3187, PM 3526, player 85; `final-test-names.txt` is the T542 manifest) | TESTQA C3 | parent, T550 |
-| 6 | Post-P4 Issues created: C-68 deep profile plus a physical-device frame/battery/thermal measurement; a world-only outlined upgrade marker on the markers atlas (AD-1, TA-1); the deck edge/void art task (AD-4); the store-full marker scale and cap note (AD-7, TA-3, C-75) | PERF, AD, TA | parent after the gates |
+| 6 | Post-P4 Issues to be created (none exist yet): C-68 deep profile plus a physical-device frame/battery/thermal measurement; a world-only outlined upgrade marker on the markers atlas (AD-1, TA-1); the deck edge/void art task (AD-4); the store-full marker scale and cap note (AD-7, TA-3, C-75) | PERF, AD, TA | parent after the gates |
 | 7 | `check-settings-noise.ps1 -Commit` clean and the art-pipeline run at exit 0 on the final commit | SECURITY C2, TA C3 | parent, T550 |
+| 8 | AD conditions 1 to 3: an Art Bible entry for the reuse of `F003-UI-ICON-UPGRADE` as a world marker, and a dated Art Director proof of the shipped marker over the T562 tiles. Both go with the post-P4 marker art task in row 6, per the owner's AD-1 disposition. Also a correction of the "dark outline" statement in `uiux-f006-final.md` section 5, carried to `p3b-followups.md` as a records fix. | AD C1 to C3 | parent (records), post-P4 art task |
 
 ## 3. Owner decisions referenced
 
@@ -40,7 +43,7 @@ UIUX-F3: the owner asked T548 to reproduce the T543 UI/UX F-3 report ("first wor
 | 2026-11-25 | Upgrade marker hidden on boosted machines accepted (ART-2, C-98). |
 | 2026-11-26 | Budget 8 uses the same-state F006 delta reading (+8.5 to +11.4, PASS). The fixed-34 reading (+12.5 / +14.7 at 12 markers) is recorded only. |
 | 2026-11-26 | **SC-008 accepted as a deviation for F006**: `RunShellPresenter.Refresh` and the defined paths are asserted at zero allocations; the whole real-scene frame still allocates about 15 to 21 per steady frame (C-68, unattributed); emulator FPS budgets 1 to 3 are missed by every build on this host (environmental per the T544 ABA); no physical-device, battery or thermal data exists. A C-68 deep-profile Issue and a physical-device measurement follow after the gates. |
-| 2026-11-26 | **AD-1 accepted for F006, art task after P4**: the reused `F003-UI-ICON-UPGRADE` glyph (no `ink_0` outline, backdrop contrast 1.55 to 2.8:1, no Art Bible entry) stays. A world-only outlined marker on the markers atlas follows as one post-P4 art and atlas task, which also removes the extra SetPass cost (TA-1). Blind namers recognised the marker in all four filters on every class (T546). |
+| 2026-11-26 | **AD-1 accepted for F006, art task after P4**: the reused `F003-UI-ICON-UPGRADE` glyph stays. It has no `ink_0` outline and no Art Bible entry. Its contrast would be 1.55 to 2.8:1 against plate_2, steel_2/3 and copper_2, but per AD-1 it is unproven whether those tones occur under the marker in the overlay band. A world-only outlined marker on the markers atlas follows as one post-P4 art and atlas task, which also removes the extra SetPass cost (TA-1). Parent evidence for the decision, not reported by a lens: in the parent-run T546 SC-005 P3 blind naming, the upgrade-marker tile was named correctly in all four filters for emuP, phoneP, phoneL and tabL. The two P3 misses were hub-dot tiles. The T546 record is still pending. |
 | 2026-11-26 | **Guidance thresholds accepted as measured** (spec clarification: SC-001, SC-002, SC-003, SC-004, SC-006 and SC-010 thresholds are guidance only). Recorded misses from `baseline.md` T542: SC-003 upgrade 3 steps vs 2 and stopped-machine category 4 steps vs 0; SC-010 persistent labels 10 vs 6; unobscured share 44 to 51 % on phone portrait vs 50 % and 66 to 67 % on landscape vs 70 %; phone chrome at 200 % text 34 to 56 % vs 20 %. T549 judges them visually. |
 | 2026-11-26 | Store-full markers per machine, uncapped, accepted for F006 (cap note after P4 with C-75); deck hard edge and black void become an art task after P4; the 44 px settle on card close is accepted as a Low note; the Auto-sell discovery hint, the offline summary copy and an Overdrive confirm go to the polish list after F006; the T543 F-3 first-tap report is filed only if reproduced (not reproduced, see section 1). |
 | 2026-11-25 | C-68 deep profile becomes a separate Issue after the P4 gates. |
