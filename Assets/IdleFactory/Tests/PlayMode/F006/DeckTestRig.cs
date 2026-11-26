@@ -148,6 +148,7 @@ namespace IdleFactory.Tests.PlayMode.F006
 
             AddCanvas(SlotGridModel.MarkerBoostedKey, 1, null);
             AddCanvas(SlotGridModel.MarkerOverdriveKey, 1, null);
+            AddCanvas(SlotGridModel.UpgradeMarkerKey, 1, null);
             foreach (var key in PresentationSpriteCatalog.PlacedF006Keys)
             {
                 if (!DeckSpriteSize.TryOf(key, out var size))
