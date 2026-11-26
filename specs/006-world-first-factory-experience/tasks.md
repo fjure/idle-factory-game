@@ -902,7 +902,7 @@ Generated 2026-11-11 after the `$speckit-analyze` remediation (52 units; 64 afte
 
 ## Phase 11: Closeout hooks and convergence (parent)
 
-- [ ] T550 *Parent* after T549:
+- [X] T550 *Parent* after T549:
   1. `scripts/maqa-sync-task-checkboxes.ps1 -TasksFile specs/006-world-first-factory-experience/tasks.md`. Over all four steps T550 writes `specs/006-world-first-factory-experience/tasks.md`, `specs/006-world-first-factory-experience/learn.md` and `wiki/`.
   2. `$speckit-wiki-ingest specs/006-world-first-factory-experience`
   3. `$speckit-learn-review`
