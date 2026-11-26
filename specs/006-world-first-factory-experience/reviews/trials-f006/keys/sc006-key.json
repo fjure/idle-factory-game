@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "seed": 6060,
+  "required": 9,
+  "trials": [
+    {
+      "trial": 1,
+      "class": "tabP",
+      "mix": "sparse",
+      "presented": [
+        0,
+        2,
+        1
+      ],
+      "answer": "ACB",
+      "file": "triptych_01.png"
+    },
+    {
+      "trial": 2,
+      "class": "phoneP",
+      "mix": "balanced",
+      "presented": [
+        1,
+        2,
+        0
+      ],
+      "answer": "CAB",
+      "file": "triptych_02.png"
+    },
+    {
+      "trial": 3,
+      "class": "tabP",
+      "mix": "sparse",
+      "presented": [
+        2,
+        0,
+        1
+      ],
+      "answer": "BCA",
+      "file": "triptych_03.png"
+    },
+    {
+      "trial": 4,
+      "class": "tabL",
+      "mix": "dense",
+      "presented": [
+        1,
+        0,
+        2
+      ],
+      "answer": "BAC",
+      "file": "triptych_04.png"
+    },
+    {
+      "trial": 5,
+      "class": "phoneL",
+      "mix": "balanced",
+      "presented": [
+        0,
+        2,
+        1
+      ],
+      "answer": "ACB",
+      "file": "triptych_05.png"
+    },
+    {
+      "trial": 6,
+      "class": "phoneL",
+      "mix": "balanced",
+      "presented": [
+        2,
+        1,
+        0
+      ],
+      "answer": "CBA",
+      "file": "triptych_06.png"
+    },
+    {
+      "trial": 7,
+      "class": "phoneP",
+      "mix": "sparse",
+      "presented": [
+        2,
+        0,
+        1
+      ],
+      "answer": "BCA",
+      "file": "triptych_07.png"
+    },
+    {
+      "trial": 8,
+      "class": "phoneP",
+      "mix": "balanced",
+      "presented": [
+        2,
+        0,
+        1
+      ],
+      "answer": "BCA",
+      "file": "triptych_08.png"
+    },
+    {
+      "trial": 9,
+      "class": "tabL",
+      "mix": "dense",
+      "presented": [
+        2,
+        1,
+        0
+      ],
+      "answer": "CBA",
+      "file": "triptych_09.png"
+    },
+    {
+      "trial": 10,
+      "class": "phoneL",
+      "mix": "balanced",
+      "presented": [
+        0,
+        1,
+        2
+      ],
+      "answer": "ABC",
+      "file": "triptych_10.png"
+    }
+  ]
+}

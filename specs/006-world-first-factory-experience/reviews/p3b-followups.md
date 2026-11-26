@@ -328,3 +328,39 @@ Result: emuP sets for SC-004 (seed 6044) and SC-006 (seed 6064) are separate fro
 | C-99 | T562 QA 1 | The SC-005 card tile (emuP, phoneL, tabL) also shows upgrade chevrons and store-full or shortage markers; the C-93 note does not say so. A taker could name another cue. | T546 (score the card tile with this note) |
 | C-100 | T562 QA 2 | The shortage tile is a very small crop (ore-drop icon only, no row context), weak in grayscale. | T546 (a miss is a tile-quality limit, not a product defect) |
 | C-101 | T562 QA 3 | `Editor/F006EmulatorCaptureBuild.cs` is not `#if`-gated (Editor-only and run only through `-executeMethod`, so safe). | Later tidy-up |
+
+### T544, final T543, T548 and T546 (2026-11-26)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T544 | #716 | #789 | `1e72e26`, merged as `437cb46` | PASS: Edit Mode 3187/3187, Play Mode 3526/3526, Windows player 85/85 on the exact commit; record numbers match the raw evidence; three minor text findings |
+| T543 final | #715 | #790 | `79ab02b`, merged as `945b155` | FAIL on `66c1e4c` (UI/UX report mistook plate width for cell width), PASS on `79ab02b`; records only |
+| T548 | #719 | #791 | `8c11089`, merged as `ac49f6c` | FAIL on `25f9636` (seven records findings in the parent's summary sections), PASS on `8c11089`; ten lens sections verbatim |
+| T546 | parent | coordination branch | this commit | parent-only; [`readability-f006.md`](readability-f006.md) |
+
+Owner decisions 2026-11-26:
+
+1. Budget 8 uses the same-state delta reading.
+2. Disk space: the Libraries of three old worktrees were deleted.
+3. Store-full markers stay uncapped for F006.
+4. The deck edge and black void become an art task after P4.
+5. The 44 px settle when the card closes is accepted as a Low note.
+6. The Auto-sell hint, the offline copy and an Overdrive confirm go to polish later.
+7. The first-tap report was reproduced in T548: it was not reproduced in 12 attempts, so it is not filed.
+8. SC-008 is accepted as a deviation.
+9. AD-1 becomes an art task after P4.
+10. The guidance thresholds are accepted as measured.
+11. The timed trials are skipped as a task. Details are in [`final-acceptance.md`](final-acceptance.md) section 3 and [`readability-f006.md`](readability-f006.md).
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-102 | T546 | The P3 sheet layout downscales small cues: the tabL P3 sheet is 6168 x 4698 px because of the full-screen card tile, so the hub dot vanishes when the sheet is viewed scaled down. Lay out P3 sheets per cue size. | Later trial tooling |
+| C-103 | T544 QA | `performance-b4.md` text: the C-66 row gives idle and burst values in mixed order; the "moving cash: 0" allocation in Play Mode is logged, not asserted; budget 5 omits `maxSteadyPerFrame` 162 to 215, and the rebuild share is 19 to 29 %, not 18 to 31 %. | Records fix, later |
+| C-104 | T548 AD-1, TA-1 | The upgrade marker reuses the UI glyph without an `ink_0` outline and has no Art Bible entry. A world-only outlined marker on the markers atlas also removes about +4.5 SetPass at 12 markers. `uiux-f006-final.md` section 5 says "dark outline", which is wrong. | Post-P4 art and atlas task (owner); records fix |
+| C-105 | T548 PERF-1, PERF-9, TESTQA-3 | The SC-008 deviation: about 15 to 21 allocations per steady frame in the real scene (C-68), emulator FPS of about 45, no physical-device, battery or thermal data, and budget 9 not measured. | Post-gate Issue: C-68 deep profile plus a device measurement |
+| C-106 | T548 ARCH-1 to ARCH-6 | Degenerate-axis jump at the hand-over (untested); the Escape test on a non-current keyboard is likely non-discriminating; the scene test name claims the hide direction; the parity test never varies `RejectionReason`; the mask over-counts badge-hidden costs. | Later polish (C-87, C-95, C-96 stay open) |
+| C-107 | T548 TESTQA-1, 2, 5, 7, 8 | `final-test-names.txt` is the T542 manifest. B4b budgets 4, 6 and 8 are logged only, with no regression guard. No scripted F003/F004/F005 journey after T561/T563. On-device gaps: compact banner, reduced motion, prestige banner, keep-out items 3 to 6. `AutosaveWriteCostTests` checks a wall-clock time. | T550 (manifest note); later |
+| C-108 | T548 UIUX-1 to UIUX-7 | The marker size gate is at the cutoff on the small phone (about 24 pt against 23.76). The 48 pt target size is shown only by Play Mode tests (device reads 45 to 47 dp). Development label over Confirm at 640x360 at 200 %. Tablet hint ends on a single word. | T549 looks; later polish |
+| C-109 | T548 SECURITY-1 to 3 | C-101 gate; `BuildApk` does not restore the scripting backend and architectures it sets; `check-release-build.ps1` does not assert that test and capture assemblies are absent from a release. | Later tidy-up |
+| C-110 | T548 GS-1 to GS-3 | The offline efficiency percent is computed in presentation; the 30 s autosave reduces offline credit after a force-stop (accepted residual); the autosave requirement is only in tasks.md, and T559 cites FR-003. | Later (spec citation fix) |
+| C-111 | T548 WD-2, AD-2 | `world-copy.md` rows N-06 … L-11 still say CHANGE and section 3 calls B-01s a draft, although T560 applied them. Provenance cites Art Bible v1.1.0 instead of v1.1.2. | Records fix, later |
