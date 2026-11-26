@@ -24,7 +24,7 @@
 | **C-86** focus ring on Upgrade after the strip-chip tap | **PASS.** The chip tap selects the Smelter, opens the card and Upgrade carries a clear white ring (`c01-chip-tap`) |
 | **C-86 / D1** 640x360 at 200 %, build card Confirm/Cancel vs the dev-build label | **PASS with a dev-only note.** Cancel and Confirm are whole words (the mid-word break of U-C5 is gone), each about 50 px high at 160 dpi (at least 48 dp). Ghost and selected slot are visible with a blue ring; the card shows 2 type rows (it scrolls). The Development Build label overlaps the bottom edge of Confirm (`h-640x360-fs200-build`): dev builds only (F-1) |
 | **C-86** tablet build card | **PASS** (`j-tablet-build`): all 4 type rows visible, Cancel and Confirm large, ghost and first column clear of the side panel. The idle hint is replaced by the card (U-C7 closed) |
-| **C-88** marker tap at 40 px | **PASS at 40 px, edge between 40 and 60 px.** Marker (Iron Ore, trunk junction) centre taken from `c04`, 1080x2400 at 2.63 px/pt. A tap 40 px up, left, right or down selects the Smelter (`d-off-up-40`); 60 px and more up selects nothing (`d-off-up-80`). Left 60 and down 70 still selected (confounded by neighbouring machine shapes). So the effective upward reach is about 15 to 23 pt: equal to a 48 pt halo read as a diameter (about 63 px radius), less than one read as a radius. Centre estimate is accurate to about 10 px. Owner question Q1 |
+| **C-88** marker tap at 40 px | **PASS at 40 px, edge between 40 and 60 px.** Marker (Iron Ore, trunk junction) centre taken from `c04`, 1080x2400 at 2.63 px/pt. A tap 40 px up, left, right or down selects the Smelter (`d-off-up-40`, byte-identical to the centre-tap frame `c04`: same selected state); 60 px and more up selects nothing (`d-off-up-80`). Left 60 and down 70 still selected (confounded by neighbouring machine shapes). So the effective upward reach is about 15 to 23 pt, consistent with the 24 pt radius of a 48 pt diameter halo (about 63 px). Centre estimate is accurate to about 10 px. Q1 answered by the code (section 9) |
 | **C-88** marker, store-full and chip taps | Store-full marker tap selects the first full Miner ("Store is full", `c02`), shortage marker tap selects the Smelter ("Short on Iron Ore", `c04`), chip tap selects the Smelter (`c01`). The T563 upgrade marker tap selects its machine (`b04`) |
 | **C-88** Back-state threshold | **Not measured**, no state change by Back seen in any capture. Provisional |
 | **C-88** landscape crop right edge vs HUD column | **PASS.** At 2400x1080 the world (depot plate included) ends about 8 % of the width left of the HUD column (`e03`); at 2560x1600 the depot is left of the side panel (`j-tablet-G12`) |
@@ -42,7 +42,7 @@ Severity: Major = a spec or checklist item fails; Medium = a clear usability or 
 | F-1 | Minor (dev only) | At 640x360 and 200 % text the "Development Build" label overlaps the bottom of the Confirm button. Not present in release builds | `h-640x360-fs200-build` | Record. If wanted, move the label in dev builds only |
 | F-2 | Minor | The tablet side-panel hint ends with a one-word last line ("it.") and stays on screen in every closed state, including with problems | `j-tablet-N`, `j-tablet-L2` (C-75 N4) | Copy tweak, art/copy task after P4 |
 | F-3 | Minor, unconfirmed | The first world tap about 20 s after a cold start was ignored in 2 of 6 attempts (portrait 200 % build slot, machine card test); the second identical tap worked. Could be my 20 s wait or a first-tap focus effect. Not reproduced under a timer | `i-p200-N` then `i-p200-build` | Reproduce with a longer settle before filing |
-| F-4 | Info | Tapping the Overdrive hub row activates Overdrive immediately (one tap, no confirm). My sweep did this by accident; later captures show the boosted look (pink markers, no upgrade markers). Hidden-on-boosted is the accepted decision | `m-overdrive`, `m-sale` | None (design). Q3 only if a confirm is wanted |
+| F-4 | Info (owner decided: Overdrive confirm goes on the polish list after F006) | Tapping the Overdrive hub row activates Overdrive immediately (one tap, no confirm). My sweep did this by accident; later captures show the boosted look (pink markers, no upgrade markers). Hidden-on-boosted is the accepted decision | `m-overdrive`, `m-sale` | Owner decision: polish list after F006 |
 | F-5 | Info | Keyboard focus order is not covered: adb `KEYCODE_TAB` and `DPAD_*` produced no visible focus change on the open machine card | `n0-keyboard-tab-no-visible-focus-card` | Covered by the Play Mode focus tests; not device-verified |
 | F-6 | Info | In the 12-machine grid at 640x360, the Smelters out of ore show the red missing-input badge and no upgrade marker, as designed (hidden under a problem badge) | `h-640x360-fs200-G12` | None |
 | F-7 | Info (positive) | U-C1 closed-state fit: the L2 portrait state now shows the vein, depot, shortage marker (Iron Ore at the trunk junction) and store-full marker without opening a sheet. U-C5 and U-C7 fixed (above). Items empty state ("Nothing here yet. Earn them from contracts.") and the error dialog (three clear actions) read well | `a02`, `m-items`, `e01-land-invalid-fixture-error-dialog` | Closed |
@@ -50,19 +50,19 @@ Severity: Major = a spec or checklist item fails; Medium = a clear usability or 
 
 ## 5. C-98 detail: upgrade marker per class
 
-Plate (cell) width measured on the captures, divided by the nominal px per point (2.63 at 420 dpi after the 7 mm raise, 2.0 at 320 dpi, 1.5 at 240, 1.0 at 160). Approximate (about 10 %).
+A world cell is 24 art px (`SlotLattice.Density`); a plate is 70 art px, about 2.9 cells. The marker cutoff is panel points per world cell: `MarkersVisibleAt(ppc) => ppc >= 24 * 0.99` (`SlotGridView.MarkerMinimumPixelsPerCell`), so the visible threshold is 23.76 pt per cell. I measured the plate width on each capture (about 10 % accuracy), divided by the nominal px per point (2.63 at 420 dpi after the 7 mm raise, 2.0 at 320 dpi, 1.5 at 240, 1.0 at 160) and by 2.9.
 
-| Class | Cell width px | about pt | Marker drawn | Evidence |
-|---|---|---|---|---|
-| Phone portrait 1080x2400, 100 % | 205 | 78 | yes, also 12 markers on the full grid | `b01`, `f01-grid12-p100` |
-| Phone portrait, 200 % text | 205 | 78 | yes | `i-p200-N` |
-| Phone landscape 2400x1080 | 190 | 72 | yes (Smelter; Miners show store-full badges) | `e03` |
-| Small phone 720x1280 (360x640 dp) | 140 | 70 | yes, 12 on the full grid and neutral | `g-small720-G12`, `-N` |
-| 640x360 at 200 % | 80 | 80 | yes, about 16 px wide | `h-640x360-fs200-N`, `-G12` |
-| Tablet 2560x1600 | 250 | 165 | yes, 12 on the full grid | `j-tablet-G12`, `-N` |
-| Desktop window (Windows, 2048x1536) | n/a | n/a | yes, 12 on 3 rows, readable under deuteranopia | `w-tabL-win-deuteranopia` |
+| Class | Plate width px | pt per cell | Margin over 23.76 | Marker drawn | Evidence |
+|---|---|---|---|---|---|
+| Phone portrait 1080x2400, 100 % | 205 | about 27 | +3 | yes, also 12 markers on the full grid | `b01`, `f01-grid12-p100` |
+| Phone portrait, 200 % text | 205 | about 27 | +3 | yes | `i-p200-N` |
+| Phone landscape 2400x1080 | 190 | about 25 | +1 | yes (Smelter; Miners show store-full badges) | `e03` |
+| Small phone 720x1280 (360x640 dp) | 140 | about 24 | +0.3 (at the cutoff) | yes, 12 on the full grid and neutral | `g-small720-G12`, `-N` |
+| 640x360 at 200 % | 80 | about 28 | +4 | yes, about 16 px wide | `h-640x360-fs200-N`, `-G12` |
+| Tablet 2560x1600 | 250 | about 58 | +34 | yes, 12 on the full grid | `j-tablet-G12`, `-N` |
+| Desktop window (Windows, 2048x1536) | n/a | n/a (96 dpi, T562 note) | n/a | yes, 12 on 3 rows, readable under deuteranopia | `w-tabL-win-deuteranopia` |
 
-No captured class loses the marker, and no class I could set on the AVD is near the 24-pt cutoff of `MarkersVisibleAt`. The T562 note puts the n=2 classes at "24 points per cell" with a 1 % tolerance, which does not match my reading of the on-screen cell width (70 to 80 pt); I suspect "cell" there is a different unit (Q2). The neutral-badge state is the `N` fixture (marker on all four machines). The chevron is white with a dark outline and reads on the dark plates; on boosted machines it is hidden (accepted).
+No captured class loses the marker, but the phone classes sit at or just above the cutoff: the small phone is within measurement error of it, and a smaller screen class or a coarser density would lose the marker, as the T562 note says. The neutral-badge state is the `N` fixture (marker on all four machines). The chevron is white with a dark outline and reads on the dark plates; on boosted machines it is hidden (accepted by the owner, not filed).
 
 ## 6. D4 plate tint, grayscale and deuteranopia
 
@@ -78,11 +78,11 @@ Capture `g-small720-build` (build card open, phone). Sampled sRGB of an empty pl
 
 ## 8. Not covered
 
-Windows session captures beyond the existing T562 path; keyboard and TalkBack; zoom fractions and the Back-state threshold; build with Cash (dust, hand-over); banner and reduced motion; pan and zoom shimmer; 844x390 and 150 % text.
+Windows session captures beyond the existing T562 path; the insufficient-Cash build card state ("Need $X more", Confirm disabled) and the desktop build card were not captured; keyboard and TalkBack; zoom fractions and the Back-state threshold; build with Cash (dust, hand-over); banner and reduced motion; pan and zoom shimmer; 844x390 and 150 % text.
 
-## 9. Owner questions
+## 9. Owner questions and answers
 
-1. Q1 The marker tap reach upward is between 15 and 23 pt (about 40 to 60 px at 420 dpi). Is the 48 pt halo meant as a diameter (then this is as built) or a radius?
-2. Q2 Which unit is the 24-point cell cutoff of `MarkersVisibleAt` (T562 reports the n=2 classes at 24 pt per cell; I measure 70 to 80 pt)?
-3. Q3 Should the Overdrive hub row ask for confirmation, or is one tap intended?
-4. Q4 F-3: should I reproduce the ignored first tap before filing, or leave it as an observation?
+1. Q1 (answered): the 48 pt marker halo is a diameter (`AttentionMarkerView.MinimumHitDiameterPoints` = 48, radius 24). My upward reach of 15 to 23 pt matches it.
+2. Q2 (answered): the cutoff is panel points per world cell of 24 art px (`SlotGridView.MarkerMinimumPixelsPerCell`, `MarkersVisibleAt`), not per plate. In those units the phone classes read 24 to 28 pt per cell, at or just above the cutoff, which matches the T562 statement. My earlier reading used plate width in the wrong unit and is corrected in section 5.
+3. Q3 (decided): Overdrive hub row confirm goes on the polish list after F006.
+4. Q4 (decided): F-3 first-tap is reproduced in T548 and filed only if confirmed.
