@@ -1,0 +1,412 @@
+{"class": "emulator-landscape-2400x1080", "runs": [
+    {"textScalePercent": 100, "states": [
+      {
+        "state": "no-panel",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 80.2, "y": 0, "w": 643.13, "h": 410.51},
+        "worldShare": 0.705,
+        "chromeShare": 0.2086,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 80.2, "h": 410.51}, "share": 0.0879},
+          {"name": "action-bar", "rect": {"x": 815.31, "y": 0, "w": 96.92, "h": 410.51}, "share": 0.1062},
+          {"name": "factory-ore-vein", "rect": {"x": 723.33, "y": 345.13, "w": 88.18, "h": 61.2}, "share": 0.0144}
+        ],
+        "sheet": null,
+        "sheetShare": 0,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 10,
+        "textElementCount": 12,
+        "labelsByOwner": {"top-strip": 5, "action-bar": 4, "factory-ore-vein": 1},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "action-bar", "kind": "label", "text": "Office"},
+          {"owner": "action-bar", "kind": "label", "text": "•"},
+          {"owner": "action-bar", "kind": "label", "text": "Overdrive"},
+          {"owner": "action-bar", "kind": "label", "text": "Ready"},
+          {"owner": "action-bar", "kind": "button", "text": "+"},
+          {"owner": "action-bar", "kind": "button", "text": "−"},
+          {"owner": "factory-ore-vein", "kind": "label", "text": "Mine"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.2472, "stoppedMachines": 3, "worldAreaVsNoPanel": 1}
+      },
+      {
+        "state": "card",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 50.93, "w": 547.34, "h": 359.57},
+        "worldShare": 0.5256,
+        "chromeShare": 0.0744,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 547.34, "h": 50.93}, "share": 0.0744}
+        ],
+        "sheet": null,
+        "sheetShare": 0,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.2472, "selectedSlot": 4, "selectedSlotVisibleShare": 1, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.7455}
+      },
+      {
+        "state": "details",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 50.93, "w": 456.12, "h": 359.57},
+        "worldShare": 0.438,
+        "chromeShare": 0.062,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 456.12, "h": 50.93}, "share": 0.062}
+        ],
+        "sheet": {"x": 456.12, "y": 0, "w": 456.12, "h": 410.51},
+        "sheetShare": 0.5,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.2472, "selectedSlot": 4, "selectedSlotVisibleShare": 1, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.6212}
+      },
+      {
+        "state": "building",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 50.93, "w": 547.34, "h": 359.57},
+        "worldShare": 0.5256,
+        "chromeShare": 0.0744,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 547.34, "h": 50.93}, "share": 0.0744}
+        ],
+        "sheet": null,
+        "sheetShare": 0,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 0.8973, "latticeShare": 0.2218, "selectedSlot": 9, "selectedSlotVisibleShare": 1, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.7455}
+      },
+      {
+        "state": "hub",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 50.93, "w": 456.12, "h": 359.57},
+        "worldShare": 0.438,
+        "chromeShare": 0.062,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 456.12, "h": 50.93}, "share": 0.062}
+        ],
+        "sheet": {"x": 456.12, "y": 0, "w": 456.12, "h": 410.51},
+        "sheetShare": 0.5,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.6212}
+      },
+      {
+        "state": "system-view",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 50.93, "w": 456.12, "h": 359.57},
+        "worldShare": 0.438,
+        "chromeShare": 0.062,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 456.12, "h": 50.93}, "share": 0.062}
+        ],
+        "sheet": {"x": 456.12, "y": 0, "w": 456.12, "h": 410.51},
+        "sheetShare": 0.5,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.6212}
+      },
+      {
+        "state": "offline-summary",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 80.2, "y": 0, "w": 643.13, "h": 410.51},
+        "worldShare": 0.705,
+        "chromeShare": 0.2086,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 80.2, "h": 410.51}, "share": 0.0879},
+          {"name": "action-bar", "rect": {"x": 815.31, "y": 0, "w": 96.92, "h": 410.51}, "share": 0.1062},
+          {"name": "factory-ore-vein", "rect": {"x": 723.33, "y": 345.13, "w": 88.18, "h": 61.2}, "share": 0.0144}
+        ],
+        "sheet": null,
+        "sheetShare": 0,
+        "overlay": {"x": 216.28, "y": 0, "w": 479.68, "h": 410.51},
+        "overlayShare": 0.5258,
+        "labelCount": 10,
+        "textElementCount": 12,
+        "labelsByOwner": {"top-strip": 5, "action-bar": 4, "factory-ore-vein": 1},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "action-bar", "kind": "label", "text": "Office"},
+          {"owner": "action-bar", "kind": "label", "text": "•"},
+          {"owner": "action-bar", "kind": "label", "text": "Overdrive"},
+          {"owner": "action-bar", "kind": "label", "text": "Ready"},
+          {"owner": "action-bar", "kind": "button", "text": "+"},
+          {"owner": "action-bar", "kind": "button", "text": "−"},
+          {"owner": "factory-ore-vein", "kind": "label", "text": "Mine"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "stoppedMachines": 3, "worldAreaVsNoPanel": 1}
+      }
+    ]},
+    {"textScalePercent": 200, "states": [
+      {
+        "state": "no-panel",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 130.37, "y": 0, "w": 513.13, "h": 410.51},
+        "worldShare": 0.5625,
+        "chromeShare": 0.3297,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 130.37, "h": 410.51}, "share": 0.1429},
+          {"name": "action-bar", "rect": {"x": 769.32, "y": 0, "w": 142.92, "h": 410.51}, "share": 0.1567},
+          {"name": "factory-ore-vein", "rect": {"x": 643.51, "y": 313.58, "w": 121.63, "h": 92.74}, "share": 0.0301}
+        ],
+        "sheet": null,
+        "sheetShare": 0,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 10,
+        "textElementCount": 12,
+        "labelsByOwner": {"top-strip": 5, "action-bar": 4, "factory-ore-vein": 1},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "action-bar", "kind": "label", "text": "Office"},
+          {"owner": "action-bar", "kind": "label", "text": "•"},
+          {"owner": "action-bar", "kind": "label", "text": "Overdrive"},
+          {"owner": "action-bar", "kind": "label", "text": "Ready"},
+          {"owner": "action-bar", "kind": "button", "text": "+"},
+          {"owner": "action-bar", "kind": "button", "text": "−"},
+          {"owner": "factory-ore-vein", "kind": "label", "text": "Mine"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "stoppedMachines": 3, "worldAreaVsNoPanel": 1}
+      },
+      {
+        "state": "card",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 71.08, "w": 547.34, "h": 339.43},
+        "worldShare": 0.4961,
+        "chromeShare": 0.1039,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 547.34, "h": 71.08}, "share": 0.1039}
+        ],
+        "sheet": null,
+        "sheetShare": 0,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "selectedSlot": 4, "selectedSlotVisibleShare": 1, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.882}
+      },
+      {
+        "state": "details",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 71.08, "w": 547.34, "h": 339.43},
+        "worldShare": 0.4961,
+        "chromeShare": 0.1039,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 547.34, "h": 71.08}, "share": 0.1039}
+        ],
+        "sheet": {"x": 547.34, "y": 0, "w": 364.89, "h": 410.51},
+        "sheetShare": 0.4,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "selectedSlot": 4, "selectedSlotVisibleShare": 1, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.882}
+      },
+      {
+        "state": "building",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 71.08, "w": 547.34, "h": 339.43},
+        "worldShare": 0.4961,
+        "chromeShare": 0.1039,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 547.34, "h": 71.08}, "share": 0.1039}
+        ],
+        "sheet": null,
+        "sheetShare": 0,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "selectedSlot": 9, "selectedSlotVisibleShare": 1, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.882}
+      },
+      {
+        "state": "hub",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 71.08, "w": 547.34, "h": 339.43},
+        "worldShare": 0.4961,
+        "chromeShare": 0.1039,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 547.34, "h": 71.08}, "share": 0.1039}
+        ],
+        "sheet": {"x": 547.34, "y": 0, "w": 364.89, "h": 410.51},
+        "sheetShare": 0.4,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.882}
+      },
+      {
+        "state": "system-view",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 0, "y": 71.08, "w": 547.34, "h": 339.43},
+        "worldShare": 0.4961,
+        "chromeShare": 0.1039,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 547.34, "h": 71.08}, "share": 0.1039}
+        ],
+        "sheet": {"x": 547.34, "y": 0, "w": 364.89, "h": 410.51},
+        "sheetShare": 0.4,
+        "overlay": null,
+        "overlayShare": 0,
+        "labelCount": 7,
+        "textElementCount": 7,
+        "labelsByOwner": {"top-strip": 7},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "top-strip", "kind": "label", "text": "Overdrive"},
+          {"owner": "top-strip", "kind": "label", "text": "Ready"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "stoppedMachines": 3, "worldAreaVsNoPanel": 0.882}
+      },
+      {
+        "state": "offline-summary",
+        "safeArea": {"x": 0, "y": 0, "w": 912.24, "h": 410.51},
+        "world": {"x": 130.37, "y": 0, "w": 513.13, "h": 410.51},
+        "worldShare": 0.5625,
+        "chromeShare": 0.3297,
+        "chrome": [
+          {"name": "top-strip", "rect": {"x": 0, "y": 0, "w": 130.37, "h": 410.51}, "share": 0.1429},
+          {"name": "action-bar", "rect": {"x": 769.32, "y": 0, "w": 142.92, "h": 410.51}, "share": 0.1567},
+          {"name": "factory-ore-vein", "rect": {"x": 643.51, "y": 313.58, "w": 121.63, "h": 92.74}, "share": 0.0301}
+        ],
+        "sheet": null,
+        "sheetShare": 0,
+        "overlay": {"x": 216.28, "y": 0, "w": 479.68, "h": 410.51},
+        "overlayShare": 0.5258,
+        "labelCount": 10,
+        "textElementCount": 12,
+        "labelsByOwner": {"top-strip": 5, "action-bar": 4, "factory-ore-vein": 1},
+        "texts": [
+          {"owner": "top-strip", "kind": "label", "text": "Cash"},
+          {"owner": "top-strip", "kind": "label", "text": "49.9M"},
+          {"owner": "top-strip", "kind": "label", "text": "Store"},
+          {"owner": "top-strip", "kind": "label", "text": "2%"},
+          {"owner": "top-strip", "kind": "label", "text": "3"},
+          {"owner": "action-bar", "kind": "label", "text": "Office"},
+          {"owner": "action-bar", "kind": "label", "text": "•"},
+          {"owner": "action-bar", "kind": "label", "text": "Overdrive"},
+          {"owner": "action-bar", "kind": "label", "text": "Ready"},
+          {"owner": "action-bar", "kind": "button", "text": "+"},
+          {"owner": "action-bar", "kind": "button", "text": "−"},
+          {"owner": "factory-ore-vein", "kind": "label", "text": "Mine"}
+        ],
+        "notes": {"columns": 4, "latticeInsideWorldShare": 1, "latticeShare": 0.139, "stoppedMachines": 3, "worldAreaVsNoPanel": 1}
+      }
+    ]}
+]}

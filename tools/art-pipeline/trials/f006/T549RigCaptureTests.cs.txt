@@ -1,0 +1,158 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using IdleFactory.Unity.Presentation;
+using IdleFactory.Unity.UI;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
+
+namespace IdleFactory.Tests.PlayMode.F006
+{
+    /// <summary>
+    /// T549 CAPTURE-ONLY driver (evidence, asserts nothing about the game beyond "the state was reached"): the T502 baseline rig of every screen class at 100 % and 200 %,
+    /// now with the F006 surfaces composed as the bootstrap composes them (machine card, build card with the ghost preview, Details, hub). Output folder:
+    /// IDLEFACTORY_T549_OUT (set), otherwise nothing is written. Without that variable the test is a no-op so it never changes anything by itself.
+    /// </summary>
+    public sealed class T549RigCaptureTests
+    {
+        private const string OutVariable = "IDLEFACTORY_T549_OUT";
+        private const string Root = "Assets/IdleFactory/Unity/UI/";
+
+        [UnityTest]
+        public IEnumerator TheRigStatesAreCapturedForAScreenClass([ValueSource(typeof(BaselineMatrixTests), nameof(BaselineMatrixTests.Classes))] BaselineClass screenClass)
+        {
+            var outDir = Environment.GetEnvironmentVariable(OutVariable);
+            if (string.IsNullOrEmpty(outDir))
+            {
+                yield break;
+            }
+
+            Directory.CreateDirectory(outDir);
+            var screen = screenClass.Screen;
+            var jsonRuns = new List<string>();
+            foreach (var percent in BaselineMatrixTests.TextScales)
+            {
+                BaselineRig rig = null;
+                var registrations = new List<IDisposable>();
+                yield return BaselineRig.Create(screen, percent, screenClass.Profile, created => rig = created);
+                try
+                {
+                    var shell = rig.ShellDocument;
+                    var effects = new RecordingEffects();
+                    var feedback = new MachineFeedback(() => false, effects);
+                    var scaffold = AssetDatabase.LoadAssetAtPath<StyleSheet>(Root + "PanelScaffold.uss");
+                    var catalog = rig.Session.Catalog;
+                    Func<string, string> keyOf = id => catalog.Machines.TryGetValue(id, out var machine) ? machine.PresentationKey : string.Empty;
+                    var buildCard = new BuildCard(rig.Session, rig.Commands, AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(Root + "Panels/BuildCard.uxml"),
+                        AssetDatabase.LoadAssetAtPath<StyleSheet>(Root + "Panels/BuildCard.uss"), scaffold, ContractsPanelTestSupport.Icon, feedback, () => rig.Grid, keyOf);
+                    registrations.Add(shell.Panels.Register(buildCard));
+                    registrations.Add(shell.Panels.Register(new MachineCard(rig.Session, rig.Commands,
+                        AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(Root + "MachineCard.uxml"), AssetDatabase.LoadAssetAtPath<StyleSheet>(Root + "MachineCard.uss"),
+                        scaffold, ContractsPanelTestSupport.Icon, feedback, () => rig.Grid.Layout)));
+                    yield return rig.Settle();
+
+                    var stopped = BaselineFixture.StoppedSlots(rig.Session);
+                    var states = new List<ShellGeometryResult>();
+
+                    yield return Close(rig);
+                    yield return Shot(rig, "no-panel", screenClass.Slug, percent, outDir, states);
+
+                    Assert.That(rig.Presenter.OpenSlot(stopped[0]), Is.True);
+                    yield return rig.Settle();
+                    Assert.That(shell.IsCardOpen, Is.True, "card open");
+                    yield return Shot(rig, "card", screenClass.Slug, percent, outDir, states);
+
+                    Assert.That(shell.OpenDetails(stopped[0]), Is.True);
+                    yield return rig.Settle();
+                    yield return Shot(rig, "details", screenClass.Slug, percent, outDir, states);
+
+                    yield return Close(rig);
+                    Assert.That(rig.Presenter.OpenSlot(BaselineFixture.EmptySlot), Is.True);
+                    yield return rig.Settle();
+                    Assert.That(shell.IsBuildCardOpen, Is.True, "build card open");
+                    var first = buildCard.TypeButtons.FirstOrDefault();
+                    if (first != null)
+                    {
+                        CardHarness.Press(first);
+                        yield return rig.Settle();
+                    }
+
+                    yield return Shot(rig, "building", screenClass.Slug, percent, outDir, states);
+
+                    yield return Close(rig);
+                    shell.OpenHub();
+                    yield return rig.Settle();
+                    yield return Shot(rig, "hub", screenClass.Slug, percent, outDir, states);
+
+                    yield return Close(rig);
+                    yield return rig.ShowTab(ShellTab.Contracts);
+                    yield return Shot(rig, "system-view", screenClass.Slug, percent, outDir, states);
+
+                    yield return Close(rig);
+                    yield return rig.ShowOfflineSummary();
+                    yield return Shot(rig, "offline-summary", screenClass.Slug, percent, outDir, states);
+
+                    var closed = states[0];
+                    foreach (var state in states)
+                    {
+                        if (state.World.HasValue && closed.World.HasValue)
+                        {
+                            state.Notes["worldAreaVsNoPanel"] = ShellGeometryProbe.Share(ShellGeometryProbe.Area(state.World.Value), ShellGeometryProbe.Area(closed.World.Value));
+                        }
+                    }
+
+                    var builder = new StringBuilder();
+                    builder.Append("    {\"textScalePercent\": ").Append(percent).Append(", \"states\": [\n");
+                    builder.Append(string.Join(",\n", states.Select(state => ShellGeometryProbe.ToJson(state, "      "))));
+                    builder.Append("\n    ]}");
+                    jsonRuns.Add(builder.ToString());
+                }
+                finally
+                {
+                    foreach (var registration in registrations)
+                    {
+                        registration.Dispose();
+                    }
+
+                    rig?.Dispose();
+                }
+
+                yield return null;
+            }
+
+            File.WriteAllText(Path.Combine(outDir, screenClass.Slug + ".json"),
+                "{\"class\": \"" + screenClass.Slug + "\", \"runs\": [\n" + string.Join(",\n", jsonRuns) + "\n]}\n", new UTF8Encoding(false));
+        }
+
+        private static IEnumerator Close(BaselineRig rig)
+        {
+            rig.DismissOffline();
+            var shell = rig.ShellDocument;
+            for (var i = 0; i < 6 && (shell.IsSheetOpen || shell.IsDockedCardOpen); i++)
+            {
+                shell.HandleBack();
+                yield return null;
+            }
+
+            shell.CloseSheet();
+            yield return rig.Settle();
+        }
+
+        private static IEnumerator Shot(BaselineRig rig, string state, string slug, int percent, string outDir, List<ShellGeometryResult> states)
+        {
+            yield return rig.Settle();
+            yield return null;
+            yield return null;
+            states.Add(rig.Measure(state));
+            File.WriteAllBytes(Path.Combine(outDir, slug + "-" + state + "-" + percent + ".png"), rig.CapturePng());
+        }
+    }
+}
+#endif
