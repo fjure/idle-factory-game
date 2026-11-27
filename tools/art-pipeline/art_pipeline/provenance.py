@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 
 DEFAULT_MODELS_PATH = Path(__file__).resolve().parent.parent / "models.json"
@@ -55,6 +56,80 @@ def missing_provenance_fields(record: dict, route: str, for_manifest: bool = Fal
     if record.get("route") not in (None, route):
         missing.append("route(mismatch)")
     return sorted(set(missing))
+
+
+# --- v2 additions (contracts/art-pipeline-v2.md, F007) ---------------------------------------------------------
+
+V2_PIPELINES = {"v2-prototype", "v2"}
+V2_ROUTES = {"render-hd", "mesh-export"}
+V2_PASSES = {"beauty", "shadow", "emissiveMask", "normal"}
+V2_PLATFORMS = ("android", "windows")
+V2_PROTOTYPE_BIBLE = "none (prototype brief)"
+V2_GENERATED_FIELDS = ["model", "license", "prompt", "seed", "workflowHash"]
+_NON_COMMERCIAL = ("non-commercial", "noncommercial", "non commercial", "cc-by-nc", "cc by-nc", "research only", "research-only", "unknown", "none")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_BIBLE_V2 = re.compile(r"^F007-AB v(\d+)\.(\d+)")
+
+
+def license_allows_commercial(lic) -> bool:
+    """Generated content without a commercial-use licence is refused by the pipeline."""
+    if not isinstance(lic, str) or not lic.strip():
+        return False
+    low = lic.strip().lower()
+    return not any(t in low for t in _NON_COMMERCIAL)
+
+
+def v2_provenance_problems(rec: dict, for_manifest: bool = False) -> list[str]:
+    """Problems with the v2 provenance additions. `pipeline: v2-prototype` allows the prototype brief placeholder for
+    `artBibleVersion`; `pipeline: v2` (M5, SC-013) requires `F007-AB v2.0` or later and a `reviewedBy` block.
+    `for_manifest` still demands the fields the render step knows; `reviewedBy` is written later, in its own commit."""
+    problems = []
+    pipeline = rec.get("pipeline")
+    if pipeline not in V2_PIPELINES:
+        problems.append("pipeline must be one of " + ", ".join(sorted(V2_PIPELINES)))
+    if _blank(rec.get("look"), False):
+        problems.append("look")
+    if rec.get("route") not in V2_ROUTES:
+        problems.append("route must be one of " + ", ".join(sorted(V2_ROUTES)))
+    passes = rec.get("renderPasses")
+    if rec.get("route") == "render-hd":
+        if not isinstance(passes, list) or not passes or not set(passes) <= V2_PASSES:
+            problems.append("renderPasses must be a non-empty subset of " + ", ".join(sorted(V2_PASSES)))
+        elif "beauty" not in passes:
+            problems.append("renderPasses must contain beauty")
+    rig = rec.get("rigVersion")
+    if not isinstance(rig, dict) or _blank(rig.get("version"), False) or not _SHA256.match(str(rig.get("sha256", ""))):
+        problems.append("rigVersion needs version and a 64-hex sha256")
+    fmt = rec.get("textureFormat")
+    if not isinstance(fmt, dict) or any(_blank(fmt.get(p), False) for p in V2_PLATFORMS):
+        problems.append("textureFormat needs a value per platform (" + ", ".join(V2_PLATFORMS) + ")")
+    gen = rec.get("generatedTextures")
+    if not isinstance(gen, list):
+        problems.append("generatedTextures must be a list")
+    else:
+        for i, g in enumerate(gen):
+            for f in V2_GENERATED_FIELDS:
+                if not isinstance(g, dict) or _blank(g.get(f), False) and not (f == "seed" and isinstance(g.get(f), int)):
+                    problems.append("generatedTextures[%d].%s" % (i, f))
+            if isinstance(g, dict) and not license_allows_commercial(g.get("license")):
+                problems.append("generatedTextures[%d] has no commercial-use licence" % i)
+    brief = rec.get("artDirectionBrief")
+    if not isinstance(brief, dict) or _blank(brief.get("path"), False) or _blank(brief.get("version"), False):
+        problems.append("artDirectionBrief needs path and version")
+    bible = rec.get("artBibleVersion")
+    if _blank(bible, False):
+        problems.append("artBibleVersion")
+    elif pipeline == "v2":
+        m = _BIBLE_V2.match(str(bible))
+        if not m or int(m.group(1)) < 2:
+            problems.append("artBibleVersion must be F007-AB v2.0 or later for pipeline v2")
+    elif pipeline == "v2-prototype" and bible != V2_PROTOTYPE_BIBLE and not _BIBLE_V2.match(str(bible)):
+        problems.append("artBibleVersion must be the prototype placeholder or an F007-AB version")
+    if pipeline == "v2" and not for_manifest:
+        reviewed = rec.get("reviewedBy")
+        if not isinstance(reviewed, dict) or any(_blank(reviewed.get(s), False) for s in ("role", "session", "date")):
+            problems.append("reviewedBy (role, session, date) is required for pipeline v2")
+    return problems
 
 
 # --- models.json -----------------------------------------------------------------

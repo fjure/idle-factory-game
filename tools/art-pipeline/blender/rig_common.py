@@ -90,6 +90,50 @@ def check_rig(scene, strict_cameras=True):
     return bad
 
 
+# --- rig-v3 (F007 T613): same cameras as rig-v2, three-light dusk set -------------------------------------------
+# Assumption (T613): World Bible v0.2 gives only a mood line ("dim-lit, calm night shift with working lights on"), no numeric
+# light anchors, and v0.3 (T607) does not exist yet. The set is therefore: a warm low key from the top left (the Art Bible
+# key direction, unchanged), a cool dim fill from the right, and a warm rim from behind the subject. Retune after T607.
+RIG_V3_VERSION = "rig-v3"
+DUSK = {
+    "key": {"color": (1.0, 0.72, 0.45), "energy": 2.2, "angle": 0.0, "dir": (0.5, -0.6, -0.6)},    # hard shadow edge
+    "fill": {"color": (0.45, 0.6, 1.0), "energy": 0.5, "angle": 0.0, "dir": (-0.6, -0.3, -0.7)},
+    "rim": {"color": (1.0, 0.6, 0.35), "energy": 1.0, "angle": 0.0, "dir": (0.2, 0.3, 0.9)},       # travels toward the camera
+}
+DUSK_WORLD = {"color": (0.05, 0.07, 0.12, 1.0), "strength": 0.25}
+
+
+def dusk_name(role, projection):
+    return "dusk-%s-%s" % (role, projection)
+
+
+def check_rig_v3(scene):
+    """Contract violations of rig-v3 (empty list = valid): the rig-v2 render contract, the rig-v2 cameras and the dusk set."""
+    import bpy
+
+    bad = check_rig(scene, strict_cameras=False)
+    for proj, spec in CAMERAS.items():
+        ob = scene.objects.get(spec["name"])
+        if ob is None:
+            bad.append("missing camera " + spec["name"])
+            continue
+        if ob.data.type != "ORTHO" or round(ob.data.ortho_scale, 5) != round(ORTHO_SCALE, 5):
+            bad.append("camera %s differs from rig-v2" % spec["name"])
+        for role, spec_l in DUSK.items():
+            light = scene.objects.get(dusk_name(role, proj))
+            if light is None or light.type != "LIGHT" or light.data.type != "SUN":
+                bad.append("missing dusk sun " + dusk_name(role, proj))
+            elif tuple(round(c, 4) for c in light.data.color) != tuple(round(c, 4) for c in spec_l["color"]) or round(light.data.energy, 4) != spec_l["energy"]:
+                bad.append("dusk light %s differs from the rig-v3 set" % light.name)
+        if scene.objects.get(key_name(proj)) is not None:
+            bad.append("rig-v2 key light still present: " + key_name(proj))
+    return bad
+
+
+def rig_is_v3(path):
+    return os.path.basename(path or "").lower().startswith("rig-v3")
+
+
 def args_after_dashes():
     argv = sys.argv
     return argv[argv.index("--") + 1:] if "--" in argv else []
