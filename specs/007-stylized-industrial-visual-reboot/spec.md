@@ -34,7 +34,7 @@ Feature 006 is **not complete** on `main`. Its review and test tasks T531–T545
   - AD-4 deck edge and black void;
   - AD-7 store-full marker cap.
 
-F007 therefore depends on how F006 is closed. This is clarification **Q1**, and FR-002 records the dependency. Several F006 carries are directly in F007's subject: AD-1, AD-4 and AD-7. The plan maps each of them either to F007 or to the F006 closeout. None may be left in both places or in neither.
+The owner decided (Q1, 2026-11-27) that F006 closes in parallel with the F007 audit and prototype. T549 judges the F006 look as an interim state. AD-1, AD-4 and AD-7 move to F007, PERF-9 is closed by F007's M1 device baseline, and C-68 stays with F006 (FR-002).
 
 ### Current visual state (repository evidence)
 
@@ -105,9 +105,9 @@ Problems found:
 
 ### Session 2026-11-27
 
-- Q1 (F006 closeout versus F007): [NEEDS CLARIFICATION: Must F006 fully close (T546, T549, T550, T551) before F007 work beyond specification starts? Or may the F007 audit and prototype run while F006 closes in parallel? If so, should the T549 owner acceptance judge the current look as an interim state that F007 is expected to replace?]
-- Q2 (prototype fidelity per direction): [NEEDS CLARIFICATION: Must Directions A, B and C each be built to full prototype parity (four machines, the depot, environment, animation and the selected-machine UI)? Or may one direction be shown at reduced fidelity, if it is eliminated by a recorded early screening that the owner confirms?]
-- Q3 (performance evidence hardware): [NEEDS CLARIFICATION: Is a physical Android phone (and optionally a tablet) available for the prototype and final performance evidence? Or does performance evidence remain emulator and Windows-player only, as accepted for F006 (A-9), with physical-device performance a recorded limitation?]
+- Q1 (F006 closeout versus F007): May the F007 audit and prototype run while F006 closes in parallel, with T549 judging the current look as an interim state? → **Answer: Yes (option A).** F006 closes in parallel. Its T549 owner acceptance judges the F006 look as an interim state that F007 is expected to replace. The F006 visual carries AD-1 (world upgrade marker), AD-4 (deck edge and black void) and AD-7 (store-full marker scale and cap) move to F007 and are not built separately in F006. PERF-9 (no physical-device data) is closed by F007's M1 audit, which measures the F006 look on the physical device (Q3). C-68 (deep profile of the unattributed steady-state allocations) stays an F006 post-P4 Issue.
+- Q2 (prototype fidelity per direction): Must Directions A, B and C each be built to full prototype parity? → **Answer: Yes (option A).** All three directions are built to full parity: four machines, the depot, environment, infrastructure, states, animation, the selected-machine UI and lighting (FR-008). There is no early elimination by reduced-fidelity screening.
+- Q3 (performance evidence hardware): Is a physical device available? → **Answer: Yes (option A).** A physical Android phone is available, and optionally a tablet. Prototype and final performance evidence include measurements on it, in addition to the emulator and the Windows player. The plan records the device model, OS version, GPU and screen class, and the device-use rules (exclusive use and a lease, as for the emulator).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -129,7 +129,7 @@ Before anything is designed, the team records what the game actually looks like 
 
 1. **Given** `main` at the audit commit, **When** the audit runs, **Then** captures of the current F006 look exist for each screen class in FR-011, in both factory states (FR-012), taken from real builds.
 2. **Given** the F004 constraint list, **When** the audit is complete, **Then** each constraint has a disposition (preserve, relax, replace or remove) per direction A, B and C, with the reason and the evidence or hypothesis behind it.
-3. **Given** the F006 final-acceptance carries (AD-1, AD-4, AD-7, PERF-9, C-68), **When** the audit is complete, **Then** each one is mapped either to F007 or to the F006 closeout.
+3. **Given** the F006 carries moved to F007 (AD-1, AD-4, AD-7), **When** the audit is complete, **Then** each one appears in the ranked problem list. The F006 look's frame rate, pacing and memory on the physical phone are recorded as the device baseline (PERF-9).
 
 ---
 
@@ -278,7 +278,7 @@ The approved assets replace the current ones one family at a time. Every family 
 ### Gates and scope
 
 - **FR-001**: The feature MUST NOT change production, economy, balancing, content definitions, research, prestige, unlock rules, offline progress, deterministic simulation results or the save format. It MUST NOT add recipes, resource types, logistics mechanics, free-form building, regions or progression systems. Every visual MUST derive from existing authoritative state, without changing it.
-- **FR-002**: F007 work beyond specification MUST respect the F006 closeout rule decided in Q1. The plan MUST map each open F006 carry (AD-1, AD-4, AD-7, PERF-9, C-68) to exactly one of F007 or the F006 closeout.
+- **FR-002**: F007 M1 and M2 MAY run while F006 closes (Q1). F007 MUST own the F006 carries AD-1, AD-4 and AD-7: the world upgrade marker, the deck edge and void, and the store-full marker scale and cap. The F006 closeout MUST NOT build them separately. F007 M1 MUST record the physical-device baseline of the F006 look, which closes PERF-9. C-68 stays with F006. F007 work MUST NOT write F006 artifacts, and F007 M5 production MUST NOT merge before F006 T549 has recorded its interim verdict. That keeps the F006 acceptance evidence tied to the F006 look.
 - **FR-003**: The feature MUST proceed through gated milestones in this order:
   - M1, the audit (US1);
   - M2, the direction exploration and in-engine prototype (US2);
@@ -302,7 +302,7 @@ The approved assets replace the current ones one family at a time. Every family 
   - a ranked problem list with evidence;
   - a per-direction disposition (preserve, relax, replace, remove) of each F004 art constraint, with reasons.
 - **FR-007**: Exploration MUST produce, for each of Directions A, B and C, a style brief with material, lighting and colour references. Concept images MAY support the briefs, but MUST NOT be presented as in-engine evidence. Reference games inform principles only. Assets, art styles and recognizable elements of Factorio, Satisfactory, Captain of Industry or any other game MUST NOT be copied, and every direction MUST keep an original visual identity.
-- **FR-008**: The in-engine prototype MUST show, for each direction built to full fidelity (per Q2):
+- **FR-008**: The in-engine prototype MUST show, for each of Directions A, B and C, all at full parity (Q2):
   - a detailed Miner, Smelter, Press, Assembler and Depot;
   - a coherent floor and surroundings;
   - visible infrastructure that organizes the site;
@@ -320,7 +320,7 @@ The approved assets replace the current ones one family at a time. Every family 
 - **FR-012**: Comparison captures MUST show the same seeded game state per factory state. There are two factory states: a partially developed factory (fewer than half the locations occupied, an early development stage) and a dense established factory (all locations occupied, mixed states, the latest stage).
 - **FR-013**: Every comparison and acceptance capture MUST come from actual Unity rendering of a real build or Play Mode capture rig. Concept art MUST NOT substitute for in-engine evidence.
 - **FR-014**: The comparison MUST report, per direction, labelled as measured or estimated:
-  - frame rate and frame pacing on the reference emulator class;
+  - frame rate and frame pacing on the physical phone (Q3), and on the reference emulator class for comparison with the F004/F006 records;
   - texture and atlas memory;
   - APK size impact;
   - draw-call and pass cost;
@@ -441,14 +441,14 @@ The approved assets replace the current ones one family at a time. Every family 
 - **SC-008 — State readability does not regress** *(binding)*. Blind naming of every machine state, in grayscale and under three colour-vision filters, on the final look meets or beats the F006 SC-005 results, with no state named below its F006 rate.
 - **SC-009 — Problems at a glance** *(guidance)*. In the owner's timed trial on seeded mixed-state captures, the owner names the stopped machines and their problem category within 3.0 s in at least 9 of 10 trials, the same threshold as F006 SC-004.
 - **SC-010 — Motion behaves** *(binding)*. With reduced motion on, no frame-to-frame change occurs in decorative or machine art over a 10-second capture of a running factory. With it off, no capture exceeds the revised flash limit. No effect plays for production the simulation did not perform.
-- **SC-011 — Performance within agreed budgets** *(binding)*. The final build meets every FR-032 budget on the reference emulator classes and the Windows player, measured with the established ABA method. If physical-device evidence is available (Q3), it meets them there as well. Otherwise the missing evidence is stated as a limitation.
+- **SC-011 — Performance within agreed budgets** *(binding)*. The final build meets every FR-032 budget on the physical phone (Q3), on the reference emulator classes and on the Windows player, measured with the established ABA method. The phone figures include frame rate, frame pacing and memory, and a sustained-load check over at least 10 minutes for thermal throttling. The tablet is measured too, if one is available.
 - **SC-012 — Nothing else changed** *(binding)*. All existing Edit Mode, Play Mode and Windows test-player suites pass. The determinism and save round-trip tests produce identical results. Saves from `main` load unchanged, and the emulator journey succeeds.
 - **SC-013 — Decided before produced** *(binding)*. The M3 decision record predates the dispatch of every M5 asset-family task. Every shipped asset cites an approved Art Bible version and has a complete provenance record.
 - **SC-014 — Owner acceptance** *(binding)*. The final acceptance record contains an owner accept verdict for every surface and required screen class. A reject reopens that surface.
 
 ## Assumptions
 
-- **A-1 Foundation**: Work starts from `main` `ac49f6c8`. F006's world-layout seam, effect pool, markers, stages, camera framing and shell are reused. F006's sequencing relative to F007 is decided in Q1.
+- **A-1 Foundation**: Work starts from `main` `ac49f6c8`. F006's world-layout seam, effect pool, markers, stages, camera framing and shell are reused. F006 closes in parallel (Q1).
 - **A-2 Preferred, not presumed**: Direction B is the owner's preferred candidate. The comparison treats all three directions on equal terms, and the recommendation follows the evidence.
 - **A-3 Projection**: Isometric stays the starting point for all three directions. The 2:1 ratio and the existing Blender rig camera are the default for B and C.
 - **A-4 Rendering pipeline**: URP 17.6.0 and Unity `6000.6.0f1` stay. Settings changes (lighting, colour space, HDR, post-processing, 2D lights, sprite material, compression) are allowed when justified by the prototype and approved through the plan and the budgets. A change of Unity version or render pipeline is out of scope.
@@ -456,7 +456,8 @@ The approved assets replace the current ones one family at a time. Every family 
 - **A-6 Logistics depiction**: Infrastructure that organizes the site — pipes, conduits, walkways, frames, utility runs feeding the depot trunks — is allowed. Machine-to-machine links stay forbidden (FR-024), unless a later owner decision changes World Bible OD-2.
 - **A-7 World Bible**: "A neutral starter industrial platform on a dark base", the mood "dim-lit night shift" and the naming rules stay unless the approved direction needs a change. Replacing the starter ground or the dark base needs a new World Bible version (§5 swappable-ground rule).
 - **A-8 Prototype isolation**: Prototype directions live in a development-build selection and dedicated asset paths. They are not shipped to players and do not touch saves. Rejected prototype assets are removed, or archived as non-shipping, after M3.
-- **A-9 Devices**: Unless Q3 says otherwise, evidence uses the Android emulator (1080 × 2400 @ 420 dpi) and the Windows player, as in F004 and F006. Physical-device performance remains a stated limitation.
+- **A-9 Devices** (Q3): Performance evidence uses a physical Android phone, and a tablet if one is available, as well as the Android emulator (1080 × 2400 @ 420 dpi) and the Windows player. The emulator and Windows player stay the capture rigs for the screen-class matrix. The plan records the device identity and how its exclusive use is coordinated.
+- **A-14 F006 in parallel** (Q1): F007 does not edit F006 specs, reviews or task records. The F006 closeout does not build the carries moved to F007 (FR-002).
 - **A-10 Generative tools**: ComfyUI and other generators may support concept exploration and asset creation, under the existing licence, provenance and cost rules. Models are downloaded only with owner approval. Hosted paid providers need prior owner approval.
 - **A-11 Audio**: Sound is not in scope. Audio feedback stays a future candidate.
 - **A-12 Task IDs**: F007 reserves a task ID range that collides with no existing Issue title (checked with `gh issue list --label maqa --state all`) before task generation.
