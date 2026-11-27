@@ -43,7 +43,7 @@ A look profile selects which art set, environment, indicator family, layout pitc
 
 | Group | Required keys |
 |---|---|
-| Machines | Miner, Smelter, Press, Assembler: stage 0 body plus the run loop. M2 also requires stage 1 for one type. |
+| Machines | Miner, Smelter, Press, Assembler: stage 0 body plus the run loop. M2 also requires stage 1 for one type, and finish tiers 0 and 1 for one type plus a site patch (FR-027c). |
 | Machine passes | Shadow, plus an emissive mask (B, C) |
 | Depot | Depot, plus the fill states EMPTY, LOW, HIGH, FULL |
 | Environment | Floor, foundations, infrastructure set, world boundary |

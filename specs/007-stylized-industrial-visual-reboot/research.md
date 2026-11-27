@@ -333,7 +333,7 @@ The M3 decision fixes the production pitch and arrangement.
 
 **Decision.**
 
-- Each machine type has 2–3 stages, selected by `level ≥ threshold`. The thresholds live in an authored presentation asset (`MachineBuildOutStages`), keyed by machine definition id.
+- Each machine type has 3 stages (0–2; refined by O-3), selected by `level ≥ threshold`. The thresholds live in an authored presentation asset (`MachineBuildOutStages`), keyed by machine definition id.
 - Threshold values come from the existing level data. Defaults are proposed by Game Systems/Economy (Low tier), for example the levels at which a machine's batch factor or rate tier changes, if such breakpoints exist in content. The proposal is reviewed for "no pacing change".
 - The stage is a pure function of `(definition id, level)`. It is not persisted and not part of the simulation.
 - The art adds parts on a fixed base silhouette, so the hit area and indicator anchor stay stable across stages. Silhouette identity across types is checked for every stage (SC-003).
@@ -342,7 +342,11 @@ The M3 decision fixes the production pitch and arrangement.
 **Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
 
 - **Fixture (GS-3).** The M2 stage-1 fixture uses a level that a real player can reach.
-- **Pending owner decision O-3.** Default thresholds 10 / 25 / 50 from the existing speed milestones (`Assets/IdleFactory/Content/Iron/iron-factory-content.json`, `milestones`). Because the stage is a pure function of the current level, it drops back with prestige.
+- **Owner decision O-3 (hybrid, 2026-11-27).**
+  - **Levels.** Build-out stages use thresholds 10 and 25 (optionally 50) from the existing speed milestones (`Assets/IdleFactory/Content/Iron/iron-factory-content.json`, `milestones`). They follow the current level and drop back with prestige.
+  - **Prestige.** A **facility finish tier** comes from `PrestigeCount`, which is already persisted in the permanent state (`Core/Run/Application/PrestigeThreshold.cs:10`). It has 2–4 steps, for example at 1, 3 and 6 prestiges (to be confirmed by Game Systems). It survives resets and shows refined materials and paint, trim and structure on machines, and more site and depot build-out, within the World Bible rules.
+  - **Combination.** Both functions combine orthogonally (stage × tier). Asset growth is limited because tiers act mostly through material, trim overlays and site props, not full re-renders per combination. This is a hypothesis; the M2 memory figure includes it.
+  - **No reward.** Neither function creates a value, currency or unlock.
 
 ## R12 — Animation, effects and flash
 

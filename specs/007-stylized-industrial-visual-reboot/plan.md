@@ -111,16 +111,16 @@ Tasks are generated now for M1–M3 only. M4–M6 are generated after the decisi
 | OD7-3 | A physical phone provides the performance evidence. | Spec Q3 |
 | OD7-4 | One shared dusk mood, through World Bible v0.3. | Clarify 1 |
 | OD7-5 | Families go live as they merge; a temporary style mix is accepted. | Clarify 2 |
-| OD7-6 | A short upgrade effect plus 2–3 build-out stages per machine type, from existing levels. | Clarify 3 |
+| OD7-6 | A short upgrade effect plus 2–3 build-out stages per machine type, from existing levels. Refined by OD7-15: 3 stages, plus a prestige finish tier. | Clarify 3 |
 | OD7-7 | A small integrated status indicator replaces the free-standing badges. | Clarify 4 |
 | OD7-8 | Denser on-screen location geometry is approved in principle. The concrete geometry is decided at M3. | Clarify 5 |
 | OD7-9 | Phone: **Google Pixel 11 Pro, Android 17**. No tablet is available (owner, 2026-11-27). The SoC, GPU, resolution and refresh rate are read from the device in T601. | R16 |
 | OD7-10 | *Pending (M2)*: World Bible v0.3 approval, before M2 scoring. | R21 |
 | OD7-11 | *Pending (M2)*: approval of the rubric anchors, before scoring. | R18 |
 | OD7-12 | *Pending (M3)*: the direction, the geometry, the machine-area factor and their conditions. | FR-016 |
-| OD7-13 | *Pending (plan review O-1)*: owner hands-on play of each direction on the Pixel before M3. | PO-1 |
-| OD7-14 | *Pending (plan review O-2)*: owner go/adjust checkpoints inside M2 (after briefs and WB v0.3; after one machine per direction; at the C1 spike result). | PO-2 |
-| OD7-15 | *Pending (plan review O-3)*: build-out thresholds 10/25/50 from the speed milestones, with stages dropping back on prestige. | GS-1, GS-2 |
+| OD7-13 | **Yes**: the owner plays each direction on the Pixel before M3 (O-1, 2026-11-27). | PO-1, FR-016a |
+| OD7-14 | **Yes**: three owner go/adjust checkpoints in M2 (after briefs and WB v0.3; after one machine per direction; at the C1 result). There is no elimination without the owner's explicit word (O-2). | PO-2, FR-016a |
+| OD7-15 | **Hybrid** (O-3). Build-out stages follow the level milestones (10/25, optionally 50) and drop back with prestige. In addition, a persistent facility finish tier comes from the persisted `PrestigeCount` and survives resets. Neither adds a reward or a save field. | GS-1, GS-2, FR-027a, FR-027c |
 
 ## Implementation lane
 
@@ -262,7 +262,7 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
   The architect review is High tier.
 - T610: pitch as instance data in world units. It converts `PivotOfCell` and `DeckTileRect` and their 16 call sites, and adds the pitch to `LayoutComposition` equality and `IdentitySuffix` (ARCH-4). It also makes the hit size profile-aware (ARCH-10), and adds the `OverhangTapTests` assertions (UX-4) and the 44 pt and no-overlap negative case (QA-12).
 - T611: indicator view at the anchor, plus the scripted, plated or outlined glyph family adapted from the S3 = b shapes. The glyph keeps a floor of at least 24 pt at `n_min` on every class, with a per-class pt test, and a contrast of at least 3:1 to its plate (UX-1, UX-3). Keep-out is per look (AD-7).
-- T612: `MachineBuildOutStages`, with the Game Systems review. The thresholds and the behaviour after prestige follow O-3. The fixture level must be reachable by a real player (GS-3).
+- T612: `MachineBuildOutStages` (levels 10/25, optionally 50; drops back with prestige) and `FacilityFinishTiers` (2–4 steps from the persisted `PrestigeCount`; survives resets). Both are pure presentation functions with Edit Mode tests, including the prestige-reset behaviour. Game Systems reviews both thresholds for "no reward, no pacing". The fixture levels and prestige counts must be reachable by a real player (GS-3).
 - T613: pipeline v2 prototype. It covers:
   - `rig-v3`, the `render-hd` route and the checks in the updated contract (union-bbox alignment, key colour, reproducibility pins, prompt lint);
   - `F007SpriteImportPostprocessor`, with dilate or premultiply, padding and tight meshes (TA-4 to TA-7).
@@ -295,7 +295,7 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
 **Added by the plan reviews.**
 
 - T638: re-baseline map and test-id comparison script (QA-5). It runs before the first M2 code task.
-- T639: owner sessions. Their content depends on O-1 and O-2: hands-on play on the Pixel per direction, and the M2 checkpoints.
+- T639: owner sessions (O-1, O-2). Checkpoint 1 follows the briefs and WB v0.3. Checkpoint 2 follows the first in-engine machine per direction. Checkpoint 3 is the C1 result. The hands-on Pixel play of all three directions comes before T635. Each session's verdict is recorded in `reviews/owner-checkpoints.md`. The parent prepares a profiler-free dev APK and holds the `unity,emulator` leases.
 - T640: conditional revise loop if the owner chooses "revise" at M3, with scope and budget set at that time (PO-7).
 - T641: fallback reproduction of the F006 readability baseline if F006 T546 is not on `main` when T630 starts (PO-3).
 

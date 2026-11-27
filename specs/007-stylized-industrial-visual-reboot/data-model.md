@@ -14,6 +14,7 @@ The ownership table follows constitution II.
 | LookProfile | Presentation asset | Technical Artist (authoring); the DevTools selection in development builds | World views, catalog, camera, effect pool | Asset only; the dev selection may sit in the display-preferences file, never in the save |
 | MachineArtEntry | Manifest row plus imported sprites or meshes | Art pipeline (generated), reviewed by the Art Director | Machine view, indicator view, effect pool, hit-test checks | Asset only |
 | MachineBuildOutStages | Presentation asset | Gameplay Developer, thresholds reviewed by Game Systems | Machine presentation model | Asset only |
+| FacilityFinishTiers | Presentation asset | Gameplay Developer, thresholds reviewed by Game Systems | Machine and environment views | Asset only; reads the persisted `PrestigeCount` |
 | LayoutPitchSettings (extends `WorldCompositionSettings`) | Presentation asset | Gameplay Developer, values decided at M3 | `LatticeLayoutBuilder`, `FactoryWorldLayout` | Asset only |
 | IndicatorGlyphSet | Sprite family | Art pipeline (scripted route) | Indicator view | Asset only |
 | DirectionRecord | Evidence | Art Director (brief), parent (status) | Owner, reviewers | `reviews/directions/<A, B or C>.md` |
@@ -80,6 +81,15 @@ Defined in [contracts/look-profile.md](./contracts/look-profile.md).
 | `thresholds[]` | 1–2 ascending machine levels, taken from existing level data (R11). |
 
 `stage(level) = count(thresholds where level ≥ t)`. The function is pure, total for level ≥ 1, and never persisted.
+
+## FacilityFinishTiers
+
+| Field | Rule |
+|---|---|
+| `thresholds[]` | 1–3 ascending prestige counts (Game Systems review) |
+| `overlays` | Per machine type and per site family: material/trim variants or overlay parts per tier |
+
+`tier(prestigeCount) = count(thresholds where prestigeCount ≥ t)`. It reads the persisted `PrestigeCount` only, is never written, and survives resets (FR-027c). Stage × tier combine orthogonally.
 
 ## LayoutPitchSettings
 

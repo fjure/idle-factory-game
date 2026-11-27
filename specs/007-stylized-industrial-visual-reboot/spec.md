@@ -112,6 +112,15 @@ Problems found:
 - Q: Should players see the new look while only some asset families are replaced? → A: **Yes, truly incremental (option A).** The game has no live players yet. Each approved family goes into the regular build as soon as it merges, and a temporary mix of old and new styles is accepted (FR-035a).
 - Q: Should machine upgrades show permanently in a machine's look, or only as a short effect at the moment of upgrade? → A: **A short effect plus 2–3 visible build-out stages per machine type (option B).** The stages are tied to existing machine-level thresholds (FR-027a).
 - Q: How visible should problem indicators stay in the new look? → A: **A small, persistent indicator built into the machine (option B).** It is a status lamp or beacon carrying a shape glyph, plus machine behaviour (stopped motion, lights off). The full cause appears in the machine card on selection (FR-027b).
+
+### Session 2026-11-27 (plan review owner decisions)
+
+- Q: Should the owner play each direction hands-on on the Pixel before the M3 decision? → A: **Yes (O-1).** Each direction is played on a profiler-free development APK with the look switch (FR-016a).
+- Q: Should M2 have owner checkpoints? → A: **Yes (O-2).** There are three go/adjust checkpoints, not eliminations, so OD7-2 full parity stands (FR-016a):
+  1. after the three briefs and World Bible v0.3;
+  2. after one machine per direction in-engine;
+  3. at the C1 feasibility result (continue, adjust or stop C).
+- Q: Should build-out stages follow the level milestones 10/25/50 and drop back on prestige? → A: **Hybrid (O-3).** Levels change the look through the build-out stages, which follow the current level and drop back on prestige. Prestige also changes the look through a persistent **facility finish tier**, derived from the existing persisted prestige count, which survives resets (FR-027a, FR-027c).
 - Q: Where should the space come from to make machines at least 1.5 times larger while keeping all 12 locations? → A: **Locations move visually closer together and may be rearranged (option A).** The owner approves this in principle now, and the default view still shows all 12. The concrete geometry is decided at M3 from the prototype (FR-005).
 
 ## User Scenarios & Testing *(mandatory)*
@@ -344,6 +353,12 @@ The approved assets replace the current ones one family at a time. Every family 
 
 ### Decision and rules (M3, M4)
 
+- **FR-016a**: Before the M3 decision, the owner MUST be able to play every direction hands-on on the Pixel, through a profiler-free development APK with the look switch (O-1). M2 MUST include three owner go/adjust checkpoints (O-2):
+  1. after the three briefs and World Bible v0.3;
+  2. after one machine per direction in-engine;
+  3. at the C1 feasibility result.
+
+  A checkpoint may adjust a direction's brief or stop C only on the owner's explicit word. It never ranks the directions.
 - **FR-016**: The M3 decision brief MUST follow constitution VII. It contains context, constraints, two to four realistic options, trade-offs, a recommendation, labelled assumptions, and the smallest set of questions needed. The owner's decision and its conditions MUST be recorded in the feature's reviews, with a matching wiki ingest.
 - **FR-017**: Changes to Art Bible `F004-PAB` and World Bible `F006-WB` MUST be proposed as new versions under their semver rules, marked rule by rule, and approved by the owner. They MUST NOT be bypassed silently. Until the new versions are approved, the current ones govern shipped assets.
 - **FR-018**: The revised Art Bible MUST define, at least:
@@ -390,7 +405,8 @@ The approved assets replace the current ones one family at a time. Every family 
 - **FR-025**: Visual hierarchy MUST keep interactive machinery, the depot, state cues, markers, the selection frame and hit areas above, and unobscured by, decoration. The camera's fit and focus rules MUST keep the selected machine fully visible with panels open.
 - **FR-026**: Machine artwork that overhangs neighbouring locations MUST NOT change which machine a tap selects. It MUST NOT cover another machine's cue or marker, or make a cue read as belonging to another machine.
 - **FR-027**: Machines MUST communicate each of these states: active production, production completion, paused, missing input, full output storage, construction and upgrade. Each state is carried first by the machinery's own behaviour and lighting, and backed by a restrained indicator. The existing badge precedence stays the single source of state, and no second precedence rule is allowed.
-- **FR-027a**: Each machine type MUST have 2 or 3 visible build-out stages, as well as the short upgrade effect. Stage changes add or enlarge parts, for example extra housings, stacks or tooling. The stage is derived in presentation only from the machine's existing level, through thresholds named in authored presentation data. It MUST NOT change any level, cost, rate, unlock or save value, and MUST NOT act as a new reward or progression system. Every stage keeps the machine's silhouette identity (SC-003) and its hit area. The M2 prototype MUST show at least two stages of one machine type. The full stage set for every machine type is M5 production scope.
+- **FR-027a**: Each machine type MUST have 3 visible build-out stages (0–2), as well as the short upgrade effect. The default thresholds are the existing speed-milestone levels 10 and 25, with 50 as an optional third step. The thresholds are confirmed by the Game Systems review. The stage follows the **current** level, so it drops back after a prestige, together with the levels (O-3). Stage changes add or enlarge parts, for example extra housings, stacks or tooling. The stage is derived in presentation only from the machine's existing level, through thresholds named in authored presentation data. It MUST NOT change any level, cost, rate, unlock or save value, and MUST NOT act as a new reward or progression system. Every stage keeps the machine's silhouette identity (SC-003) and its hit area. The M2 prototype MUST show at least two stages of one machine type. The full stage set for every machine type is M5 production scope.
+- **FR-027c**: The site and all machines MUST also show a **facility finish tier**, derived only from the existing persisted prestige count. Examples are refined materials and paint, extra trim and structure on machines, and a more built-out site and depot. The tier is a pure presentation function with 2–4 steps, whose thresholds live in authored presentation data and are reviewed by Game Systems. It survives prestige resets, so every prestige leaves a visible mark. It MUST NOT change any value, cost, rate or save field. It MUST NOT add a reward, currency or unlock, and MUST stay within the World Bible rules (no lore, signage or new world elements). Build-out stage (level) and finish tier (prestige) combine independently. The M2 prototype MUST show two finish tiers on one machine and a patch of site; the full set is M5 scope.
 - **FR-027b**: Every non-running machine MUST show a persistent in-world indicator, integrated into the machine artwork. It is a status lamp or beacon carrying a per-state shape glyph, anchored to its own machine. Together with the machine's behaviour (stopped motion, work lights off), it replaces the current free-standing 23-art-pixel badge. The **glyph** is the normative state carrier; lights and motion are secondary carriers only (plan review UX-2). The glyph MUST:
   - keep the F004 floor of at least 24 pt at `n_min` on every required screen class;
   - sit on a small plate or carry an outline, with a luminance contrast of at least 3:1 against that plate (UX-1, UX-3).
@@ -434,7 +450,7 @@ The approved assets replace the current ones one family at a time. Every family 
   - World Designer (site composition, infrastructure purpose, World Bible);
   - Performance (render, memory and APK budgets).
 
-  DevOps is mandatory for rendering-pipeline settings changes. Game Systems/Economy runs a light review (Low tier) of the build-out stage thresholds (FR-027a). It confirms that the thresholds come from existing level data and change no pacing. Security/Privacy is expected to be omitted, because no trust boundary or persisted data changes. The plan records the omission and its reason. Play-Tester runs once on the M2 prototype and once per M5 batch that changes the player-visible core loop. Its report goes to the owner.
+  DevOps is mandatory for rendering-pipeline settings changes. Game Systems/Economy runs a light review (Low tier) of the build-out stage and finish-tier thresholds (FR-027a, FR-027c). It confirms that the thresholds come from existing level data and change no pacing. Security/Privacy is expected to be omitted, because no trust boundary or persisted data changes. The plan records the omission and its reason. Play-Tester runs once on the M2 prototype and once per M5 batch that changes the player-visible core loop. Its report goes to the owner.
 - **FR-039**: Meaningful decisions MUST be ingested into the wiki: the constraint dispositions, the direction decision, the new budgets, the pipeline changes and the import settings. The mandatory `after_implement` hooks MUST run per batch.
 
 ### Key Entities
@@ -444,7 +460,8 @@ The approved assets replace the current ones one family at a time. Every family 
 - **Constraint disposition**: one F004 art rule, its per-direction verdict (preserve, relax, replace or remove), the reason, and the evidence or hypothesis.
 - **Direction decision record**: the owner's choice, its conditions, the rejected alternatives with reasons, the date, and links to the evidence seen.
 - **Art Bible version and World Bible version**: the versioned rule sets that govern shipped assets, with change markers and a migration decision.
-- **Build-out stage**: one of the 2–3 visual stages of a machine type. It has a level threshold taken from existing level data, and its own artwork. It is presentation-only and never persisted (FR-027a).
+- **Build-out stage**: one of the 3 visual stages of a machine type. It has a level threshold taken from existing level data, and its own artwork. It is presentation-only, never persisted, and drops back with prestige (FR-027a).
+- **Facility finish tier**: a site-wide and per-machine visual tier derived from the persisted prestige count. It survives resets, is presentation-only, and adds no reward (FR-027c).
 - **Asset family**: the unit of incremental replacement. Examples are machines, depot, floor and foundations, infrastructure, effects and indicators. Each family has a brief, a manifest, provenance, checks, review records and before/after captures.
 - **Performance budget set**: the agreed limits for the new look, with their measurement method and workload.
 
