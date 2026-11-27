@@ -111,7 +111,7 @@ Defined in [contracts/look-profile.md](./contracts/look-profile.md).
 
 ## ComparisonCapture (JSON sidecar)
 
-`look` · `geometry` ∈ {same, proposed} · `class` ∈ {emuP, emuL, tabL, phoneP-card, phoneL640} · `textScale` · `factoryState` ∈ {partial, dense} · `seed` · `commit` · `buildKind` ∈ {apk-dev, windows-player} · `device` · `resolution` · `capturedAt` · `deadAreaShare` · `medianMachineAreaPx`.
+`look` · `geometry` ∈ {same, proposed} · `class` ∈ {emuP, emuL, tabL, phoneP-card, phoneL640} · `textScale` · `factoryState` ∈ {partial, dense} · `seed` · `commit` · `buildKind` ∈ {apk-dev, windows-player, editor-playmode} · `device` · `resolution` · `capturedAt` · `deadAreaShare` · `medianMachineAreaPx`.
 
 ## DirectionDecisionRecord
 

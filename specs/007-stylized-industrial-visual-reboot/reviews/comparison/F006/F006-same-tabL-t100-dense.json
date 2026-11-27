@@ -1,0 +1,38 @@
+{
+  "look": "F006",
+  "geometry": "same",
+  "class": "tabL",
+  "textScale": 100,
+  "factoryState": "dense",
+  "seed": 6040,
+  "commit": "83812cac46d88d2c58267c2ad894e5bdc4d27e3f",
+  "buildKind": "editor-playmode",
+  "device": "unity-editor-playmode | Windows 11  (10.0.26200) | NVIDIA GeForce RTX 5070 Ti | 2560x1600 window, class dpi 276",
+  "resolution": {
+    "w": 2560,
+    "h": 1600
+  },
+  "capturedAt": "2026-11-27T02:16:15Z",
+  "profile": "tablet class, touch 276 dpi (assumed: R08 gives no dpi; the 7 mm rule decides the panel scale) (Touch 2560x1600px Landscape 276 dpi)",
+  "buildId": "editor-playmode 6000.6.0f1 1.0 83812cac",
+  "framingRect": {
+    "x": 0.0,
+    "y": 111.0,
+    "w": 1800.0,
+    "h": 1354.0,
+    "name": "unobstructed-world-rect"
+  },
+  "route": "Unity 6000.6.0f1 editor Play Mode (batch, GPU), real scene CoreGameFoundation.unity; Game view custom rendering resolution at the class size (a Windows window cannot exceed the 1920x1080 display); shipped RunShellDocument.ApplyDeviceProfile (touch, class dpi) and ApplyTextScale; forced per-slot visuals (T545 method); simulation, animation clock and attention markers frozen; world camera clears to the key colour. Run fixed clocks (OverrideRunCompositionForTests): no simulation advance, so HUD readouts are constant. Deviation: tabL (and every class taller or wider than the display) is not a Windows-player capture, because a Windows window cannot exceed the 1920x1080 host display; owner to confirm this route",
+  "layout": "F006-same-tabL-t100-dense-layout.json",
+  "bodyMask": "F006-same-tabL-t100-dense-bodymask.png",
+  "notes": "fixtures.json seed 6040; 12 occupied, stage 2 | reducedMotion=on timeScale=0 markersHidden=true clear=key(0,255,0) cardSlot=-1",
+  "pixelsPerPoint": 2.1111111640930176,
+  "dpi": 276.0,
+  "scaleReason": "AuthoredScaleLargeEnough: authored 2,111 px/pt, required 1,729, effective 2,111",
+  "columns": 4,
+  "cardOpen": "no",
+  "realStage": 2,
+  "deadAreaShare": 0.144283,
+  "medianMachineAreaPx": 8448.0,
+  "metricsVersion": "1.0.0"
+}
