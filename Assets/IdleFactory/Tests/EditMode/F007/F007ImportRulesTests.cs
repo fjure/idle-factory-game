@@ -201,6 +201,42 @@ namespace IdleFactory.Tests.EditMode.F007
         }
 
         [Test]
+        public void CreateFamilyAtlasBuildsAValidatedAtlasPerLookAndFamilyInsideTheGivenFolder()
+        {
+            var atlasFolderExisted = AssetDatabase.IsValidFolder(F007SpriteAtlasSettings.AtlasFolder);
+            Assert.That(F007SpriteAtlasSettings.AtlasPath(F007Look.B, "machines"), Is.EqualTo("Assets/IdleFactory/Art/F007/Atlases/B/machines.spriteatlasv2"));
+            Assert.That(F007SpriteAtlasSettings.IsValidFamily("machines-2"), Is.True);
+            foreach (var bad in new[] { string.Empty, null, "Machines", "ma chines", "-x", "a/b" })
+            {
+                Assert.That(F007SpriteAtlasSettings.IsValidFamily(bad), Is.False, bad);
+            }
+
+            Assert.Throws<System.ArgumentException>(() => F007SpriteAtlasSettings.CreateFamilyAtlas(F007Look.A, "Bad Family", ProbeFolder));
+
+            foreach (var look in new[] { F007Look.A, F007Look.B, F007Look.C })
+            {
+                var importer = F007SpriteAtlasSettings.CreateFamilyAtlas(look, "machines", ProbeFolder);
+                var path = F007SpriteAtlasSettings.AtlasPath(look, "machines", ProbeFolder);
+                Assert.That(AssetDatabase.GetAssetPath(importer), Is.EqualTo(path));
+                Assert.That(path, Does.StartWith(ProbeFolder + "/"), "the test never creates an atlas under Art/F007");
+                Assert.That(F007SpriteAtlasSettings.Validate(importer, look), Is.Empty, look.ToString());
+                Assert.That(importer.packingSettings.padding, Is.EqualTo(F007ImportRules.For(look).AtlasPadding), look.ToString());
+                foreach (var platform in F004SpriteAtlasSettings.Platforms)
+                {
+                    var size = importer.GetPlatformSettings(platform).maxTextureSize;
+                    Assert.That(size, Is.EqualTo(512), look + " " + platform);
+                    Assert.That(F007SpriteAtlasSettings.PageBytes(size), Is.LessThanOrEqualTo(1024 * 1024), look + " " + platform);
+                }
+
+                // A second call reconfigures the same atlas instead of failing or duplicating it.
+                var again = F007SpriteAtlasSettings.CreateFamilyAtlas(look, "machines", ProbeFolder);
+                Assert.That(AssetDatabase.GetAssetPath(again), Is.EqualTo(path));
+            }
+
+            Assert.That(AssetDatabase.IsValidFolder(F007SpriteAtlasSettings.AtlasFolder), Is.EqualTo(atlasFolderExisted), "the production atlas folder is untouched by this test");
+        }
+
+        [Test]
         public void AtlasSettingsPerLookKeepTheStrictPageCapAndTheMipPadding()
         {
             Assert.That(F007SpriteAtlasSettings.MaxPageBytes, Is.EqualTo(1024 * 1024), "the page rule in force is 1 MiB until T614 passes on the Pixel and the owner accepts");

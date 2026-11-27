@@ -117,6 +117,8 @@ def post_process(raw: dict[str, Image.Image], padding: int = DEFAULT_PADDING, di
 # --- manifest row and provenance ------------------------------------------------------------------------------------
 
 def manifest_row(params: dict, passes: dict[str, Image.Image], pivot_px: tuple[float, float], provenance_ref: str) -> dict:
+    """MachineArtEntry row. `pivot` is NORMALISED (fractions of the canvas, origin bottom-left, as Unity's sprite pivot); `pivotPx`
+    is the art-pixel value of data-model.md (origin top-left). Both describe the same single pivot."""
     w, h = next(iter(passes.values())).size
     # Params give anchors relative to the pivot in art px (x right, y up); the row stores them in canvas px, top-left origin.
     def to_canvas(p):
@@ -225,7 +227,7 @@ def run(params_path: Path, out_dir: Path, exe: str | None = None, repro: bool = 
     prov_name = asset_id + ".provenance.json"
     row = manifest_row(params, passes, pivot, prov_name)
     prov = build_provenance(params, RIG_V3, info, list(passes_wanted))
-    results = run_checks(params, passes, pivot, row)
+    results = [c2.check_not_clipped(raw)] + run_checks(params, passes, pivot, row)
     problems = v2_provenance_problems(prov)
     results.append(CheckResult("provenance_v2", not problems, {"problems": problems}))
     if repro:

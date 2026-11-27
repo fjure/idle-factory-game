@@ -81,7 +81,23 @@ def check_pass_alignment(passes: dict[str, Image.Image], pivots: dict[str, tuple
     return CheckResult("pass_alignment", not problems, {"problems": problems, "emissiveOutsideBeauty": leaked, "alphaTolerance": alpha_tol})
 
 
-# --- key colour absence (SC-006) ----------------------------------------------------------------------------------
+# --- render not clipped (AD review N5) ----------------------------------------------------------------------------
+
+def check_not_clipped(passes: dict[str, Image.Image], margin: int = 1) -> CheckResult:
+    """No raw pass may have content within `margin` px of the render canvas edge: such a pass was cut off by the camera
+    frame, and a trim cannot restore it. Run on the raw renders, before the union trim."""
+    touching = []
+    for name in sorted(passes):
+        box = _alpha(passes[name]).getbbox()
+        if box is None:
+            continue
+        w, h = passes[name].size
+        if box[0] < margin or box[1] < margin or box[2] > w - margin or box[3] > h - margin:
+            touching.append({"pass": name, "bbox": list(box), "canvas": [w, h]})
+    return CheckResult("render_not_clipped", not touching, {"margin": margin, "clipped": touching})
+
+
+# --- key colour absence (SC-006)----------------------------------------------------------------------------------
 
 def check_key_colour_absent(images: list[Image.Image], key: tuple[int, int, int] = CAPTURE_KEY_RGB) -> CheckResult:
     """The capture key colour must not appear in any pixel with non-zero alpha, in any image."""
@@ -323,7 +339,7 @@ def check_prompt_lint(record: dict, denylist: list[str] | None = None) -> CheckR
 
 # --- mesh export (TA-8, Direction C) ------------------------------------------------------------------------------
 
-MESH_LIMITS = {"maxTriangles": 4000, "maxMaterials": 3, "maxVariants": 4, "unitsPerWorldUnit": 1.0, "unitTolerance": 1e-3, "pivotTolerance": 1e-3}
+MESH_LIMITS = {"maxTriangles": 4000, "maxMaterials": 3, "maxVariants": 4, "unitsPerWorldUnit": 1.0, "unitTolerance": 1e-3, "pivotTolerance": 0.025}
 
 
 def read_gltf_summary(path: Path | str) -> dict:

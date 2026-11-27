@@ -208,6 +208,81 @@ namespace IdleFactory.Editor.Art
         /// <summary>RGBA32-equivalent bytes of a square page (the unit of the page rule).</summary>
         public static int PageBytes(int pageSize) => pageSize * pageSize * 4;
 
+        /// <summary>The atlas asset path of a family: <c>&lt;folder&gt;/&lt;look&gt;/&lt;family&gt;.spriteatlasv2</c> (one atlas per family and look).</summary>
+        public static string AtlasPath(F007Look look, string family, string folder = AtlasFolder)
+        {
+            return folder + "/" + look + "/" + family + F004SpriteAtlasSettings.AtlasExtension;
+        }
+
+        /// <summary>A family key is lower-case letters, digits and hyphens, starting with a letter or digit.</summary>
+        public static bool IsValidFamily(string family)
+        {
+            return !string.IsNullOrEmpty(family) && System.Text.RegularExpressions.Regex.IsMatch(family, "^[a-z0-9][a-z0-9-]*$");
+        }
+
+        /// <summary>
+        /// Creates (or reconfigures) the Sprite Atlas v2 of one family in one look and packs the given folders or sprites into it, mirroring
+        /// <see cref="F004SpriteAtlasSettings.CreateFamilyAtlas"/>. Pages stay at 512 px (1 MiB of RGBA32) and padding follows the look. The result is
+        /// validated and an invalid atlas throws, so a family can never ship with a page plan the rules forbid. Not called by any build step yet: the
+        /// production families arrive with their art (M5), and <paramref name="folder"/> exists so tests can work outside <c>Art/F007</c>.
+        /// </summary>
+        public static UnityEditor.U2D.SpriteAtlasImporter CreateFamilyAtlas(F007Look look, string family, string folder, params UnityEngine.Object[] packables)
+        {
+            if (!IsValidFamily(family))
+            {
+                throw new System.ArgumentException("family must be lower-case letters, digits and hyphens: '" + family + "'", nameof(family));
+            }
+
+            if (PageBytes(MaxPageSize) > MaxPageBytes)
+            {
+                throw new System.InvalidOperationException("the page cap " + MaxPageSize + " exceeds the page budget of " + MaxPageBytes + " B");
+            }
+
+            var path = AtlasPath(look, family, folder);
+            EnsureFolder(System.IO.Path.GetDirectoryName(path).Replace((char)92, '/'));
+            if (AssetImporter.GetAtPath(path) == null)
+            {
+                var asset = new UnityEditor.U2D.SpriteAtlasAsset();
+                if (packables != null && packables.Length > 0)
+                {
+                    asset.Add(packables);
+                }
+
+                UnityEditor.U2D.SpriteAtlasAsset.Save(asset, path);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            }
+
+            var importer = (UnityEditor.U2D.SpriteAtlasImporter)AssetImporter.GetAtPath(path);
+            Configure(importer, look);
+            importer.SaveAndReimport();
+            importer = (UnityEditor.U2D.SpriteAtlasImporter)AssetImporter.GetAtPath(path);
+            var problems = Validate(importer, look);
+            if (problems.Count > 0)
+            {
+                throw new System.InvalidOperationException("F007 atlas " + path + " is invalid: " + string.Join("; ", problems));
+            }
+
+            return importer;
+        }
+
+        /// <summary>Same as the explicit-folder overload, in the production folder <see cref="AtlasFolder"/>.</summary>
+        public static UnityEditor.U2D.SpriteAtlasImporter CreateFamilyAtlas(F007Look look, string family, params UnityEngine.Object[] packables)
+        {
+            return CreateFamilyAtlas(look, family, AtlasFolder, packables);
+        }
+
+        private static void EnsureFolder(string folder)
+        {
+            if (AssetDatabase.IsValidFolder(folder))
+            {
+                return;
+            }
+
+            var parent = System.IO.Path.GetDirectoryName(folder).Replace((char)92, '/');
+            EnsureFolder(parent);
+            AssetDatabase.CreateFolder(parent, System.IO.Path.GetFileName(folder));
+        }
+
         /// <summary>Writes the look's atlas settings into an importer (does not save).</summary>
         public static void Configure(UnityEditor.U2D.SpriteAtlasImporter importer, F007Look look)
         {

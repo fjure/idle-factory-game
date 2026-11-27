@@ -1,0 +1,15 @@
+{
+  "assetId": "reference-machine-mesh",
+  "machineDefinitionId": "reference-machine",
+  "look": "F007-C",
+  "pipeline": "v2-prototype",
+  "stage": 0,
+  "asset": "reference-machine",
+  "variants": 1,
+  "shadowCaster": true,
+  "lods": 1,
+  "textureFormat": {"android": "ASTC_6x6", "windows": "BC7"},
+  "artDirectionBrief": {"path": "none", "version": "none (prototype brief)"},
+  "artBibleVersion": "none (prototype brief)",
+  "generatedTextures": []
+}

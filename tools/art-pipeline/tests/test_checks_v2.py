@@ -270,3 +270,16 @@ def test_glb_reader_matches_gltf(tmp_path):
     (tmp_path / "bad.glb").write_bytes(b"nope" + b"\0" * 20)
     with pytest.raises(ValueError):
         c2.read_gltf_summary(tmp_path / "bad.glb")
+
+
+# --- render not clipped ------------------------------------------------------------------------------------------------------------
+
+def test_not_clipped_fails_when_any_pass_touches_the_canvas_edge():
+    inside = {"beauty": rect_img((20, 20), (3, 3, 16, 16)), "shadow": rect_img((20, 20), (5, 5, 18, 18))}
+    assert c2.check_not_clipped(inside).passed
+    for box in ((0, 3, 10, 10), (3, 0, 10, 10), (3, 3, 19, 10), (3, 3, 10, 19)):     # each edge in turn
+        r = c2.check_not_clipped({**inside, "beauty": rect_img((20, 20), box)})
+        assert not r.passed and r.details["clipped"][0]["pass"] == "beauty", box
+    assert not c2.check_not_clipped({"shadow": rect_img((20, 20), (5, 5, 19, 18))}).passed   # right edge, 1 px margin
+    assert c2.check_not_clipped({"shadow": rect_img((20, 20), (5, 5, 19, 18))}, margin=0).passed
+    assert c2.check_not_clipped({"empty": Image.new("RGBA", (4, 4))}).passed

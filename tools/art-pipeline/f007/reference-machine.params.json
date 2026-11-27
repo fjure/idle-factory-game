@@ -7,7 +7,7 @@
   "asset": "reference-machine",
   "projection": "isometric-2-1",
   "resolution": 384,
-  "ppu": 128,
+  "ppu": 96,
   "samples": 16,
   "passes": ["beauty", "shadow", "emissiveMask", "normal"],
   "padding": 4,

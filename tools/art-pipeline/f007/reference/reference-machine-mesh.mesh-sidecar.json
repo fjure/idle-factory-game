@@ -1,0 +1,8 @@
+{
+  "assetId": "reference-machine-mesh",
+  "format": "glb",
+  "lods": 1,
+  "shadowCaster": true,
+  "unitsPerWorldUnit": 1.0,
+  "variants": 1
+}

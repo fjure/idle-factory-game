@@ -144,3 +144,11 @@ def test_rerender_of_the_reference_asset_reproduces_the_golden_passes(tmp_path):
     for n in ("beauty", "shadow", "emissiveMask", "normal"):
         r = c2.check_reproducibility(load(GOLDEN, n), load(tmp_path / "again", n))
         assert r.passed, (n, r.details)
+
+
+def test_golden_reference_passes_are_not_clipped_and_keep_padding_after_the_trim():
+    raw = {n: load(GOLDEN, n) for n in ("beauty", "shadow", "emissiveMask", "normal")}
+    r = c2.check_not_clipped(raw, margin=8)
+    assert r.passed, r.details
+    trimmed, _pivot = rh.trim_to_union(raw, 4)
+    assert c2.check_pass_alignment(trimmed, padding=4).passed

@@ -38,7 +38,14 @@ def main(argv: list[str] | None = None) -> int:
     rh.add_argument("--out", required=True, help="output directory")
     rh.add_argument("--blender", default=None, help="Blender 5.2.1 executable (default $BLENDER_EXE or the standard install path)")
     rh.add_argument("--repro", action="store_true", help="render a second time on one thread and run the reproducibility check")
+    me = sub.add_parser("mesh-export", help="F007 art pipeline v2 (Direction C): headless GLB export, mesh checks, manifest row, provenance")
+    me.add_argument("--params", required=True, help="per-asset parameter JSON (see f007/reference-mesh.params.json)")
+    me.add_argument("--out", required=True, help="output directory")
+    me.add_argument("--blender", default=None, help="Blender 5.2.1 executable (default $BLENDER_EXE or the standard install path)")
     args = ap.parse_args(argv)
+    if args.cmd == "mesh-export":
+        from . import mesh_export
+        return mesh_export.main(args)
     if args.cmd == "render-hd":
         from . import render_hd
         return render_hd.main(args)
