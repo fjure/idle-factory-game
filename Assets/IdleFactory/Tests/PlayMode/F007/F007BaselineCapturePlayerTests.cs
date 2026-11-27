@@ -199,6 +199,10 @@ namespace IdleFactory.Tests.PlayMode.F007
 #endif
             Assert.That(new JsonRunCheckpointStore(dataRoot, catalog).Promote(decoded.Checkpoint).Succeeded, Is.True);
 
+            // Text raster must not depend on which glyphs earlier jobs or sessions asked for first: a throw-away scene load creates the dynamic font assets, then their atlases are
+            // cleared and refilled from one fixed, sorted character set (runtime data only; no asset on disk is written).
+            yield return PrewarmFonts();
+
             foreach (var group in spec.jobs.GroupBy(j => j.w + "x" + j.h))
             {
                 var first = group.First();
@@ -247,10 +251,17 @@ namespace IdleFactory.Tests.PlayMode.F007
                 if (failure != null) break;
             }
 
-            clockOverride?.Dispose();
+            try
+            {
+                clockOverride?.Dispose();
+            }
+            finally
+            {
 #if UNITY_EDITOR
-            RunSceneRun.DeleteRoot(dataRoot);
+                RunSceneRun.DeleteRoot(dataRoot);
 #endif
+            }
+
             DeleteIfExists(checkpoints);
             DeleteIfExists(runCheckpoints);
 #if !UNITY_EDITOR
@@ -260,6 +271,38 @@ namespace IdleFactory.Tests.PlayMode.F007
             MoveBack(backup2, runCheckpoints);
             Time.timeScale = previousTimeScale;
             if (failure != null) throw failure;
+        }
+
+        private const string WarmCharacters = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ °·×–—‘’“”•…‹›←↑→↓";
+
+        private static IEnumerator PrewarmFonts()
+        {
+            var first = SceneManager.GetActiveScene();
+#if UNITY_EDITOR
+            EditorSceneManager.LoadSceneInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive));
+            while (!SceneManager.GetSceneByPath(ScenePath).isLoaded) yield return null;
+#else
+            var load = SceneManager.LoadSceneAsync(ScenePath, LoadSceneMode.Additive);
+            while (!load.isDone) yield return null;
+#endif
+            for (var i = 0; i < 120; i++) yield return null;
+            var scene = SceneManager.GetSceneByPath(ScenePath);
+            foreach (var lifecycle in UnityEngine.Object.FindObjectsByType<RunLifecycleAdapter>(FindObjectsInactive.Include)) lifecycle.AutosaveEnabled = false;
+            var unload = SceneManager.UnloadSceneAsync(scene);
+            while (unload != null && !unload.isDone) yield return null;
+            for (var i = 0; i < 10; i++) yield return null;
+
+            var assets = Resources.FindObjectsOfTypeAll<UnityEngine.TextCore.Text.FontAsset>().OrderBy(f => f.name, StringComparer.Ordinal).ToArray();
+            foreach (var font in assets)
+            {
+                font.ClearFontAssetData(true);
+                var ok = font.TryAddCharacters(WarmCharacters, out var missing);
+                Log("T603 font warm-up: " + font.name + " populationMode=" + font.atlasPopulationMode + " ok=" + ok + " missing=" + (missing ?? string.Empty).Length + " glyphs=" + font.glyphTable.Count);
+            }
+
+            Log("T603 font warm-up: " + assets.Length + " font assets");
+            for (var i = 0; i < 10; i++) yield return null;
+            if (first.IsValid()) SceneManager.SetActiveScene(first);
         }
 
         private static IEnumerator RunGroup(Scene scene, List<Job> jobs, string outDir)

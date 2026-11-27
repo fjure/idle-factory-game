@@ -70,6 +70,7 @@ def test_the_committed_f006_baseline_validates_against_the_fixture_list():
     assert len(sidecars) == 14  # 7 class variants x 2 factory states
     frozen = json.loads((BASELINE / "baseline-metrics.json").read_text(encoding="utf-8"))
     assert frozen["metricsVersion"] == METRICS_VERSION and len(frozen["cells"]) == 14
+    assert len(frozen["crossSession"]) >= 2 and all(c["allIdentical"] for c in frozen["crossSession"])
     assert len(frozen["determinism"]) == 14 and all(d["identical"] and all(d[k]["first"] == d[k]["repeat"] for k in ("png", "bodymask", "layout")) for d in frozen["determinism"])
 
 
@@ -88,3 +89,18 @@ def test_repeat_comparison_covers_png_mask_and_layout(tmp_path):
     put("c4"), put("c4-repeat", mask=b"n")
     rows = {r["cell"]: r for r in compare_repeats(tmp_path)}
     assert rows["c1"]["identical"] and not rows["c2"]["identical"] and not rows["c3"]["identical"] and not rows["c4"]["identical"]
+
+
+def test_cross_session_comparison_flags_any_difference(tmp_path):
+    from metrics.finalize_captures import compare_sessions
+
+    a, b = tmp_path / "a", tmp_path / "b"
+    for d in (a, b):
+        d.mkdir()
+        (d / "c-raw.json").write_text("{}", encoding="utf-8")
+        (d / "c.png").write_bytes(b"p")
+        (d / "c-bodymask.png").write_bytes(b"m")
+        (d / "c-layout.json").write_bytes(b"{}")
+    assert compare_sessions(a, [b])[0]["allIdentical"]
+    (b / "c.png").write_bytes(b"q")
+    assert not compare_sessions(a, [b])[0]["allIdentical"]

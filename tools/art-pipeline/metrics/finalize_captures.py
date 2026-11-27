@@ -1,6 +1,6 @@
 """Turns the raw output of the T603 capture driver into evidence: measures every capture, writes the sidecars and freezes the baseline values.
 
-    python -m metrics.finalize_captures <scratch-dir> <destination-dir> <fixtures.json>
+    python -m metrics.finalize_captures <scratch-dir> <destination-dir> <fixtures.json> [<other-session-dir> ...]
 
 For every `<stem>-raw.json` in the scratch directory this copies `<stem>.png`, `<stem>-bodymask.png` and `<stem>-layout.json` to the destination, writes the sidecar
 `<stem>.json` (the driver's fields plus deadAreaShare, medianMachineAreaPx and the metrics version) and validates it. A `-repeat` capture is compared with its original
@@ -45,9 +45,30 @@ def compare_repeats(scratch: Path) -> list[dict]:
     return out
 
 
-def finalize(scratch: Path, dest: Path, fixtures: dict) -> dict:
+def compare_sessions(scratch: Path, others: list[Path]) -> list[dict]:
+    """Compares every cell of `scratch` (PNG, body mask, layout JSON) with the same cell captured in other, separate Unity sessions."""
+    out = []
+    for other in others:
+        cells = []
+        for raw_path in sorted(scratch.glob("*-raw.json")):
+            stem = raw_path.name[: -len("-raw.json")]
+            if stem.endswith("-repeat"):
+                continue
+            row = {"cell": stem}
+            for kind, suffix in (("png", ".png"), ("bodymask", "-bodymask.png"), ("layout", "-layout.json")):
+                row[kind] = sha256(other / f"{stem}{suffix}")
+                row[kind + "Identical"] = row[kind] == sha256(scratch / f"{stem}{suffix}")
+            cells.append(row)
+        out.append({"session": other.name, "cells": cells, "allIdentical": all(c["pngIdentical"] and c["bodymaskIdentical"] and c["layoutIdentical"] for c in cells)})
+    return out
+
+
+def finalize(scratch: Path, dest: Path, fixtures: dict, others: list[Path] | None = None) -> dict:
     dest.mkdir(parents=True, exist_ok=True)
     cells = {}
+    cross = compare_sessions(scratch, others or [])
+    if not all(c["allIdentical"] for c in cross):
+        raise SystemExit("cross-session determinism check failed for: " + ", ".join(c["session"] for c in cross if not c["allIdentical"]))
     determinism = compare_repeats(scratch)
     bad = [d["cell"] for d in determinism if not d["identical"]]
     if bad:
@@ -92,6 +113,7 @@ def finalize(scratch: Path, dest: Path, fixtures: dict) -> dict:
         "captureCommit": fixtures["captureCommit"],
         "fixtures": {name: {"seed": s["seed"], "occupied": s["occupied"], "stage": s["stage"]} for name, s in fixtures["states"].items()},
         "determinism": determinism,
+        "crossSession": cross,
         "cells": cells,
         "perClass": _per_class(cells),
     }
@@ -108,12 +130,12 @@ def _per_class(cells: dict) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 3:
+    if len(argv) < 3:
         print(__doc__)
         return 2
     fixtures = json.loads(Path(argv[2]).read_text(encoding="utf-8"))
-    frozen = finalize(Path(argv[0]), Path(argv[1]), fixtures)
-    print(f"{len(frozen['cells'])} cells, determinism checks: {len(frozen['determinism'])}, all identical")
+    frozen = finalize(Path(argv[0]), Path(argv[1]), fixtures, [Path(a) for a in argv[3:]])
+    print(f"{len(frozen['cells'])} cells, repeat checks: {len(frozen['determinism'])}, other sessions compared: {len(frozen['crossSession'])}, all identical")
     return 0
 
 
