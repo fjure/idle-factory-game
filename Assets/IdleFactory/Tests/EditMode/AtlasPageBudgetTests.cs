@@ -25,7 +25,30 @@ namespace IdleFactory.Tests.EditMode
                     .Select(file => file.Replace((char)92, '/')));
             }
 
+            if (Directory.Exists(F007SpriteAtlasSettings.AtlasFolder))
+            {
+                paths.AddRange(Directory.GetFiles(F007SpriteAtlasSettings.AtlasFolder, "*" + F004SpriteAtlasSettings.AtlasExtension, SearchOption.AllDirectories)
+                    .Select(file => file.Replace((char)92, '/')));
+            }
+
             return paths;
+        }
+
+        /// <summary>
+        /// T613 (research R13 amendment, TA-3): the F007 look atlases obey the same strict 1 MiB page rule. A look can only raise its page cap together
+        /// with this constant and the T614 verdict (Pixel pass plus owner acceptance at M4); until then a look that plans a bigger page fails here.
+        /// </summary>
+        [Test]
+        public void EveryF007LookPlansPagesWithinTheStrictOneMiBBudget()
+        {
+            Assert.That(F004SpriteAtlasSettings.MaxPageBytes, Is.EqualTo(1024 * 1024), "the page rule in force is 1 MiB");
+            Assert.That(F007SpriteAtlasSettings.MaxPageBytes, Is.EqualTo(1024 * 1024));
+            foreach (var look in new[] { F007Look.A, F007Look.B, F007Look.C })
+            {
+                Assert.That(F007SpriteAtlasSettings.PageBytes(F007SpriteAtlasSettings.MaxPageSize), Is.LessThanOrEqualTo(F004SpriteAtlasSettings.MaxPageBytes), look + " page plan");
+                var rules = F007ImportRules.For(look);
+                Assert.That(rules.AtlasPadding, Is.GreaterThanOrEqualTo(1 << rules.MipLevels), look + " padding covers its mips");
+            }
         }
 
         [Test]

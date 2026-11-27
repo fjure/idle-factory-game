@@ -33,7 +33,22 @@ def main(argv: list[str] | None = None) -> int:
     f6.add_argument("--out", required=True, help="art-source/f006/concept directory to write")
     ct = sub.add_parser("cue-tail", help="regenerate the F006 T524 badge pointer-tail sprites (OD-12, K4)")
     ct.add_argument("--out", required=True, help="art-source/f006/cue directory to write")
+    rh = sub.add_parser("render-hd", help="F007 art pipeline v2: headless Blender passes, post, v2 checks, manifest row")
+    rh.add_argument("--params", required=True, help="per-asset parameter JSON (see f007/reference-machine.params.json)")
+    rh.add_argument("--out", required=True, help="output directory")
+    rh.add_argument("--blender", default=None, help="Blender 5.2.1 executable (default $BLENDER_EXE or the standard install path)")
+    rh.add_argument("--repro", action="store_true", help="render a second time on one thread and run the reproducibility check")
+    me = sub.add_parser("mesh-export", help="F007 art pipeline v2 (Direction C): headless GLB export, mesh checks, manifest row, provenance")
+    me.add_argument("--params", required=True, help="per-asset parameter JSON (see f007/reference-mesh.params.json)")
+    me.add_argument("--out", required=True, help="output directory")
+    me.add_argument("--blender", default=None, help="Blender 5.2.1 executable (default $BLENDER_EXE or the standard install path)")
     args = ap.parse_args(argv)
+    if args.cmd == "mesh-export":
+        from . import mesh_export
+        return mesh_export.main(args)
+    if args.cmd == "render-hd":
+        from . import render_hd
+        return render_hd.main(args)
     if args.cmd == "concept-f006":
         from . import concept_f006
         build = concept_f006.write_all(args.out)

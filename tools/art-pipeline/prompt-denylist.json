@@ -1,0 +1,10 @@
+{
+  "_note": "AD-10 prompt lint: game titles and artist or studio names that must not appear in a generation prompt. Extend, never silently shrink.",
+  "terms": [
+    "factorio", "satisfactory", "shapez", "mindustry", "dyson sphere program", "oxygen not included", "rimworld",
+    "clash of clans", "cookie clicker", "adventure capitalist", "bitburner", "idle miner tycoon", "anno 1800",
+    "kaizen", "dwarf fortress", "starcraft", "transport fever", "cities skylines", "stardew valley",
+    "greg rutkowski", "hayao miyazaki", "studio ghibli", "simon stalenhag", "syd mead", "moebius", "pixar",
+    "artgerm", "alphonse mucha", "makoto shinkai", "beeple", "craig mullins", "wlop", "ross tran"
+  ]
+}
