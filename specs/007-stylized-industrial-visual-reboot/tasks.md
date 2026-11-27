@@ -93,6 +93,149 @@ description: "Dependency-ordered work for the Visual Direction Reboot, milestone
 
 ---
 
+## Context Orchestration Process
+
+### Parent Orchestrator Rules
+
+- **Order.** Execute work units in ledger order. Units that the ledger marks as parallel candidates may run together once their prerequisites are verified. Task-level `[P]` markers are local hints only.
+- **Completion.** Task checkboxes are the completion checklist. A unit is complete only when every referenced task is checked after parent verification. GitHub Issues remain the MAQA workflow-status authority, and checkboxes are mirrored from them (`scripts/maqa-sync-task-checkboxes.ps1`).
+- **Fresh sessions.** Use a clean subagent session for each delegated unit, with one authoritative MAQA Issue and one worktree. Include the full handoff packet. Do not rely on prior conversation state.
+- **Write scope.** Keep each worker inside its listed write scope. A worker stops before editing an unassigned path or a shared serialized Unity asset. Scenes, prefabs, `.asset` files, URP assets and `ProjectSettings/` change only through Unity tooling.
+- **Tests.** Test work is fail-first where practical. A red-only unit is never accepted.
+- **Leases.** Acquire the leases a unit needs before spawning its worker, and release them after QA and merge. Use `scripts/resource-lease.ps1` with owner `issue-<n>`:
+  - `unity` for every Unity run;
+  - `emulator` for any `adb` use, including the Pixel 11 Pro, and for Android or player runs (pass `-Serial` when two devices are attached);
+  - `gpu` for Blender, ComfyUI and every performance capture.
+- **Owner gates are blocking.** No production of direction assets before checkpoint 1 (T639). No remaining-machine art before checkpoint 2 (T642). No C machine art before the C1 gate (T643). No scoring before the WB v0.3 approval (T607) and the rubric-anchor approval (T608). No M3 brief before hands-on play (T644). No M4–M6 work before T636 and T637.
+- **Model tier.** Follow the AGENTS.md routing:
+  - Medium by default;
+  - Medium with `high` reasoning for T609 and T625;
+  - High for the architect review of T609 and for the Art Director in T608 and T635;
+  - Low for T602.
+
+  Escalate only with a recorded reason.
+- **Independent review.** Producers never review their own assets, briefs, Bible text or rubric scores. Reviewers and trial sessions are fresh sessions.
+- **Parent checks.** The parent inspects diffs, runs targeted verification, checks for unrelated changes, and fixes or re-delegates inconsistencies before starting a dependent unit.
+- **Final validation.** The parent owns final validation and reruns the gates even when another agent helped interpret results. Workers and QA never run the `after_implement` hooks.
+
+### Required Subagent Handoff Packet
+
+Every assignment includes:
+
+- the work unit ID, phase, task ID, MAQA Issue, exact task text and exact paths;
+- the role, review lenses, complexity tier and model/reasoning level;
+- the relevant `spec.md` FR, SC and edge cases, the `plan.md` owner decisions OD7-1 to OD7-15, the `research.md` R-ids including their "Plan review amendments", the `data-model.md` rows, the `contracts/` sections and `reviews/plan-reviews.md` finding IDs;
+- the non-negotiable constraints:
+  - no production, economy, content, unlock, offline, prestige or save change (FR-001);
+  - presentation derives from authoritative state, with the existing badge precedence as the only state source (FR-027);
+  - the shipped default look stays `F006` in M1–M3;
+  - prototype assets only under `Art/F007/Prototype/<A|B|C>/` and `art-source/f007/prototype/`, and never in release builds;
+  - no machine-to-machine links (FR-024, WB v0.3);
+  - the glyph keeps at least 24 pt at `n_min`;
+  - zero steady-state allocations;
+  - atlas pages stay at most 1 MiB until T614 passes on the Pixel and the owner accepts;
+  - the approved brief and WB version for visual work;
+- the accepted prerequisite commits and the current implementation status;
+- the allowed and forbidden paths and tools. The Blender MCP or ComfyUI MCP is used only after a real tool call in the worker session, and final pixels come only from the headless batch;
+- Unity `6000.6.0f1`, the target classes (emuP, emuL, tabL, phoneP-card, 640×360) and devices (Pixel 11 Pro, emulator, Windows player), and the required validation with the exact commands;
+- the relevant wiki pages, chosen from `wiki/INDEX.md` (for example `wiki/pages/f007-plan-overview.md` and `wiki/pages/f007-directions-and-measurement-plan.md`);
+- the required response:
+  - files changed;
+  - task IDs completed;
+  - tests run, with results and counts;
+  - expected failures;
+  - assumptions;
+  - unresolved risks;
+  - parent follow-up;
+  - a done/blocked verdict.
+
+### Parent Verification Gate
+
+For each unit, the parent:
+
+1. Inspects `git diff -- <unit paths>` plus every extra path the worker reported, and confirms edits stay in scope or are justified adjacent changes.
+2. Runs the targeted `scripts/test-unity.ps1 -TestFile <file>` commands (recompiling first, with a total above 0), `scripts/test-unity.ps1 -DevTools` for DevTools-assembly tests once T609 provides it, `powershell -NoProfile -File scripts/test-art-pipeline.ps1` where art tooling or assets changed (exit 3 is a blocker), and the suite named in the unit.
+3. Rereads the contract and data-model sections for any public boundary change: the look profile, layout pitch, indicator anchor, build-out stage or finish tier, or the pipeline manifest.
+4. Confirms the following are unchanged unless the unit names them:
+   - Core, content and save paths;
+   - `Library/`;
+   - unassigned serialized assets;
+   - the shipped URP asset;
+   - `ProjectSettings/` noise, checked with `scripts/check-settings-noise.ps1 -Commit <sha>`. URP and quality changes get a manual diff review.
+
+   It also runs `scripts/check-release-build.ps1` once T615 provides the prototype checks, and `tools/test-ids/compare_test_ids.py` once T638 provides it.
+5. Requires independent QA PASS on the exact commit, plus the named specialist reviews, before marking the unit.
+
+### Context Compaction Recovery
+
+After compaction:
+
+1. Read this process, the ledger and the checklist before editing.
+2. Run `git status --short` and `scripts/resource-lease.ps1 -Status`, and inspect existing diffs.
+3. Resume at an earlier partially changed unit if one exists. Otherwise resume at the first ledger unit with unchecked tasks whose prerequisites are accepted.
+4. Reconstruct state from Issue status, merged commits, mirrored checkboxes, diffs, review and owner-checkpoint records, and targeted tests.
+5. Finish and verify a partial unit before opening another worker.
+
+### Work Unit Ledger
+
+Ledger convention:
+
+- One unit per task.
+- Rows are in dependency (execution) order.
+- Every prerequisite names an earlier unit.
+- The Tasks column is the only mapping between units and tasks.
+- Conditional units (WU35 T641, WU45 T640) run only when their condition holds. Otherwise the parent closes them as not needed, with a recorded reason.
+
+Generated 2026-11-27 after the `$speckit-analyze` remediation (45 units, M1–M3). It is refreshed when T637 regenerates the M4–M6 tasks.
+
+| Unit | Phase | Tasks | Atomic scope and touched paths | Prerequisites | Required handoff sources | Parent verification |
+|------|-------|-------|--------------------------------|---------------|--------------------------|---------------------|
+| WU01 | Phase 1: Setup and gates (no story) | T600 | Parent-only. `specs/007-stylized-industrial-visual-reboot/reviews/gates.md` | None | plan.md "Implementation lane"; reviews/plan-reviews.md | Gate result recorded with date and evidence; diff limited to the record. |
+| WU02 | Phase 1: Setup and gates (no story) | T601 | Parent-only. `specs/007-stylized-industrial-visual-reboot/reviews/devices-f007.md` | WU01 | research.md R16; plan.md OD7-9 | Device record complete (SoC, GPU, Android build, resolution, refresh, ASTC support); dev APK starts on the Pixel; leases released. |
+| WU03 | Phase 1: Setup and gates (no story) | T602 | `AGENTS.md`, `docs/agents/workstation-pitfalls.md`, `scripts/check-after-implement-hooks.ps1`, `scripts/test-art-pipeline.ps1`, `scripts/test-unity.ps1`, `specs/007-stylized-industrial-visual-reboot/reviews/` skeleton | WU01 | reviews/plan-reviews.md OPS-1 to OPS-8; research.md R16, R20; contracts/art-pipeline-v2.md | `scripts/test-art-pipeline.ps1` exit 0; hook-gate dry run detects `Art/F006/`; diff limited to the listed paths; QA PASS. |
+| WU04 | Phase 1: Setup and gates (no story) | T638 | `tools/test-ids/compare_test_ids.py`, `tools/test-ids/tests/`, `specs/007-stylized-industrial-visual-reboot/reviews/rebaseline-map.md`, `scripts/test-unity.ps1` (`-CheckTestIds`), `docs/agents/workstation-pitfalls.md` | WU03 | research.md R19 amendment; reviews/plan-reviews.md QA-5 | pytest green; a planted missing id fails; diff limited to the listed paths; QA PASS. |
+| WU05 | Phase 2: M1 — Current-state visual audit (US1, P1) | T603 | `tools/art-pipeline/metrics/`, `tools/art-pipeline/tests/metrics/`, `specs/007-stylized-industrial-visual-reboot/reviews/comparison/fixtures.json`, `reviews/comparison/F006/` | WU03 | spec.md FR-006, FR-011, FR-011a, FR-012, SC-003, SC-004, SC-006; research.md R08, R18; contracts/evidence-and-decision.md | pytest green; `scripts/test-art-pipeline.ps1` exit 0; the determinism re-capture is identical; sidecars validate; QA PASS. |
+| WU06 | Phase 2: M1 — Current-state visual audit (US1, P1) | T604 | `specs/007-stylized-industrial-visual-reboot/reviews/baseline-device.md` Scheduling note: WU02, WU03; parallel candidate with WU05 (separate lease windows). | WU02, WU03, WU05 | research.md R16, R17; spec.md FR-014, FR-032, SC-011 | The record labels every number (dev build, measured) with its method; device protocol followed; leases released; QA PASS. |
+| WU07 | Phase 2: M1 — Current-state visual audit (US1, P1) | T605 | `specs/007-stylized-industrial-visual-reboot/reviews/audit-f007.md` | WU05, WU06 | spec.md US1, FR-006; research.md R03; docs/art/F004-art-bible-v1.md | Every F004 rule id has a per-direction disposition; every problem links evidence; AD-1, AD-4 and AD-7 are present; QA PASS. |
+| WU08 | Phase 2: M1 — Current-state visual audit (US1, P1) | T606 | Read-only review. `specs/007-stylized-industrial-visual-reboot/reviews/audit-review.md` | WU07 | reviews/audit-f007.md; spec.md US1 | Review record exists with verdicts from fresh, non-producing sessions; findings fixed by the T605 author; no code diff. |
+| WU09 | Phase 3: M2 foundations (blocking for US2) | T607 | `docs/world/world-bible-v0.3.md` | WU07 | docs/world/world-bible-v0.2.md; research.md R15, R21 amendments; spec.md FR-007a, FR-024 | Every WD-1 to WD-8 and AD-2 item is covered; Art Director renderability note present; owner approval recorded before WU37; World Designer review; no other diff. |
+| WU10 | Phase 3: M2 foundations (blocking for US2) | T608 | `specs/007-stylized-industrial-visual-reboot/reviews/rubric-anchors.md` Scheduling note: WU07; parallel candidate with WU09. | WU07, WU09 | spec.md SC-002, FR-037; research.md R18 amendment | Anchors written for 8 dimensions, calibration recorded, F006 not used as an anchor, schema defined; owner approval recorded; no other diff. |
+| WU11 | Phase 3: M2 foundations (blocking for US2) | T609 | `Assets/IdleFactory/Unity/Presentation/Look/`, `Assets/IdleFactory/Unity/Bootstrap/CoreGameFoundationBootstrap.cs`, `Assets/IdleFactory/Unity/Presentation/PresentationSpriteCatalog.cs`, `Assets/IdleFactory/DevTools/`, `Assets/IdleFactory/DevTools/Scenes/F007LookProfiles.unity`, `Assets/IdleFactory/Editor/PlatformBuildCommands.cs`, `Assets/IdleFactory/Art/F007/Profiles/F006.asset`, `Assets/IdleFactory/Tests/EditMode/F007/`, `Assets/IdleFactory/Tests/PlayMode/F007/`, `scripts/test-unity.ps1` (`-DevTools`) | WU03, WU04 | contracts/look-profile.md; data-model.md LookProfile; research.md R07, R19 amendments; reviews/plan-reviews.md ARCH-1, ARCH-5 to ARCH-7, ARCH-11, QA-1 to QA-4 | `scripts/test-unity.ps1 -TestFile` for `LookProfileResolutionTests`, `LookProfileDeterminismParityTests` and `LookProfileInvalidSelectionTests`; `-DevTools` run with a count above 0; full suites with the same pass set; `F006/BaselineMatrixTests` green; check-settings-noise; High-tier architect review; QA PASS. |
+| WU12 | Phase 3: M2 foundations (blocking for US2) | T610 | `Assets/IdleFactory/Unity/Presentation/World/SlotLattice.cs`, `FactoryWorldLayout.cs`, `WorldCompositionSettings.cs`, `Assets/IdleFactory/Unity/Presentation/CameraScaleModel.cs`, the 16 call sites, `Assets/IdleFactory/Tests/EditMode/F007/LayoutPitchTests.cs`, `Assets/IdleFactory/Tests/PlayMode/F007/OverhangTapTests.cs` | WU11 | contracts/look-profile.md rules 6–7; data-model.md LayoutPitchSettings; research.md R09 amendment; ARCH-4, ARCH-10, UX-4, QA-12 | `-TestFile` for the new tests; `F006/LayoutIndependenceTests`, `WorldLayoutParityTests` and `WorldTapPriorityTests` unchanged and green; full suites; T638 id check; QA PASS. |
+| WU13 | Phase 3: M2 foundations (blocking for US2) | T611 | `Assets/IdleFactory/Unity/Presentation/World/MachineIndicatorView.cs`, the scripted glyph family under `tools/art-pipeline/`, `Assets/IdleFactory/Tests/EditMode/F007/IndicatorGlyphSizeTests.cs`, `Assets/IdleFactory/Tests/PlayMode/F007/IndicatorAnchorTests.cs` Scheduling note: WU11; parallel candidate with WU14 and WU17. | WU11 | spec.md FR-027, FR-027b; research.md R10 amendment; UX-1 to UX-3, AD-7, AD-8 | `-TestFile` for both tests; pipeline pytest for contrast; `scripts/test-art-pipeline.ps1` exit 0; `StateCueSetTests` unchanged; QA PASS with UI/UX and Art Director lenses. |
+| WU14 | Phase 3: M2 foundations (blocking for US2) | T612 | `Assets/IdleFactory/Unity/Presentation/World/MachineBuildOutStages.cs`, `FacilityFinishTiers.cs` plus their assets, `Assets/IdleFactory/Tests/EditMode/F007/BuildOutStageTests.cs`, `FacilityFinishTierTests.cs` Scheduling note: WU11; parallel candidate with WU13 and WU17. | WU11, WU13 | spec.md FR-027a, FR-027c; data-model.md; research.md R11 amendment; GS-1 to GS-3 | `-TestFile` for both tests (boundaries, prestige drop-back, tier persistence, no state write); Game Systems review recorded; QA PASS. |
+| WU15 | Phase 3: M2 foundations (blocking for US2) | T613 | `tools/art-pipeline/blender/rig-v3.blend`, `tools/art-pipeline/` render-hd and mesh-export routes and checks, `Assets/IdleFactory/Editor/Art/F007SpriteImportPostprocessor.cs`, the `AtlasPageBudgetTests` extension | WU03 | contracts/art-pipeline-v2.md; research.md R05, R14 amendments; TA-4 to TA-8, AD-9, AD-10 | `scripts/test-art-pipeline.ps1` exit 0; reference re-render within tolerance; Edit Mode importer test; QA PASS with Technical Art and Art Director lenses. |
+| WU16 | Phase 3: M2 foundations (blocking for US2) | T614 | `specs/007-stylized-industrial-visual-reboot/reviews/page-cap-astc.md`; isolated test atlases only | WU02, WU15 | research.md R13 amendment; TA-1, TA-3, PERF-2, QA-11 | Record with a pass or fail verdict per size and the maximum of 3 cold loads on the Pixel; `AtlasPageBudgetTests` still at 1 MiB; leases released; QA PASS. |
+| WU17 | Phase 3: M2 foundations (blocking for US2) | T615 | capture driver, `tools/art-pipeline/comparison/make_sheets.py` and tests, `scripts/check-release-build.ps1`, `Assets/IdleFactory/Tests/EditMode/F007/PrototypeReferenceGuardTests.cs` Scheduling note: WU11; parallel candidate with WU13 and WU14. | WU11, WU13, WU14 | contracts/evidence-and-decision.md; contracts/look-profile.md rule 4; research.md R07, R08 amendments; QA-3, QA-9 | pytest green; release check on the release APK and the Windows build plus the dev-build positive control; variant count 490; QA PASS. |
+| WU18 | Phase 4: M2 — Three directions in the real game (US2, P1) | T616 | `specs/007-stylized-industrial-visual-reboot/reviews/directions/A.md` | WU07, WU09 | research.md R04 amendment; docs/world/world-bible-v0.3.md; spec.md FR-007, FR-020, FR-021 | Brief covers every R04 item; concepts labelled; prompt lint passes; World Designer lens; no other diff. |
+| WU19 | Phase 4: M2 — Three directions in the real game (US2, P1) | T620 | `specs/007-stylized-industrial-visual-reboot/reviews/directions/B.md` Scheduling note: WU07, WU09; parallel candidate with WU18 and WU20. | WU07, WU09, WU18 | research.md R05 amendment; WB v0.3; spec.md FR-007 | Brief covers every R05 item, including the memory levers and the 192 px test; no other diff. |
+| WU20 | Phase 4: M2 — Three directions in the real game (US2, P1) | T624 | `specs/007-stylized-industrial-visual-reboot/reviews/directions/C.md` Scheduling note: WU07, WU09; parallel candidate with WU18 and WU19. | WU07, WU09, WU18, WU19 | research.md R06 amendment; AD-1; WB v0.3 | Brief covers the fair-C items and the model-versus-rendering-flaw rule; no other diff. |
+| WU21 | Phase 3: M2 foundations (blocking for US2) | T639 | Owner checkpoint. `specs/007-stylized-industrial-visual-reboot/reviews/owner-checkpoints.md` | WU09, WU18, WU19, WU20 | the three briefs; WB v0.3; spec.md FR-016a | Owner's go or adjust per direction recorded verbatim with the date; no ranking. |
+| WU22 | Phase 4: M2 — Three directions in the real game (US2, P1) | T617 | `art-source/f007/prototype/A/`, `Assets/IdleFactory/Art/F007/Prototype/A/` (first machine), `F007-A` profile | WU11, WU13, WU15, WU18, WU21 | directions/A.md; contracts/art-pipeline-v2.md; contracts/look-profile.md | Pipeline checks; resolution test for the A keys present; flash ≤ 3/s; provenance complete; Art Director review by another session; QA PASS. |
+| WU23 | Phase 4: M2 — Three directions in the real game (US2, P1) | T621 | `art-source/f007/prototype/B/`, `Assets/IdleFactory/Art/F007/Prototype/B/` (first machine), `F007-B` profile Scheduling note: WU11, WU13, WU15, WU19, WU21; parallel candidate with WU22 (gpu and unity serialized). | WU11, WU13, WU15, WU19, WU21, WU22 | directions/B.md; contracts/art-pipeline-v2.md | Pipeline checks, including reproducibility and alignment; provenance; Art Director review; QA PASS. |
+| WU24 | Phase 4: M2 — Three directions in the real game (US2, P1) | T625 | `Assets/IdleFactory/DevTools/Rendering/F007C_UniversalURP.asset`, DevTools pipeline switch, `Assets/IdleFactory/Tests/PlayMode/F007/C1SortingTests.cs`, `specs/007-stylized-industrial-visual-reboot/reviews/directions/C-spike.md` | WU11, WU13, WU17, WU20 | research.md R06 amendment; contracts/look-profile.md rule 9; ARCH-2, ARCH-3, PERF-6, OPS-5 | `C1SortingTests`; `RenderPipelineConfigurationTests` unchanged; release check with no `UniversalRendererData` and 490 variants; Pixel gate numbers recorded; manual URP diff review; High-tier architect review; QA PASS. |
+| WU25 | Phase 4: M2 — Three directions in the real game (US2, P1) | T643 | Owner gate. `reviews/owner-checkpoints.md` | WU24 | directions/C-spike.md; spec.md FR-016a | Owner decision (continue, adjust or stop C) recorded verbatim. |
+| WU26 | Phase 4: M2 — Three directions in the real game (US2, P1) | T626 | `art-source/f007/prototype/C/`, `Assets/IdleFactory/Art/F007/Prototype/C/` (first machine), `F007-C` profile | WU15, WU24, WU25 | directions/C.md; C-spike.md; contracts/art-pipeline-v2.md mesh-export | Mesh-export checks; Unity-render IoU step; Art Director review; QA PASS. Skipped only if WU25 recorded "stop C". |
+| WU27 | Phase 4: M2 — Three directions in the real game (US2, P1) | T642 | Owner checkpoint. `reviews/owner-checkpoints.md` Scheduling note: WU22, WU23 (WU26 joins when available). | WU22, WU23, WU26 | the first-machine captures on the Pixel; spec.md FR-016a | Owner's go or adjust per direction recorded verbatim. |
+| WU28 | Phase 4: M2 — Three directions in the real game (US2, P1) | T618 | `art-source/f007/prototype/A/`, `Assets/IdleFactory/Art/F007/Prototype/A/` (remaining machines, depot, stage 1, finish tier 1) | WU22, WU27 | directions/A.md; spec.md FR-027a, FR-027c, SC-003 | IoU ≤ 0.70 for every pair and stage; `LookProfileResolutionTests` covers all A machine keys; QA PASS. |
+| WU29 | Phase 4: M2 — Three directions in the real game (US2, P1) | T619 | A environment, infrastructure, boundary, `F007-A` `LayoutPitchSettings`, effects, site patch | WU28, WU12 | directions/A.md; WB v0.3; spec.md FR-023 to FR-025, FR-030, FR-031 | `ReducedMotionWorldTests` and the allocation test under `F007-A`; parity test; UX-7 check recorded in `directions/A.md`; QA PASS with the World Designer lens. |
+| WU30 | Phase 4: M2 — Three directions in the real game (US2, P1) | T622 | `art-source/f007/prototype/B/`, `Assets/IdleFactory/Art/F007/Prototype/B/` (remaining machines, depot, stage and tier, 192 px test) Scheduling note: WU23, WU27; parallel candidate with WU28. | WU23, WU27, WU28 | directions/B.md; SC-003 | IoU per pair and stage; resolution tests; QA PASS. |
+| WU31 | Phase 4: M2 — Three directions in the real game (US2, P1) | T623 | B environment, infrastructure, boundary, pitch, effects, site patch | WU30, WU12 | directions/B.md; WB v0.3 | As WU29, under `F007-B`. |
+| WU32 | Phase 4: M2 — Three directions in the real game (US2, P1) | T627 | `art-source/f007/prototype/C/`, `Assets/IdleFactory/Art/F007/Prototype/C/` (remaining machines, depot, stage and tier) | WU26, WU27 | directions/C.md | IoU through the render step; resolution tests; QA PASS. |
+| WU33 | Phase 4: M2 — Three directions in the real game (US2, P1) | T628 | C environment (2D), infrastructure, boundary, pitch, effects, finish-tier patch, lamp lights | WU32, WU12 | directions/C.md; C-spike.md | As WU29 under `F007-C`, plus `C1SortingTests` on the full scene. |
+| WU34 | Phase 4: M2 — Three directions in the real game (US2, P1) | T629 | `specs/007-stylized-industrial-visual-reboot/reviews/comparison/` Scheduling note: WU29, WU31, WU33 (or WU25 with "stop C"). | WU29, WU31, WU33, WU25 | contracts/evidence-and-decision.md; research.md R08 | The sheet generator reports 0 missing cells (70 plus the 640×360 checks); re-capture identical; QA PASS. |
+| WU35 | Phase 4: M2 — Three directions in the real game (US2, P1) | T641 | Conditional, parent-only. `reviews/trials-f007/f006-baseline.md` | WU05 | research.md R18 (PO-3) | Runs only if F006 T546 is not on `main` when WU36 starts; record from an independent session. |
+| WU36 | Phase 4: M2 — Three directions in the real game (US2, P1) | T630 | Independent sessions. `reviews/trials-f007/` Scheduling note: WU34; WU35 if it ran. | WU34, WU35 | research.md R18; spec.md SC-003, SC-005, SC-008, SC-009 | Trial records with shuffled inputs and a hidden key; owner timed trial recorded; the sessions are not producers. |
+| WU37 | Phase 4: M2 — Three directions in the real game (US2, P1) | T631 | `reviews/rubric/` Scheduling note: WU34, WU09 (approved), WU10 (approved); parallel candidate with WU36, WU38 to WU41. | WU34, WU09, WU10, WU36 | reviews/rubric-anchors.md; spec.md SC-002 | Two reviewers in separate sessions; JSON validates against the schema; spreads above 1 discussed. |
+| WU38 | Phase 4: M2 — Three directions in the real game (US2, P1) | T632 | `reviews/performance-m2.md` | WU34 | research.md R16, R17; spec.md FR-014, FR-032, SC-011 | Every number labelled; W007-D protocol followed; budget set v2 draft items present; leases released; QA PASS. |
+| WU39 | Phase 4: M2 — Three directions in the real game (US2, P1) | T633 | `reviews/playtest-f007-m2.md` | WU34 | roles-and-reviews.md Play-Tester; spec.md FR-038 | Report states build, channel and evidence; feel statements labelled; no host input injection; goes to the owner. |
+| WU40 | Phase 4: M2 — Three directions in the real game (US2, P1) | T634 | `reviews/uiux-f007-m2.md`, `reviews/world-conformance-f007-m2.md`, `reviews/po-f007-m2.md` | WU34 | spec.md US2, FR-025, FR-026, FR-029, FR-036, SC-007; research.md R18 (UX-7) | Three records from fresh read-only sessions; named F006 suites green per profile; no code diff. |
+| WU41 | Phase 5: M3 — Owner chooses the direction (US3, P1) | T644 | Owner session. `reviews/owner-checkpoints.md` | WU34 | spec.md FR-016a | Owner's hands-on impressions for every direction recorded. |
+| WU42 | Phase 5: M3 — Owner chooses the direction (US3, P1) | T635 | `specs/007-stylized-industrial-visual-reboot/reviews/direction-brief.md` | WU36, WU37, WU38, WU39, WU40, WU41 | contracts/evidence-and-decision.md "Decision brief"; constitution VII | Every required brief section present, including "revise"; facts, assumptions and recommendation labelled; no other diff. |
+| WU43 | Phase 5: M3 — Owner chooses the direction (US3, P1) | T636 | Owner decision. `reviews/direction-decision.md`; wiki ingest | WU42 | data-model.md DirectionDecisionRecord | Owner words recorded verbatim; the commit predates any M5 Issue (SC-013). |
+| WU44 | Phase 5: M3 — Owner chooses the direction (US3, P1) | T637 | Parent-only. Cleanup plan; `tasks.md` regeneration (M4–M6); analyze; ledger; sync | WU43 | research.md R01, R07 (ARCH-12); spec.md FR-003, FR-004 | `$speckit-analyze` has no CRITICAL; the ledger validates; the release check passes after cleanup. |
+| WU45 | Phase 5: M3 — Owner chooses the direction (US3, P1) | T640 | Conditional, parent-only. Revised brief and new task ids | WU43 | spec.md US3 scenario 2 | Runs only if WU43 recorded "revise"; the loop is recorded in the decision file. |
+
 ## Phase 1: Setup and gates (no story)
 
 - [ ] T600 *Parent* Re-verify the MAQA gates on `origin/main`:
@@ -226,7 +369,7 @@ description: "Dependency-ordered work for the Visual Direction Reboot, milestone
     - `scripts/check-settings-noise.ps1 -Commit <sha>`;
     - the release build check from T615, once it lands, passes on this commit.
   - **Resources**: unity.
-  - **Covers**: FR-001, FR-009, FR-035a; look-profile rules 1–5; ARCH-1, ARCH-5, ARCH-6, ARCH-7, ARCH-11; QA-1, QA-2, QA-4.
+  - **Covers**: FR-001, FR-009, FR-035a; SC-012; look-profile rules 1–5; ARCH-1, ARCH-5, ARCH-6, ARCH-7, ARCH-11; QA-1, QA-2, QA-4.
 - [ ] T610 Gameplay Developer (Software Architect and Test/QA lenses; Medium, high reasoning), after T609. Pitch as instance data.
   - **Pitch conversion**: move `PivotOfCell` and `DeckTileRect` from static with `const` pitch (`Assets/IdleFactory/Unity/Presentation/World/SlotLattice.cs:20-41`, `FactoryWorldLayout.cs:477-493`) to instance methods of `FactoryWorldLayout`. Migrate all 16 call sites.
   - **`LayoutPitchSettings`**: add it to `WorldCompositionSettings.cs` with `pitchWorld` in world units, an optional `groupRule` and `minHitPoints` ≥ 44. Include the pitch in `LayoutComposition` equality and `IdentitySuffix` (`WorldCompositionSettings.cs:84-110`), so the camera refits (ARCH-4).
@@ -292,7 +435,7 @@ description: "Dependency-ordered work for the Visual Direction Reboot, milestone
      - asserts the release variant count is unchanged (490);
      - an Edit Mode guard `Tests/EditMode/F007/PrototypeReferenceGuardTests.cs` checks that no asset or assembly outside DevTools references prototype paths, and that none are under `Resources/` or `StreamingAssets/`.
 
-  **Tests**: pytest for the sheet generator. A release-build check run on a release APK and the Windows build, plus the dev-build control. **Resources**: unity. **Covers**: FR-009, FR-011, FR-011a, FR-012, FR-013; look-profile rule 4; QA-3, QA-9; ARCH-1, ARCH-2.
+  **Tests**: pytest for the sheet generator. A release-build check run on a release APK and the Windows build, plus the dev-build control. **Resources**: unity. **Covers**: FR-009, FR-011, FR-011a, FR-012, FR-013; SC-012; look-profile rule 4; QA-3, QA-9; ARCH-1, ARCH-2.
 - [ ] T639 *Owner* Checkpoint 1 (O-2), after T607, T616, T620 and T624. The owner reviews World Bible v0.3 and the three briefs, and gives go or adjust per direction. This is not a ranking. A brief changes only on the owner's explicit word. Record it in `specs/007-stylized-industrial-visual-reboot/reviews/owner-checkpoints.md`. **Covers**: FR-016a; OD7-14.
 
 ## Phase 4: M2 — Three directions in the real game (US2, P1)
@@ -398,12 +541,12 @@ Rules that apply to every direction task:
 
 ### Comparison
 
-- [ ] T629 [US2] Technical Artist (Test/QA lens; Medium), after T619, T623 and T628. Run the full capture matrix with the T615 driver:
+- [ ] T629 [US2] Technical Artist (Test/QA lens; Medium), after T619, T623 and T628, or after T619 and T623 if T643 recorded "C stopped". Run the full capture matrix with the T615 driver:
   - 5 class variants × 2 states × 7 look and geometry columns (70 cells);
   - the 640×360 reduced check per direction (dense state, 100 % and 200 % text, proposed geometry);
   - one APNG strip per direction of the animated process.
 
-  Output goes to `reviews/comparison/`. **Validation**: the sheet generator reports 0 missing cells; one cell re-captured is identical. **Resources**: unity, emulator. **Covers**: FR-011, FR-011a, FR-012, FR-013; SC-004, SC-006 measurements; QA-9.
+  Output goes to `reviews/comparison/`. **Validation**: the sheet generator reports 0 missing cells; one cell re-captured is identical. **Resources**: unity, emulator. **Covers**: FR-011, FR-011a, FR-012, FR-013, FR-022; SC-004, SC-006 measurements; QA-9.
 - [ ] T630 [P] [US2] Independent trial sessions (Test/QA lens; Medium), after T629, plus *Owner* for the timed trial. Precondition: F006 `reviews/readability-f006.md` (T546) is on `main`; otherwise T641 runs first.
   - Silhouette naming per direction: grayscale, shuffled, 10 trials per type (SC-003).
   - Blind state naming in grayscale and three CVD filters, including static frames with reduced motion on and one stopped machine among running machines (SC-008).
@@ -424,11 +567,12 @@ Rules that apply to every direction task:
 
   Every number is labelled "dev build", "measured" or "estimated". Output: `reviews/performance-m2.md`, with each direction against the frozen budgets and a draft of the budget set v2 items (PERF-5). **Resources**: unity, emulator, gpu. **Covers**: FR-014, FR-032; SC-011; PERF-1, PERF-3, PERF-4, PERF-5, PERF-8, PERF-9.
 - [ ] T633 [P] [US2] Play-Tester (Medium), after T629. A player session per direction on the dev APK, on the emulator (adb screenshots only, no host input injection). It reports clarity, feedback, readability and feel, labelled as inference, to `reviews/playtest-f007-m2.md` for the owner. **Resources**: unity, emulator. **Covers**: FR-038; constitution IX.
-- [ ] T634 [P] [US2] UI/UX Reviewer and World Designer (read-only; Medium), after T629.
+- [ ] T634 [P] [US2] UI/UX Reviewer, World Designer and Game Designer/Product Owner (read-only, separate sessions; Medium), after T629.
   - **UI/UX**: the per-direction interaction check (select the front, back and edge machine in the dense state, open the card, no covered cue or frame; UX-7), the 640×360 reduced check (FR-011a), indicator salience against machinery (FR-029), the card framing at 200 % text, and the named F006 suites green under each profile (UX-8).
   - **World Designer**: the WB v0.3 conformance and trace test (SC-007).
+  - **Game Designer/Product Owner**: checks the prototypes against US2 scenarios 1–5, FR-001 (parity test evidence), FR-020 and FR-021, and the measurability of the M2 success-criteria results (constitution IX).
 
-  Output: `reviews/uiux-f007-m2.md` and `reviews/world-conformance-f007-m2.md`. **Resources**: unity, emulator. **Covers**: FR-025, FR-026, FR-029, FR-036; SC-007; UX-7, UX-8.
+  Output: `reviews/uiux-f007-m2.md`, `reviews/world-conformance-f007-m2.md` and `reviews/po-f007-m2.md`. **Resources**: unity, emulator. **Covers**: FR-025, FR-026, FR-029, FR-036; SC-007; UX-7, UX-8.
 - [ ] T641 *Parent* Fallback, run only if F006 T546 is not on `main` when T630 starts. An independent session reproduces the F006 readability baseline (blind naming plus the owner's timed trial on F006 captures from T603) with the same tools, in `reviews/trials-f007/f006-baseline.md`. **Covers**: SC-008, SC-009; PO-3.
 
 ## Phase 5: M3 — Owner chooses the direction (US3, P1)
@@ -446,7 +590,7 @@ Rules that apply to every direction task:
   - the proposed production geometry and machine-area factor (≥ 1.5);
   - the smallest set of owner questions.
 
-  **Resources**: none. **Covers**: FR-014, FR-015, FR-016; US3 scenarios 1–3.
+  **Resources**: none. **Covers**: FR-014, FR-015, FR-016, FR-022; US3 scenarios 1–3.
 - [ ] T636 *Owner* Decision (OD7-12), after T635. The parent records the owner's words verbatim in `reviews/direction-decision.md` (data-model DirectionDecisionRecord), and ingests it into the wiki. **Covers**: FR-016; SC-013.
 - [ ] T637 *Parent* After T636:
   - the cleanup plan for rejected looks (assets, profiles, the dev scene, the second URP asset if C is rejected, per-profile tests, and the test-player build inputs, followed by a release check; ARCH-12);
@@ -479,6 +623,8 @@ After each batch's merges, the parent runs:
 5. `scripts/check-after-implement-hooks.ps1 -FeatureDir specs/007-stylized-industrial-visual-reboot`;
 6. `scripts/maqa-stale-worktrees.ps1`.
 
+These steps cover FR-039.
+
 Then the parent hands off to a fresh session per AGENTS.md.
 
 ---
@@ -495,7 +641,7 @@ Then the parent hands off to a fresh session per AGENTS.md.
 - T613 → all asset tasks.
 - T617 and T621 → T642 (checkpoint 2) → T618 and T622.
 - T625 → T643 (C1 gate) → T626 → T627 → T628.
-- T619, T623 and T628 → T629 → T630, T631, T632, T633, T634 and T644 → T635 → T636 → T637 (or T640).
+- T619, T623 and T628 (or T643 recording "C stopped") → T629 → T630, T631, T632, T633, T634 and T644 → T635 → T636 → T637 (or T640).
 - T546 of F006 on `main`, or T641 → T630.
 - WB v0.3 approval (T607) and rubric approval (T608) → T631.
 
@@ -513,13 +659,55 @@ Then the parent hands off to a fresh session per AGENTS.md.
 
 ### Parallel examples
 
+Work-unit ordering in the ledger controls orchestration. `[P]` markers are local hints only. Parallel candidates are named in the ledger's Prerequisites column, and the parent verifies each one before any dependent unit starts.
+
+
 - **B2**: T611 and T612 run in parallel after T609 (different files; one `unity` lease at a time for test runs). T607 and T608 are docs-only and run in parallel with any code task.
 - **B3**: the three briefs T616, T620 and T624 run in parallel (different files).
 - **B5**: A, B and C art run in parallel on disjoint paths (`Prototype/A`, `B`, `C`). Renders serialize on `gpu`, and Unity imports serialize on `unity`.
 - **B6**: trials (T630), rubric (T631) and the UX/World review (T634) are read-only and run in parallel. T632 and T633 need the emulator lease in turn.
+
+## Subagent Handoff Examples
+
+**Test-oriented unit: WU11/T609 (look-profile seam)**
+
+- **Assignment**: a Gameplay Developer with the Software Architect (High review) and Test/QA lenses, Medium tier at `high` reasoning. Start after WU03 and WU04 are accepted. The parent holds `unity`.
+- **Context to give**:
+  - the T609 text;
+  - `contracts/look-profile.md` rules 1–5 and its test list;
+  - `data-model.md` LookProfile and its ownership rows;
+  - research R07 and R19 with their amendments;
+  - findings ARCH-1, ARCH-5, ARCH-6, ARCH-7, ARCH-11 and QA-1 to QA-4;
+  - spec FR-001, FR-009 and FR-035a;
+  - `wiki/pages/f007-plan-overview.md` and `wiki/pages/f006-world-presentation-design.md`.
+- **Test-first**: it writes `LookProfileResolutionTests` and `LookProfileDeterminismParityTests` first, including the planted mutating-profile negative control. They must fail before the resolver exists.
+- **Allowed changes**: only the paths in the WU11 row. No Core, content, save or shipped URP asset changes. Scenes change only through Unity tooling.
+- **Report**: test counts (Edit Mode, Play Mode, DevTools runner above 0), the parity hashes, the F006 baseline-matrix result, and the settings-noise check.
+
+**Implementation unit: WU23/T621 (first machine, direction B)**
+
+- **Assignment**: a 3D and Render Artist with the Art Director, Technical Artist and Test/QA lenses, Medium tier. The parent holds `gpu` and `unity` in turn.
+- **Context to give**:
+  - the T621 text;
+  - `reviews/directions/B.md`;
+  - `docs/world/world-bible-v0.3.md`;
+  - `contracts/art-pipeline-v2.md`;
+  - research R05 and R14 with their amendments;
+  - spec FR-020 and FR-021;
+  - `wiki/pages/f007-directions-and-measurement-plan.md` and `wiki/pages/art-production-pipeline.md`.
+- **Rules**: verify a real Blender MCP call before using it. Final pixels come only from the headless `render-hd` batch. No reference screenshots go into img2img.
+- **Allowed changes**: only `art-source/f007/prototype/B/`, `Assets/IdleFactory/Art/F007/Prototype/B/` and the `F007-B` profile asset.
+- **Report**: check results, the reproducibility diff, the provenance path, the memory estimate, and captures for checkpoint 2.
 
 ## Implementation strategy
 
 - **MVP of this phase**: US1 (M1 audit). It is useful on its own, because it fixes the baseline and closes F006 PERF-9.
 - **Next**: the M2 foundations, which keep the F006 look unchanged and are verifiable by parity and release checks. Then the directions in checkpointed increments, each stopping at an owner checkpoint.
 - **Then**: M3 ends this task set. Production (US4–US8) starts only after T637 regenerates the tasks.
+
+### Context-orchestrated subagent strategy
+
+- The parent sends a compact packet per Issue: the unit row, the task text, contract sections, R-ids with amendments, finding IDs, wiki pages, paths, commands, leases and risks.
+- Medium tier by default. T609 and T625 run at `high` reasoning, with a High-tier architect review. The Art Director's rubric and recommendation work runs at High. T602 runs at Low.
+- Reviews, trials and rubric scoring run in fresh sessions. QA fixes go back to the same worker.
+- Owner checkpoints (WU21, WU25, WU27, WU41, WU43) are hard stops. The parent prepares evidence and records the owner's words; it never decides in the owner's place.
