@@ -1,0 +1,17 @@
+[project]
+name = "test-ids"
+version = "0.1.0"
+description = "Compares C# NUnit test ids between two git refs against the F007 rebaseline map (QA-5, T638)."
+requires-python = ">=3.12,<3.14"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest==8.4.2"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
