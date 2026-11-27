@@ -31,3 +31,7 @@ A presentation-only **look profile** (`F006` default, `F007-A/B/C` prototype, la
 All ten plan-review lenses returned APPROVE WITH CONDITIONS with no blocker; the accepted findings are applied (see `reviews/plan-reviews.md`). (S064)
 
 See [directions and measurement plan](./f007-directions-and-measurement-plan.md), [visual identity](./visual-identity-art-direction.md), [F006 plan overview](./f006-plan-overview.md), [URP foundation](./urp-rendering-foundation.md).
+
+## Batch B0 status (2026-11-27)
+
+Gates re-verified, T602 and T638 merged, T603 blocked, T601/T604 await the Pixel. See [batch B0 gates and tooling](./f007-batch-0-gates-and-tooling.md) and [baseline capture lessons](./f007-baseline-capture-lessons.md). (S064)

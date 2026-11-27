@@ -1,8 +1,8 @@
 ---
 title: Android emulator validation
 type: howto
-sources: [S001, S008, S018, S022, S037, S060, S061, S062, S063]
-updated: 2026-11-26
+sources: [S001, S008, S018, S022, S037, S060, S061, S062, S063, S064]
+updated: 2026-11-27
 ---
 
 # Android emulator validation
@@ -74,3 +74,5 @@ Script fixes from T245: R20 assertion corrected, forced departure checkpoint, bl
 - F006 T541 (merged 2026-11-19): the journey script targets the Office hub, has an F006 scenario, `-ValidateOnly`, the default AVD `IdleFactory_Test_API_36` and an `F006Autosave` check. All tap fractions are provisional until T542 calibrates them; the autosave restore check can pass against an unchanged periodic file and should require a newer generation (C-70). See [F006 batch 6](./f006-batch-6-verification-and-polish.md). (S062)
 
 - F006 T562 (2026-11-26): device-class trial captures use a capture-only development APK with test assemblies (`IDLEFACTORY_T562_CAPTURE`); the spec is pushed with adb after launch and images are pulled from the app files. The AVD reaches only about 46 to 47 FPS on this host for any build, and the host GPU stayed in P8 during the cold-boot capture; treat emulator FPS as informational. See [B4b](./f006-batch-6b-fixes-captures-and-performance.md). (S063)
+
+- F007 T602 (2026-11-27): the physical Pixel 11 Pro falls under the `emulator` lease; pass `-Serial` when two devices are attached; phone performance runs hold `unity,emulator,gpu`; adb starts from the main checkout. See [F007 batch B0](./f007-batch-0-gates-and-tooling.md). (S064)

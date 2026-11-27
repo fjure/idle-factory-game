@@ -68,6 +68,8 @@ page files, not here.
 
 - [Feature 007 plan overview (planned)](pages/f007-plan-overview.md) — Stylized industrial reboot: milestones M1-M6, owner decisions OD7-1..OD7-15, look-profile seam, MAQA lane.
 - [F007 directions and measurement plan](pages/f007-directions-and-measurement-plan.md) — Directions A/B/C, ASTC page-cap re-measure, evidence methods; hypotheses labelled.
+- [F007 batch B0 gates and tooling](pages/f007-batch-0-gates-and-tooling.md) — T600 gates, Pixel lease rule, Art/F006-F007 triggers, test-id comparison tool.
+- [F007 baseline capture lessons](pages/f007-baseline-capture-lessons.md) — Deterministic editor Play Mode captures: frozen HUD, font pre-warm, camera reset, resolution route (T603 blocked).
 - [Feature 006 plan overview (planned)](pages/f006-plan-overview.md) — Phases P0-P4, owner decisions OD-1..OD-16, binding versus guidance criteria, World Bible gate.
 - [F006 P0 direction decision](pages/f006-p0-direction-decision.md) — OD-9a World Bible freeze, OD-9b direction A with B's wall as stage-2 candidate, hub "Office", binding conditions.
 - [F006 Android load hang and the atlas page cap](pages/f006-android-load-hang-atlas-page-cap.md) — T552: 2 MiB page hang, 512x512 cap, carried SetPass re-measure.
