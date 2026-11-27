@@ -232,3 +232,135 @@ Done: CF-2..CF-5, B-4 (visible second cause line), B-6, C-28 (guard now covers t
 | C-74 | T560 not done | C-65 StandalonePlayer two-write autosave test (no player-compatible RunPersistence rig); C-53 `DeckPlanner.Build` undressed-path assert (first Refresh is legitimately undressed; needs bootstrap ordering); C-55 real prestige banner end-to-end test; B-13 duplicate PanelScaffold sheet (per-card `styleSheets.Add`) and B-14 shim (production callers remain). | Later task (refactor/test debt); C-65 also T544 device evidence |
 | C-75 | UI/UX + Art Director N1, N3, N4 | Store-full marker draws the 24 px storage icon at 22 px (0.917x, non-integer; shimmer risk): author a 22/23 px marker sprite (art task). Dim tint 0.5 makes occupied plates almost `floor_1`; consider 0.6 after the device look. "it." widow in the side-panel hint and the four F004-B2 baselines. | Final T543 (D4, D5); later art task |
 | C-76 | Architect 1d, 2b, 2c, 3c, 5c | Stale ShellNavigationStack docs; MachineCard cause and rates refresh only on state, shortfall or completion change (rate-only change lags); the card's CompletionsDelta written in a rebuild frame is lost (no production reader); no bootstrap-level cold-start test beyond T560's C-60 case; confirm `familyFpsCaps` 8 equals the old class default. | T542 notes; later |
+
+## Batch 6 part B (P4): T542 and owner decisions 2026-11-25
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T542 | #714 | #781 | `689baa1` (records fix round on `8eec44b`) | PASS: records complete and truthful against committed logs; Edit Mode 3167/3167, Play Mode 3483/3483, Windows player 82/82, art pipeline PASS, fixtures and trace unchanged, settings noise OK |
+
+Owner decisions 2026-11-25:
+- **T561 added** (fix task, like T560): the T542 product and journey gaps are fixed before T544, the T545 captures and the final T543; T561 re-verifies the delta.
+- **T545 scope**: T545 delivers the capture driver and the Windows-class captures (phoneP, phoneL, tabL, tabP) after T561; the emulator class (emuP) moves to the new T562, after disk space is freed.
+- Removal of the 12 stale batch-6a worktrees approved and done.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-77 | T542 D6, C-73 | Shortage marker shows the generic down-arrow, not the resource icon. | T561 |
+| C-78 | T542 marker checklist 7a/7c | A tap on a visible marker icon (or 40 px beside it) selects nothing; only the strip chip selects. | T561 |
+| C-79 | T542 F004 journey | F004Crispness landscape 94.2 % (floor 95 %); a pixel test, not host load; suspected marker or prop scale (C-75). | T561 (cause; art decision if C-75) |
+| C-80 | T542 D7 | About 180 px recentre on the build-card hand-over to the machine card. | T561 |
+| C-81 | T542 D8 | Targets estimated at 45–47 dp on the 100 % portrait class (project rule 48 px; SC-009 minimum 44 pt); no accessibility nodes via adb. | T561 (measure and fix); UI/UX ruling in final T543 |
+| C-82 | T542 journeys | `F006Build` fails because the committed device sets have no empty location; F005 Sell heuristic picks Auto-sell; landscape, zoom and hub taps calibrated on 1080x2400 portrait only; `-ZoomPrefTaps` not calibrated. | T561 (fixture, Sell); later (landscape taps) |
+| C-83 | T542 journeys | ProducingFps about 40 in every scenario, controls equal; host loaded (B4a 61.4). | T544 on a quiet host, cold-booted emulator |
+| C-84 | T542 QA | Result-table row 14 still lists BuildRotation as PASS without the machine-card qualifier (corrected at lines 83, 115). | T561 record update |
+
+### T561 (T542 findings fix)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T561 | #782 | #784 | `55a8e48` (fix round on `f1c0664`, architect REJECT then APPROVE_WITH_NOTES; UI/UX ACCEPT_WITH_NOTES) | PASS: Edit Mode 3175/3175, Play Mode 3516/3516, Windows player 82/82, settings noise OK; emulator F006 `-AutosaveCheck` PASS, F004 crispness portrait 97.6 % / landscape 97.7 %, F005 Sell PASS; reverting `CameraScaleModel.cs` fails 3 camera and 2 hand-over tests |
+
+Results: C-77 and C-78 were a T542 misread (the red arrow is the per-machine Missing-input badge; the attention marker is the 22 px resource icon, and a tap on it selects the first affected location). C-79 cause: the landscape HUD columns inside the crispness band; the analyzer now crops x 0.10–0.90. C-80 fixed in `CameraScaleModel` (no recentre on an unchanged band; a scale change always clamps and snaps; `KeepCurrentViewLegal` grows the sheet relaxation by the overrun and resets on close). C-81: 48 pt = 126 px at 420 dpi, asserted by a device-scale Play Mode test. C-82: device set `device/empty-location`, robust Sell selector. C-84 corrected.
+
+Owner decisions 2026-11-25 (continued):
+- **Marker salience** (22 px resource icon reads weak next to the red Missing-input badge): art decision together with C-75 after P4; no change in T561.
+- **Crispness crop** x 0.10–0.90 accepted as a measurement-window change (no threshold relaxed).
+- **C-85 folded into T561**: on the AVD the first device Back after launch was lost, because Escape was read only from `Keyboard.current` and the AVD exposes 16 keyboard devices. `RunShellDocument.EscapePressedThisFrame()` now reads every keyboard (allocation-free); `HubContractsBackSceneTests` covers it.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-85 | T561 device journey | First Back after launch lost (multi-keyboard AVD). | Fixed in T561 |
+| C-86 | T561 UI/UX re-read | Device Back re-check; focus ring on Upgrade after the strip-chip tap; compact-class card re-captures (D1, tablet). | Final T543 |
+| C-87 | T561 architect | Fit-all degenerate axis at the hand-over is untested; document the multi-keyboard Escape assumption; `HubContractsBackSceneTests` does not discriminate the old `Keyboard.current` polling; optional zero-alloc test for the Escape polling. | T548 (architect review) |
+| C-88 | T561 QA | Marker tap at 40 px covered only by a device capture (scene test 0 and 6 px); Back-state threshold 0.5 from few runs; landscape crop right edge 0.90 close to the HUD column (~0.904); landscape, zoom and hub tap fractions still provisional (C-82 remainder). | Final T543 / T548 |
+
+### T545 QA and FR-027 (owner decision 2026-11-25)
+
+- T545 #717 first QA FAIL on `5d9ae70`: the SC-004 and SC-006 inputs were valid (10/10 each), but the SC-005 P3 cue tiles did not show their cues (the hub dot appeared in the no-dot control; the upgrade, shortage and store-full markers were not on screen; the card was not beside its machine). The fix round `2a0f85d` captures the P3 tiles from real session states.
+- **FR-027 gap**: the shipped world draws no "upgrade available" marker. `MachinePresentationModel.UpgradeMarkerVisible` is computed and tested, but no view renders it (confirmed by the parent on origin/main 9e17bf3). Owner decision: **new fix task T563 #786**, after T561 and before T544, T562, the final T543 and T548. The SC-005 upgrade-marker tile is re-captured in T562 for every class; the T545 Windows tile records "cue not shown".
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-89 | T545 worker, parent check | FR-027 upgrade marker has a model but no world renderer. | T563 |
+| C-90 | T545 worker | SC-005 timed cue trial captures (keys `sc005-timed-standard`, `sc005-timed-reduced-motion`) not produced; the F004 builder takes emuP-class composites. | T562 |
+| C-91 | T545 QA | tabP SC-004 trials 6 and 7 clipped on the right by the side panel; "Development Build" watermark over the Overdrive button; low SC-006 layout variety (triptych_08 B and C differ only in the wall style). | T546 (note when running); T562 if re-captured |
+
+### T545 (trial seeds, oracles and Windows-class captures)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T545 | #717 | #785 | `2a0f85d` (fix round on `5d9ae70`), merged as `cad6d41` | PASS with minor findings: Edit Mode 3175/3175, Play Mode 3516/3516, Windows player 83/83, art pipeline 371 passed, f006 pytest 21; keys outside the repo and 1:1 with the taker files; SC-004 10/10 and SC-006 10/10 valid; P3 cues shown except the upgrade marker (C-89, T563) |
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-92 | T545 re-QA | The upgrade-marker P3 tile (a glint) is scored by the oracle as a normal cue and its key carries no "cue not shown" mark. Mark it in the key and the oracle; re-capture it after T563. T546 must not score the T545 upgrade tile. | T562 (after T563); T546 note |
+| C-93 | T545 re-QA | Real confounding markers on some P3 tiles (phoneP store-full tile has a red arrow; upgrade tiles show shortage arrows or store-full stacks; phoneL ghost tile shows store-full stacks); the phoneP shortage crop shows only the ore icon. | T562 (re-crop or accept with a note) |
+
+### T563 (FR-027 upgrade marker)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T563 | #786 | #787 | `8e5131b`, merged as `ae17efa` (architect APPROVE_WITH_NOTES; UI/UX ACCEPT_WITH_NOTES) | PASS: Edit Mode 3187/3187, Play Mode 3522/3522, Windows player 83/83, settings noise OK; emulator F006 `-AutosaveCheck` PASS, F004 crispness portrait 97.9 % / landscape 97.7 %, Default PASS; reverting `RunShellPresenter` fails the shipped-scene cash-follow test |
+
+Result: the world draws the reused F003-UI-ICON-UPGRADE (16x15 opaque, near white, scale 1) per location when an upgrade is affordable and the machine shows no problem badge; it yields to an Item boost (ART-2, two markers per location), sorts below the badge, hides below 24 px per cell and is not a tap target. A per-frame, allocation-free affordability mask in `RunShellPresenter` rebuilds the visuals when cash crosses an upgrade cost. C-89 closed.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-94 | T563 QA, architect | No 600-frame zero-alloc test over `RunShellPresenter.Refresh` (the new per-frame mask); no worst-case overlay renderer census with the marker on all 12 slots (expected equal to the boosted + Overdrive case). | T544 (SC-008 / budgets) |
+| C-95 | T563 QA, architect | No shipped-scene assertion that the marker disappears when cash is spent (only the appear direction); the mask also counts costs of machines whose marker a problem badge hides, so cash oscillating around such a cost rebuilds the factory snapshot with no visible change. | T548 (architect) / later polish |
+| C-96 | T563 architect | The affordability rule exists twice (`SlotGridModel` and `MachinePresentationModel`, pinned by a parity test); `WorldEffectsFeed.UpgradeAvailable` can be snapshot-stale. Make both call one helper. | T548 (architect) / later polish |
+| C-97 | T563 worker, reviews | The marker extends about 5 px outside the M1 keep-out box; keep-outs and the geometry export are unchanged and no test checks the sliver against the shipped layouts. | Art Director with C-75 |
+| C-98 | T563 UI/UX | Device evidence only at 1080x2400 portrait (no landscape, tablet, small phone, full 12-machine grid, neutral-badge state); state which supported classes fall below 24 px per cell and lose the marker. Owner to acknowledge: the marker is hidden on boosted machines (ART-2 trade-off). | Final T543 (captures); T562 (upgrade tile); owner |
+
+**Owner decisions 2026-11-25 (evening):** (1) T562 runs before T544, because the host is not quiet yet; T544 follows on a quiet host. (2) C-98: the upgrade marker stays hidden on boosted machines (ART-2 trade-off accepted). (3) Marker salience (22 px resource icon) and C-97 go to the Art Director decision with C-75 after P4; the C-68 deep-profile Issue is created after the P4 gates.
+
+### T562 (emuP trial captures)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T562 | #783 | #788 | `31a18f6`, merged as `4d79538` | PASS with minor findings: Edit Mode 3187/3187, Play Mode 3522/3522, Windows player 83/83, art pipeline 378 passed; keys outside the repo and 1:1 with the taker files; SC-004 emuP 10/10 valid; SC-006 emuP consistent; SC-005 P3 cues shown for emuP, phoneP, phoneL and tabL; timed standard and reduced-motion sets match their keys |
+
+Result: emuP sets for SC-004 (seed 6044) and SC-006 (seed 6064) are separate from the T545 Windows sets, so T546 scores two sets each. SC-005 emuP has 22 F004 tiles and 7 P3 tiles; the P3 series of phoneP, phoneL and tabL is re-captured with the T563 upgrade marker. The timed cue trial (standard APNG, reduced-motion frozen frame) is built from emuP composites. C-90 and C-92 closed; C-93 re-staged or noted per tile. The captures are in-player ScreenCapture from a development build with test assemblies on the AVD (watermark visible), not adb screencap of a shipping APK.
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-99 | T562 QA 1 | The SC-005 card tile (emuP, phoneL, tabL) also shows upgrade chevrons and store-full or shortage markers; the C-93 note does not say so. A taker could name another cue. | T546 (score the card tile with this note) |
+| C-100 | T562 QA 2 | The shortage tile is a very small crop (ore-drop icon only, no row context), weak in grayscale. | T546 (a miss is a tile-quality limit, not a product defect) |
+| C-101 | T562 QA 3 | `Editor/F006EmulatorCaptureBuild.cs` is not `#if`-gated (Editor-only and run only through `-executeMethod`, so safe). | Later tidy-up |
+
+### T544, final T543, T548 and T546 (2026-11-26)
+
+| Task | Issue | PR | Commit | QA |
+|---|---|---|---|---|
+| T544 | #716 | #789 | `1e72e26`, merged as `437cb46` | PASS: Edit Mode 3187/3187, Play Mode 3526/3526, Windows player 85/85 on the exact commit; record numbers match the raw evidence; three minor text findings |
+| T543 final | #715 | #790 | `79ab02b`, merged as `945b155` | FAIL on `66c1e4c` (UI/UX report mistook plate width for cell width), PASS on `79ab02b`; records only |
+| T548 | #719 | #791 | `8c11089`, merged as `ac49f6c` | FAIL on `25f9636` (seven records findings in the parent's summary sections), PASS on `8c11089`; ten lens sections verbatim |
+| T546 | parent | coordination branch | this commit | parent-only; [`readability-f006.md`](readability-f006.md) |
+
+Owner decisions 2026-11-26:
+
+1. Budget 8 uses the same-state delta reading.
+2. Disk space: the Libraries of three old worktrees were deleted.
+3. Store-full markers stay uncapped for F006.
+4. The deck edge and black void become an art task after P4.
+5. The 44 px settle when the card closes is accepted as a Low note.
+6. The Auto-sell hint, the offline copy and an Overdrive confirm go to polish later.
+7. The first-tap report was reproduced in T548: it was not reproduced in 12 attempts, so it is not filed.
+8. SC-008 is accepted as a deviation.
+9. AD-1 becomes an art task after P4.
+10. The guidance thresholds are accepted as measured.
+11. The timed trials are skipped as a task. Details are in [`final-acceptance.md`](final-acceptance.md) section 3 and [`readability-f006.md`](readability-f006.md).
+
+| Id | Source | Follow-up | Carried by |
+|---|---|---|---|
+| C-102 | T546 | The P3 sheet layout downscales small cues: the tabL P3 sheet is 6168 x 4698 px because of the full-screen card tile, so the hub dot vanishes when the sheet is viewed scaled down. Lay out P3 sheets per cue size. | Later trial tooling |
+| C-103 | T544 QA | `performance-b4.md` text: the C-66 row gives idle and burst values in mixed order; the "moving cash: 0" allocation in Play Mode is logged, not asserted; budget 5 omits `maxSteadyPerFrame` 162 to 215, and the rebuild share is 19 to 29 %, not 18 to 31 %. | Records fix, later |
+| C-104 | T548 AD-1, TA-1 | The upgrade marker reuses the UI glyph without an `ink_0` outline and has no Art Bible entry. A world-only outlined marker on the markers atlas also removes about +4.5 SetPass at 12 markers. `uiux-f006-final.md` section 5 says "dark outline", which is wrong. | Post-P4 art and atlas task (owner); records fix |
+| C-105 | T548 PERF-1, PERF-9, TESTQA-3 | The SC-008 deviation: about 15 to 21 allocations per steady frame in the real scene (C-68), emulator FPS of about 45, no physical-device, battery or thermal data, and budget 9 not measured. | Post-gate Issue: C-68 deep profile plus a device measurement |
+| C-106 | T548 ARCH-1 to ARCH-6 | Degenerate-axis jump at the hand-over (untested); the Escape test on a non-current keyboard is likely non-discriminating; the scene test name claims the hide direction; the parity test never varies `RejectionReason`; the mask over-counts badge-hidden costs. | Later polish (C-87, C-95, C-96 stay open) |
+| C-107 | T548 TESTQA-1, 2, 5, 7, 8 | `final-test-names.txt` is the T542 manifest. B4b budgets 4, 6 and 8 are logged only, with no regression guard. No scripted F003/F004/F005 journey after T561/T563. On-device gaps: compact banner, reduced motion, prestige banner, keep-out items 3 to 6. `AutosaveWriteCostTests` checks a wall-clock time. | T550 (manifest note); later |
+| C-108 | T548 UIUX-1 to UIUX-7 | The marker size gate is at the cutoff on the small phone (about 24 pt against 23.76). The 48 pt target size is shown only by Play Mode tests (device reads 45 to 47 dp). Development label over Confirm at 640x360 at 200 %. Tablet hint ends on a single word. | T549 looks; later polish |
+| C-109 | T548 SECURITY-1 to 3 | C-101 gate; `BuildApk` does not restore the scripting backend and architectures it sets; `check-release-build.ps1` does not assert that test and capture assemblies are absent from a release. | Later tidy-up |
+| C-110 | T548 GS-1 to GS-3 | The offline efficiency percent is computed in presentation; the 30 s autosave reduces offline credit after a force-stop (accepted residual); the autosave requirement is only in tasks.md, and T559 cites FR-003. | Later (spec citation fix) |
+| C-111 | T548 WD-2, AD-2 | `world-copy.md` rows N-06 … L-11 still say CHANGE and section 3 calls B-01s a draft, although T560 applied them. Provenance cites Art Bible v1.1.0 instead of v1.1.2. | Records fix, later |

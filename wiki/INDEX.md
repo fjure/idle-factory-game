@@ -53,6 +53,8 @@ page files, not here.
 - [F006 batch 5 shell, build card, stages and camera framing](pages/f006-batch-5-shell-card-and-stages.md) — T536/T537/T555 persistent layer and U-B1 band, T539 build card, T540 stages with offset u0, T558 depot framing (AR-3, AR-4).
 - [F006 batch 5 world deck, depot, effects pool and markers](pages/f006-batch-5-world-and-effects.md) — T527 edges, T556 cue contrast, T529 allocation-free effect pool, T528 depot census, T557 marker wiring.
 - [F006 batch 6 verification and polish](pages/f006-batch-6-verification-and-polish.md) — T531 B4a numbers, budget 8 restatement, census ceiling 110, T541 journey.
+- [F006 batch 6 part B fixes, captures and B4b](pages/f006-batch-6b-fixes-captures-and-performance.md) — T542, T561, T563 upgrade marker, T545/T562 captures, B4b results (46-47 FPS ABA, budget 8 delta).
+- [F006 final gates, owner decisions and acceptance](pages/f006-final-gates-and-acceptance.md) — T543/T548/T546/T549 verdicts, SC-008 deviation, AD-1, closeout counts, post-P4 Issues.
 - [F006 batch 6 copy conformance and polish](pages/f006-batch-6-copy-conformance-and-polish.md) — T547 CF-1..CF-5, World Bible v0.2 Store/Depot, T560 fixes and carries C-72..C-76.
 - [Run content dispatch](pages/run-content-dispatch.md) — T136 RunCatalogBuilder and GameplayContentDispatcher: version peek, all-or-nothing build, static diagnostics, permutation identity, Item target pitfall.
 - [Gameplay content validation](pages/gameplay-content-validation.md) — Ordered semantic diagnostics, all-or-nothing catalog construction, nested-order stability, and the T096 v2 reader and validator.
@@ -144,6 +146,7 @@ page files, not here.
 - [F004 batch 3 workflow pitfalls](pages/f004-batch-3-workflow-pitfalls.md) — Play Mode timeout, disk space, review fidelity, deferred B2.
 - [F004 batch 4 workflow pitfalls](pages/f004-batch-4-workflow-pitfalls.md) — RenderParity first-run flake, UI Toolkit folder, long Unity runs vs QA, deferred B2.
 - [F004 batch 5 workflow pitfalls](pages/f004-batch-5-workflow-pitfalls.md) — Quiet-host protocol, busy-lease resume, main moving under a PR, settings re-serialization.
+- [F006 batch 6 part B workflow pitfalls](pages/f006-batch-6b-workflow-pitfalls.md) — Early-returning QA, merge script leaves Issue open, dev watermark, rig has no deck art.
 - [F004 batch 6 workflow pitfalls](pages/f004-batch-6-workflow-pitfalls.md) — Full-suite catch on horizontal inset, worktree move, relaxed-assertion decision, delta QA.
 - [F004 batch 7 workflow pitfalls](pages/f004-batch-7-workflow-pitfalls.md) — Blind-naming isolation, sealed trial keys, failed gate to new task, practice screen, stale pytest launcher.
 - [F004 batch 8 workflow pitfalls](pages/f004-batch-8-workflow-pitfalls.md) — Verbatim parallel reviews, blocker to task, measurement method, PPU assignment mistake.

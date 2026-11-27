@@ -1,8 +1,8 @@
 ---
 title: Feature 006 plan overview (planned)
 type: decision
-sources: [S056, S057, S058, S059, S060, S061, S062]
-updated: 2026-11-19
+sources: [S056, S057, S058, S059, S060, S061, S062, S063]
+updated: 2026-11-26
 ---
 
 # Feature 006 plan overview (planned, not implemented)
@@ -50,3 +50,7 @@ P3 batch A merged (T525, T526, T534, T552-T554, T535): card, Details, hub and th
 ## Batch 6 status (P4 part A, 2026-11-19)
 
 T531 (B4a measurement), T541 (journey), T547 (World Designer conformance) and the added T560 (pre-T542 polish) merged; World Bible is now `F006-WB v0.2` and Art Bible v1.1.2. Remaining: T545, T542, T544, final T543, T548, T549-T551. See [verification and polish](./f006-batch-6-verification-and-polish.md), [copy conformance and polish](./f006-batch-6-copy-conformance-and-polish.md) and [pitfalls](./f006-batch-6-workflow-pitfalls.md). (S062)
+
+## Final status (2026-11-26)
+
+Batch 6 part B (T542, T561, T563, T545, T562, T544) and the final gates (T543, T548, T546, T549) are done: owner visual acceptance PASS, SC-008 accepted as a deviation. The T550 closeout and the post-P4 Issues (C-68, outlined upgrade marker, deck art) remain. Final counts: Edit Mode 3187, Play Mode 3526, player 85. See [part B](./f006-batch-6b-fixes-captures-and-performance.md), [final gates](./f006-final-gates-and-acceptance.md) and [part B pitfalls](./f006-batch-6b-workflow-pitfalls.md). (S063)

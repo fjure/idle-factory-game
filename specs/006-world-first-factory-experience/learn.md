@@ -1,9 +1,9 @@
 # What I Learned: World-First Factory Experience (F006)
 
 **Feature**: Make the factory the screen: a world deck, depot and labelled hub in place of the six-tab bar. Gameplay, content and saves stay unchanged.
-**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch; P3 batch A); 2026-11-19 (batch 5 and batch 6 part A, see the last sections)
-**Scope**: Phases P0 (T500-T509), P1 (T510-T518), the first P2 batch (T519-T524, T532, T533, T538), P3 batch A (T525, T526, T534, T535, T552-T554) batch 5 (T527-T529, T536, T537, T539, T540, T555-T559) and batch 6 part A (T531, T541, T547, T560)
-**Implementation status**: 51 of 61 listed tasks are checked (batch 6 part A merged on 2026-11-19, main 38cc418; T560 was added by the owner). Open: T542 to T545, T548 to T551 and the final T543. P0, P1, the first P2 batch, P3 batch A, batch 5 and batch 6 part A are merged.
+**Generated**: 2026-11-11 (P0 batch); 2026-11-12 (P1 batch); 2026-11-13 (P2 batch; P3 batch A); 2026-11-19 (batch 5 and batch 6 part A); 2026-11-26 (batch 6 part B, final gates and closeout, see the last sections)
+**Scope**: Phases P0 (T500-T509), P1 (T510-T518), the first P2 batch (T519-T524, T532, T533, T538), P3 batch A (T525, T526, T534, T535, T552-T554) batch 5 (T527-T529, T536, T537, T539, T540, T555-T559) batch 6 part A (T531, T541, T547, T560) and batch 6 part B with the final gates (T542, T561, T563, T545, T562, T544, T543, T548, T546, T549)
+**Implementation status**: all implementation, verification and gate tasks are merged on main `ac49f6c8` (2026-11-26); only the T550 closeout (hooks, convergence, tasks.md mirror) and the post-P4 Issues remain. Final counts: Edit Mode 3187, Play Mode 3526, tagged Windows player 85/85. Owner visual acceptance (T549) is PASS; SC-008 is accepted as a deviation.
 
 ---
 
@@ -503,3 +503,106 @@ C-68..C-76 in `reviews/p3b-followups.md`: the card-closed 21 allocations per fra
 - **F006-WB v0.2**: the World Bible after owner decision CF-1; Store is the capacity term, Depot the structure.
 - **Delta cap**: the restated budget 8, F006 adds at most +12 SetPass per render over the F004-only 34.
 - **Class D string**: a literal that is not player-visible (exception messages, keys, object names).
+
+---
+
+# Batch 6 part B and closeout: fixes, captures, performance and final gates (T542, T561, T563, T545, T562, T544, T543, T548, T546, T549)
+
+## Batch 6B: Key Decisions
+
+### 25. Treat "computed and tested but never drawn" as a missing feature (T563)
+
+**What we did**: T545's capture work showed the shipped world drew no upgrade marker (FR-027). `MachinePresentationModel.UpgradeMarkerVisible` existed with tests, but no view rendered it. The owner added T563: the reused `F003-UI-ICON-UPGRADE` glyph, an allocation-free per-frame affordability mask in `RunShellPresenter`, hidden below 24 px per cell and on boosted machines.
+
+**Why**: A model test proves a rule, not that the player sees it. A capture of the real scene exposed the gap that a whole batch of green tests had not.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Mark the spec item done on the model | The player-visible requirement is unmet. |
+| New outlined marker art now | Needs an Art Bible entry and atlas work; deferred after P4 (AD-1). |
+
+**When you'd choose differently**: If the cue were a pure data flag with no player-visible requirement, a model test would be enough.
+
+---
+
+### 26. Check a tester's finding against the build before assigning a fix (C-77, C-78)
+
+**What we did**: T542 reported "shortage marker shows a generic arrow" and "marker taps select nothing". T561 found the red arrow is the per-machine Missing-input badge, and the attention marker is a 22 px resource icon whose tap selects the first affected location.
+
+**Why**: Fixing a misread wastes a task and can break correct behaviour. Salience of the 22 px icon became an art decision after P4 instead.
+
+**When you'd choose differently**: If several testers misread the same thing, the cue is weak even if the code is right; that is a design finding.
+
+---
+
+### 27. Move a measurement window, not a threshold (C-79)
+
+**What we did**: F004 crispness read 94.2 % in landscape against a 95 % floor. The cause was HUD columns inside the analyzed band. The crop became x 0.10 to 0.90, and the owner accepted it as a window change with no threshold relaxed (97.7 % after).
+
+**Why**: The floor protects world pixels; HUD pixels in the sample measured something else.
+
+**When you'd choose differently**: If the world itself were soft at the edges, narrowing the window would hide a real defect; check with a pixel test first.
+
+---
+
+### 28. Accept a deviation with a named follow-up, not a quiet pass (SC-008)
+
+**What we did**: The real scene still allocates about 15 to 21 objects per steady frame, emulator FPS budgets 1 to 3 are missed by every build, and no physical-device data exists. The owner accepted SC-008 as a deviation and queued a deep-profile and device-measurement Issue after the gates.
+
+**Why**: The defined paths are asserted at zero and an ABA shows F006 code costs nothing measurable; blocking the feature on an unattributed allocation or on emulator FPS would not buy evidence this host can give.
+
+**Alternatives considered**:
+| Approach | Why it wasn't chosen |
+|----------|---------------------|
+| Block until the 15 to 21 are attributed | A deep profile is its own task with its own tooling. |
+| Relax the budget text | Hides the miss; the deviation is recorded with each limit named. |
+
+**When you'd choose differently**: If a physical-device run showed dropped frames, the deviation would not stand.
+
+---
+
+### 29. Read a gate against the same state it measured (budget 8, B4b)
+
+**What we did**: Budget 8 is judged as the F006 delta over the F004-only value in the same state (+8.5 to +11.4, cap +12). A fixed 34 baseline would give +12.5 to +14.7 at 12 markers and is recorded only.
+
+**Why**: Different states change the baseline; a delta against a number from another state measures the state, not the feature.
+
+**When you'd choose differently**: If the baseline state cannot be reproduced, fall back to the absolute number and say so.
+
+---
+
+## Batch 6B: Concepts to Know
+
+### ABA to separate code from environment
+B4a read 61.4 FPS; B4b read 46 to 47 for the same code era. The ABA (older build, new build, older build, same emulator and session) read 44.8, 44.6 and 43.8, and the controls read the same. The drop is the session, not F006, and it is not isolated further (the host GPU sat in P8 during one capture). Compare against a known-good build in the same session before blaming a change.
+
+### Blind trials with answer keys outside the repository
+SC-005 naming and SC-006 ordering used fresh agents that never saw the keys, which were released only after scoring. Results: 22/22 on 16 sheets, P3 cues 110/112 then a re-test of the two misses (16/16), SC-006 10/10 and 10/10. A viewing limit surfaced: a 6168 x 4698 px sheet loses a 1 to 2 px hub dot when downscaled (C-102), so sheets need a size cap and per-cue layout.
+
+### Role-split final review
+Ten lens reviews ran as nine independent agents on one commit and returned ACCEPT WITH CONDITIONS. QA failed two records (the UI/UX report confused plate width with cell width; the parent's summary text had seven errors). Independent QA of the records themselves caught what the authors did not.
+
+### Several keyboards on one device
+The AVD exposes 16 keyboard devices; reading `Keyboard.current` lost the first Back (C-85). Read all keyboards, allocation-free.
+
+## Batch 6B: Workflow
+
+- Sonnet QA agents return early on long Unity runs; use foreground wait loops until the summary line.
+- `scripts/maqa-merge.ps1` leaves the Issue open and `maqa:in-review`; the parent runs `merged #<n>` itself.
+- The "Development Build" watermark overlaps controls on small phones in development APKs; it is not a product defect.
+- The capture rig has no deck art; real-scene evidence comes from the Windows player or the device.
+
+## Batch 6B: Closeout state
+
+- Counts on main `ac49f6c8`: Edit Mode 3187, Play Mode 3526, player 85/85; `final-test-names.txt` is the T542 manifest.
+- T549: owner PASS on every surface and captured class; accepted gaps are the 48 pt overlay crop and a live stage change. Timed trials (T546) were skipped by owner decision.
+- Carries C-77..C-111 are in `reviews/p3b-followups.md`. Post-P4 Issues to create: C-68 deep profile plus a physical-device measurement, an outlined upgrade marker with an Art Bible entry (AD-1, C-104), deck edge and void art, a store-full scale and cap note (C-75). Records fixes (C-103, C-111) are later.
+
+## Batch 6B: Glossary additions
+
+- **FR-027 marker**: the world "upgrade available" glyph, the reused `F003-UI-ICON-UPGRADE`.
+- **Affordability mask**: the per-frame bitmask in `RunShellPresenter` that rebuilds visuals when cash crosses an upgrade cost.
+- **ABA**: older build, new build, older build on the same emulator and session, to separate code from environment.
+- **SC-008 deviation**: the owner-accepted gap between the zero-allocation requirement and the unattributed real-scene allocations.
+- **Capture APK**: a development build with test assemblies that carries the trial capture driver; not a shipping build.

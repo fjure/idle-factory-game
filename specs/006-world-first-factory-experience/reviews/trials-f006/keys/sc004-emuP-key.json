@@ -1,0 +1,360 @@
+{
+  "schema": 1,
+  "seed": 6044,
+  "stoppedLimitSeconds": 3.0,
+  "resourceLimitSeconds": 5.0,
+  "required": 9,
+  "practice": {
+    "trial": 0,
+    "class": "emuP",
+    "stopped": [
+      {
+        "slot": 5,
+        "category": "storage-full"
+      },
+      {
+        "slot": 6,
+        "category": "missing-input"
+      },
+      {
+        "slot": 7,
+        "category": "missing-input"
+      }
+    ],
+    "sharedResource": "iron.ore",
+    "sharedSlots": [
+      6,
+      7
+    ],
+    "benign": [
+      {
+        "slot": 0,
+        "state": "inactive"
+      }
+    ]
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 0,
+          "category": "missing-input"
+        },
+        {
+          "slot": 4,
+          "category": "missing-input"
+        },
+        {
+          "slot": 6,
+          "category": "storage-full"
+        },
+        {
+          "slot": 8,
+          "category": "storage-full"
+        },
+        {
+          "slot": 10,
+          "category": "missing-input"
+        },
+        {
+          "slot": 11,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        0,
+        4,
+        10,
+        11
+      ],
+      "benign": [
+        {
+          "slot": 5,
+          "state": "inactive"
+        },
+        {
+          "slot": 9,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_01.png"
+    },
+    {
+      "trial": 2,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 0,
+          "category": "missing-input"
+        },
+        {
+          "slot": 3,
+          "category": "missing-input"
+        },
+        {
+          "slot": 6,
+          "category": "storage-full"
+        },
+        {
+          "slot": 8,
+          "category": "storage-full"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        0,
+        3
+      ],
+      "benign": [
+        {
+          "slot": 2,
+          "state": "inactive"
+        },
+        {
+          "slot": 10,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_02.png"
+    },
+    {
+      "trial": 3,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 1,
+          "category": "missing-input"
+        },
+        {
+          "slot": 3,
+          "category": "missing-input"
+        },
+        {
+          "slot": 8,
+          "category": "storage-full"
+        }
+      ],
+      "sharedResource": "iron.plate",
+      "sharedSlots": [
+        1,
+        3
+      ],
+      "benign": [
+        {
+          "slot": 7,
+          "state": "paused"
+        },
+        {
+          "slot": 11,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_03.png"
+    },
+    {
+      "trial": 4,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 1,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.plate",
+      "sharedSlots": [
+        1,
+        10
+      ],
+      "benign": [],
+      "file": "trial_04.png"
+    },
+    {
+      "trial": 5,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 4,
+          "category": "missing-input"
+        },
+        {
+          "slot": 5,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.ore",
+      "sharedSlots": [
+        4,
+        5,
+        10
+      ],
+      "benign": [],
+      "file": "trial_05.png"
+    },
+    {
+      "trial": 6,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 2,
+          "category": "storage-full"
+        },
+        {
+          "slot": 7,
+          "category": "storage-full"
+        },
+        {
+          "slot": 8,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.plate",
+      "sharedSlots": [
+        8,
+        10
+      ],
+      "benign": [
+        {
+          "slot": 0,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_06.png"
+    },
+    {
+      "trial": 7,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 4,
+          "category": "missing-input"
+        },
+        {
+          "slot": 6,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "storage-full"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        4,
+        6
+      ],
+      "benign": [
+        {
+          "slot": 8,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_07.png"
+    },
+    {
+      "trial": 8,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 1,
+          "category": "missing-input"
+        },
+        {
+          "slot": 2,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        1,
+        2
+      ],
+      "benign": [],
+      "file": "trial_08.png"
+    },
+    {
+      "trial": 9,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 1,
+          "category": "missing-input"
+        },
+        {
+          "slot": 4,
+          "category": "missing-input"
+        },
+        {
+          "slot": 7,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        1,
+        4,
+        7,
+        10
+      ],
+      "benign": [
+        {
+          "slot": 2,
+          "state": "inactive"
+        },
+        {
+          "slot": 6,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_09.png"
+    },
+    {
+      "trial": 10,
+      "class": "emuP",
+      "stopped": [
+        {
+          "slot": 0,
+          "category": "missing-input"
+        },
+        {
+          "slot": 2,
+          "category": "storage-full"
+        },
+        {
+          "slot": 3,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.ore",
+      "sharedSlots": [
+        0,
+        3,
+        10
+      ],
+      "benign": [],
+      "file": "trial_10.png"
+    }
+  ]
+}

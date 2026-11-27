@@ -1,0 +1,134 @@
+{
+  "sets": [
+    {
+      "set": "phoneL",
+      "filters": {
+        "grayscale": {
+          "tiles": 22,
+          "correctAllFields": 22,
+          "correctGateFields": 22,
+          "confusions": []
+        },
+        "deuteranopia": {
+          "tiles": 22,
+          "correctAllFields": 22,
+          "correctGateFields": 22,
+          "confusions": []
+        },
+        "protanopia": {
+          "tiles": 22,
+          "correctAllFields": 22,
+          "correctGateFields": 22,
+          "confusions": []
+        },
+        "tritanopia": {
+          "tiles": 22,
+          "correctAllFields": 22,
+          "correctGateFields": 22,
+          "confusions": []
+        }
+      },
+      "passAllFields": true,
+      "passGateFields": true,
+      "p3": {
+        "grayscale": {
+          "tiles": 7,
+          "correct": 7,
+          "confusions": [],
+          "notScored": []
+        },
+        "deuteranopia": {
+          "tiles": 7,
+          "correct": 7,
+          "confusions": [],
+          "notScored": []
+        },
+        "protanopia": {
+          "tiles": 7,
+          "correct": 7,
+          "confusions": [],
+          "notScored": []
+        },
+        "tritanopia": {
+          "tiles": 7,
+          "correct": 7,
+          "confusions": [],
+          "notScored": []
+        }
+      },
+      "passP3": true,
+      "pass": true
+    },
+    {
+      "set": "tabL",
+      "filters": {
+        "grayscale": {
+          "tiles": 22,
+          "correctAllFields": 22,
+          "correctGateFields": 22,
+          "confusions": []
+        },
+        "deuteranopia": {
+          "tiles": 22,
+          "correctAllFields": 22,
+          "correctGateFields": 22,
+          "confusions": []
+        },
+        "protanopia": {
+          "tiles": 22,
+          "correctAllFields": 22,
+          "correctGateFields": 22,
+          "confusions": []
+        },
+        "tritanopia": {
+          "tiles": 22,
+          "correctAllFields": 22,
+          "correctGateFields": 22,
+          "confusions": []
+        }
+      },
+      "passAllFields": true,
+      "passGateFields": true,
+      "p3": {
+        "grayscale": {
+          "tiles": 7,
+          "correct": 7,
+          "confusions": [],
+          "notScored": []
+        },
+        "deuteranopia": {
+          "tiles": 7,
+          "correct": 5,
+          "confusions": [
+            {
+              "tile": 1,
+              "id": "p3-hub-dot",
+              "named": "p3-hub-no-dot"
+            },
+            {
+              "tile": 7,
+              "id": "p3-hub-no-dot",
+              "named": "p3-hub-dot"
+            }
+          ],
+          "notScored": []
+        },
+        "protanopia": {
+          "tiles": 7,
+          "correct": 7,
+          "confusions": [],
+          "notScored": []
+        },
+        "tritanopia": {
+          "tiles": 7,
+          "correct": 7,
+          "confusions": [],
+          "notScored": []
+        }
+      },
+      "passP3": false,
+      "pass": false
+    }
+  ],
+  "pass": false
+}

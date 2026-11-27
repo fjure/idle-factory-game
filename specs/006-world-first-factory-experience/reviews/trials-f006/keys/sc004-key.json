@@ -1,0 +1,396 @@
+{
+  "schema": 1,
+  "seed": 6040,
+  "stoppedLimitSeconds": 3.0,
+  "resourceLimitSeconds": 5.0,
+  "required": 9,
+  "practice": {
+    "trial": 0,
+    "class": "phoneP",
+    "stopped": [
+      {
+        "slot": 0,
+        "category": "missing-input"
+      },
+      {
+        "slot": 1,
+        "category": "missing-input"
+      },
+      {
+        "slot": 2,
+        "category": "missing-input"
+      },
+      {
+        "slot": 3,
+        "category": "storage-full"
+      },
+      {
+        "slot": 7,
+        "category": "missing-input"
+      }
+    ],
+    "sharedResource": "iron.plate",
+    "sharedSlots": [
+      0,
+      1,
+      2,
+      7
+    ],
+    "benign": [
+      {
+        "slot": 4,
+        "state": "inactive"
+      },
+      {
+        "slot": 8,
+        "state": "paused"
+      }
+    ]
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "class": "phoneP",
+      "stopped": [
+        {
+          "slot": 7,
+          "category": "missing-input"
+        },
+        {
+          "slot": 9,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "storage-full"
+        }
+      ],
+      "sharedResource": "iron.ore",
+      "sharedSlots": [
+        7,
+        9
+      ],
+      "benign": [
+        {
+          "slot": 3,
+          "state": "paused"
+        },
+        {
+          "slot": 5,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_01.png"
+    },
+    {
+      "trial": 2,
+      "class": "phoneL",
+      "stopped": [
+        {
+          "slot": 2,
+          "category": "storage-full"
+        },
+        {
+          "slot": 8,
+          "category": "storage-full"
+        },
+        {
+          "slot": 9,
+          "category": "missing-input"
+        },
+        {
+          "slot": 11,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        9,
+        11
+      ],
+      "benign": [],
+      "file": "trial_02.png"
+    },
+    {
+      "trial": 3,
+      "class": "phoneL",
+      "stopped": [
+        {
+          "slot": 0,
+          "category": "missing-input"
+        },
+        {
+          "slot": 2,
+          "category": "missing-input"
+        },
+        {
+          "slot": 4,
+          "category": "missing-input"
+        },
+        {
+          "slot": 5,
+          "category": "missing-input"
+        },
+        {
+          "slot": 6,
+          "category": "storage-full"
+        },
+        {
+          "slot": 11,
+          "category": "storage-full"
+        }
+      ],
+      "sharedResource": "iron.ore",
+      "sharedSlots": [
+        0,
+        2,
+        4,
+        5
+      ],
+      "benign": [
+        {
+          "slot": 1,
+          "state": "paused"
+        },
+        {
+          "slot": 8,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_03.png"
+    },
+    {
+      "trial": 4,
+      "class": "phoneP",
+      "stopped": [
+        {
+          "slot": 2,
+          "category": "missing-input"
+        },
+        {
+          "slot": 9,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        2,
+        9,
+        10
+      ],
+      "benign": [
+        {
+          "slot": 0,
+          "state": "paused"
+        },
+        {
+          "slot": 5,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_04.png"
+    },
+    {
+      "trial": 5,
+      "class": "tabL",
+      "stopped": [
+        {
+          "slot": 2,
+          "category": "missing-input"
+        },
+        {
+          "slot": 5,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.ore",
+      "sharedSlots": [
+        2,
+        5
+      ],
+      "benign": [
+        {
+          "slot": 7,
+          "state": "inactive"
+        },
+        {
+          "slot": 10,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_05.png"
+    },
+    {
+      "trial": 6,
+      "class": "tabP",
+      "stopped": [
+        {
+          "slot": 0,
+          "category": "missing-input"
+        },
+        {
+          "slot": 4,
+          "category": "missing-input"
+        },
+        {
+          "slot": 8,
+          "category": "storage-full"
+        },
+        {
+          "slot": 9,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        0,
+        4,
+        9
+      ],
+      "benign": [
+        {
+          "slot": 7,
+          "state": "inactive"
+        },
+        {
+          "slot": 10,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_06.png"
+    },
+    {
+      "trial": 7,
+      "class": "tabP",
+      "stopped": [
+        {
+          "slot": 1,
+          "category": "storage-full"
+        },
+        {
+          "slot": 3,
+          "category": "missing-input"
+        },
+        {
+          "slot": 5,
+          "category": "missing-input"
+        },
+        {
+          "slot": 7,
+          "category": "missing-input"
+        },
+        {
+          "slot": 11,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.plate",
+      "sharedSlots": [
+        3,
+        5,
+        7,
+        11
+      ],
+      "benign": [
+        {
+          "slot": 0,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_07.png"
+    },
+    {
+      "trial": 8,
+      "class": "phoneL",
+      "stopped": [
+        {
+          "slot": 0,
+          "category": "missing-input"
+        },
+        {
+          "slot": 2,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "storage-full"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        0,
+        2
+      ],
+      "benign": [
+        {
+          "slot": 7,
+          "state": "inactive"
+        }
+      ],
+      "file": "trial_08.png"
+    },
+    {
+      "trial": 9,
+      "class": "tabL",
+      "stopped": [
+        {
+          "slot": 2,
+          "category": "missing-input"
+        },
+        {
+          "slot": 3,
+          "category": "missing-input"
+        },
+        {
+          "slot": 6,
+          "category": "storage-full"
+        }
+      ],
+      "sharedResource": "iron.ore",
+      "sharedSlots": [
+        2,
+        3
+      ],
+      "benign": [],
+      "file": "trial_09.png"
+    },
+    {
+      "trial": 10,
+      "class": "phoneP",
+      "stopped": [
+        {
+          "slot": 2,
+          "category": "storage-full"
+        },
+        {
+          "slot": 6,
+          "category": "missing-input"
+        },
+        {
+          "slot": 10,
+          "category": "missing-input"
+        }
+      ],
+      "sharedResource": "iron.bar",
+      "sharedSlots": [
+        6,
+        10
+      ],
+      "benign": [
+        {
+          "slot": 3,
+          "state": "paused"
+        },
+        {
+          "slot": 5,
+          "state": "paused"
+        }
+      ],
+      "file": "trial_10.png"
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "rows": [
+    {
+      "trial": 1,
+      "class": "tabP",
+      "mix": "sparse",
+      "named": "ACB",
+      "key": "ACB",
+      "correct": true,
+      "missing": false
+    },
+    {
+      "trial": 2,
+      "class": "phoneP",
+      "mix": "balanced",
+      "named": "CAB",
+      "key": "CAB",
+      "correct": true,
+      "missing": false
+    },
+    {
+      "trial": 3,
+      "class": "tabP",
+      "mix": "sparse",
+      "named": "BCA",
+      "key": "BCA",
+      "correct": true,
+      "missing": false
+    },
+    {
+      "trial": 4,
+      "class": "tabL",
+      "mix": "dense",
+      "named": "BAC",
+      "key": "BAC",
+      "correct": true,
+      "missing": false
+    },
+    {
+      "trial": 5,
+      "class": "phoneL",
+      "mix": "balanced",
+      "named": "ACB",
+      "key": "ACB",
+      "correct": true,
+      "missing": false
+    },
+    {
+      "trial": 6,
+      "class": "phoneL",
+      "mix": "balanced",
+      "named": "CBA",
+      "key": "CBA",
+      "correct": true,
+      "missing": false
+    },
+    {
+      "trial": 7,
+      "class": "phoneP",
+      "mix": "sparse",
+      "named": "BCA",
+      "key": "BCA",
+      "correct": true,
+      "missing": false
+    },
+    {
+      "trial": 8,
+      "class": "phoneP",
+      "mix": "balanced",
+      "named": "BCA",
+      "key": "BCA",
+      "correct": true,
+      "missing": false
+    },
+    {
+      "trial": 9,
+      "class": "tabL",
+      "mix": "dense",
+      "named": "CBA",
+      "key": "CBA",
+      "correct": true,
+      "missing": false
+    },
+    {
+      "trial": 10,
+      "class": "phoneL",
+      "mix": "balanced",
+      "named": "ABC",
+      "key": "ABC",
+      "correct": true,
+      "missing": false
+    }
+  ],
+  "correct": 10,
+  "required": 9,
+  "trials": 10,
+  "pass": true
+}
