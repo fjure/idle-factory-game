@@ -109,7 +109,7 @@ foreach ($name in 'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'NO_PROXY', 'http_pr
 $outFile = [IO.Path]::GetTempFileName()
 $errFile = [IO.Path]::GetTempFileName()
 try {
-    $arguments = 'run --frozen --offline --project tools/art-pipeline pytest'
+    $arguments = 'run --frozen --offline --project tools/art-pipeline pytest tools/art-pipeline'
     $process = Start-Process -FilePath $uv -ArgumentList $arguments -WorkingDirectory $repositoryRoot `
         -NoNewWindow -Wait -PassThru -RedirectStandardOutput $outFile -RedirectStandardError $errFile
     $output = ((Get-Content -LiteralPath $outFile -Raw), (Get-Content -LiteralPath $errFile -Raw)) -join "`n"
