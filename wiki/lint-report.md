@@ -15,3 +15,7 @@ Mechanical checks: index-drift 0 (all 135 pages listed in INDEX.md once, no dead
 | 7 | stale | semantic | run-shell-and-panels.md | Cites S056, last ingested 2026-11-26; page `updated` is 2026-11-11 | re-read S056 against the page; bump `updated` if still accurate |
 | 8 | stale | semantic | unity-presentation-boundary.md | Cites S056, last ingested 2026-11-26; page `updated` is 2026-11-11 | re-read S056 against the page; bump `updated` if still accurate |
 | 9 | stale | semantic | visual-identity-art-direction.md | Cites S056, last ingested 2026-11-26; page `updated` is 2026-11-19 | re-read S056 against the page; bump `updated` if still accurate |
+
+## Scoped addendum — 2026-11-27 (F007 plan ingest, S064)
+
+Scoped pass on the two new pages (f007-plan-overview, f007-directions-and-measurement-plan) and the four updated pages (visual-identity-art-direction, art-production-pipeline, f006-android-load-hang-atlas-page-cap, pixel-camera-scale): links, citations and index drift. No new findings. This is not a full pass, so the rows above stay as reported by the 2026-11-26 full pass. The F007 source was renumbered from S063 to S064 at the merge with main, because the F006 closeout registered S063 first.
