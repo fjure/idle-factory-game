@@ -86,3 +86,10 @@ def test_bad_layout_is_rejected():
         dead_area(canvas(), {"schema": 2, "width": 100, "height": 100, "safeArea": {"x": 0, "y": 0, "w": 1, "h": 1}})
     with pytest.raises(LayoutError):
         dead_area(canvas(), layout(uiRects=[{"x": 0, "y": 0, "w": -1, "h": 5}]))
+
+
+def test_fractional_rectangle_edges_round_outward():
+    # x 0.5 .. 1.5 touches pixels 0 and 1 (floor of the left edge, ceil of the right edge).
+    img = Image.new("RGB", (10, 1), KEY_COLOUR)
+    r = dead_area(img, {"schema": 1, "width": 10, "height": 1, "safeArea": {"x": 0, "y": 0, "w": 10, "h": 1}, "uiRects": [{"x": 0.5, "y": 0, "w": 1.0, "h": 1}]})
+    assert r["uiInSafePx"] == 2 and r["deadPx"] == 8

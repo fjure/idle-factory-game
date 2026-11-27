@@ -12,7 +12,7 @@
     "w": 2400,
     "h": 1080
   },
-  "capturedAt": "2026-11-27T01:37:13Z",
+  "capturedAt": "2026-11-27T01:54:35Z",
   "profile": "emulator class landscape, touch 420 dpi (Touch 2400x1080px Landscape 420 dpi)",
   "buildId": "editor-playmode 6000.6.0f1 1.0 83812cac",
   "framingRect": {
@@ -22,7 +22,7 @@
     "h": 1080.0,
     "name": "unobstructed-world-rect"
   },
-  "route": "Unity 6000.6.0f1 editor Play Mode (batch, GPU), real scene CoreGameFoundation.unity; Game view custom rendering resolution at the class size (a Windows window cannot exceed the 1920x1080 display); shipped RunShellDocument.ApplyDeviceProfile (touch, class dpi) and ApplyTextScale; forced per-slot visuals (T545 method); simulation, animation clock and attention markers frozen; world camera clears to the key colour",
+  "route": "Unity 6000.6.0f1 editor Play Mode (batch, GPU), real scene CoreGameFoundation.unity; Game view custom rendering resolution at the class size (a Windows window cannot exceed the 1920x1080 display); shipped RunShellDocument.ApplyDeviceProfile (touch, class dpi) and ApplyTextScale; forced per-slot visuals (T545 method); simulation, animation clock and attention markers frozen; world camera clears to the key colour. Run fixed clocks (OverrideRunCompositionForTests): no simulation advance, so HUD readouts are constant. Deviation: tabL (and every class taller or wider than the display) is not a Windows-player capture, because a Windows window cannot exceed the 1920x1080 host display; owner to confirm this route",
   "layout": "F006-same-emuL-t100-partial-layout.json",
   "bodyMask": "F006-same-emuL-t100-partial-bodymask.png",
   "notes": "fixtures.json seed 6060; 5 occupied, stage 1 | reducedMotion=on timeScale=0 markersHidden=true clear=key(0,255,0) cardSlot=-1",

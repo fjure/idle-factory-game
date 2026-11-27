@@ -31,19 +31,30 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def compare_repeats(scratch: Path) -> list[dict]:
+    """Compares every `<cell>-repeat` capture with its original: PNG, body mask and layout JSON by sha256. All hashes are returned."""
+    out = []
+    for raw_path in sorted(scratch.glob("*-repeat-raw.json")):
+        repeat = raw_path.name[: -len("-raw.json")]
+        cell = repeat[: -len("-repeat")]
+        row = {"cell": cell}
+        for kind, suffix in (("png", ".png"), ("bodymask", "-bodymask.png"), ("layout", "-layout.json")):
+            row[kind] = {"first": sha256(scratch / f"{cell}{suffix}"), "repeat": sha256(scratch / f"{repeat}{suffix}")}
+        row["identical"] = all(row[k]["first"] == row[k]["repeat"] for k in ("png", "bodymask", "layout"))
+        out.append(row)
+    return out
+
+
 def finalize(scratch: Path, dest: Path, fixtures: dict) -> dict:
     dest.mkdir(parents=True, exist_ok=True)
     cells = {}
-    determinism = []
+    determinism = compare_repeats(scratch)
+    bad = [d["cell"] for d in determinism if not d["identical"]]
+    if bad:
+        raise SystemExit("determinism check failed (PNG, body mask or layout differ between the two captures): " + ", ".join(bad))
     for raw_path in sorted(scratch.glob("*-raw.json")):
         stem = raw_path.name[: -len("-raw.json")]
         if stem.endswith("-repeat"):
-            original = stem[: -len("-repeat")]
-            determinism.append({
-                "cell": original,
-                "png": {"first": sha256(scratch / f"{original}.png"), "repeat": sha256(scratch / f"{stem}.png")},
-                "bodymask": {"first": sha256(scratch / f"{original}-bodymask.png"), "repeat": sha256(scratch / f"{stem}-bodymask.png")},
-            })
             continue
         raw = json.loads(raw_path.read_text(encoding="utf-8"))
         layout = load_layout(scratch / f"{stem}-layout.json")
@@ -102,9 +113,8 @@ def main(argv: list[str]) -> int:
         return 2
     fixtures = json.loads(Path(argv[2]).read_text(encoding="utf-8"))
     frozen = finalize(Path(argv[0]), Path(argv[1]), fixtures)
-    bad = [d for d in frozen["determinism"] if d["png"]["first"] != d["png"]["repeat"] or d["bodymask"]["first"] != d["bodymask"]["repeat"]]
-    print(f"{len(frozen['cells'])} cells, determinism checks: {len(frozen['determinism'])}, not identical: {len(bad)}")
-    return 1 if bad else 0
+    print(f"{len(frozen['cells'])} cells, determinism checks: {len(frozen['determinism'])}, all identical")
+    return 0
 
 
 if __name__ == "__main__":

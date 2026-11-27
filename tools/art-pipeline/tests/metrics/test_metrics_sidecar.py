@@ -70,4 +70,21 @@ def test_the_committed_f006_baseline_validates_against_the_fixture_list():
     assert len(sidecars) == 14  # 7 class variants x 2 factory states
     frozen = json.loads((BASELINE / "baseline-metrics.json").read_text(encoding="utf-8"))
     assert frozen["metricsVersion"] == METRICS_VERSION and len(frozen["cells"]) == 14
-    assert all(d["png"]["first"] == d["png"]["repeat"] for d in frozen["determinism"]) and frozen["determinism"]
+    assert len(frozen["determinism"]) == 14 and all(d["identical"] and all(d[k]["first"] == d[k]["repeat"] for k in ("png", "bodymask", "layout")) for d in frozen["determinism"])
+
+
+def test_repeat_comparison_covers_png_mask_and_layout(tmp_path):
+    from metrics.finalize_captures import compare_repeats
+
+    def put(stem, png=b"a", mask=b"m", layout=b"{}"):
+        (tmp_path / f"{stem}.png").write_bytes(png)
+        (tmp_path / f"{stem}-bodymask.png").write_bytes(mask)
+        (tmp_path / f"{stem}-layout.json").write_bytes(layout)
+        (tmp_path / f"{stem}-raw.json").write_text("{}", encoding="utf-8")
+
+    put("c1"), put("c1-repeat")
+    put("c2"), put("c2-repeat", layout=b'{"x":1}')
+    put("c3"), put("c3-repeat", png=b"b")
+    put("c4"), put("c4-repeat", mask=b"n")
+    rows = {r["cell"]: r for r in compare_repeats(tmp_path)}
+    assert rows["c1"]["identical"] and not rows["c2"]["identical"] and not rows["c3"]["identical"] and not rows["c4"]["identical"]

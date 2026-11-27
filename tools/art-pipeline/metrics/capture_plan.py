@@ -4,7 +4,7 @@
 
 The plan is the driver's input (`F007BaselineCapturePlayerTests`, environment variable IDLEFACTORY_T603_SPEC). One job per class variant and factory state:
 emuP, emuL, tabL, phoneP-card at 100 % and 200 % text (machine card open), phoneL640 at 100 % and 200 % text. `--repeat` adds a second capture of one cell
-(stem + "-repeat") for the determinism check; the repeat is compared and never committed.
+(stem + "-repeat") for the determinism check; `--repeat all` repeats every cell, a comma list repeats those cells. A repeat is compared and never committed.
 """
 from __future__ import annotations
 
@@ -32,6 +32,8 @@ def stem_of(cls: str, text: int, state: str) -> str:
 
 def build_plan(fixtures: dict, repeat: str | None = None) -> dict:
     jobs = []
+    repeat_all = repeat == "all"
+    wanted = set() if repeat_all or not repeat else {r for r in repeat.split(",") if r}
     for cls, (w, h, dpi, source, texts, card, profile) in CLASSES.items():
         for text in texts:
             for state in ("partial", "dense"):
@@ -40,15 +42,16 @@ def build_plan(fixtures: dict, repeat: str | None = None) -> dict:
                     "stem": stem_of(cls, text, state), "look": LOOK, "geometry": GEOMETRY, "cls": cls, "w": w, "h": h, "dpi": dpi, "input": source,
                     "textScale": text, "state": state, "seed": fx["seed"], "stage": fx["stage"], "cardSlot": fx["cardSlot"] if card else -1,
                     "commit": fixtures["captureCommit"], "profile": profile,
-                    "route": "Unity 6000.6.0f1 editor Play Mode (batch, GPU), real scene CoreGameFoundation.unity; Game view custom rendering resolution at the class size (a Windows window cannot exceed the 1920x1080 display); shipped RunShellDocument.ApplyDeviceProfile (touch, class dpi) and ApplyTextScale; forced per-slot visuals (T545 method); simulation, animation clock and attention markers frozen; world camera clears to the key colour",
+                    "route": "Unity 6000.6.0f1 editor Play Mode (batch, GPU), real scene CoreGameFoundation.unity; Game view custom rendering resolution at the class size (a Windows window cannot exceed the 1920x1080 display); shipped RunShellDocument.ApplyDeviceProfile (touch, class dpi) and ApplyTextScale; forced per-slot visuals (T545 method); simulation, animation clock and attention markers frozen; world camera clears to the key colour. Run fixed clocks (OverrideRunCompositionForTests): no simulation advance, so HUD readouts are constant. Deviation: tabL (and every class taller or wider than the display) is not a Windows-player capture, because a Windows window cannot exceed the 1920x1080 host display; owner to confirm this route",
                     "notes": f"fixtures.json seed {fx['seed']}; {fx['occupied']} occupied, stage {fx['stage']}",
                     "slots": fx["slots"],
                 }
                 jobs.append(job)
-                if repeat == job["stem"]:
+                if repeat_all or job["stem"] in wanted:
                     jobs.append({**job, "stem": job["stem"] + "-repeat"})
-    if repeat and not any(j["stem"] == repeat + "-repeat" for j in jobs):
-        raise SystemExit(f"--repeat {repeat!r} is not a cell of the plan")
+    missing = wanted - {j["stem"] for j in jobs}
+    if missing:
+        raise SystemExit(f"--repeat names no cell of the plan: {sorted(missing)}")
     return {"schema": 1, "jobs": jobs}
 
 

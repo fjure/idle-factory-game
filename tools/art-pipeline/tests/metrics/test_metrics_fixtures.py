@@ -68,3 +68,5 @@ def test_plan_has_one_job_per_cell_and_a_repeat():
     assert card["F006-same-phoneP-card-t200-dense"] >= 0 and card["F006-same-emuP-t100-dense"] == -1
     with pytest.raises(SystemExit):
         build_plan(fixtures, "no-such-cell")
+    everything = build_plan(fixtures, "all")["jobs"]
+    assert len(everything) == 28 and sum(j["stem"].endswith("-repeat") for j in everything) == 14

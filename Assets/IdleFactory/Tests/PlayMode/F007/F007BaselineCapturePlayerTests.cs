@@ -188,7 +188,16 @@ namespace IdleFactory.Tests.PlayMode.F007
             Assert.That(asset, Is.Not.Null, "the packaged W005-L fixture");
             var decoded = new SaveV2CheckpointCodec(catalog).Deserialize(asset.bytes);
             Assert.That(decoded.Succeeded, Is.True, decoded.Message);
-            Assert.That(new JsonRunCheckpointStore(Application.persistentDataPath, catalog).Promote(decoded.Checkpoint).Succeeded, Is.True);
+            var dataRoot = Application.persistentDataPath;
+            IDisposable clockOverride = null;
+#if UNITY_EDITOR
+            // Editor route: the run lives under an isolated root with FIXED clocks (the Feature 003 composition seam), so the simulation never advances and every HUD readout
+            // (Store bar, cash, attention count) is the same in every capture and every run.
+            dataRoot = RunSceneRun.NewRoot();
+            var fixedNow = new DateTimeOffset(2026, 11, 27, 12, 0, 0, TimeSpan.Zero);
+            clockOverride = CoreGameFoundationBootstrap.OverrideRunCompositionForTests(dataRoot, () => fixedNow, () => 0.0);
+#endif
+            Assert.That(new JsonRunCheckpointStore(dataRoot, catalog).Promote(decoded.Checkpoint).Succeeded, Is.True);
 
             foreach (var group in spec.jobs.GroupBy(j => j.w + "x" + j.h))
             {
@@ -238,6 +247,10 @@ namespace IdleFactory.Tests.PlayMode.F007
                 if (failure != null) break;
             }
 
+            clockOverride?.Dispose();
+#if UNITY_EDITOR
+            RunSceneRun.DeleteRoot(dataRoot);
+#endif
             DeleteIfExists(checkpoints);
             DeleteIfExists(runCheckpoints);
 #if !UNITY_EDITOR

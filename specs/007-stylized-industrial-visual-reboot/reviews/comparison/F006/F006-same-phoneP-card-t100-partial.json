@@ -12,17 +12,17 @@
     "w": 720,
     "h": 1280
   },
-  "capturedAt": "2026-11-27T01:37:26Z",
+  "capturedAt": "2026-11-27T01:54:52Z",
   "profile": "phone portrait, touch 320 dpi (R08), machine card open (Touch 720x1280px Portrait 320 dpi)",
   "buildId": "editor-playmode 6000.6.0f1 1.0 83812cac",
   "framingRect": {
     "x": 0.0,
     "y": 98.0,
     "w": 720.0,
-    "h": 697.0,
+    "h": 745.0,
     "name": "unobstructed-world-rect"
   },
-  "route": "Unity 6000.6.0f1 editor Play Mode (batch, GPU), real scene CoreGameFoundation.unity; Game view custom rendering resolution at the class size (a Windows window cannot exceed the 1920x1080 display); shipped RunShellDocument.ApplyDeviceProfile (touch, class dpi) and ApplyTextScale; forced per-slot visuals (T545 method); simulation, animation clock and attention markers frozen; world camera clears to the key colour",
+  "route": "Unity 6000.6.0f1 editor Play Mode (batch, GPU), real scene CoreGameFoundation.unity; Game view custom rendering resolution at the class size (a Windows window cannot exceed the 1920x1080 display); shipped RunShellDocument.ApplyDeviceProfile (touch, class dpi) and ApplyTextScale; forced per-slot visuals (T545 method); simulation, animation clock and attention markers frozen; world camera clears to the key colour. Run fixed clocks (OverrideRunCompositionForTests): no simulation advance, so HUD readouts are constant. Deviation: tabL (and every class taller or wider than the display) is not a Windows-player capture, because a Windows window cannot exceed the 1920x1080 host display; owner to confirm this route",
   "layout": "F006-same-phoneP-card-t100-partial-layout.json",
   "bodyMask": "F006-same-phoneP-card-t100-partial-bodymask.png",
   "notes": "fixtures.json seed 6060; 5 occupied, stage 1 | reducedMotion=on timeScale=0 markersHidden=true clear=key(0,255,0) cardSlot=5",
@@ -32,7 +32,7 @@
   "columns": 3,
   "cardOpen": "yes",
   "realStage": 2,
-  "deadAreaShare": 0.151259,
+  "deadAreaShare": 0.15303,
   "medianMachineAreaPx": 3184,
   "metricsVersion": "1.0.0"
 }

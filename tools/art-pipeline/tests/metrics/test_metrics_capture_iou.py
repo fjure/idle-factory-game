@@ -67,3 +67,10 @@ def test_silhouettes_are_cut_from_the_capture_per_machine_type():
     assert s["smelter"].size == (15, 10)
     r = capture_iou(img, layout)
     assert r["types"] == ["miner", "smelter"] and len(r["pairs"]) == 1
+
+
+def test_narrow_silhouette_is_centred_not_left_aligned():
+    # a: 10 x 10 canvas with only x 0..4 set; b: a 4 wide slab. Centred, b sits at x 3..6 and overlaps 2 columns (20 px): IoU 20 / (50 + 40 - 20).
+    a = mask_of(10, 10, [(0, 0, 5, 10)])
+    b = mask_of(4, 10, [(0, 0, 4, 10)])
+    assert pairwise_iou({"a": a, "b": b})["pairs"][0]["full"] == pytest.approx(20 / 70, abs=1e-4)
