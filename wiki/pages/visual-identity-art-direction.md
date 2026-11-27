@@ -1,8 +1,8 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054, S055, S056, S057, S062]
-updated: 2026-11-19
+sources: [S063, S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054, S055, S056, S057, S062]
+updated: 2026-11-27
 ---
 
 # Visual identity and art direction
@@ -86,3 +86,7 @@ F006 chose an open platform deck with a railing edge (direction A) on top of thi
 ## F006 world-layer census (2026-11-19)
 
 Art Bible v1.1.2 confirms section 21.12: the world-layer renderer census has a worst-case ceiling of 110 (T531 measured 99 portrait and 101 landscape); 95 remains the typical-case figure. No palette, style or asset change. Also, World Bible `F006-WB v0.2` makes "Store" the capacity term and "Depot" the world structure. See [F006 batch 6](./f006-batch-6-verification-and-polish.md). (S062)
+
+## F007 reboot plan (2026-11-27)
+
+F007 plans to supersede the D24 pixel identity with a look chosen at an owner gate (M3) among three prototypes (D48 pixel, Blender high-res sprites, hybrid 3D). F004 rules stay in force for shipped assets until Art Bible `F007-AB v2.0` is signed; v2 supersedes `F004-PAB v1.1.2` by a supersession table and a per-family migration table. See [F007 plan overview](./f007-plan-overview.md) and [directions](./f007-directions-and-measurement-plan.md). (S063)

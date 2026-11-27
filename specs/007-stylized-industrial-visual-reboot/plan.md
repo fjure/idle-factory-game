@@ -120,7 +120,7 @@ Tasks are generated now for M1–M3 only. M4–M6 are generated after the decisi
 | OD7-12 | *Pending (M3)*: the direction, the geometry, the machine-area factor and their conditions. | FR-016 |
 | OD7-13 | **Yes**: the owner plays each direction on the Pixel before M3 (O-1, 2026-11-27). | PO-1, FR-016a |
 | OD7-14 | **Yes**: three owner go/adjust checkpoints in M2 (after briefs and WB v0.3; after one machine per direction; at the C1 result). There is no elimination without the owner's explicit word (O-2). | PO-2, FR-016a |
-| OD7-15 | **Hybrid** (O-3). Build-out stages follow the level milestones (10/25, optionally 50) and drop back with prestige. In addition, a persistent facility finish tier comes from the persisted `PrestigeCount` and survives resets. Neither adds a reward or a save field. | GS-1, GS-2, FR-027a, FR-027c |
+| OD7-15 | **Hybrid** (O-3). Build-out stages 0–2 follow the level milestones (10 and 25; the second may move to 50) and drop back with prestige. In addition, a persistent facility finish tier comes from the persisted `PrestigeCount` and survives resets. Neither adds a reward or a save field. | GS-1, GS-2, FR-027a, FR-027c |
 
 ## Implementation lane
 
@@ -262,7 +262,7 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
   The architect review is High tier.
 - T610: pitch as instance data in world units. It converts `PivotOfCell` and `DeckTileRect` and their 16 call sites, and adds the pitch to `LayoutComposition` equality and `IdentitySuffix` (ARCH-4). It also makes the hit size profile-aware (ARCH-10), and adds the `OverhangTapTests` assertions (UX-4) and the 44 pt and no-overlap negative case (QA-12).
 - T611: indicator view at the anchor, plus the scripted, plated or outlined glyph family adapted from the S3 = b shapes. The glyph keeps a floor of at least 24 pt at `n_min` on every class, with a per-class pt test, and a contrast of at least 3:1 to its plate (UX-1, UX-3). Keep-out is per look (AD-7).
-- T612: `MachineBuildOutStages` (levels 10/25, optionally 50; drops back with prestige) and `FacilityFinishTiers` (2–4 steps from the persisted `PrestigeCount`; survives resets). Both are pure presentation functions with Edit Mode tests, including the prestige-reset behaviour. Game Systems reviews both thresholds for "no reward, no pacing". The fixture levels and prestige counts must be reachable by a real player (GS-3).
+- T612: `MachineBuildOutStages` (stages 0–2 at levels 10 and 25, the second optionally 50; drops back with prestige) and `FacilityFinishTiers` (2–4 steps from the persisted `PrestigeCount`; survives resets). Both are pure presentation functions with Edit Mode tests, including the prestige-reset behaviour. Game Systems reviews both thresholds for "no reward, no pacing". The fixture levels and prestige counts must be reachable by a real player (GS-3).
 - T613: pipeline v2 prototype. It covers:
   - `rig-v3`, the `render-hd` route and the checks in the updated contract (union-bbox alignment, key colour, reproducibility pins, prompt lint);
   - `F007SpriteImportPostprocessor`, with dilate or premultiply, padding and tight meshes (TA-4 to TA-7).

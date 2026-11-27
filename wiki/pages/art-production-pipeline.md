@@ -1,8 +1,8 @@
 ---
 title: Art production pipeline
 type: decision
-sources: [S038, S040, S042, S052, S053, S054, S055, S057, S060]
-updated: 2026-11-13
+sources: [S063, S038, S040, S042, S052, S053, S054, S055, S057, S060]
+updated: 2026-11-27
 ---
 
 # Art production pipeline
@@ -64,3 +64,7 @@ The pipeline gained a `mockup` compositor and `concept-f006` for direction sheet
 ## F006 batch 4 additions (2026-11-13)
 
 Every atlas page is capped at 512 x 512 RGBA32 (T552); F006 world (512) and FX (256) atlases are imported. See [Android load hang](./f006-android-load-hang-atlas-page-cap.md) and [art review and import](./f006-batch-p3a-art-review-and-import.md). (S060)
+
+## F007 pipeline v2 plan (2026-11-27)
+
+Planned extension, not a replacement: a `render-hd` route (rig-v3, beauty, shadow and emissive passes, union-bbox trim, direction-specific palette checks), a `mesh-export` route for the hybrid direction, reproducibility by CPU render with pinned versions and a delta tolerance (hypothesis, set from a two-render test), provenance fields `look`, `renderPasses`, `textureFormat`, `generatedTextures[]`, and an `F007SpriteImportPostprocessor`. ComfyUI is limited to concepts and material tileables; prompt lint and seed logs guard originality. See [F007 directions](./f007-directions-and-measurement-plan.md). (S063)

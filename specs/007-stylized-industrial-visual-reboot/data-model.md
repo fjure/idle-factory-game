@@ -78,7 +78,7 @@ Defined in [contracts/look-profile.md](./contracts/look-profile.md).
 | Field | Rule |
 |---|---|
 | `machineDefinitionId` | Existing id. |
-| `thresholds[]` | 1–2 ascending machine levels, taken from existing level data (R11). |
+| `thresholds[]` | Exactly 2 ascending machine levels (default 10 and 25; the second may move to 50 after Game Systems review), giving stages 0–2 (R11, FR-027a). |
 
 `stage(level) = count(thresholds where level ≥ t)`. The function is pure, total for level ≥ 1, and never persisted.
 
@@ -86,7 +86,7 @@ Defined in [contracts/look-profile.md](./contracts/look-profile.md).
 
 | Field | Rule |
 |---|---|
-| `thresholds[]` | 1–3 ascending prestige counts (Game Systems review) |
+| `thresholds[]` | 1–3 ascending prestige counts, giving 2–4 tiers including tier 0 (Game Systems review) |
 | `overlays` | Per machine type and per site family: material/trim variants or overlay parts per tier |
 
 `tier(prestigeCount) = count(thresholds where prestigeCount ≥ t)`. It reads the persisted `PrestigeCount` only, is never written, and survives resets (FR-027c). Stage × tier combine orthogonally.

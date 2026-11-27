@@ -1,8 +1,8 @@
 ---
 title: Pixel camera scale
 type: decision
-sources: [S045, S038, S039, S041, S052, S053, S055, S056, S061]
-updated: 2026-11-19
+sources: [S063, S045, S038, S039, S041, S052, S053, S055, S056, S061]
+updated: 2026-11-27
 ---
 
 # Pixel camera scale
@@ -60,3 +60,7 @@ Owner decision F1 (2026-11-05): the 720x1280 @ 320 dpi phone (2.004 px/pt) is a 
 Planned (F006): camera math moves from `columns` to `FactoryWorldLayout.Bounds` (= today's Extent) plus `LayoutId`, with a `LargestFittingScale` parity test. See [F006 world presentation design](./f006-world-presentation-design.md). (S056)
 
 F006 T558 (owner decision 2026-11-19, Art Bible v1.1.1 sections 4.1 and 4.2): fit-all now includes the depot column (depot sprite, collector spine, store-full and shortage marker boxes), so the table's `n_fit` values are upper bounds and fit-all may sit one whole scale lower. AR-3: on the phone portrait 1080x2400 fit-all equals `n_min` 3, so there is no zoom-out and machines are about 25 % smaller (a cell about 27 pt). AR-4: where the depot column cannot fit at `n_min` (tablet portrait 1536x2048; 200 % text on 360x640, 390x844, 640x360) the depot is reached by panning while the content stays in view. Details: [batch 5 shell and framing](./f006-batch-5-shell-card-and-stages.md). (S061)
+
+## F007 per-look camera policy (planned, 2026-11-27)
+
+F007 M2 keeps the integer scale for every look (B and C map `n` to a world scale through the look's PPU); M4 decides the production policy: A keeps integer scaling, B and C may use continuous zoom with readable bounds, with explicit test re-baselining. Layout pitch becomes per-look instance data in world units and part of layout identity; the hit-size formula becomes profile-aware with the camera as sole writer. See [F007 plan overview](./f007-plan-overview.md). (S063)

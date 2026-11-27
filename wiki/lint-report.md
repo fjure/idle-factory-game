@@ -19,3 +19,7 @@ Changes since the batch 5 pass (2026-11-19, earlier same day): the earlier link 
 | 7 | citations | semantic | f006-batch-5-gate-and-owner-decisions.md | Owner decision table, rows 2026-11-17 to 2026-11-19 (8 rows), carries no per-row source ID. The page-level `(S061)` line after the table covers them. Carried over from the previous pass; not re-checked in this pass. | Either add `(S061)` to each row, or accept the page-level citation for table rows. Owner or ingest edit. |
 
 Stale check: no page is older than 90 days. Source-reingest check: 6 pages (rows 1-6) are older than the last ingest of S056 (2026-11-19).
+
+## Scoped addendum — 2026-11-27 (F007 plan ingest, S063)
+
+Scoped pass on the two new pages (f007-plan-overview, f007-directions-and-measurement-plan) and four updated pages (visual-identity-art-direction, art-production-pipeline, f006-android-load-hang-atlas-page-cap, pixel-camera-scale): links, citations, index drift. No new findings. The pre-existing pages over 600 words were only appended to and are not split here. This addendum is not a full pass: rows 1–7 above stay open. Row 6 (visual-identity-art-direction) is now `updated: 2026-11-27`, but this ingest did not re-check its S056 content.

@@ -96,7 +96,7 @@ The physical-device baseline (R16) is part of M1.
 - **Renderer.** Cycles with ambient occlusion and contact shadows. Filmic or AgX tone mapping is avoided, and the Standard view transform is kept, so colours stay predictable across families (hypothesis, checked by the Art Director in M2).
 - **Shadows.** Shadows are baked into a separate soft-alpha shadow sprite, so the shadows of neighbouring locations can blend.
 - **Materials.** Stylized PBR: base colour, roughness, edge wear through a curvature mask, and hand-painted accents. Textures are procedural in Blender, or ComfyUI-generated tileables under R14.
-- **Resolution.** Prototype resolution is **128 art px per cell** at 1×, with bilinear filtering and mipmaps for zoom-out. This is derived as follows:
+- **Resolution.** Prototype resolution is **128 px per world unit** (one world unit = 24 F006 art px) at 1×, with bilinear filtering and mipmaps for zoom-out. This is derived as follows:
   - In the F006 phone portrait capture `f01-grid12-p100.png`, a location plate is about 210 device px wide. That is the 70-art-px lattice pitch at n = 3 (measured on the capture: about 175 px at the 900 px display width, scale factor 1.2).
   - With a ≥ 1.5× area (SC-004, about 1.22× linear) and a denser pitch (FR-005), a machine covers roughly 260–320 device px.
   - 128 px per cell gives machine frames of about 256–320 px, which is close to 1:1 on the reference phone. On the tablet and when zoomed in, the art is mildly upscaled.
@@ -104,7 +104,7 @@ The physical-device baseline (R16) is part of M1.
 - **Animation.** Rendered frame sequences, 12–16 frames per loop, played on the shared `PresentationAnimationClock`. Moving parts (drill head, press ram, assembler arm) can optionally be rendered as separate overlay sprites, so a loop needs fewer full frames.
 - **State light.** A separate emissive mask sprite per machine (lamps, furnace glow). It is driven by state, so a stopped machine's lights can switch off without re-rendering the body (FR-027).
 
-**Canvas (corrected, TA-2).** At 128 px per F006 art cell (24 art px), the F006 machine canvas of 80 × 64 art px scales by 128 / 24 = 5.33 to about **427 × 341 px** per frame (derived).
+**Canvas (corrected, TA-2).** At 128 px per world unit (one world unit = 24 F006 art px), the F006 machine canvas of 80 × 64 art px scales by 128 / 24 = 5.33 to about **427 × 341 px** per frame (derived).
 
 **Memory estimate (corrected, TA-1, TA-2, PERF-3; derived, a hypothesis until it is measured from the M2 build report).** ASTC stores 128 bits per block. That is 0.444 B/px at 6×6 and 0.25 B/px at 8×8. One frame of 427 × 341 px is 145,607 px. Stage 0 for four machines with 14 frames each:
 
@@ -151,7 +151,7 @@ Levers, each to be measured in M2:
 
 | Route | What it is | Assessment |
 |---|---|---|
-| C1 | The world camera switches to the **Universal Renderer** (Forward+). Sprites are drawn as transparent sorted renderers in that renderer, and meshes get real lighting. | A renderer change touches the F004 URP foundation: parity tests, variants and SetPass. Recommended for the prototype, because it is the only route that renders 3D meshes with real lighting at screen resolution. |
+| C1 | The world camera switches to the **Universal Renderer** (Forward, per the plan-review amendment). Sprites are drawn as transparent sorted renderers in that renderer, and meshes get real lighting. | A renderer change touches the F004 URP foundation: parity tests, variants and SetPass. Recommended for the prototype, because it is the only route that renders 3D meshes with real lighting at screen resolution. |
 | C2 | Meshes render into a RenderTexture through a second camera (Universal Renderer), which is composited as a sprite. | Costs an extra target and fill rate, and adds a resolution trade-off. |
 | C3 | Meshes use Sprite-Lit or custom shaders inside the 2D Renderer, lit only by 2D lights. | No 3D light direction or shadows. This is closer to B, at more cost (reworded, ARCH-13). |
 
@@ -343,7 +343,7 @@ The M3 decision fixes the production pitch and arrangement.
 
 - **Fixture (GS-3).** The M2 stage-1 fixture uses a level that a real player can reach.
 - **Owner decision O-3 (hybrid, 2026-11-27).**
-  - **Levels.** Build-out stages use thresholds 10 and 25 (optionally 50) from the existing speed milestones (`Assets/IdleFactory/Content/Iron/iron-factory-content.json`, `milestones`). They follow the current level and drop back with prestige.
+  - **Levels.** Build-out stages 0–2 use thresholds 10 and 25 (Game Systems may move the second threshold to 50) from the existing speed milestones (`Assets/IdleFactory/Content/Iron/iron-factory-content.json`, `milestones`). They follow the current level and drop back with prestige.
   - **Prestige.** A **facility finish tier** comes from `PrestigeCount`, which is already persisted in the permanent state (`Core/Run/Application/PrestigeThreshold.cs:10`). It has 2–4 steps, for example at 1, 3 and 6 prestiges (to be confirmed by Game Systems). It survives resets and shows refined materials and paint, trim and structure on machines, and more site and depot build-out, within the World Bible rules.
   - **Combination.** Both functions combine orthogonally (stage × tier). Asset growth is limited because tiers act mostly through material, trim overlays and site props, not full re-renders per combination. This is a hypothesis; the M2 memory figure includes it.
   - **No reward.** Neither function creates a value, currency or unlock.
