@@ -28,7 +28,7 @@ Runs the tests tagged StandalonePlayer in a Windows player (PlayMode only).
 Runs only the art-pipeline chain step described below and exits before any Unity check or start.
 
 Art pipeline chain (Feature 004, T406): before Unity starts, scripts/test-art-pipeline.ps1 -IfChanged runs when
-tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/ changed relative to the merge base with origin/main.
+tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/, Art/F006/ or Art/F007/ changed relative to the merge base with origin/main.
 A pipeline test failure (exit 1) or unavailable tooling (exit 3) stops this script before Unity starts. With no
 such change the step is skipped and nothing else about this script changes.
 #>
