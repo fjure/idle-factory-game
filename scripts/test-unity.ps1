@@ -31,6 +31,13 @@ Art pipeline chain (Feature 004, T406): before Unity starts, scripts/test-art-pi
 tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/, Art/F006/ or Art/F007/ changed relative to the merge base with origin/main.
 A pipeline test failure (exit 1) or unavailable tooling (exit 3) stops this script before Unity starts. With no
 such change the step is skipped and nothing else about this script changes.
+
+.PARAMETER CheckTestIds
+Optional. Before Unity starts, runs tools/test-ids/compare_test_ids.py (Feature 007, T638): it lists the C# [Test],
+[TestCase] and [UnityTest] ids under Assets/IdleFactory/Tests/ at HEAD, compares them with origin/main, and fails unless
+every missing or renamed id has an exact-id "moved" or "removed" row in
+specs/007-stylized-industrial-visual-reboot/reviews/rebaseline-map.md. Exit 1 (unmapped ids) or 2 (usage, git or
+map error) stops this script before Unity starts. Needs python (or py) on PATH. Without the switch nothing changes.
 #>
 [CmdletBinding()]
 param(
@@ -40,6 +47,8 @@ param(
     [switch]$StandaloneWindowsPlayer,
 
     [switch]$ArtPipelineOnly,
+
+    [switch]$CheckTestIds,
 
     [string]$TestFile,
 
@@ -461,6 +470,25 @@ if ($PSBoundParameters.ContainsKey("Category")) {
 }
 if ($StandaloneWindowsPlayer -and $Suite -eq "EditMode") {
     throw "Standalone Windows Player runs support PlayMode tests only."
+}
+if ($CheckTestIds) {
+    $python = $null
+    foreach ($candidate in @("python", "py")) {
+        $command = Get-Command $candidate -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($command) { $python = $command.Source; break }
+    }
+    if (-not $python) {
+        throw "-CheckTestIds needs python (or py) on PATH; this is not a test failure."
+    }
+    $testIdsOutput = & $python (Join-Path $projectRoot "tools/test-ids/compare_test_ids.py") --repo $projectRoot --base origin/main --head HEAD
+    $testIdsExit = $LASTEXITCODE
+    $testIdsOutput | Write-Host
+    if ($testIdsExit -eq 2) {
+        throw "Test id comparison could not run (tools/test-ids/compare_test_ids.py exit 2: usage, git or map error)."
+    }
+    if ($testIdsExit -ne 0) {
+        throw "Test id comparison failed (exit $testIdsExit): missing test ids are not in specs/007-stylized-industrial-visual-reboot/reviews/rebaseline-map.md."
+    }
 }
 $artPipelineOutput = & powershell -NoProfile -File (Join-Path $PSScriptRoot "test-art-pipeline.ps1") -IfChanged
 $artPipelineExit = $LASTEXITCODE
