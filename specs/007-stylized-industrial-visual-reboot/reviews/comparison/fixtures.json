@@ -1,0 +1,203 @@
+{
+  "schema": 1,
+  "feature": "007-stylized-industrial-visual-reboot",
+  "note": "Pinned fixtures of the F007 comparison captures (R08, QA-9). Seeds are the F006 trial seeds; the slot lists are derived from them by tools/art-pipeline/metrics/fixtures.py and are the driver's input.",
+  "captureCommit": "83812cac46d88d2c58267c2ad894e5bdc4d27e3f",
+  "trialFixtures": {
+    "source": "tools/art-pipeline/trials/f006/seeds.json",
+    "sha256": "f1c8ffe50d26a084589bbb4a17667f5e8ea6c0eebc798bbdb9634784ba0c99a2",
+    "commit": "31a18f66a889e5d7ca83c08ed080d3300cca4f7d",
+    "seedIds": {
+      "partial": "sc006.seed",
+      "dense": "sc004.seed"
+    }
+  },
+  "states": {
+    "partial": {
+      "seed": 6060,
+      "stage": 1,
+      "unlocked": 8,
+      "occupied": 5,
+      "cardSlot": 5,
+      "slots": [
+        {
+          "cond": "occupied",
+          "machine": "assembler",
+          "state": "running",
+          "level": 3,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "miner",
+          "state": "running",
+          "level": 3,
+          "upgrade": false
+        },
+        {
+          "cond": "empty",
+          "machine": "",
+          "state": "",
+          "level": 0,
+          "upgrade": false
+        },
+        {
+          "cond": "empty",
+          "machine": "",
+          "state": "",
+          "level": 0,
+          "upgrade": false
+        },
+        {
+          "cond": "empty",
+          "machine": "",
+          "state": "",
+          "level": 0,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "miner",
+          "state": "running",
+          "level": 2,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "press",
+          "state": "running",
+          "level": 2,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "smelter",
+          "state": "missing-input",
+          "level": 2,
+          "upgrade": false
+        },
+        {
+          "cond": "locked",
+          "machine": "",
+          "state": "",
+          "level": 4,
+          "upgrade": false
+        },
+        {
+          "cond": "locked",
+          "machine": "",
+          "state": "",
+          "level": 4,
+          "upgrade": false
+        },
+        {
+          "cond": "locked",
+          "machine": "",
+          "state": "",
+          "level": 4,
+          "upgrade": false
+        },
+        {
+          "cond": "locked",
+          "machine": "",
+          "state": "",
+          "level": 4,
+          "upgrade": false
+        }
+      ]
+    },
+    "dense": {
+      "seed": 6040,
+      "stage": 2,
+      "unlocked": 12,
+      "occupied": 12,
+      "cardSlot": 6,
+      "slots": [
+        {
+          "cond": "occupied",
+          "machine": "smelter",
+          "state": "missing-input",
+          "level": 5,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "press",
+          "state": "missing-input",
+          "level": 2,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "miner",
+          "state": "running",
+          "level": 4,
+          "upgrade": true
+        },
+        {
+          "cond": "occupied",
+          "machine": "miner",
+          "state": "storage-full",
+          "level": 4,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "press",
+          "state": "running",
+          "level": 3,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "assembler",
+          "state": "running",
+          "level": 2,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "assembler",
+          "state": "running",
+          "level": 2,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "press",
+          "state": "running",
+          "level": 5,
+          "upgrade": true
+        },
+        {
+          "cond": "occupied",
+          "machine": "smelter",
+          "state": "running",
+          "level": 5,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "smelter",
+          "state": "storage-full",
+          "level": 3,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "miner",
+          "state": "running",
+          "level": 4,
+          "upgrade": false
+        },
+        {
+          "cond": "occupied",
+          "machine": "assembler",
+          "state": "paused",
+          "level": 4,
+          "upgrade": false
+        }
+      ]
+    }
+  }
+}

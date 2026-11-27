@@ -1,0 +1,38 @@
+{
+  "look": "F006",
+  "geometry": "same",
+  "class": "emuP",
+  "textScale": 100,
+  "factoryState": "dense",
+  "seed": 6040,
+  "commit": "83812cac46d88d2c58267c2ad894e5bdc4d27e3f",
+  "buildKind": "editor-playmode",
+  "device": "unity-editor-playmode | Windows 11  (10.0.26200) | NVIDIA GeForce RTX 5070 Ti | 1080x2400 window, class dpi 420",
+  "resolution": {
+    "w": 1080,
+    "h": 2400
+  },
+  "capturedAt": "2026-11-27T01:37:07Z",
+  "profile": "emulator class, touch 420 dpi (R08) (Touch 1080x2400px Portrait 420 dpi)",
+  "buildId": "editor-playmode 6000.6.0f1 1.0 83812cac",
+  "framingRect": {
+    "x": 0.0,
+    "y": 129.0,
+    "w": 1080.0,
+    "h": 1960.0,
+    "name": "unobstructed-world-rect"
+  },
+  "route": "Unity 6000.6.0f1 editor Play Mode (batch, GPU), real scene CoreGameFoundation.unity; Game view custom rendering resolution at the class size (a Windows window cannot exceed the 1920x1080 display); shipped RunShellDocument.ApplyDeviceProfile (touch, class dpi) and ApplyTextScale; forced per-slot visuals (T545 method); simulation, animation clock and attention markers frozen; world camera clears to the key colour",
+  "layout": "F006-same-emuP-t100-dense-layout.json",
+  "bodyMask": "F006-same-emuP-t100-dense-bodymask.png",
+  "notes": "fixtures.json seed 6040; 12 occupied, stage 2 | reducedMotion=on timeScale=0 markersHidden=true clear=key(0,255,0) cardSlot=-1",
+  "pixelsPerPoint": 2.6309001445770264,
+  "dpi": 420.0,
+  "scaleReason": "RaisedForTouchTarget: authored 2,089 px/pt, required 2,631, effective 2,631",
+  "columns": 3,
+  "cardOpen": "no",
+  "realStage": 2,
+  "deadAreaShare": 0.423596,
+  "medianMachineAreaPx": 4111.5,
+  "metricsVersion": "1.0.0"
+}
