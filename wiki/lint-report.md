@@ -1,4 +1,4 @@
-# Wiki Lint Report — 2026-11-26
+# Wiki Lint Report — 2026-11-27 (full pass 2026-11-26; scoped addenda below)
 
 Scope: full pass after the F006 batch 6 part B and closeout ingest (S063, commit 6068ba32). Config: stale_after_days 90, auto_fix index-and-links. Corpus: 135 pages, 63 sources (S001-S063). Stale cutoff: 2026-08-28.
 
@@ -19,3 +19,7 @@ Mechanical checks: index-drift 0 (all 135 pages listed in INDEX.md once, no dead
 ## Scoped addendum — 2026-11-27 (F007 plan ingest, S064)
 
 Scoped pass on the two new pages (f007-plan-overview, f007-directions-and-measurement-plan) and the four updated pages (visual-identity-art-direction, art-production-pipeline, f006-android-load-hang-atlas-page-cap, pixel-camera-scale): links, citations and index drift. No new findings. This is not a full pass, so the rows above stay as reported by the 2026-11-26 full pass. The F007 source was renumbered from S063 to S064 at the merge with main, because the F006 closeout registered S063 first.
+
+## Scoped addendum 2 — 2026-11-27 (F007 batch B0 re-ingest of S064)
+
+Pages created: f007-batch-0-gates-and-tooling.md, f007-baseline-capture-lessons.md. Pages updated: f007-plan-overview.md, android-emulator-validation.md (S064 added to `sources`). Checks: index-drift 0 (all pages indexed, no dead lines), links 0 (all relative links and S-ids resolve), orphans 0 (new pages linked from the plan overview and each other), contradictions 0 (no conflict markers), citations 0 (every new claim cites S064). Stale: the nine pre-existing rows above are unchanged and were not touched. No mechanical fixes were needed beyond adding S064 to the `sources` frontmatter of android-emulator-validation.md.
