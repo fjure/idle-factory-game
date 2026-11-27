@@ -1,4 +1,4 @@
-# Wiki Lint Report — 2026-11-26
+# Wiki Lint Report — 2026-11-27 (full pass 2026-11-26; scoped addenda below)
 
 Scope: full pass after the F006 batch 6 part B and closeout ingest (S063, commit 6068ba32). Config: stale_after_days 90, auto_fix index-and-links. Corpus: 135 pages, 63 sources (S001-S063). Stale cutoff: 2026-08-28.
 
