@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using IdleFactory.Unity.Presentation.Look;
 using IdleFactory.Unity.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -70,7 +72,17 @@ namespace IdleFactory.DevTools
 
         private string markerAccessibleName = string.Empty;
 
-        public static DevToolsOverlay Create(DevTimeScale timeScale, GameObject host)
+        /// <summary>The look-profile selector row (<c>dev-lookprofile-row</c>), shown only while a prototype profile is available (T609).</summary>
+        public VisualElement ProfileRow => profileRow;
+
+        /// <summary>The profile buttons in row order: the shipped default first, then the held prototype profiles.</summary>
+        public IReadOnlyList<Button> ProfileButtons => profileButtons;
+
+        private DevLookProfileSource lookSource;
+        private VisualElement profileRow;
+        private readonly List<Button> profileButtons = new List<Button>();
+
+        public static DevToolsOverlay Create(DevTimeScale timeScale, GameObject host, DevLookProfileSource lookSource = null)
         {
             if (timeScale == null)
             {
@@ -84,6 +96,7 @@ namespace IdleFactory.DevTools
 
             var overlay = host.AddComponent<DevToolsOverlay>();
             overlay.timeScale = timeScale;
+            overlay.lookSource = lookSource;
             overlay.Build();
             return overlay;
         }
@@ -170,6 +183,64 @@ namespace IdleFactory.DevTools
 
             timeScale.Changed += Refresh;
             Refresh();
+
+            // T609: the look-profile selector. With the shipped default alone there is nothing to choose, so the row stays hidden and the overlay is unchanged.
+            if (lookSource != null)
+            {
+                profileRow = new VisualElement { name = "dev-lookprofile-row", tooltip = "Look profile" };
+                profileRow.style.flexDirection = FlexDirection.Row;
+                profileRow.style.flexWrap = Wrap.Wrap;
+                profileRow.style.marginTop = MarkerGap;
+                profileRow.style.backgroundColor = new Color(0f, 0f, 0f, 0.7f);
+                profileRow.pickingMode = PickingMode.Position;
+                ConsumePointer(profileRow, hovered => rowHovered = hovered);
+                root.Add(profileRow);
+                lookSource.Changed += RefreshProfiles;
+                RefreshProfiles();
+            }
+        }
+
+        private void RefreshProfiles()
+        {
+            if (profileRow == null || lookSource == null)
+            {
+                return;
+            }
+
+            profileRow.Clear();
+            profileButtons.Clear();
+            var ids = new List<string> { LookProfile.F006Id };
+            foreach (var profile in lookSource.Profiles)
+            {
+                if (!ids.Contains(profile.Id))
+                {
+                    ids.Add(profile.Id);
+                }
+            }
+
+            profileRow.style.display = ids.Count > 1 ? DisplayStyle.Flex : DisplayStyle.None;
+            var selectedId = string.IsNullOrEmpty(lookSource.SelectedProfileId) ? LookProfile.F006Id : lookSource.SelectedProfileId;
+            foreach (var profileId in ids)
+            {
+                var id = profileId;
+                var selected = string.Equals(id, selectedId, StringComparison.Ordinal);
+                var button = new Button(() => lookSource.Select(id)) { name = "dev-lookprofile-" + id, text = id };
+                button.focusable = true;
+                button.tooltip = "Look profile " + id + (selected ? ", selected" : string.Empty);
+                button.style.minWidth = TargetSize;
+                button.style.minHeight = TargetSize;
+                button.style.fontSize = 16;
+                button.style.marginLeft = 2;
+                button.style.marginRight = 2;
+                button.style.color = Color.white;
+                button.style.backgroundColor = selected ? new Color(0.2f, 0.5f, 0.9f, 1f) : new Color(0.25f, 0.25f, 0.25f, 1f);
+                button.style.unityFontStyleAndWeight = selected ? FontStyle.Bold : FontStyle.Normal;
+                var border = selected ? 2f : 0f;
+                button.style.borderTopWidth = button.style.borderBottomWidth = button.style.borderLeftWidth = button.style.borderRightWidth = border;
+                button.style.borderTopColor = button.style.borderBottomColor = button.style.borderLeftColor = button.style.borderRightColor = Color.white;
+                profileRow.Add(button);
+                profileButtons.Add(button);
+            }
         }
 
         // The overlay owns the presses on its own rectangles: they stop here, and the world input path (RuntimePanelHitTest) sees the
@@ -441,6 +512,11 @@ namespace IdleFactory.DevTools
             if (timeScale != null)
             {
                 timeScale.Changed -= Refresh;
+            }
+
+            if (lookSource != null)
+            {
+                lookSource.Changed -= RefreshProfiles;
             }
 
             if (panelSettings != null)

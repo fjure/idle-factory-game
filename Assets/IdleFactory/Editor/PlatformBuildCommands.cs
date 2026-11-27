@@ -35,6 +35,23 @@ namespace IdleFactory.Editor
 
         private static readonly string[] DevToolsDefines = { DevToolsDefine };
 
+        /// <summary>
+        /// The dev-only holder scene of the prototype look profiles (T609, ARCH-1). It is built only when <see cref="DevToolsDefine"/> is among the extra
+        /// scripting defines, so no release build references a prototype profile or its art.
+        /// </summary>
+        public const string DevLookProfilesScenePath = "Assets/IdleFactory/DevTools/Scenes/F007LookProfiles.unity";
+
+        /// <summary>The scenes of a build: the one authored scene, plus the dev-only look-profile holder when the DevTools define is set.</summary>
+        public static string[] BuildScenes(string[] extraScriptingDefines)
+        {
+            if (extraScriptingDefines != null && Array.IndexOf(extraScriptingDefines, DevToolsDefine) >= 0)
+            {
+                return new[] { ScenePath, DevLookProfilesScenePath };
+            }
+
+            return new[] { ScenePath };
+        }
+
         public static void EnsureBuildScene()
         {
             var scenes = EditorBuildSettings.scenes;
@@ -294,9 +311,15 @@ namespace IdleFactory.Editor
                 configure?.Invoke();
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output)));
 
+                var scenes = BuildScenes(extraScriptingDefines);
+                if (scenes.Length > 1 && string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(DevLookProfilesScenePath)))
+                {
+                    throw new InvalidOperationException($"Dev look-profile scene is missing: {DevLookProfilesScenePath}");
+                }
+
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
                 {
-                    scenes = new[] { ScenePath },
+                    scenes = scenes,
                     locationPathName = output,
                     target = target,
                     options = options,
