@@ -64,7 +64,7 @@ The physical-device baseline (R16) is part of M1.
 
 **Decision (prototype definition).** Direction A keeps a recognizable pixel identity but drops the constraints the audit marks as causes:
 
-- **Density.** A higher density (**D48**: 48 art px per cell, twice D24) at integer scaling. On the reference phone, the `n_min` rule then needs n ≥ 1, which keeps integer zoom levels (derived: `n_min = ceil(24 · 2.625 / 48 − 0.01) = 2`, and 1 at the smaller classes; hypothesis that this fits, verified in M2).
+- **Density.** A higher density (**D48**: 48 art px per cell, twice D24) at integer scaling. On the emulator class, the `n_min` rule gives `n_min = ceil(24 · 2.625 / 48 − 0.01) = 2` (derived), and 1 at the smaller classes. Integer zoom levels are kept (hypothesis that this fits, verified in M2).
 - **Palette.** An extended palette of up to 96 colours with per-material ramps of 5–6 tones.
 - **Shading.** Hand-placed or render-derived highlights and ambient occlusion, quantised to the palette. Ordered dithering is allowed only on large flat surfaces.
 - **Outline.** Selective outlines instead of a uniform `ink_0` outline.
@@ -76,12 +76,17 @@ The physical-device baseline (R16) is part of M1.
 **Known cost.**
 
 - 4× the texel count of D24 for the same canvas (derived).
-- Under RGBA32 point-filtered art, the 1 MiB page cap allows a 512 × 512 page, so a 160 × 128 machine frame (the D48 equivalent of 80 × 64) fits 12 frames per page (derived: 3 × 4 cells of 160 × 128 in 512 × 512).
+- Under RGBA32 point-filtered art, the 1 MiB page cap allows a 512 × 512 page, so a 160 × 128 machine frame (the D48 equivalent of 80 × 64) fits **9** frames per page with padding 2 (derived: 3 × 3; a fourth row of 128 px plus padding exceeds 512).
 
 **Alternatives.**
 
 - *D32.* Rejected: too little gain to answer the question.
 - *D64.* Rejected for A: it approaches B's cost while keeping the pixel limitations.
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Light (AD-3).** The A brief states the cap of Point Light2D per screen (at most 12, as in L2) and the order of operations: palette-baked ramp first, then an additive Light2D accent. The resulting variant delta is reported in `performance-m2.md`.
+- **Page plan (TA-9).** 9 frames per 512² page.
 
 ## R05 — Direction B: Stylized 3D-to-2D
 
@@ -99,15 +104,27 @@ The physical-device baseline (R16) is part of M1.
 - **Animation.** Rendered frame sequences, 12–16 frames per loop, played on the shared `PresentationAnimationClock`. Moving parts (drill head, press ram, assembler arm) can optionally be rendered as separate overlay sprites, so a loop needs fewer full frames.
 - **State light.** A separate emissive mask sprite per machine (lamps, furnace glow). It is driven by state, so a stopped machine's lights can switch off without re-rendering the body (FR-027).
 
-**Memory estimate (derived, hypothesis until measured in M2).** One machine frame of 288 × 224 px is 64,512 px. Four machine types with 14 frames each is 56 frames, or 3.61 M px:
+**Canvas (corrected, TA-2).** At 128 px per F006 art cell (24 art px), the F006 machine canvas of 80 × 64 art px scales by 128 / 24 = 5.33 to about **427 × 341 px** per frame (derived).
 
-| Format | Bytes per px | Total |
-|---|---|---|
-| RGBA32 | 4 | 14.4 MB, above the current 8 MB world-art budget |
-| ASTC 6×6 | 0.89 | 3.2 MB |
-| ASTC 8×8 | 0.5 | 1.8 MB |
+**Memory estimate (corrected, TA-1, TA-2, PERF-3; derived, a hypothesis until it is measured from the M2 build report).** ASTC stores 128 bits per block. That is 0.444 B/px at 6×6 and 0.25 B/px at 8×8. One frame of 427 × 341 px is 145,607 px. Stage 0 for four machines with 14 frames each:
 
-M5 adds 2–3 build-out stages (FR-027a). At ASTC 6×6 that is about 6.5–9.6 MB, before environment art. A compressed texture format and a revised memory budget are therefore required (FR-032).
+| Layer | Pixels | ASTC 6×6 | RGBA32 |
+|---|---|---|---|
+| Beauty, 56 frames | 8.15 M | 3.62 MB | 32.6 MB |
+| Emissive mask, 56 frames (full resolution) | 8.15 M | 3.62 MB | 32.6 MB |
+| Shadow, 1 still per machine, R8 | 0.58 M | 0.58 MB (R8) | — |
+| Total with mips (+33 %) | | **≈ 10.4 MB** | ≈ 88 MB |
+
+M2 adds the depot, the environment and one stage-1 machine, for roughly 13–16 MB. M5 with 2–3 stages per machine lands at roughly 25–30 MB.
+
+Levers, each to be measured in M2:
+
+- an emissive mask at half resolution or as a single channel;
+- moving parts as overlay sprites, so a loop needs fewer full frames;
+- ASTC 8×8 on large, calm surfaces;
+- tight sprite meshes.
+
+**Consequence.** Direction B cannot fit the current 8 MB world-art budget. It needs compression and a new memory budget (FR-032) in any case. The M2 comparison reports B's real figure from the build report. Testing 192 px per cell is limited to **one** machine (2.25× the texels).
 
 **Rationale.** This is the owner's preferred candidate. It reuses the existing Blender toolchain, camera and projection. It produces material depth, AO and lighting offline at no runtime cost, and it keeps the URP 2D renderer and the sprite-based presentation architecture unchanged.
 
@@ -116,6 +133,10 @@ M5 adds 2–3 build-out stages (FR-027a). At ASTC 6×6 that is about 6.5–9.6 M
 - Sprite memory grows quickly.
 - Animation is limited to pre-rendered frames.
 - Compressed textures on Android are unverified against the load hang (R13).
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **View transform (AD-9).** Standard stays. Emissive light comes only through the emissive mask, without bloom. One asset is rendered once under AgX as a recorded comparison parameter; it does not change the route.
 
 ## R06 — Direction C: Hybrid 2.5D
 
@@ -132,7 +153,7 @@ M5 adds 2–3 build-out stages (FR-027a). At ASTC 6×6 that is about 6.5–9.6 M
 |---|---|---|
 | C1 | The world camera switches to the **Universal Renderer** (Forward+). Sprites are drawn as transparent sorted renderers in that renderer, and meshes get real lighting. | A renderer change touches the F004 URP foundation: parity tests, variants and SetPass. Recommended for the prototype, because it is the only route that renders 3D meshes with real lighting at screen resolution. |
 | C2 | Meshes render into a RenderTexture through a second camera (Universal Renderer), which is composited as a sprite. | Costs an extra target and fill rate, and adds a resolution trade-off. |
-| C3 | Meshes use a custom unlit "fake-lit" shader inside the 2D Renderer. | No real lights or shadows. This is close to B with more cost. |
+| C3 | Meshes use Sprite-Lit or custom shaders inside the 2D Renderer, lit only by 2D lights. | No 3D light direction or shadows. This is closer to B, at more cost (reworded, ARCH-13). |
 
 **Rationale.** C exists to test whether real-time machinery adds enough life and flexibility to justify its cost:
 
@@ -151,6 +172,23 @@ It must be built honestly, which means C1. Like all M2 work, the C1 renderer cha
 - the frame time on the phone is within 2× the F006 baseline.
 
 If the spike fails, the owner is told before the full C prototype is built. Per Q2, C is still built to full parity unless the owner decides otherwise on that evidence.
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Route for C1 (ARCH-2, decision).** C uses a **dev-only second URP asset** with a Universal Renderer (Forward, not Forward+). DevTools sets it through `QualitySettings.renderPipeline` before the first frame. The shipped URP asset keeps exactly one 2D renderer, so `RenderPipelineConfigurationTests` stay scoped to it. The release check asserts that the variant count (490) is unchanged and that no `UniversalRendererData` is in the release build.
+- **Sorting (ARCH-3).** Before the full C prototype, the spike decides between two options: depth-placed sprites, or meshes in the transparent queue with sorting orders. Exit criteria: correct order of floor, mesh, shadow, marker, effect, selection frame and indicator in a test scene with overhang.
+- **Fair C brief (AD-1).** C gets:
+  - a defined ramp or toon shader with 3 bands and a rim;
+  - a contact-shadow blob per machine;
+  - at most 4 warm real-time point lights for lamps, or emissive plus light probes;
+  - a directional key in the dusk direction.
+
+  C reuses B's models. The brief records how a model flaw (shared with B) is told apart from a rendering flaw (C only).
+- **Spike gate with absolute budgets (PERF-6).** The gate runs on the Pixel, in the one-machine scene with W007-D conditions:
+  - frame time p95 ≤ 16.7 ms and GPU time ≤ 8 ms at 60 Hz (hypothesis thresholds, which the owner can adjust);
+  - variant and SetPass deltas reported;
+  - the URP asset settings listed: depth and opaque texture off, MSAA, HDR and post off, at most 1 shadow cascade or baked blob shadows only, SRP Batcher compatibility of the sprite shader.
+- **Settings review (OPS-5).** `check-settings-noise.ps1` does not cover GraphicsSettings or QualitySettings. Every commit that touches a URP asset or the quality settings is reviewed by hand with its diff.
 
 ## R07 — How the prototype is isolated: the look profile
 
@@ -186,6 +224,28 @@ No simulation path changes (FR-009).
 - *Branches per direction.* Rejected: comparison captures must come from one build at one commit.
 - *Scene copies.* Rejected: scenes are edited only through Unity tooling, and three scene copies would triple the serialized-change review.
 
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Isolation mechanism (ARCH-1).** Prototype profiles and assets are referenced by a **dev-only scene** (or prefab) with a DevTools holder component. `PlatformBuildCommands.Run` adds that scene to the build only when `IDLEFACTORY_DEV` is among the `extraScriptingDefines`. There are no `Resources/` paths and no StreamingAssets.
+- **Release check (QA-3).** `scripts/check-release-build.ps1` is extended to check `BuildReport.packedAssets` by path and GUID. It fails on:
+  - any source under `Art/F007/Prototype/`;
+  - any `LookProfile` with `isPrototype`;
+  - any `UniversalRendererData`;
+  - prototype atlas names in the built data.
+
+  Positive control: the dev build must contain them. An Edit Mode guard checks that no asset or assembly outside DevTools references prototype assets.
+- **Ownership and initialization order (ARCH-6).** The bootstrap owns **one** `LookProfileResolver` instance and passes it to the views, the camera settings and the effect pool. DevTools injects an `ILookProfileSource` at `BeforeSceneLoad`, mirroring `DefaultTimeScaleSource`. There are no new statics, and there is one switch path (rebuild plus refit).
+- **Requirement tables (ARCH-5).** Every profile carries its own requirement table (keys, sizes, pivots). The existing static registry stays the table of the `F006` profile.
+- **Invalid dev selection (ARCH-11).** An unknown profile id in the preferences file falls back to the shipped default with a log entry. Release builds ignore the key, and a test covers both.
+- **Cleanup after M3 (ARCH-12).** The cleanup covers:
+  - the prototype assets and profiles;
+  - the dev scene;
+  - the second URP asset;
+  - per-profile tests of rejected looks;
+  - the test-player build inputs.
+
+  The release check runs again afterwards.
+
 ## R08 — Comparison capture protocol (FR-011, FR-012, FR-013)
 
 **Decision.**
@@ -212,18 +272,23 @@ No simulation path changes (FR-009).
 
 **Rationale.** Equal rules make the comparison fair. The second geometry shows what densification buys, without mixing that gain into the style judgement.
 
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Sidecars (QA-9).** The seed ids and the commit of the F006 trial fixtures are pinned in a fixture list (`reviews/comparison/fixtures.json`). The sidecar fields are fixed: commit, profile, geometry, class, text scale, seed, factory state, build id and the measured framing rectangle. The sheet generator rejects sidecars that do not match their file name or commit. One cell is captured twice as a determinism check.
+- **640 × 360 (UX-5, FR-011a).** A reduced check per direction: dense state only, at 100 % and 200 % text, proposed geometry only. It is listed in the M3 brief and is a binding class in M6.
+
 ## R09 — Location geometry and densification (FR-005, SC-004)
 
 **Fact.**
 
 - On-screen location spacing comes from the lattice constants in `SlotGridLayout` (70 × 54 art px lattice) and from the `LatticeLayoutBuilder` columns: 3 in portrait, 4 in landscape.
-- `FactoryWorldLayout` is the only place that knows the location count (F006 SC-011).
+- The location count is the constant 12 in `SlotGridLayout` (`SlotLattice.cs:20`). `LatticeLayoutBuilder.ShippedLocationCount` reuses it, and test layouts pass other counts (ARCH-9; corrected).
 - Selection, hit-testing and cue anchoring all go through `FactoryWorldLayout` and `WorldTapResolver`.
 
 **Decision.**
 
 - The lattice pitch and the plate and deck dressing become per-look-profile layout parameters. They are a presentation asset, extending `WorldCompositionSettings`, not constants.
-- A direction may propose a denser pitch and machine-group arrangements, for example pairing Miner with Smelter around a shared foundation. Every location keeps:
+- A direction may propose a denser pitch and machine-group arrangements, such as bays on a shared slab. Grouping never follows the production chain (WD-4). Every location keeps:
   - its id;
   - its unlock order;
   - a non-overlapping hit area of at least 44 pt;
@@ -232,6 +297,11 @@ No simulation path changes (FR-009).
 The M3 decision fixes the production pitch and arrangement.
 
 **Guard.** The existing layout-independence tests (6, 20 and L-shape layouts) run against every profile.
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Pitch as data (ARCH-4).** T610 turns `PivotOfCell` and `DeckTileRect` (currently static with `const` pitch, 16 call sites) into instance methods of `FactoryWorldLayout`. It adds the pitch to the equality and `IdentitySuffix` of `LayoutComposition`, so the camera refits. The pitch is expressed in **world units**.
+- **Grouping (WD-4).** Shared foundations group locations only by site zone or density. Grouping is identical for all machine types and unlock orders, never follows the item chain, and carries no direction marks. Every location keeps its own visible foundation and indicator anchor ("bays on one slab").
 
 ## R10 — State indicators built into the machine (FR-027, FR-027b, FR-028, FR-029)
 
@@ -251,6 +321,14 @@ The M3 decision fixes the production pitch and arrangement.
 
 **Evaluation.** The F004/F006 blind-naming protocol (grayscale plus three colour-vision filters) and the owner's timed trial run on the M2 dense captures for every direction (SC-008, SC-009 guidance at M2, binding at M6).
 
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Glyph floor (UX-1, AD-7).** The 60 % figure applies only to the salience of the lamp housing. The **glyph** keeps the F004 floor: at least 24 pt at `n_min` on every required class (including 720 × 1280 and 640 × 360), with strokes of at least 2 art px or the equivalent. A per-class pt-size check is part of the tests.
+- **Normative carrier (UX-2).** The glyph alone carries the state normatively. Lights and motion are secondary, because they disappear with reduced motion or on machines without an emissive area.
+- **Contrast (UX-3).** The glyph sits on its own small plate or carries an outline, with a luminance-contrast floor (≥ 3:1 for the glyph against the plate, checked per direction). The upgrade glyph (AD-1) uses the same plate family.
+- **Keep-out per look (AD-7).** The F004 overlay keep-out (§3.4) assumes overhang 0. It is derived again per look, and the indicator is tested in a dense-cluster capture.
+- **Upgrade marker (AD-8).** It may move to the side when the denser pitch would collide with the neighbour above. Captured in the proposed geometry.
+
 ## R11 — Build-out stages (FR-027a)
 
 **Decision.**
@@ -260,6 +338,11 @@ The M3 decision fixes the production pitch and arrangement.
 - The stage is a pure function of `(definition id, level)`. It is not persisted and not part of the simulation.
 - The art adds parts on a fixed base silhouette, so the hit area and indicator anchor stay stable across stages. Silhouette identity across types is checked for every stage (SC-003).
 - **M2 scope**: two stages of one machine type per direction. **M5 scope**: the full set.
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Fixture (GS-3).** The M2 stage-1 fixture uses a level that a real player can reach.
+- **Pending owner decision O-3.** Default thresholds 10 / 25 / 50 from the existing speed milestones (`Assets/IdleFactory/Content/Iron/iron-factory-content.json`, `milestones`). Because the stage is a pure function of the current level, it drops back with prestige.
 
 ## R12 — Animation, effects and flash
 
@@ -283,12 +366,16 @@ The M3 decision fixes the production pitch and arrangement.
 - **B and C** sprites use **ASTC** on Android: 6×6 as the default, 4×4 for small high-detail parts. They use bilinear filtering with mipmaps.
 - **Windows player**: DXT5 or BC7.
 - **Page-cap re-measurement.** The cap is re-measured for compressed pages in a dedicated M2 measurement, both on the emulator and on the phone:
-  - pages of 1024² and 2048² in ASTC 6×6 (≈ 0.9 MiB and 3.6 MiB);
+  - a byte-matched sweep in ASTC 6×6: pages of 1448² (≈ 0.9 MiB) and 2048² (≈ 1.8 MiB). A texel-matched control holds the texel count and varies the bytes, through RGBA32 versus ASTC at the same size (TA-1, TA-3);
   - load time and the hang signature from the F006 journey `isLoading` gate.
 
   Until that measurement passes, compressed pages also stay at 1 MiB or less of GPU memory (FR-032).
 
-**Hypothesis.** The hang relates to the byte size of a single upload or read rather than to texel count. An ASTC 1024² page (≈ 0.9 MiB) is expected to load like a 1 MiB RGBA32 page. The M2 measurement verifies this.
+**Hypothesis.** The hang relates to the byte size of a single upload or read rather than to texel count. An ASTC page of about 0.9 MiB is expected to load like a 1 MiB RGBA32 page. The M2 sweep verifies or refutes this; the cause stays unknown until then.
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **The phone is authoritative (PERF-2, TA-3).** For each device, record whether ASTC is supported natively (extension list through `adb`). The emulator may decode in software and then does not predict the phone. Each page variant is loaded cold 3 times, and the maximum is reported, using the `isLoading` gate. `AtlasPageBudgetTests` stays strict at 1 MiB until the phone passes (QA-11).
 
 ## R14 — Art pipeline v2 (FR-019, FR-034)
 
@@ -330,6 +417,15 @@ The M3 decision fixes the production pitch and arrangement.
 
 The postprocessor and the manifest-driven integration (`F004ArtIntegration` pattern) are extended, not forked.
 
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Alignment (TA-4).** All passes are trimmed to the **union bbox**, with one shared pivot. A check verifies that the emissive mask is a subset of the beauty alpha.
+- **Shadow and emissive (TA-5).** Shadows are R8 or A8, at ASTC 4×4 or uncompressed, because ASTC 6×6 bands soft gradients. They use a multiply blend on their own sorting layer under the neighbouring bodies. The emissive pass uses additive blending. The materials and the SetPass delta enter the estimate.
+- **Reproducibility (TA-6).** The render runs on the CPU with a fixed seed, no denoiser (or a deterministic one), and pinned Blender and OIDN versions. The SSIM threshold is set in M2 from a two-render test.
+- **Filtering (TA-7, M2 brief).** Edges are dilated or premultiplied. Padding is at least 2^(mip levels), or the mip levels are limited. Tight sprite meshes are used, and overdraw is measured.
+- **Mesh export (TA-8).** Checks for unit and scale, pivot, triangle count, material and variant counts, and the shadow-caster flag. The silhouette IoU for C needs a Unity render step.
+- **Originality (AD-10).** A prompt lint rejects game and artist names. Every prompt and seed is logged. Reference screenshots are never used as img2img or ControlNet inputs.
+
 ## R15 — Camera and scaling per look
 
 **Decision.**
@@ -347,14 +443,25 @@ The postprocessor and the manifest-driven integration (`F004ArtIntegration` patt
 
   The black void disappears, which addresses AD-4. Fit-all framing keeps the HUD-aware unobstructed rectangle (F006 C1). The dead-area metric in R18 counts only pixels that are neither world art nor UI.
 
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Background rules (WD-3).** The background is anonymous, silhouette-only, unlit and unreachable. It has no signage or text, no named buildings, no power lines, pylons, cooling towers or grid hardware, no vehicles, people or landmarks, and nothing that reads as a second depot. The sky is only a mood band, with no sun, moon or day cycle. There are no gates, roads or exits beyond the site. The ground family stays keyed to `starter-platform`.
+- **Hit size (ARCH-10).** The hit-size formula in `CameraScaleModel` (`:281`) becomes profile-aware. The camera keeps its single writer.
+
 ## R16 — Physical device protocol (Q3, SC-011)
 
 **Decision.**
 
 - **Device record.** The phone is a Google Pixel 11 Pro with Android 17. No tablet is available (owner, 2026-11-27). The first M1 task reads the SoC and GPU, resolution, density and refresh rate from the device and records them in `reviews/devices-f007.md`. Tablet evidence stays emulated: the Windows-player tablet class for captures, with no physical tablet performance.
-- **Lease.** The phone shares the host's single ADB server with the emulator. Unity CLI runs with an Android target kill that server ("Killing ADB server", AGENTS.md). Phone work therefore holds the **`emulator`** lease, which this plan redefines as "the host ADB server and any device on it". It also holds `unity` when a build runs. A separate `phone` lease resource is not added. This is a documentation change to AGENTS.md and the workstation pitfalls, owned by a DevOps Low-tier task.
+- **Lease.** The phone shares the host's single ADB server with the emulator. Unity CLI runs with an Android target kill that server ("Killing ADB server", AGENTS.md). Phone work therefore holds the **`emulator`** lease, which `scripts/resource-lease.ps1:18` already documents as "emulator-5554 and anything that talks to its adb server" (OPS-1). It also holds `unity` when a build runs, and `gpu` for every performance capture (`-Resource unity,emulator,gpu`, OPS-6). A separate `phone` lease resource is not added. This is a documentation change to AGENTS.md and the workstation pitfalls, owned by a DevOps Low-tier task.
 - **Measurement.** The same ABA method as F004 B2 and F006 B4: frame pacing via SurfaceFlinger timestats or `dumpsys gfxinfo`, PSS memory, texture memory from the build report, and a 10-minute sustained run that records frequency and thermal status where the device exposes them.
 - **Input.** Measurements use profiler-free development builds (memory: profile only with `-noProfilerAutoconnect`). Input goes through `adb` only, never host input injection (memory 2026-11-17).
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Serial (OPS-2).** When the emulator and the phone are both connected, every run passes `-Serial`: the phone's serial for phone runs, `emulator-5554` for emulator runs. The journey script already stops safely when more than one device is connected.
+- **Device protocol (PERF-7).** `devices-f007.md` records, per run: thermal state at start, charging state, battery level, brightness, fixed refresh rate (no adaptive 120 Hz), Game Mode, and battery saver off. Runs start from a fixed cool-down state, with ABAB order. Phone runs and emulator runs never share a lease window while the emulator loads the host GPU.
+- **Dev builds (PERF-9).** Every M2 number is labelled "dev build". The overlay and DevTools update are switched off during runs. SC-011 is measured on release builds (M5 and M6). At M2, one release-config spot check runs for B, as far as isolation allows.
 
 ## R17 — Performance budgets (FR-032)
 
@@ -384,6 +491,24 @@ The owner approves budget set v2, and it is recorded in Art Bible v2. M5 measure
 
 **Workloads.** W006-V is reused. W007-D (dense, all 12 running with effects) is the worst case.
 
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **GPU metrics (PERF-1).** Measure GPU time per frame (Perfetto, or the `gfxinfo` GPU columns). Take one overdraw capture per direction at W007-D and report the pixels drawn per frame.
+- **On-device pass counts (PERF-4).** Take draw and pass counts on the device with the Frame Debugger or Perfetto. The Editor SetPass reading is labelled "estimated".
+- **Contents of budget set v2 (PERF-5, fixed for the M4 task):**
+  - FPS target, p95, p99, and the number of intervals ≥ 33 ms and ≥ 50 ms (phone and emulator);
+  - 0 allocations per frame;
+  - GPU world-art memory per format, and the phone PSS delta;
+  - the page rule (size, format, mips);
+  - the APK delta;
+  - variants and SetPass;
+  - GPU ms and overdraw ratio;
+  - cold load time to the first frame;
+  - 10-minute drift in frame time, plus thermal status;
+  - maximum resident sprite memory while zooming.
+- **W007-D (PERF-8).** 12 machines running with effects, a fixed seed, the three zoom stops, one build-out stage (M2; more in M5) and a fixed camera path. A 30 s warm-up is discarded, then 60 s are sampled. The sustained run is a 10-minute loop.
+- **Allocations (PERF-10).** The steady state starts after the warm-up and never includes a profile switch.
+
 ## R18 — Evaluation methods
 
 | Criterion | Method | Who |
@@ -398,6 +523,26 @@ The owner approves budget set v2, and it is recorded in Art Bible v2. M5 measure
 | SC-008 / SC-009 | F004/F006 blind naming and timed trial tools (`tools/art-pipeline/trials`) | Independent session; owner |
 | SC-010 | Frame differencing of a 10 s capture with reduced motion on; flash check | Script |
 | SC-011 | R16 and R17 | Performance Engineer |
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **SC-002 rubric (AD-4, AD-5, AD-6, PO-4).** The rubric scores **8 visual dimensions**:
+  - silhouettes;
+  - materials;
+  - environment coherence;
+  - composition;
+  - density and clutter;
+  - state readability;
+  - animation;
+  - consistency across classes.
+
+  "Performance" is measured (SC-011). "Before and after" is the owner's verdict (SC-001). The anchors 1, 3 and 5 are written per dimension from reference criteria. F006 is **scored**, not defined as anchor 1. Before scoring, the reviewers calibrate on two sample captures. A spread of more than 1 point between reviewers is discussed and recorded. Blinding is impossible; the mitigation is matched framing and shuffled order.
+- **SC-006 (UX-6, PO-6).** Measured per class and per factory state. The UI rectangles come from the UI Toolkit layout, and empty areas hidden by the card count as UI. The criterion is only met together with SC-004 on the same captures, and with background art that is less salient than the machines (FR-025).
+- **SC-004 (PO-5).** The body area excludes the shadow sprite. Overhang beyond the location cell is reported separately.
+- **SC-010 (QA-7).** Two checks: an effect-spawn counter against the simulation events, and with reduced motion on, a frozen clock with a pixel-identical comparison over 10 s.
+- **Scripts (QA-8).** The dead-area, area and IoU scripts are deliverables with their own pytest and known-answer fixtures. The key colour must not appear in any art (a check). The F006 baseline values are frozen in M1, together with the script version.
+- **Readability baseline (PO-3).** SC-008 and SC-009 compare against F006 `readability-f006.md` (T546). If T546 is not on `main` when T630 starts, T641 reproduces the F006 baseline with the same tools.
+- **M2 UX check per direction (UX-7).** In the dense state, select the front, back and edge machine, open the card, and check that no cue or selection frame is covered. Recorded as pass or fail in `directions/*.md`.
 
 ## R19 — Test strategy
 
@@ -417,6 +562,38 @@ The owner approves budget set v2, and it is recorded in Art Bible v2. M5 measure
 - **Art pipeline**: pytest for the new checks and the `render-hd` route, through `scripts/test-art-pipeline.ps1`.
 - **Device**: the emulator journey for each look in development builds, plus the phone measurement scripts.
 - **Re-baselining**: every test that asserts F004 constants for the shipped look moves behind the F006 profile, or is re-baselined at M4/M5 with an explicit old-to-new list. Examples are D24, palette, crispness, IoU and badge size. Tests are never silently deleted.
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Parity test (QA-1, QA-2, ARCH-7).**
+  - **What is compared.** A hash per tick of the full authoritative simulation state: balances, per-machine state and progress, cycle counters, depot fill, contracts and RNG state.
+  - **Inputs.** The same seed, a fixed time source, and scripted inputs (build, upgrade, Overdrive, prestige, an offline gap). The taps run through `WorldTapResolver` and must produce identical location-id sequences for every profile.
+  - **Profiles.** Under `F006` and every other profile.
+  - **Extra cases.** A profile switch in the middle of a run, compared against a run without the switch. Save and checkpoint bytes must be identical.
+  - **Negative control.** A planted, state-changing test profile must fail.
+  - **Guard.** `Look/` uses no simulation write API.
+- **DevTools tests (QA-4).** Tests that need `IDLEFACTORY_DEV` run in a defined runner path (temporary `csc.rsp` plus `-assemblyNames`, per workstation-pitfalls). A gate fails on 0 discovered tests. Profile-agnostic cases (resolution, layout) also run in the normal suites under `F006`.
+- **Re-baselining (QA-5).** `reviews/rebaseline-map.md` maps old test ids to new ones. A script (T638) compares `[Test]` and `[TestCase]` ids against the `main` baseline: every missing id must appear in the map. Re-baselining candidates include `CameraScaleModelTests`, `SlotGridLatticeTests`, `PixelCrispnessTests`, `StateCueSetTests`, `AtlasPageBudgetTests`, `PresentationSpriteCatalogTests`, the F006 layout, marker and stage tests, `DevToolsOverlay*Tests` and `tools/art-pipeline/tests/test_checks.py`. The candidate list in the QA report is binding as a starting point.
+- **Edge-case tests (QA-6), per profile in Play Mode:**
+  - profile switch with the card open at 200 % text in phone portrait;
+  - reduced motion during a running effect;
+  - an overhang tap into the neighbour zone on the dense layout;
+  - offline return, Overdrive, prestige and stage change (no catch-up);
+  - empty and locked locations without colour;
+  - card framing with large art.
+- **Overhang (UX-4).** `OverhangTapTests` asserts, on the dense layout per class and at both text scales, that a tap on an opaque pixel of the front-most machine selects that machine, that the selection frame stays visible, and that hit-shape separation is measured in pt at `n_min`. There is also a cue-anchor-to-owner test for grouped bays.
+- **Hit areas (QA-12).** A 44 pt and no-overlap check per profile, with a deliberately overlapping layout as the negative case.
+- **Named suites (UX-8, QA-10).** These F006 suites must pass unchanged under every profile:
+  - `CardCameraTests`;
+  - `TextScaleLayoutTests`;
+  - `RunHudLayoutTests`;
+  - `F006/LayoutIndependenceTests`;
+  - `F006/ReducedMotionWorldTests`;
+  - focus and keyboard order.
+
+  The SC-012 evidence is the result XML of Edit Mode, Play Mode and the tagged player tests, with a Play Mode count above 0, plus the existing SaveV1 to V3 fixtures.
+- **Allocations (QA-11).** The profile is a parameter of the tagged allocation test.
+- **Suite duration.** The full Play Mode run already takes about 25–30 minutes. The profile matrix applies only to the tests named above, not to the whole suite.
 
 ## R20 — Roles, tiers, lane and resources
 
@@ -447,6 +624,10 @@ The owner approves budget set v2, and it is recorded in Art Bible v2. M5 measure
   - Online Services: no remote boundary.
 - **Resources**: Unity, emulator (covers the phone, R16) and GPU leases per the AGENTS.md rules. Blender and ComfyUI MCP sessions hold `gpu`.
 
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Labels and batch gate (OPS-7).** M1 and M2 Issues carry `resource:unity`, `resource:emulator` and `resource:gpu` as needed. Every batch ends with `scripts/test-unity.ps1 -StandaloneWindowsPlayer` (AGENTS.md).
+
 ## R21 — World Bible v0.3 (FR-007a)
 
 **Decision.** The World Designer authors `F006-WB v0.3`:
@@ -457,6 +638,27 @@ The owner approves budget set v2, and it is recorded in Art Bible v2. M5 measure
 - the infrastructure purpose rules for FR-024, including the visual distinction between cosmetic infrastructure and depot trunks.
 
 The site name, naming rules and the depot/trunk/no-machine-link rule are unchanged. The World Designer decides MINOR or MAJOR under §7 with a written reason (spec A-7). The owner approves before M2 captures are scored. The Art Director confirms the mood can be rendered in all three directions before the v0.3 text is frozen.
+
+**Plan review amendments (2026-11-27, `reviews/plan-reviews.md`).**
+
+- **Scope of v0.3 (WD-1, WD-8).** v0.3 covers:
+  - new mood words for §3 (replacing "dim-lit" and "night shift");
+  - removing "dark base" from §1 and §5, with a migration table;
+  - an explicit statement that no string, the site name and the tagline do not change;
+  - the background rules (R15);
+  - the grouping rules (R09);
+  - stage legibility (open deck, walled yard, gantry line) in the dusk look, required in every direction brief.
+- **Infrastructure rules (FR-024):**
+  - only trunks end at the depot, one machine per trunk;
+  - cosmetic runs never connect two machines and end at ground, wall, support, tank, boundary or depot housing;
+  - cosmetic runs use their own vocabulary (thinner, no flow marks, no arrows, no motion), are mounted on walls and frames, and never lie flat between locations;
+  - no parallel run along a trunk; crossings only as a clearly higher overhead run;
+  - one line of purpose per element in the brief.
+
+  The SC-007 test question is: "Can this be traced from machine X to machine Y?" The answer must be no.
+- **Forbidden terms (WD-6).** Pylons, signage, roads and vehicles are added to the forbidden list.
+- **Measurable mood anchors (AD-2).** Swatches for ground, sky and lamp; key and fill hues; a luminance band for the ground; and a minimum luminance for the void (no pixel below X). They are checked on every capture.
+- **Version (WD-5, WD-7).** Recommendation: **MINOR**, but non-additive. v0.3 says that it supersedes v0.2 §1, §3 and §5, carries the migration table, and adds a one-line clarification to §7 that a mood or ground change counts as MINOR with migration. The World Designer decides and records the reason.
 
 ## R22 — Art Bible v2 (FR-017, FR-018, FR-033)
 

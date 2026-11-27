@@ -33,9 +33,10 @@ Defined in [contracts/look-profile.md](./contracts/look-profile.md).
 | `id` | string | One of `F006`, `F007-A`, `F007-B`, `F007-C`, `F007`. Unique. |
 | `isPrototype` | bool | True for A, B and C. A prototype profile MUST NOT be the shipped default. |
 | `spriteCatalog` | catalog reference | Must resolve every required key for this profile (fails closed, as in F004 FR-024). |
+| `requirementTable` | per-profile table | Required keys, sizes and pivots for this profile. The existing static registry is the table of the `F006` profile (ARCH-5). |
 | `meshSet` | optional prefab set | Only C. Null otherwise. |
 | `worldRenderer` | renderer asset reference | `2D` (default) or `Universal` (C1, R06). |
-| `pixelsPerUnit` | int | 1 cell = 1 world unit. D24 → 24, A → 48, B → 128 (hypothesis R05). |
+| `pixelsPerUnit` | int | Art px per world unit. 1 world unit is 24 F006 art px, and a location cell is the 70 × 54 F006 lattice (`WorldCompositionSettings.cs:95`; corrected, ARCH-8). D24 → 24, A → 48, B → 128 (hypothesis R05). |
 | `filtering` | enum | `Point` (F006, A) or `Bilinear` (B, C). |
 | `cameraPolicy` | enum | `IntegerScale` (M2 for all; production A) or `Continuous` (production B or C, decided at M4). |
 | `layoutPitch` | LayoutPitchSettings | `F006` lattice or the direction's proposed denser pitch. |
@@ -45,7 +46,7 @@ Defined in [contracts/look-profile.md](./contracts/look-profile.md).
 
 **State transitions.**
 
-- Development build: profile selection `F006` ⇄ `F007-x`, applied on the next world rebuild. The world-rebuild path is the one F006 uses for a layout change. The simulation is untouched.
+- Development build: profile selection `F006` ⇄ `F007-x`. It comes from an `ILookProfileSource` that DevTools injects at `BeforeSceneLoad`, and the bootstrap-owned resolver applies it on the next world rebuild (ARCH-6). An unknown persisted id falls back to the shipped default with a log entry (ARCH-11). The world-rebuild path is the one F006 uses for a layout change. The simulation is untouched.
 - Release build: a fixed profile.
 
 ## MachineArtEntry (manifest row)
@@ -84,8 +85,8 @@ Defined in [contracts/look-profile.md](./contracts/look-profile.md).
 
 | Field | Rule |
 |---|---|
-| `pitchArtPx` | Lattice pitch in the look's art px. The F006 value is 70 × 54 at D24. |
-| `groupRule` | Optional arrangement key, for example `pairs`, decided at M3. |
+| `pitchWorld` | Lattice pitch in **world units**. The F006 value is 70 × 54 art px at D24 = 2.917 × 2.25 world units. It is part of the `LayoutComposition` equality and `IdentitySuffix` (ARCH-4). |
+| `groupRule` | Optional arrangement key (for example `bays`), decided at M3. Grouping is by site zone or density, never by production chain (WD-4). |
 | `minHitPoints` | At least 44 pt per location at `n_min` or the minimum zoom (F006 FR-005). |
 
 **Invariants**:

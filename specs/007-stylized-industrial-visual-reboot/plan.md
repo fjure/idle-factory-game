@@ -118,6 +118,9 @@ Tasks are generated now for M1–M3 only. M4–M6 are generated after the decisi
 | OD7-10 | *Pending (M2)*: World Bible v0.3 approval, before M2 scoring. | R21 |
 | OD7-11 | *Pending (M2)*: approval of the rubric anchors, before scoring. | R18 |
 | OD7-12 | *Pending (M3)*: the direction, the geometry, the machine-area factor and their conditions. | FR-016 |
+| OD7-13 | *Pending (plan review O-1)*: owner hands-on play of each direction on the Pixel before M3. | PO-1 |
+| OD7-14 | *Pending (plan review O-2)*: owner go/adjust checkpoints inside M2 (after briefs and WB v0.3; after one machine per direction; at the C1 spike result). | PO-2 |
+| OD7-15 | *Pending (plan review O-3)*: build-out thresholds 10/25/50 from the speed milestones, with stages dropping back on prestige. | GS-1, GS-2 |
 
 ## Implementation lane
 
@@ -126,6 +129,7 @@ Tasks are generated now for M1–M3 only. M4–M6 are generated after the decisi
 - **Task IDs.** The range T600–T699 is reserved; no existing Issue title uses it (R20).
 - **Batch end.** Each batch ends with the `after_implement` hooks (`$speckit-wiki-ingest`, `$speckit-learn-review`) and the hook gate.
 - **M2 and the Play-Tester.** M2 changes no core loop. The Play-Tester runs once on the prototype build to report on feel, and the report goes to the owner.
+- **Resource labels and batch gate (OPS-7).** Issues carry `resource:unity`, `resource:emulator` and `resource:gpu` as needed. Phone performance captures hold `unity,emulator,gpu`. Every batch ends with `scripts/test-unity.ps1 -StandaloneWindowsPlayer`.
 
 ## Dependencies
 
@@ -199,7 +203,7 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
 
 ### Review waves and role disposition
 
-1. **Plan reviews** (before tasks; read-only, separate sessions):
+1. **Plan reviews** (before tasks; read-only, separate sessions). **Done 2026-11-27** on `4238827e`. All ten lenses return APPROVE WITH CONDITIONS, with no blocker. The findings and dispositions are in `reviews/plan-reviews.md`, and the accepted ones are applied in this revision. Three owner decisions (O-1 to O-3) are open. The lenses were:
    - Software Architect (High): look-profile seam, C1 renderer;
    - Art Director: direction definitions R04–R06 and rubric approach;
    - Technical Artist: R13, R14;
@@ -224,12 +228,22 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
 
 - T600: re-verify the MAQA gates.
 - T601: record the Pixel 11 Pro identity (OD7-9), with the SoC, GPU, resolution, density and refresh rate read through `adb`. Check that a profiler-free development APK installs and starts.
-- T602: DevOps, Low tier. Extend the lease wording (the `emulator` lease covers the phone) in AGENTS.md and `docs/agents/workstation-pitfalls.md`, and extend the art-path triggers to `Art/F006/` and `Art/F007/`.
+- T602: DevOps, Low tier. Covers four changes:
+  - name the phone under the `emulator` lease, require `-Serial` when two devices are connected, and require `gpu` for phone performance runs, in AGENTS.md and `docs/agents/workstation-pitfalls.md` (OPS-1, OPS-2, OPS-6, OPS-8);
+  - extend the art-path arrays and doc lines to `Art/F004/`, `Art/F006/` and `Art/F007/` (OPS-3);
+  - record the manual diff-review rule for URP and quality settings (OPS-5);
+  - create the `reviews/` skeleton.
 
 **M1 — Audit.**
 
-- T603: baseline captures and metrics scripts (dead area, machine area) on F006.
-- T604: phone baseline, ABA plus sustained run (PERF-9).
+- T603: baseline captures and the metric scripts (dead area, machine body area, silhouette IoU on captures), each with pytest known-answer fixtures (QA-8). Pin the fixture seeds and commits in `reviews/comparison/fixtures.json` (QA-9). Freeze the F006 baseline values with the script version.
+- T604: Pixel baseline of the F006 look (closes F006 PERF-9). It follows the device protocol (R16) and measures:
+  - ABAB runs;
+  - GPU time;
+  - overdraw;
+  - cold load;
+  - a 10-minute sustained run;
+  - ASTC extension support.
 - T605: audit record, constraint dispositions and problem register.
 - T606: audit review.
 
@@ -237,13 +251,23 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
 
 - T607: World Bible v0.3, authored by the World Designer and approved by the owner (OD7-10).
 - T608: rubric anchors, approved by the owner (OD7-11).
-- T609: look-profile seam, resolver and DevTools switch, with the tests from contracts/look-profile.md (High-tier architect review).
-- T610: `LayoutPitchSettings` and the overhang tap rules.
-- T611: indicator view at the anchor, plus the scripted indicator glyph family, adapted from the S3 = b shapes.
-- T612: `MachineBuildOutStages` (with the Game Systems review).
-- T613: pipeline v2 prototype: `rig-v3`, the `render-hd` route, the checks and `F007SpriteImportPostprocessor`.
-- T614: ASTC page-cap re-measurement on the emulator and the phone.
-- T615: comparison capture driver, sheet generator and release-isolation build check.
+- T609: look-profile seam. It covers:
+  - a bootstrap-owned resolver and an `ILookProfileSource` injected at `BeforeSceneLoad` (ARCH-6);
+  - per-profile requirement tables (ARCH-5);
+  - a dev-only holder scene added only for `IDLEFACTORY_DEV` builds (ARCH-1);
+  - the invalid-id fallback (ARCH-11);
+  - the parity test per R19, with its negative control (QA-1, QA-2, ARCH-7);
+  - the DevTools test runner path with a non-zero count gate (QA-4).
+
+  The architect review is High tier.
+- T610: pitch as instance data in world units. It converts `PivotOfCell` and `DeckTileRect` and their 16 call sites, and adds the pitch to `LayoutComposition` equality and `IdentitySuffix` (ARCH-4). It also makes the hit size profile-aware (ARCH-10), and adds the `OverhangTapTests` assertions (UX-4) and the 44 pt and no-overlap negative case (QA-12).
+- T611: indicator view at the anchor, plus the scripted, plated or outlined glyph family adapted from the S3 = b shapes. The glyph keeps a floor of at least 24 pt at `n_min` on every class, with a per-class pt test, and a contrast of at least 3:1 to its plate (UX-1, UX-3). Keep-out is per look (AD-7).
+- T612: `MachineBuildOutStages`, with the Game Systems review. The thresholds and the behaviour after prestige follow O-3. The fixture level must be reachable by a real player (GS-3).
+- T613: pipeline v2 prototype. It covers:
+  - `rig-v3`, the `render-hd` route and the checks in the updated contract (union-bbox alignment, key colour, reproducibility pins, prompt lint);
+  - `F007SpriteImportPostprocessor`, with dilate or premultiply, padding and tight meshes (TA-4 to TA-7).
+- T614: ASTC page-cap re-measurement. The Pixel is authoritative, and the emulator's ASTC support is recorded. The sweep runs byte-matched and texel-matched pages, 3 cold loads each, and reports the maximum (TA-3, PERF-2).
+- T615: comparison capture driver; sheet generator with the sidecar validator (QA-9); release-isolation check. The isolation check extends `check-release-build.ps1` to cover `BuildReport.packedAssets`, prototype profiles and `UniversalRendererData`, with a positive control on the dev build and an Edit Mode reference guard (QA-3).
 
 **M2 — Directions** (parallel by direction once foundations merge, subject to the `gpu` and `unity` leases).
 
@@ -251,22 +275,29 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
 |---|---|---|---|---|
 | A | T616 | T617 | T618 | T619 |
 | B | T620 | T621 | T622 | T623 |
-| C | T624 | T625: C1 feasibility spike (owner informed of the result), then T626 machines | T627 | T628 |
+| C | T624 (fair brief per AD-1) | T625: C1 feasibility spike. It covers the dev-only second URP asset (ARCH-2), the sorting decision with order tests (ARCH-3), absolute Pixel budgets, and the variant and SetPass deltas (PERF-6). The result goes to the owner (O-2). Then T626 machines | T627 | T628 |
 
 **M2 — Comparison.**
 
 - T629: capture the full matrix.
-- T630: independent trials (silhouettes, blind naming, materials) and the owner timed trial.
+- T630: independent trials (silhouettes, blind naming including static and reduced-motion frames, materials) and the owner's timed trial. Precondition: F006 T546 is on `main`, otherwise T641 runs first (PO-3).
 - T631: rubric scoring by two reviewers.
 - T632: `performance-m2.md`.
 - T633: Play-Tester on the prototype build.
-- T634: UI/UX and World Designer reviews.
+- T634: UI/UX review, including the per-direction interaction check (UX-7) and the reduced 640 × 360 check (FR-011a), plus the World Designer review using the trace test (SC-007).
 
 **M3 — Decision.**
 
 - T635: decision brief.
 - T636: owner decision record.
-- T637: post-decision cleanup plan, regeneration of the M4–M6 tasks, and `analyze`.
+- T637: post-decision cleanup plan (full list, ARCH-12), regeneration of the M4–M6 tasks, and `analyze`.
+
+**Added by the plan reviews.**
+
+- T638: re-baseline map and test-id comparison script (QA-5). It runs before the first M2 code task.
+- T639: owner sessions. Their content depends on O-1 and O-2: hands-on play on the Pixel per direction, and the M2 checkpoints.
+- T640: conditional revise loop if the owner chooses "revise" at M3, with scope and budget set at that time (PO-7).
+- T641: fallback reproduction of the F006 readability baseline if F006 T546 is not on `main` when T630 starts (PO-3).
 
 **Closeout per batch.** Parent hooks, as in AGENTS.md.
 

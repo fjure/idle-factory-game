@@ -29,7 +29,12 @@
 | indicator anchor inside the body and the hit area | ✓ | ✓ | ✓ |
 | indicator contrast over its own machine (≥ 3:1 fill or outline) | ✓ | ✓ | ✓ |
 | texture-memory estimate per family against budget | ✓ | ✓ | ✓ |
-| reproducibility (re-render diff within tolerance) | pixel-identical | ΔE ≤ 2 on ≥ 99 % of opaque px (hypothesis, M4) | same |
+| pass alignment (union bbox, one pivot; emissive ⊆ beauty alpha) | — | ✓ | ✓ |
+| key-colour absence (SC-006 capture key never in art) | ✓ | ✓ | ✓ |
+| reproducibility (re-render diff within tolerance) | pixel-identical | ΔE ≤ 2 on ≥ 99 % of opaque px, plus an SSIM threshold set in M2; CPU, fixed seed, denoiser off, pinned versions (TA-6) | same |
+| prompt lint for generated inputs (no game or artist names; prompts and seeds logged; no reference img2img) | ✓ | ✓ | ✓ |
+
+`mesh-export` checks (C, TA-8): unit and scale, pivot, triangle count, material and variant counts, shadow-caster flag. The silhouette IoU for C runs through a Unity render step.
 
 ## Provenance (`provenance.json`, additions to F004 §15)
 
@@ -55,4 +60,6 @@ The page plan obeys the page rule in force: 1 MiB until the R13 re-measurement p
 
 Exit codes: 0 pass, 1 test failure, 3 tooling unavailable. Exit 3 is a blocker, never a pass. `scripts/test-unity.ps1` chains it automatically when `tools/art-pipeline/`, `art-source/` or `Assets/IdleFactory/Art/F007/` change.
 
-**Plan action.** `scripts/test-unity.ps1` and `scripts/check-after-implement-hooks.ps1` currently trigger on `Assets/IdleFactory/Art/F004/`. A DevOps task extends that path list to `Assets/IdleFactory/Art/F007/`.
+**Plan action (OPS-3).** The art-path arrays in `scripts/check-after-implement-hooks.ps1:157` and `scripts/test-art-pipeline.ps1:46` list only `Assets/IdleFactory/Art/F004/`. The `Art/F006/` gap is live today. T602 extends both arrays, and the doc lines (`check-after-implement-hooks.ps1:20`, `test-art-pipeline.ps1:27`, `test-unity.ps1:31`), to `Art/F004/`, `Art/F006/` and `Art/F007/`.
+
+**Renderer settings (OPS-5).** `check-settings-noise.ps1` does not cover GraphicsSettings or QualitySettings. Commits that touch URP assets or quality settings are reviewed by hand with the diff.
