@@ -271,11 +271,13 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
 
 **M2 — Directions** (parallel by direction once foundations merge, subject to the `gpu` and `unity` leases).
 
-| Direction | Brief | Machines and depot | Environment, effects, stage art | Integration and review |
+Each direction has a brief, a first machine (the input to owner checkpoint 2), the remaining machines with the depot and stage and tier art, and environment plus integration:
+
+| Direction | Brief | First machine | Remaining machines, depot, stage and tier | Environment and integration |
 |---|---|---|---|---|
 | A | T616 | T617 | T618 | T619 |
 | B | T620 | T621 | T622 | T623 |
-| C | T624 (fair brief per AD-1) | T625: C1 feasibility spike. It covers the dev-only second URP asset (ARCH-2), the sorting decision with order tests (ARCH-3), absolute Pixel budgets, and the variant and SetPass deltas (PERF-6). The result goes to the owner (O-2). Then T626 machines | T627 | T628 |
+| C | T624 | T625 C1 spike, owner gate T643, then T626 | T627 | T628 |
 
 **M2 — Comparison.**
 
@@ -295,7 +297,7 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
 **Added by the plan reviews.**
 
 - T638: re-baseline map and test-id comparison script (QA-5). It runs before the first M2 code task.
-- T639: owner sessions (O-1, O-2). Checkpoint 1 follows the briefs and WB v0.3. Checkpoint 2 follows the first in-engine machine per direction. Checkpoint 3 is the C1 result. The hands-on Pixel play of all three directions comes before T635. Each session's verdict is recorded in `reviews/owner-checkpoints.md`. The parent prepares a profiler-free dev APK and holds the `unity,emulator` leases.
+- T639, T642, T643, T644: owner sessions (O-1, O-2): checkpoint 1 after the briefs and WB v0.3 (T639), checkpoint 2 after the first machines (T642), the C1 gate (T643), and hands-on Pixel play before T635 (T644). See `tasks.md`.
 - T640: conditional revise loop if the owner chooses "revise" at M3, with scope and budget set at that time (PO-7).
 - T641: fallback reproduction of the F006 readability baseline if F006 T546 is not on `main` when T630 starts (PO-3).
 
