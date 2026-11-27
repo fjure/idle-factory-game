@@ -56,6 +56,13 @@ Read it before working in the shared main checkout, running Unity tests or build
 - **`File.Replace` onto an existing file fails intermittently on this host.** In F006 P2 (T538, 2026-11-13) about 0.6 % of back-to-back replaces threw `IOException` 0x80070497 (ERROR_UNABLE_TO_REMOVE_REPLACED). The cause is a just-closed handle that an indexer or scanner holds. Production code that replaces files must retry transient IO and access failures for a bounded time; `DisplayPreferencesStore` waits 15, 30 and 60 ms. A test that counts attempts must not let a real `File.Replace` run inside its fault-injecting double, or a genuine host failure adds an attempt. Real-file-system tests assert outcomes only.
 - **Finished workers can leave background processes behind** (`python3 -` heredocs, sleep monitors). In F005 batch D, `until grep -q … ; do sleep 20; done` wait loops of a finished worker never ended and locked its worktree; list them by command line and stop only the finished worker's own loops. Before a measurement, run `Get-CimInstance Win32_Process` and look for command lines that contain the worktree path, and stop what is left.
 - **`PlayerWithTests.exe` cannot be relaunched standalone.** The test runner deletes it after the run, so quiet-host player timings need a separately built probe player, as in the T300 and T336 measurements.
+- **Screenshots larger than the host display need editor Play Mode.** A Windows player window cannot be larger than the 1920×1080 monitor. A 1080×2400 request came back as 1080×1080 (F007 T603). Capture larger classes with `PlayModeWindow.SetCustomRenderingResolution` in editor Play Mode, and record `buildKind: editor-playmode`.
+- **Prove capture determinism across sessions and job orders, not just repeats.** In F007 T603 three sources of drift appeared one after another:
+  - **HUD values.** Store and cash readouts come from the live session, which keeps advancing on wall-clock time. Freeze them with `CoreGameFoundationBootstrap.OverrideRunCompositionForTests` (fixed UTC, isolated temp root).
+  - **Text raster.** Text pixels were ±1 off between sessions, because TextCore dynamic font atlases pack glyphs in request order. Pre-warm them in a fixed order with `ClearFontAssetData` plus `TryAddCharacters`.
+  - **World framing.** The camera framing carried over from the previous job: a 640×360 cell captured first was panned 41 px.
+
+  Re-capture in a separate Unity session with a shuffled order that also puts the small-resolution cell first. Compare PNG, mask and layout bytes.
 - **Record host load as a PF-9 deviation.** Name what ran during the timed window (Riot, Steam, Battle.net, Docker, Chrome, other agent sessions) in the measurement record, with approximate load.
 
 ## Art tooling
