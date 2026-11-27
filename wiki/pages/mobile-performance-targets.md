@@ -1,8 +1,8 @@
 ---
 title: Mobile performance targets
 type: decision
-sources: [S001, S018, S048, S062]
-updated: 2026-11-19
+sources: [S001, S018, S048, S062, S063]
+updated: 2026-11-26
 ---
 
 # Mobile performance targets
@@ -45,3 +45,7 @@ T412 froze the Feature 004 render budgets from the first B2 measurement (61.37 F
 ## F006 budget 8 restated (2026-11-19)
 
 The B2/B3 SetPass reading of about one pass per render came from an Editor probe whose batch counters read 0; in the Windows player the same differential reads 28 to 34 passes for F004 pages alone (F004-only baseline 34) and 42 to 44 with F006. The owner restated row 8: the F006 delta must be at most +12 passes (about +35 %) over the F004-only baseline on W006-V, with the `camera.Render()` CPU tier 1 bound binding; the absolute count is informational. T531 measured +6 to +10, which passes. `performance-budgets.md` takes the text at the T544 close-out. See [F006 batch 6](./f006-batch-6-verification-and-polish.md) and `specs/004-visual-identity/reviews/performance-b3.md` section 12. (S062)
+
+## F006 B4b (2026-11-26)
+
+On a quiet host with a cold-booted emulator the F006 build reads 46 to 47 FPS, the same as the B4a-era build and the fresh-run controls in an ABA, so B4a's 61.4 is not reproducible and no F006 code regression is shown. Budget 8 passes on the same-state delta (+8.5 to +11.4 over the F004-only value). The owner accepted SC-008 as a deviation (about 15 to 21 allocations per steady real-scene frame; no physical-device, battery or thermal data). See [B4b](./f006-batch-6b-fixes-captures-and-performance.md) and [final gates](./f006-final-gates-and-acceptance.md). (S063)

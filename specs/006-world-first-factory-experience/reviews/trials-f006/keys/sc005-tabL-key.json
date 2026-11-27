@@ -1,0 +1,1298 @@
+{
+  "schema": 5,
+  "set": "tabL",
+  "seed": 6080,
+  "columns": 5,
+  "filters": {
+    "grayscale": [
+      {
+        "number": 1,
+        "id": "assembler-storage-full",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 2,
+        "id": "miner-running-boosted",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "boosted"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 3,
+        "id": "plate-locked-L2",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 2
+      },
+      {
+        "number": 4,
+        "id": "assembler-paused",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 5,
+        "id": "miner-running-overdrive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 6,
+        "id": "assembler-inactive",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 7,
+        "id": "miner-running",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 8,
+        "id": "assembler-missing-input",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 9,
+        "id": "miner-storage-full",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 10,
+        "id": "assembler-running-selected",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 11,
+        "id": "plate-empty",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 12,
+        "id": "miner-waiting",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 13,
+        "id": "plate-empty-selected",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 14,
+        "id": "assembler-waiting",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 15,
+        "id": "miner-inactive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 16,
+        "id": "plate-locked-L4",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 4
+      },
+      {
+        "number": 17,
+        "id": "assembler-running-both-markers",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [
+          "boosted",
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 18,
+        "id": "assembler-running",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 19,
+        "id": "miner-paused",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 20,
+        "id": "plate-locked-L5",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 5
+      },
+      {
+        "number": 21,
+        "id": "plate-locked-L3",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 3
+      },
+      {
+        "number": 22,
+        "id": "miner-missing-input",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      }
+    ],
+    "deuteranopia": [
+      {
+        "number": 1,
+        "id": "assembler-paused",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 2,
+        "id": "assembler-inactive",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 3,
+        "id": "plate-locked-L5",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 5
+      },
+      {
+        "number": 4,
+        "id": "miner-paused",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 5,
+        "id": "plate-locked-L4",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 4
+      },
+      {
+        "number": 6,
+        "id": "miner-inactive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 7,
+        "id": "miner-running-overdrive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 8,
+        "id": "assembler-running-both-markers",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [
+          "boosted",
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 9,
+        "id": "assembler-waiting",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 10,
+        "id": "assembler-missing-input",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 11,
+        "id": "assembler-running-selected",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 12,
+        "id": "miner-running",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 13,
+        "id": "assembler-running",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 14,
+        "id": "assembler-storage-full",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 15,
+        "id": "miner-storage-full",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 16,
+        "id": "plate-empty",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 17,
+        "id": "miner-running-boosted",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "boosted"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 18,
+        "id": "miner-missing-input",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 19,
+        "id": "miner-waiting",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 20,
+        "id": "plate-locked-L3",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 3
+      },
+      {
+        "number": 21,
+        "id": "plate-empty-selected",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 22,
+        "id": "plate-locked-L2",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 2
+      }
+    ],
+    "protanopia": [
+      {
+        "number": 1,
+        "id": "assembler-running",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 2,
+        "id": "assembler-running-both-markers",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [
+          "boosted",
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 3,
+        "id": "assembler-paused",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 4,
+        "id": "miner-storage-full",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 5,
+        "id": "miner-paused",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 6,
+        "id": "plate-locked-L4",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 4
+      },
+      {
+        "number": 7,
+        "id": "miner-running-overdrive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 8,
+        "id": "assembler-running-selected",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 9,
+        "id": "plate-empty-selected",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 10,
+        "id": "assembler-storage-full",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 11,
+        "id": "plate-empty",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 12,
+        "id": "plate-locked-L5",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 5
+      },
+      {
+        "number": 13,
+        "id": "miner-running",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 14,
+        "id": "plate-locked-L2",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 2
+      },
+      {
+        "number": 15,
+        "id": "assembler-inactive",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 16,
+        "id": "plate-locked-L3",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 3
+      },
+      {
+        "number": 17,
+        "id": "miner-inactive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 18,
+        "id": "miner-waiting",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 19,
+        "id": "assembler-missing-input",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 20,
+        "id": "miner-missing-input",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 21,
+        "id": "miner-running-boosted",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "boosted"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 22,
+        "id": "assembler-waiting",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      }
+    ],
+    "tritanopia": [
+      {
+        "number": 1,
+        "id": "miner-running-boosted",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "boosted"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 2,
+        "id": "miner-waiting",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 3,
+        "id": "assembler-inactive",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 4,
+        "id": "plate-locked-L3",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 3
+      },
+      {
+        "number": 5,
+        "id": "assembler-running-both-markers",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [
+          "boosted",
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 6,
+        "id": "miner-paused",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 7,
+        "id": "plate-locked-L5",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 5
+      },
+      {
+        "number": 8,
+        "id": "assembler-missing-input",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 9,
+        "id": "assembler-storage-full",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 10,
+        "id": "miner-missing-input",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "missing-input",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 11,
+        "id": "assembler-running-selected",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 12,
+        "id": "miner-storage-full",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "storage-full",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 13,
+        "id": "plate-locked-L2",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 2
+      },
+      {
+        "number": 14,
+        "id": "assembler-running",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 15,
+        "id": "assembler-waiting",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "waiting",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 16,
+        "id": "plate-locked-L4",
+        "cond": "locked",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 4
+      },
+      {
+        "number": 17,
+        "id": "miner-inactive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "inactive",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 18,
+        "id": "assembler-paused",
+        "cond": "occupied",
+        "machine": "assembler",
+        "state": "paused",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 19,
+        "id": "miner-running",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 20,
+        "id": "miner-running-overdrive",
+        "cond": "occupied",
+        "machine": "miner",
+        "state": "running",
+        "markers": [
+          "overdrive"
+        ],
+        "selected": false,
+        "level": 0
+      },
+      {
+        "number": 21,
+        "id": "plate-empty-selected",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": true,
+        "level": 0
+      },
+      {
+        "number": 22,
+        "id": "plate-empty",
+        "cond": "empty",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0
+      }
+    ]
+  },
+  "p3Filters": {
+    "grayscale": [
+      {
+        "number": 1,
+        "id": "p3-hub-no-dot",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "no dot",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-hub-no-dot class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-hub-no-dot attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 hub dot forced off (visual only; the real flags decide the rest) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 2,
+        "id": "p3-attention-shortage",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "shortage marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-attention-shortage class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-attention-shortage attention{shortage=1 storeFull=0 markers=1 visible=1 first=Shortage/iron.ore@6 hubDot=False} cardOpen=False selected=-1 real shortage after removing every miner; store-full markers hidden for the frame so the tile shows only the shortage marker (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 3,
+        "id": "p3-attention-store-full",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "store full marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-attention-store-full class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-attention-store-full attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 real store-full state of the W005-L run; shortage markers hidden for the frame so the tile shows only the store-full marker (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 4,
+        "id": "p3-hub-dot",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "hub dot",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-hub-dot class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-hub-dot attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=True} cardOpen=False selected=-1 hub dot forced on (visual only; the real flags decide the rest) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 5,
+        "id": "p3-ghost-preview",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "ghost preview",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-ghost-preview class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-ghost-preview attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 one ghost miner at location 11 (real removal ok=True); no available-locations highlight; the shipped preview mutes the other machines; attention markers hidden (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 6,
+        "id": "p3-card-next-to-machine",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "machine card",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-card-next-to-machine class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-card-next-to-machine attention{shortage=1 storeFull=6 markers=2 visible=2 first=Shortage/iron.plate@10 hubDot=False} cardOpen=True selected=4 real card of the selected machine at slot 4 (selection frame drawn by the presenter); cardOpen=True selectedSlot=4 D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 7,
+        "id": "p3-upgrade-marker",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "upgrade marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-upgrade-marker class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-upgrade-marker attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 forced visual (SlotVisual.UpgradeMarker on a running level-2 miner at slot 4, not boosted, no badge); upgrade marker renderer enabled=True (the marker is hidden below 24 points per cell, SlotGridView.MarkersVisibleAt); attention markers hidden D6=marker-captured-as-shipped"
+      }
+    ],
+    "deuteranopia": [
+      {
+        "number": 1,
+        "id": "p3-hub-dot",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "hub dot",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-hub-dot class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-hub-dot attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=True} cardOpen=False selected=-1 hub dot forced on (visual only; the real flags decide the rest) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 2,
+        "id": "p3-attention-shortage",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "shortage marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-attention-shortage class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-attention-shortage attention{shortage=1 storeFull=0 markers=1 visible=1 first=Shortage/iron.ore@6 hubDot=False} cardOpen=False selected=-1 real shortage after removing every miner; store-full markers hidden for the frame so the tile shows only the shortage marker (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 3,
+        "id": "p3-card-next-to-machine",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "machine card",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-card-next-to-machine class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-card-next-to-machine attention{shortage=1 storeFull=6 markers=2 visible=2 first=Shortage/iron.plate@10 hubDot=False} cardOpen=True selected=4 real card of the selected machine at slot 4 (selection frame drawn by the presenter); cardOpen=True selectedSlot=4 D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 4,
+        "id": "p3-ghost-preview",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "ghost preview",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-ghost-preview class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-ghost-preview attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 one ghost miner at location 11 (real removal ok=True); no available-locations highlight; the shipped preview mutes the other machines; attention markers hidden (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 5,
+        "id": "p3-upgrade-marker",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "upgrade marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-upgrade-marker class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-upgrade-marker attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 forced visual (SlotVisual.UpgradeMarker on a running level-2 miner at slot 4, not boosted, no badge); upgrade marker renderer enabled=True (the marker is hidden below 24 points per cell, SlotGridView.MarkersVisibleAt); attention markers hidden D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 6,
+        "id": "p3-attention-store-full",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "store full marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-attention-store-full class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-attention-store-full attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 real store-full state of the W005-L run; shortage markers hidden for the frame so the tile shows only the store-full marker (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 7,
+        "id": "p3-hub-no-dot",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "no dot",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-hub-no-dot class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-hub-no-dot attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 hub dot forced off (visual only; the real flags decide the rest) D6=marker-captured-as-shipped"
+      }
+    ],
+    "protanopia": [
+      {
+        "number": 1,
+        "id": "p3-attention-store-full",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "store full marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-attention-store-full class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-attention-store-full attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 real store-full state of the W005-L run; shortage markers hidden for the frame so the tile shows only the store-full marker (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 2,
+        "id": "p3-card-next-to-machine",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "machine card",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-card-next-to-machine class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-card-next-to-machine attention{shortage=1 storeFull=6 markers=2 visible=2 first=Shortage/iron.plate@10 hubDot=False} cardOpen=True selected=4 real card of the selected machine at slot 4 (selection frame drawn by the presenter); cardOpen=True selectedSlot=4 D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 3,
+        "id": "p3-attention-shortage",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "shortage marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-attention-shortage class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-attention-shortage attention{shortage=1 storeFull=0 markers=1 visible=1 first=Shortage/iron.ore@6 hubDot=False} cardOpen=False selected=-1 real shortage after removing every miner; store-full markers hidden for the frame so the tile shows only the shortage marker (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 4,
+        "id": "p3-ghost-preview",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "ghost preview",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-ghost-preview class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-ghost-preview attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 one ghost miner at location 11 (real removal ok=True); no available-locations highlight; the shipped preview mutes the other machines; attention markers hidden (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 5,
+        "id": "p3-upgrade-marker",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "upgrade marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-upgrade-marker class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-upgrade-marker attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 forced visual (SlotVisual.UpgradeMarker on a running level-2 miner at slot 4, not boosted, no badge); upgrade marker renderer enabled=True (the marker is hidden below 24 points per cell, SlotGridView.MarkersVisibleAt); attention markers hidden D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 6,
+        "id": "p3-hub-no-dot",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "no dot",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-hub-no-dot class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-hub-no-dot attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 hub dot forced off (visual only; the real flags decide the rest) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 7,
+        "id": "p3-hub-dot",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "hub dot",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-hub-dot class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-hub-dot attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=True} cardOpen=False selected=-1 hub dot forced on (visual only; the real flags decide the rest) D6=marker-captured-as-shipped"
+      }
+    ],
+    "tritanopia": [
+      {
+        "number": 1,
+        "id": "p3-hub-no-dot",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "no dot",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-hub-no-dot class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-hub-no-dot attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 hub dot forced off (visual only; the real flags decide the rest) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 2,
+        "id": "p3-upgrade-marker",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "upgrade marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-upgrade-marker class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-upgrade-marker attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 forced visual (SlotVisual.UpgradeMarker on a running level-2 miner at slot 4, not boosted, no badge); upgrade marker renderer enabled=True (the marker is hidden below 24 points per cell, SlotGridView.MarkersVisibleAt); attention markers hidden D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 3,
+        "id": "p3-attention-store-full",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "store full marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-attention-store-full class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-attention-store-full attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 real store-full state of the W005-L run; shortage markers hidden for the frame so the tile shows only the store-full marker (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 4,
+        "id": "p3-attention-shortage",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "shortage marker",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-attention-shortage class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-attention-shortage attention{shortage=1 storeFull=0 markers=1 visible=1 first=Shortage/iron.ore@6 hubDot=False} cardOpen=False selected=-1 real shortage after removing every miner; store-full markers hidden for the frame so the tile shows only the shortage marker (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 5,
+        "id": "p3-ghost-preview",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "ghost preview",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-ghost-preview class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-ghost-preview attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=False} cardOpen=False selected=-1 one ghost miner at location 11 (real removal ok=True); no available-locations highlight; the shipped preview mutes the other machines; attention markers hidden (C-93) D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 6,
+        "id": "p3-card-next-to-machine",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "machine card",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-card-next-to-machine class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-card-next-to-machine attention{shortage=1 storeFull=6 markers=2 visible=2 first=Shortage/iron.plate@10 hubDot=False} cardOpen=True selected=4 real card of the selected machine at slot 4 (selection frame drawn by the presenter); cardOpen=True selectedSlot=4 D6=marker-captured-as-shipped"
+      },
+      {
+        "number": 7,
+        "id": "p3-hub-dot",
+        "cond": "p3",
+        "machine": "",
+        "state": "",
+        "markers": [],
+        "selected": false,
+        "level": 0,
+        "cue": "hub dot",
+        "cueShown": true,
+        "capture": "job=sc005-tabL-p3-hub-dot class=tabL window=2048x1536 dpi=96 columns=4 stageValue=stage 2 (activity 2, level 1) expectStage=0 realStage=2 expectShortage= p3=p3-hub-dot attention{shortage=0 storeFull=6 markers=1 visible=1 first=StoreFull/@0 hubDot=True} cardOpen=False selected=-1 hub dot forced on (visual only; the real flags decide the rest) D6=marker-captured-as-shipped"
+      }
+    ]
+  }
+}

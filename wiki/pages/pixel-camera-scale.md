@@ -1,7 +1,7 @@
 ---
 title: Pixel camera scale
 type: decision
-sources: [S063, S045, S038, S039, S041, S052, S053, S055, S056, S061]
+sources: [S064, S045, S038, S039, S041, S052, S053, S055, S056, S061]
 updated: 2026-11-27
 ---
 
@@ -63,4 +63,4 @@ F006 T558 (owner decision 2026-11-19, Art Bible v1.1.1 sections 4.1 and 4.2): fi
 
 ## F007 per-look camera policy (planned, 2026-11-27)
 
-F007 M2 keeps the integer scale for every look (B and C map `n` to a world scale through the look's PPU); M4 decides the production policy: A keeps integer scaling, B and C may use continuous zoom with readable bounds, with explicit test re-baselining. Layout pitch becomes per-look instance data in world units and part of layout identity; the hit-size formula becomes profile-aware with the camera as sole writer. See [F007 plan overview](./f007-plan-overview.md). (S063)
+F007 M2 keeps the integer scale for every look (B and C map `n` to a world scale through the look's PPU); M4 decides the production policy: A keeps integer scaling, B and C may use continuous zoom with readable bounds, with explicit test re-baselining. Layout pitch becomes per-look instance data in world units and part of layout identity; the hit-size formula becomes profile-aware with the camera as sole writer. See [F007 plan overview](./f007-plan-overview.md). (S064)

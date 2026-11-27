@@ -22,6 +22,8 @@
 
 ### Feature 006 status (verified 2026-11-27)
 
+> **Update (merge with `main` `60d3bfea`, 2026-11-27):** F006 is now closed on `main`. T546 (`reviews/readability-f006.md`), the owner's T549 visual acceptance, T550 and T551 are done. The FR-002 gate for M5 merges (the T549 verdict) is therefore met, and T641 is expected to be unnecessary. The status below records the state at specification time.
+
 Feature 006 is **not complete** on `main`. Its review and test tasks T531–T545, T547, T548 and T560–T563 are merged; the `tasks.md` checkboxes are not yet mirrored. In `reviews/final-acceptance.md`, all ten lenses return ACCEPT WITH CONDITIONS with no blocker. These parent and owner steps are still open:
 
 - **T530 / T546**: the SC-004, SC-005 and SC-006 readability trials. `reviews/readability-f006.md` does not exist yet.

@@ -1,8 +1,8 @@
 ---
 title: F006 batch 6 verification and polish
 type: decision
-sources: [S062]
-updated: 2026-11-19
+sources: [S062, S063]
+updated: 2026-11-26
 ---
 
 # F006 batch 6 verification and polish (part A, main 38cc418)
@@ -22,3 +22,5 @@ Four Issues merged: T541 #713 (PR #778), T547 #718 (PR #777), T531 #704 (PR #779
 `scripts/android-emulator-journey.ps1` now targets the Office hub, has an F006 scenario and `-ValidateOnly`, defaults to AVD `IdleFactory_Test_API_36` and has an `F006Autosave` check. Tap fractions are provisional until T542 calibrates them on a device (C-70). See [emulator validation](./android-emulator-validation.md). (S062)
 
 Related: [copy conformance and polish](./f006-batch-6-copy-conformance-and-polish.md), [batch 5 gates](./f006-batch-5-gate-and-owner-decisions.md), [plan overview](./f006-plan-overview.md), [batch 6 pitfalls](./f006-batch-6-workflow-pitfalls.md), [run persistence](./run-persistence.md).
+
+Continues in [part B fixes, captures and B4b](./f006-batch-6b-fixes-captures-and-performance.md). (S063)

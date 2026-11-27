@@ -1,8 +1,8 @@
 ---
 title: F006 batch 6 workflow pitfalls
 type: howto
-sources: [S062]
-updated: 2026-11-19
+sources: [S062, S063]
+updated: 2026-11-26
 ---
 
 # F006 batch 6 workflow pitfalls
@@ -17,3 +17,5 @@ updated: 2026-11-19
 - **A `wip` commit or staged UI Toolkit noise can sit in a worker's worktree mid-fix.** QA confirms the final PR head has neither. (S062)
 
 Related: [batch 5 pitfalls](./f006-batch-5-workflow-pitfalls.md), [workstation pitfalls](../../docs/agents/workstation-pitfalls.md).
+
+Continues in [part B pitfalls](./f006-batch-6b-workflow-pitfalls.md). (S063)

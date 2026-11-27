@@ -1,7 +1,7 @@
 ---
 title: F006 Android load hang and the atlas page cap
 type: decision
-sources: [S063, S060]
+sources: [S064, S060]
 updated: 2026-11-27
 ---
 
@@ -17,4 +17,4 @@ updated: 2026-11-27
 
 Related: [Android emulator validation](./android-emulator-validation.md), [F004 batch 10 per-page atlas memory](./f004-batch-10-lattice-zoom-ore-vein-art-import.md), [gate and decisions](./f006-p3a-gate-and-owner-decisions.md).
 
-**F007 plan (hypothesis).** F007 re-measures the cap for ASTC pages on the Pixel 11 Pro and the emulator: byte-matched and texel-matched sweeps, 3 cold loads, maximum reported, with the hang assumed to follow byte size. The cap stays at 1 MiB until the phone passes. See [F007 directions and measurement plan](./f007-directions-and-measurement-plan.md). (S063)
+**F007 plan (hypothesis).** F007 re-measures the cap for ASTC pages on the Pixel 11 Pro and the emulator: byte-matched and texel-matched sweeps, 3 cold loads, maximum reported, with the hang assumed to follow byte size. The cap stays at 1 MiB until the phone passes. See [F007 directions and measurement plan](./f007-directions-and-measurement-plan.md). (S064)

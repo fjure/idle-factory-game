@@ -1,0 +1,210 @@
+{
+ "pair_01": {
+  "set": "emuP",
+  "filter": "grayscale",
+  "dot": "Y",
+  "size": [
+   268,
+   169
+  ],
+  "sizeNoDot": [
+   268,
+   169
+  ]
+ },
+ "pair_02": {
+  "set": "phoneL",
+  "filter": "tritanopia",
+  "dot": "Y",
+  "size": [
+   129,
+   74
+  ],
+  "sizeNoDot": [
+   129,
+   74
+  ]
+ },
+ "pair_03": {
+  "set": "tabL",
+  "filter": "deuteranopia",
+  "dot": "X",
+  "size": [
+   196,
+   114
+  ],
+  "sizeNoDot": [
+   196,
+   114
+  ]
+ },
+ "pair_04": {
+  "set": "tabL",
+  "filter": "tritanopia",
+  "dot": "X",
+  "size": [
+   196,
+   118
+  ],
+  "sizeNoDot": [
+   196,
+   118
+  ]
+ },
+ "pair_05": {
+  "set": "phoneP",
+  "filter": "tritanopia",
+  "dot": "X",
+  "size": [
+   146,
+   104
+  ],
+  "sizeNoDot": [
+   146,
+   104
+  ]
+ },
+ "pair_06": {
+  "set": "phoneP",
+  "filter": "protanopia",
+  "dot": "Y",
+  "size": [
+   146,
+   102
+  ],
+  "sizeNoDot": [
+   146,
+   102
+  ]
+ },
+ "pair_07": {
+  "set": "emuP",
+  "filter": "deuteranopia",
+  "dot": "X",
+  "size": [
+   268,
+   169
+  ],
+  "sizeNoDot": [
+   268,
+   169
+  ]
+ },
+ "pair_08": {
+  "set": "phoneL",
+  "filter": "protanopia",
+  "dot": "Y",
+  "size": [
+   129,
+   72
+  ],
+  "sizeNoDot": [
+   129,
+   72
+  ]
+ },
+ "pair_09": {
+  "set": "phoneL",
+  "filter": "grayscale",
+  "dot": "Y",
+  "size": [
+   129,
+   72
+  ],
+  "sizeNoDot": [
+   129,
+   72
+  ]
+ },
+ "pair_10": {
+  "set": "phoneL",
+  "filter": "deuteranopia",
+  "dot": "Y",
+  "size": [
+   129,
+   72
+  ],
+  "sizeNoDot": [
+   129,
+   72
+  ]
+ },
+ "pair_11": {
+  "set": "tabL",
+  "filter": "protanopia",
+  "dot": "Y",
+  "size": [
+   196,
+   114
+  ],
+  "sizeNoDot": [
+   196,
+   114
+  ]
+ },
+ "pair_12": {
+  "set": "tabL",
+  "filter": "grayscale",
+  "dot": "Y",
+  "size": [
+   196,
+   114
+  ],
+  "sizeNoDot": [
+   196,
+   114
+  ]
+ },
+ "pair_13": {
+  "set": "phoneP",
+  "filter": "grayscale",
+  "dot": "Y",
+  "size": [
+   146,
+   102
+  ],
+  "sizeNoDot": [
+   146,
+   102
+  ]
+ },
+ "pair_14": {
+  "set": "emuP",
+  "filter": "tritanopia",
+  "dot": "Y",
+  "size": [
+   268,
+   174
+  ],
+  "sizeNoDot": [
+   268,
+   174
+  ]
+ },
+ "pair_15": {
+  "set": "emuP",
+  "filter": "protanopia",
+  "dot": "Y",
+  "size": [
+   268,
+   169
+  ],
+  "sizeNoDot": [
+   268,
+   169
+  ]
+ },
+ "pair_16": {
+  "set": "phoneP",
+  "filter": "deuteranopia",
+  "dot": "Y",
+  "size": [
+   146,
+   102
+  ],
+  "sizeNoDot": [
+   146,
+   102
+  ]
+ }
+}

@@ -1,7 +1,7 @@
 ---
 title: Visual identity and art direction
 type: decision
-sources: [S063, S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054, S055, S056, S057, S062]
+sources: [S064, S038, S040, S042, S043, S044, S045, S046, S047, S049, S050, S051, S053, S054, S055, S056, S057, S062]
 updated: 2026-11-27
 ---
 
@@ -89,4 +89,4 @@ Art Bible v1.1.2 confirms section 21.12: the world-layer renderer census has a w
 
 ## F007 reboot plan (2026-11-27)
 
-F007 plans to supersede the D24 pixel identity with a look chosen at an owner gate (M3) among three prototypes (D48 pixel, Blender high-res sprites, hybrid 3D). F004 rules stay in force for shipped assets until Art Bible `F007-AB v2.0` is signed; v2 supersedes `F004-PAB v1.1.2` by a supersession table and a per-family migration table. See [F007 plan overview](./f007-plan-overview.md) and [directions](./f007-directions-and-measurement-plan.md). (S063)
+F007 plans to supersede the D24 pixel identity with a look chosen at an owner gate (M3) among three prototypes (D48 pixel, Blender high-res sprites, hybrid 3D). F004 rules stay in force for shipped assets until Art Bible `F007-AB v2.0` is signed; v2 supersedes `F004-PAB v1.1.2` by a supersession table and a per-family migration table. See [F007 plan overview](./f007-plan-overview.md) and [directions](./f007-directions-and-measurement-plan.md). (S064)
