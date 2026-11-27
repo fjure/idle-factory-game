@@ -397,7 +397,8 @@ namespace IdleFactory.Unity.Presentation
                 }
             }
 
-            if (requireRegistryRows)
+            // The shipped scene catalog sets requireRegistryRows; a profile's authored table always enforces its own required rows (T609, rule 3).
+            if (requireRegistryRows || (requirementTable != null && requirementTable.Source == LookRequirementSource.Authored))
             {
                 foreach (var requirement in RequirementTable.Rows)
                 {

@@ -72,15 +72,29 @@ namespace IdleFactory.Tests.EditMode
             Assert.That(retiredTypes, Is.Empty);
         }
 
-        // T512 (Feature 006, R22): presentation tuning assets are not gameplay content (FR-001 holds). WorldCompositionSettings holds the world
-        // layout margin, the depot and deposit cell rules and prop weights and density; it reaches no simulation, economy or save data. Each
-        // type listed here must live in the presentation namespace (checked below), so a gameplay definition cannot hide behind this list.
-        private static readonly Type[] PresentationTuningAssets = { typeof(IdleFactory.Unity.Presentation.WorldCompositionSettings) };
+        // T512 (Feature 006, R22) and T609 (Feature 007): presentation tuning assets are not gameplay content (FR-001 holds). WorldCompositionSettings holds
+        // the world layout margin, the depot and deposit cell rules and prop weights and density. LookProfile (T609) holds the art set, requirement table,
+        // camera policy and renderer choice of a look. Neither reaches simulation, economy or save data. Each type listed here must live in one of the
+        // allowed presentation namespaces (checked below, as an explicit set and not a prefix), and PresentationTuningAssetsReachNoSimulationContentOrPersistenceType
+        // walks their serialized fields, so a gameplay definition cannot hide behind this list.
+        private static readonly Type[] PresentationTuningAssets =
+        {
+            typeof(IdleFactory.Unity.Presentation.WorldCompositionSettings),
+            typeof(IdleFactory.Unity.Presentation.Look.LookProfile),
+        };
+
+        private static readonly string[] AllowedPresentationNamespaces = { "IdleFactory.Unity.Presentation", "IdleFactory.Unity.Presentation.Look" };
+
+        // The namespaces (and the IdleFactory.Core assembly) that hold simulation, domain, content and persistence types.
+        private static readonly string[] ForbiddenNamespaces =
+        {
+            "IdleFactory.Run", "IdleFactory.Domain", "IdleFactory.Core", "IdleFactory.Unity.Content", "IdleFactory.Unity.Persistence",
+        };
 
         [Test]
         public void NoScriptableObjectInTheUnityAssemblyCarriesSerializedGameplayFields()
         {
-            Assert.That(PresentationTuningAssets.Select(type => type.Namespace), Is.All.EqualTo("IdleFactory.Unity.Presentation"),
+            Assert.That(PresentationTuningAssets.Select(type => type.Namespace), Is.SubsetOf(AllowedPresentationNamespaces),
                 "only presentation tuning assets may be exempt");
             var offenders = typeof(GameplayContentLoader).Assembly.GetTypes()
                 .Where(type => typeof(ScriptableObject).IsAssignableFrom(type) && !PresentationTuningAssets.Contains(type))
@@ -90,6 +104,64 @@ namespace IdleFactory.Tests.EditMode
                 .ToArray();
 
             Assert.That(offenders, Is.Empty);
+        }
+
+        [Test]
+        public void PresentationTuningAssetsReachNoSimulationContentOrPersistenceType()
+        {
+            var offenders = new System.Collections.Generic.List<string>();
+            foreach (var asset in PresentationTuningAssets)
+            {
+                WalkSerializedFields(asset, asset.Name, new System.Collections.Generic.HashSet<Type>(), offenders);
+            }
+
+            Assert.That(offenders, Is.Empty);
+        }
+
+        private static bool IsForbidden(Type type) =>
+            type.Assembly.GetName().Name == "IdleFactory.Core" ||
+            (type.Namespace != null && ForbiddenNamespaces.Any(ns => type.Namespace == ns || type.Namespace.StartsWith(ns + ".", StringComparison.Ordinal)));
+
+        private static System.Collections.Generic.IEnumerable<Type> ElementTypes(Type type)
+        {
+            if (type.IsArray)
+            {
+                return ElementTypes(type.GetElementType());
+            }
+
+            if (type.IsGenericType)
+            {
+                return type.GetGenericArguments().SelectMany(ElementTypes);
+            }
+
+            return new[] { type };
+        }
+
+        // Every serialized field, recursing into nested [Serializable] types of the IdleFactory assemblies such as PresentationSpriteCatalog and
+        // LookProfileRequirementTable, and into the element types of arrays and lists.
+        private static void WalkSerializedFields(Type type, string path, System.Collections.Generic.HashSet<Type> seen, System.Collections.Generic.List<string> offenders)
+        {
+            if (!seen.Add(type))
+            {
+                return;
+            }
+
+            foreach (var field in type.GetFields(DeclaredInstance).Where(f => !f.IsNotSerialized && (f.IsPublic || f.GetCustomAttribute<SerializeField>() != null)))
+            {
+                var here = path + "." + field.Name;
+                foreach (var used in ElementTypes(field.FieldType))
+                {
+                    if (IsForbidden(used))
+                    {
+                        offenders.Add(here + " : " + used.FullName);
+                    }
+                    else if (!used.IsEnum && !used.IsPrimitive && used.Namespace != null && used.Namespace.StartsWith("IdleFactory.", StringComparison.Ordinal)
+                             && used.GetCustomAttribute<SerializableAttribute>() != null)
+                    {
+                        WalkSerializedFields(used, here, seen, offenders);
+                    }
+                }
+            }
         }
 
         [Test]

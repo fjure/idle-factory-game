@@ -413,6 +413,20 @@ namespace IdleFactory.Unity.Bootstrap
                 return DisableWithCode(diagnostic.Code, diagnostic.Message);
             }
 
+            // T609 (N2): a later development switch must satisfy the same content presentation keys that start-up just checked.
+            lookResolver.SetContentKeyCheck(candidate =>
+            {
+                try
+                {
+                    var check = GameplayContentDispatcher.Load(contentBytes, new SpriteCatalogKeyResolver(candidate));
+                    return check.IsSuccess ? null : check.Diagnostics[0].Code + ": " + check.Diagnostics[0].Message;
+                }
+                catch (Exception exception)
+                {
+                    return "content.internal: " + exception.GetType().Name;
+                }
+            });
+
             return InitializeRunRuntime(loaded.RunCatalog);
         }
 

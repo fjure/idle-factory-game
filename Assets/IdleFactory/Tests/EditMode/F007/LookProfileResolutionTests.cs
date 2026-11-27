@@ -309,6 +309,68 @@ namespace IdleFactory.Tests.EditMode.F007
         }
 
         [Test]
+        public void ResolvingWritesNoSettingOfAProfilesSerializedCatalog()
+        {
+            var table = LookProfileTestKit.SmallTable();
+            var prototypeCatalog = kit.CatalogFor(table, false);
+            var prototype = kit.Profile(LookProfile.PrototypeAId, true, prototypeCatalog, table);
+            var sceneCatalog = kit.CatalogFor(LookProfileRequirementTable.F006(), true);
+            var source = new FakeLookProfileSource { Selected = LookProfile.PrototypeAId }.Hold(prototype);
+            var resolver = Resolver(kit.F006(), sceneCatalog, source, true);
+
+            Assert.That(prototypeCatalog.RequireRegistryRows, Is.False);
+            Assert.That(resolver.Resolve(), Is.True, resolver.Error);
+            Assert.That(resolver.Active.Id, Is.EqualTo(LookProfile.PrototypeAId));
+            Assert.That(prototypeCatalog.RequireRegistryRows, Is.False, "resolution never mutates the serialized catalog of a profile");
+            Assert.That(sceneCatalog.RequireRegistryRows, Is.True, "and leaves the shipped catalog's own setting");
+        }
+
+        [Test]
+        public void AnAuthoredTableEnforcesItsRequiredRowsWithoutTheRegistryRowsSetting()
+        {
+            var table = LookProfileTestKit.SmallTable();
+            LogAssert.Expect(LogType.Warning, "presentation.key.unresolved: T-GLYPH");
+            var catalog = kit.CatalogFor(table, false, new[] { "T-GLYPH" });
+            Assert.That(catalog.RequireRegistryRows, Is.False);
+            Assert.That(catalog.IsValid, Is.False, "a required row of an authored table is missing");
+            Assert.That(catalog.Error, Does.Contain("T-GLYPH"));
+
+            var f006Catalog = kit.CatalogFor(LookProfileRequirementTable.F006(), false, new[] { "F003-MACHINE-MINER" });
+            Assert.That(f006Catalog.Validate(), Is.True, "the F006 table keeps its setting: a development catalog stays legal when smaller");
+        }
+
+        [Test]
+        public void ASwitchToAProfileThatLacksAContentKeyIsRejectedLikeAtStartUp()
+        {
+            var table = LookProfileRequirementTable.FromRows(new[]
+            {
+                new PresentationSpriteRequirement("T-MACHINE", 80f / 24f, 64f / 24f, 0.5f, 15f / 64f, 1, 4, true, true),
+                new PresentationSpriteRequirement("T-GLYPH", 1f, 1f, 0.5f, 0.5f, 1, 1, false),
+            });
+            var lacking = kit.Profile(LookProfile.PrototypeBId, true, kit.CatalogFor(table, false, new[] { "T-GLYPH" }), table);
+            var complete = kit.Profile(LookProfile.PrototypeAId, true, kit.CatalogFor(table, false), table);
+            var sceneCatalog = kit.CatalogFor(LookProfileRequirementTable.F006(), true);
+            var source = new FakeLookProfileSource().Hold(lacking).Hold(complete);
+            var resolver = Resolver(kit.F006(), sceneCatalog, source, true);
+            Assert.That(resolver.Resolve(), Is.True, resolver.Error);
+            var applied = new List<string>();
+            resolver.Applied += profile => applied.Add(profile.Id);
+
+            // The content (here: a stand-in for it) needs the key T-GLYPH, which the table of the profile does not require but the content does.
+            resolver.SetContentKeyCheck(candidate => candidate.TryGet("T-GLYPH", out _) ? null : "presentation.key.unresolved: T-GLYPH");
+
+            source.Select(LookProfile.PrototypeBId);
+            Assert.That(resolver.Active.Id, Is.EqualTo(LookProfile.F006Id), "the switch is rejected and the current profile stays");
+            Assert.That(resolver.Error, Is.EqualTo("presentation.key.unresolved: T-GLYPH"));
+            Assert.That(log, Does.Contain("presentation.key.unresolved: T-GLYPH"));
+            Assert.That(applied, Is.Empty);
+
+            source.Select(LookProfile.PrototypeAId);
+            Assert.That(resolver.Active.Id, Is.EqualTo(LookProfile.PrototypeAId), "a profile that carries every content key is accepted");
+            Assert.That(applied, Is.EqualTo(new[] { LookProfile.PrototypeAId }));
+        }
+
+        [Test]
         public void ResolvingASpriteAllocatesNothing()
         {
             var table = LookProfileRequirementTable.F006();

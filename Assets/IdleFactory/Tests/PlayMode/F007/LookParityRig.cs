@@ -67,7 +67,8 @@ namespace IdleFactory.Tests.PlayMode.F007
     /// <see cref="RunSession"/> over the packaged Iron content with a scaled prestige threshold: the same seed, no wall clock (the run advances only by the
     /// ticks the script gives it), and scripted inputs (build, upgrade, auto-sell, Overdrive, an offline-length gap, a prestige). After every tick the
     /// presentation of the active look profile draws that state through the real world views, taps go through <see cref="WorldTapResolver"/>, and a hash of
-    /// the full authoritative state (the Save V3 bytes of the run and the permanent state plus every machine read-model field and cycle counter) is recorded.
+    /// the full authoritative state (the canonical bytes that <c>SaveV2Mapper.Serialize</c> writes for the run and the permanent state, schema version 3 of the SaveV2 codec, plus every machine
+    /// read-model field and cycle counter) is recorded.
     /// A profile that is only presentation yields the same hashes, tap results and save bytes as any other.
     /// </summary>
     internal sealed class LookParityRig : IDisposable
@@ -93,7 +94,7 @@ namespace IdleFactory.Tests.PlayMode.F007
         /// <summary>
         /// Runs the script. <paramref name="startProfile"/> is the id the source selects before start-up; at <paramref name="switchTick"/> (when not
         /// negative) the source switches to <paramref name="switchTo"/>. <paramref name="planted"/> runs in the presentation step of every tick with the
-        /// active profile's id: the negative control uses it to play a "profile" that changes the simulation.
+        /// active profile's id: the detector-sensitivity control uses it to play a "profile" that changes the simulation, to show that the hashes would notice.
         /// </summary>
         public ParityOutcome Run(string startProfile, int switchTick, string switchTo, Action<int, string, RunSession, RunCommands> planted)
         {

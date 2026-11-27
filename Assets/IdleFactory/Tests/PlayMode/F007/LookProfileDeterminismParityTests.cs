@@ -101,6 +101,8 @@ namespace IdleFactory.Tests.PlayMode.F007
             AssertSame(baseline, fromPrototype, "F007-A to F006 at tick 50");
         }
 
+        // A detector-sensitivity control (the R19 negative control): it proves that the per-tick hashes and save bytes would catch a profile that changed the
+        // simulation. It is not evidence about any real profile; the real profiles are the other tests of this class.
         [Test]
         public void ANegativeControlWithAPlantedMutatingProfileIsDetected()
         {

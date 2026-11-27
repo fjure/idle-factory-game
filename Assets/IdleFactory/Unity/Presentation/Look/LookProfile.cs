@@ -107,7 +107,7 @@ namespace IdleFactory.Unity.Presentation.Look
 
         /// <summary>A profile with its own catalog and table (a prototype, or a test profile). Fields not passed keep the F006 values.</summary>
         public static LookProfile Create(
-            string profileId, bool prototype, PresentationSpriteCatalog catalog, LookProfileRequirementTable table, int unitsPerPixel = 24)
+            string profileId, bool prototype, PresentationSpriteCatalog catalog, LookProfileRequirementTable table, int pixelsPerUnit = 24)
         {
             var profile = CreateInstance<LookProfile>();
             profile.name = profileId;
@@ -116,7 +116,7 @@ namespace IdleFactory.Unity.Presentation.Look
             profile.usesShippedSceneCatalog = false;
             profile.spriteCatalog = catalog ?? new PresentationSpriteCatalog();
             profile.requirementTable = table ?? LookProfileRequirementTable.F006();
-            profile.pixelsPerUnit = unitsPerPixel;
+            profile.pixelsPerUnit = pixelsPerUnit;
             return profile;
         }
 

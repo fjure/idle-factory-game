@@ -28,6 +28,7 @@ namespace IdleFactory.Unity.Presentation.Look
         private readonly HashSet<string> reportedUnknown = new HashSet<string>(StringComparer.Ordinal);
         private LookProfile active;
         private PresentationSpriteCatalog activeCatalog;
+        private Func<PresentationSpriteCatalog, string> contentKeyCheck;
 
         /// <summary>
         /// Whether this build honours a development profile source: true only with <c>IDLEFACTORY_DEV</c>. A release build never reads the selection key
@@ -143,6 +144,12 @@ namespace IdleFactory.Unity.Presentation.Look
             return true;
         }
 
+        /// <summary>
+        /// Supplies the content-key check of a later switch (the bootstrap does it once the gameplay content has loaded): a function that returns null when
+        /// every presentation key of the content resolves in the candidate catalog, else a coded problem. A profile that fails it is rejected like at start-up.
+        /// </summary>
+        public void SetContentKeyCheck(Func<PresentationSpriteCatalog, string> check) => contentKeyCheck = check;
+
         /// <summary>Frame 0 of a key of the active profile; false for a key it has not registered. Allocation-free.</summary>
         public bool TryGetSprite(string key, out Sprite sprite)
         {
@@ -245,19 +252,21 @@ namespace IdleFactory.Unity.Presentation.Look
                 return CatalogMissingCode + ": " + Printable(profile.Id);
             }
 
+            // The catalog enforces the required rows of an authored table itself; resolution writes no setting of a profile's serialized catalog.
             catalog.UseRequirementTable(profile.RequirementTable);
-            // An authored table lists the keys its profile must supply. The catalog enforces a table's required rows only when it is told to, so an authored
-            // table switches that on; the F006 table keeps the setting its catalog already has (the shipped scene sets it, a development catalog does not).
-            if (profile.RequirementTable.Source == LookRequirementSource.Authored)
-            {
-                catalog.RequireRegistryRows = true;
-            }
-
             if (!catalog.Validate())
             {
                 var error = catalog.Error;
                 catalog = null;
                 return error;
+            }
+
+            // N2: a switch is held to the same content-key rule as start-up. The bootstrap supplies the check once the content has loaded.
+            var contentProblem = contentKeyCheck?.Invoke(catalog);
+            if (contentProblem != null)
+            {
+                catalog = null;
+                return contentProblem;
             }
 
             return null;
