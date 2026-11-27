@@ -351,7 +351,7 @@ The postprocessor and the manifest-driven integration (`F004ArtIntegration` patt
 
 **Decision.**
 
-- **Device record.** The owner provides the phone, and optionally a tablet. The first M1 task records the device's model, SoC and GPU, Android version, resolution, density and refresh rate in `reviews/devices-f007.md`.
+- **Device record.** The phone is a Google Pixel 11 Pro with Android 17. No tablet is available (owner, 2026-11-27). The first M1 task reads the SoC and GPU, resolution, density and refresh rate from the device and records them in `reviews/devices-f007.md`. Tablet evidence stays emulated: the Windows-player tablet class for captures, with no physical tablet performance.
 - **Lease.** The phone shares the host's single ADB server with the emulator. Unity CLI runs with an Android target kill that server ("Killing ADB server", AGENTS.md). Phone work therefore holds the **`emulator`** lease, which this plan redefines as "the host ADB server and any device on it". It also holds `unity` when a build runs. A separate `phone` lease resource is not added. This is a documentation change to AGENTS.md and the workstation pitfalls, owned by a DevOps Low-tier task.
 - **Measurement.** The same ABA method as F004 B2 and F006 B4: frame pacing via SurfaceFlinger timestats or `dumpsys gfxinfo`, PSS memory, texture memory from the build report, and a 10-minute sustained run that records frequency and thermal status where the device exposes them.
 - **Input.** Measurements use profiler-free development builds (memory: profile only with `-noProfilerAutoconnect`). Input goes through `adb` only, never host input injection (memory 2026-11-17).

@@ -57,7 +57,7 @@ Tasks are generated now for M1–M3 only. M4–M6 are generated after the decisi
 - independent trials and the rubric;
 - owner trials (R18, R19).
 
-**Target Platform**: Android ARM64 IL2CPP on the physical phone (Q3), plus the emulator at 1080x2400 and 420 dpi, plus the Windows Standalone player.
+**Target Platform**: Android ARM64 IL2CPP on the physical phone (Google Pixel 11 Pro, Android 17), plus the emulator at 1080x2400 and 420 dpi, plus the Windows Standalone player. No physical tablet exists. The tablet class is captured through the Windows player's tablet resolution.
 
 **Project Type**: A single Unity 2D game repository with offline art tooling.
 
@@ -114,7 +114,7 @@ Tasks are generated now for M1–M3 only. M4–M6 are generated after the decisi
 | OD7-6 | A short upgrade effect plus 2–3 build-out stages per machine type, from existing levels. | Clarify 3 |
 | OD7-7 | A small integrated status indicator replaces the free-standing badges. | Clarify 4 |
 | OD7-8 | Denser on-screen location geometry is approved in principle. The concrete geometry is decided at M3. | Clarify 5 |
-| OD7-9 | *Pending (M1, owner input)*: the phone (and tablet) identity. | R16 |
+| OD7-9 | Phone: **Google Pixel 11 Pro, Android 17**. No tablet is available (owner, 2026-11-27). The SoC, GPU, resolution and refresh rate are read from the device in T601. | R16 |
 | OD7-10 | *Pending (M2)*: World Bible v0.3 approval, before M2 scoring. | R21 |
 | OD7-11 | *Pending (M2)*: approval of the rubric anchors, before scoring. | R18 |
 | OD7-12 | *Pending (M3)*: the direction, the geometry, the machine-area factor and their conditions. | FR-016 |
@@ -223,7 +223,7 @@ See R19. The determinism parity test across profiles is the FR-001 guard. All su
 **Phase 0 — Gates and set-up (parent).**
 
 - T600: re-verify the MAQA gates.
-- T601: record the phone identity (OD7-9).
+- T601: record the Pixel 11 Pro identity (OD7-9), with the SoC, GPU, resolution, density and refresh rate read through `adb`. Check that a profiler-free development APK installs and starts.
 - T602: DevOps, Low tier. Extend the lease wording (the `emulator` lease covers the phone) in AGENTS.md and `docs/agents/workstation-pitfalls.md`, and extend the art-path triggers to `Art/F006/` and `Art/F007/`.
 
 **M1 — Audit.**
