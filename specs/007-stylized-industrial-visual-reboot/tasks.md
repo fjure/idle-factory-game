@@ -238,7 +238,7 @@ Generated 2026-11-27 after the `$speckit-analyze` remediation (45 units, M1–M3
 
 ## Phase 1: Setup and gates (no story)
 
-- [ ] T600 *Parent* Re-verify the MAQA gates on `origin/main`:
+- [X] T600 *Parent* Re-verify the MAQA gates on `origin/main`:
   - the constitution has no placeholders;
   - `.specify/branch-convention.yml` is present;
   - the wiki is initialised;
@@ -254,7 +254,7 @@ Generated 2026-11-27 after the `$speckit-analyze` remediation (45 units, M1–M3
   - whether ASTC is supported (`GL_KHR_texture_compression_astc_ldr`).
 
   Then install and start a profiler-free development APK of `main` (`-noProfilerAutoconnect`). **Resources**: unity, emulator. **Covers**: OD7-9; research R16.
-- [ ] T602 DevOps (Software Architect lens; Low, `haiku`). Changes:
+- [X] T602 DevOps (Software Architect lens; Low, `haiku`). Changes:
   - `AGENTS.md` "Shared workstation resources" and `docs/agents/workstation-pitfalls.md` "Emulator and adb":
     - name the physical phone under the `emulator` lease;
     - require `-Serial` when two devices are attached;
@@ -265,7 +265,7 @@ Generated 2026-11-27 after the `$speckit-analyze` remediation (45 units, M1–M3
   - Create the empty skeleton `specs/007-stylized-industrial-visual-reboot/reviews/{comparison,rubric,trials-f007,directions}/` (with `.gitkeep`).
 
   **Validation**: `scripts/test-art-pipeline.ps1` still exits 0. A dry run of `check-after-implement-hooks.ps1 -FeatureDir specs/006-world-first-factory-experience` now detects `Art/F006/` changes. **Resources**: none. **Covers**: OPS-1, OPS-2, OPS-3, OPS-5, OPS-6, OPS-8; research R16, R20.
-- [ ] T638 Test/QA Engineer as implementer of test tooling (Software Architect lens; Medium). Two deliverables:
+- [X] T638 Test/QA Engineer as implementer of test tooling (Software Architect lens; Medium). Two deliverables:
   - `tools/test-ids/compare_test_ids.py`, with pytest in `tools/test-ids/tests/`. It lists every `[Test]` and `[TestCase]` id under `Assets/IdleFactory/Tests/` at a given ref, compares against `origin/main`, and fails unless every missing or renamed id appears in `specs/007-stylized-industrial-visual-reboot/reviews/rebaseline-map.md`.
   - Create the map with its header and the QA-5 candidate list (from `reviews/plan-reviews.md`) as "not yet moved".
   - Wire the script into `scripts/test-unity.ps1` as an optional `-CheckTestIds` step, documented in `docs/agents/workstation-pitfalls.md`.
