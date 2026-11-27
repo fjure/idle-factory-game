@@ -17,7 +17,7 @@ merged batch and before $speckit-converge. It fails when:
   5. tasks.md checkboxes differ from GitHub Issue state (skipped with -SkipGitHub).
   6. Art pipeline (Feature 004, T406): when the feature uses scripts/test-art-pipeline.ps1 (its tasks.md names
      it) or -RequireArtPipeline is given, and a commit in <ArtBatchBase>..HEAD (default: all history) touched
-     tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/, the pipeline report
+     tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/, Art/F006/ or Art/F007/, the pipeline report
      (test-results/art-pipeline/report.json, written by scripts/test-art-pipeline.ps1) must show status=pass,
      no uncommitted art-path changes, and a commit that contains the newest such art-path commit. Features
      that do not use the pipeline, or batches that did not touch those paths, are not affected.
@@ -154,7 +154,7 @@ else {
 }
 
 # 6. Art pipeline report for batches that changed art-pipeline paths.
-$artPaths = @('tools/art-pipeline/', 'art-source/', 'Assets/IdleFactory/Art/F004/')
+$artPaths = @('tools/art-pipeline/', 'art-source/', 'Assets/IdleFactory/Art/F004/', 'Assets/IdleFactory/Art/F006/', 'Assets/IdleFactory/Art/F007/')
 $tasksPath = Join-Path $featurePath 'tasks.md'
 $usesPipeline = $RequireArtPipeline -or ((Test-Path -LiteralPath $tasksPath) -and (Select-String -LiteralPath $tasksPath -SimpleMatch 'scripts/test-art-pipeline.ps1' -Quiet))
 if ($usesPipeline) {

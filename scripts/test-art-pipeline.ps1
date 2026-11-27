@@ -24,7 +24,7 @@ also how the no-uv dry run is done. Default order: -UvPath, $env:IDLEFACTORY_UV_
 %USERPROFILE%\.local\bin\uv.exe, Get-Command uv.
 
 .PARAMETER IfChanged
-Run only when tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/ changed relative to the
+Run only when tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/, Art/F006/ or Art/F007/ changed relative to the
 merge base with origin/main (committed, staged, unstaged or untracked). Otherwise print a skip and
 exit 0 without touching the report. Fails safe (treated as changed) when origin/main is unknown.
 
@@ -43,7 +43,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
-$artPaths = @('tools/art-pipeline/', 'art-source/', 'Assets/IdleFactory/Art/F004/')
+$artPaths = @('tools/art-pipeline/', 'art-source/', 'Assets/IdleFactory/Art/F004/', 'Assets/IdleFactory/Art/F006/', 'Assets/IdleFactory/Art/F007/')
 
 function Get-ArtPathsChanged {
     $base = (& git -C $repositoryRoot merge-base HEAD origin/main 2>$null)
