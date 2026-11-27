@@ -11,6 +11,21 @@ namespace IdleFactory.DevTools
     {
         public static DevTimeScale TimeScale { get; private set; }
 
+        /// <summary>The development look-profile source (T609), or null before <c>BeforeSceneLoad</c> ran.</summary>
+        public static DevLookProfileSource LookSource { get; private set; }
+
+        /// <summary>
+        /// T609 (ARCH-6): injects the look-profile source before the scene loads, mirroring <c>DefaultTimeScaleSource</c>, because the bootstrap resolves its
+        /// look profile in <c>Awake</c>, which runs before any <c>AfterSceneLoad</c> method. The prototype profiles arrive later with the holder scene.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void InitializeLookProfileSource()
+        {
+            var source = new DevLookProfileSource(PersistenceRoots.Resolve(Application.persistentDataPath));
+            LookSource = source;
+            CoreGameFoundationBootstrap.DefaultLookProfileSource = source;
+        }
+
         /// <summary>The single overlay host object, or null before initialization.</summary>
         public static GameObject Host { get; private set; }
 
@@ -30,7 +45,11 @@ namespace IdleFactory.DevTools
             var host = new GameObject("IdleFactory DevTools");
             Host = host;
             Object.DontDestroyOnLoad(host);
-            DevToolsOverlay.Create(timeScale, host);
+            DevToolsOverlay.Create(timeScale, host, LookSource);
+            if (LookSource != null)
+            {
+                host.AddComponent<LookProfileHolderLoader>().Source = LookSource;
+            }
         }
     }
 }

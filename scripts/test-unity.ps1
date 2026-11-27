@@ -32,6 +32,13 @@ tools/art-pipeline/, art-source/ or Assets/IdleFactory/Art/F004/, Art/F006/ or A
 A pipeline test failure (exit 1) or unavailable tooling (exit 3) stops this script before Unity starts. With no
 such change the step is skipped and nothing else about this script changes.
 
+.PARAMETER DevTools
+Runs the DevTools test assembly (IdleFactory.DevToolsTests, Feature 007 T609, QA-4). That assembly compiles only with the IDLEFACTORY_DEV scripting
+define, which an ordinary run never sets. The switch writes a temporary Assets/csc.rsp (and its .meta) that defines it, runs the Play Mode tests of
+that assembly only (-assemblyNames), and removes both files afterwards, also when the run fails or times out. Neither file is ever committed. The run
+FAILS when it discovers no test: the assembly silently disappearing from the runner (a missing define, a renamed assembly) is never a pass.
+-DevTools cannot be combined with -Suite, -TestFile, -StandaloneWindowsPlayer or -ArtPipelineOnly; -Category narrows it as usual.
+
 .PARAMETER CheckTestIds
 Optional. Before Unity starts, runs tools/test-ids/compare_test_ids.py (Feature 007, T638): it lists the C# [Test],
 [TestCase] and [UnityTest] ids under Assets/IdleFactory/Tests/ at HEAD, compares them with origin/main, and fails unless
@@ -47,6 +54,8 @@ param(
     [switch]$StandaloneWindowsPlayer,
 
     [switch]$ArtPipelineOnly,
+
+    [switch]$DevTools,
 
     [switch]$CheckTestIds,
 
@@ -319,7 +328,8 @@ function Invoke-UnitySuite {
         [object]$Focus,
         [Parameter(Mandatory = $true)]
         [string]$RunDirectory,
-        [string]$CategoryFilter
+        [string]$CategoryFilter,
+        [string[]]$AssemblyNames = @()
     )
 
     $resultPath = Join-Path $RunDirectory "$Name-results.xml"
@@ -345,6 +355,9 @@ function Invoke-UnitySuite {
     }
     if ($CategoryFilter) {
         $arguments += @("-testCategory", $CategoryFilter)
+    }
+    if ($AssemblyNames.Count -gt 0) {
+        $arguments += @("-assemblyNames", ($AssemblyNames -join ";"))
     }
     if ($Name -eq "PlayerPlayMode") {
         # The existing PlayMode suite includes fixtures that rely on Editor-only APIs.
@@ -468,6 +481,11 @@ if ($PSBoundParameters.ContainsKey("Category")) {
         throw "-Category requires -Suite EditMode|PlayMode or -TestFile."
     }
 }
+if ($DevTools) {
+    if ($Suite -or $TestFile -or $StandaloneWindowsPlayer -or $ArtPipelineOnly) {
+        throw "-DevTools runs the DevTools test assembly on its own; do not combine it with -Suite, -TestFile, -StandaloneWindowsPlayer or -ArtPipelineOnly."
+    }
+}
 if ($StandaloneWindowsPlayer -and $Suite -eq "EditMode") {
     throw "Standalone Windows Player runs support PlayMode tests only."
 }
@@ -517,7 +535,10 @@ $focus = if ($TestFile) { Resolve-FocusedTest -Path $TestFile -RequestedSuite $S
 if ($StandaloneWindowsPlayer -and $focus -and $focus.Suite -ne "PlayMode") {
     throw "Standalone Windows Player runs support PlayMode tests only: $($focus.RelativePath)"
 }
-$suites = if ($StandaloneWindowsPlayer) {
+$suites = if ($DevTools) {
+    @("PlayMode")
+}
+elseif ($StandaloneWindowsPlayer) {
     @("PlayerPlayMode")
 }
 elseif ($focus) {
@@ -536,6 +557,9 @@ New-Item -ItemType Directory -Path $runDirectory | Out-Null
 
 $lockStream = $null
 $removeOwnedLock = $true
+$devToolsResponsePath = Join-Path $projectRoot "Assets\csc.rsp"
+$devToolsResponseMeta = $devToolsResponsePath + ".meta"
+$devToolsResponseWritten = $false
 try {
     Assert-NoActiveEditor
     $lockStream = [IO.File]::Open(
@@ -545,11 +569,30 @@ try {
         [IO.FileShare]::None
     )
 
+    if ($DevTools) {
+        # The define reaches every assembly through the compiler response file, so IdleFactory.DevTools and IdleFactory.DevToolsTests compile for this run.
+        if ((Test-Path -LiteralPath $devToolsResponsePath) -or (Test-Path -LiteralPath $devToolsResponseMeta)) {
+            throw "Assets/csc.rsp already exists; remove it (never commit it) before a -DevTools run: $devToolsResponsePath"
+        }
+        $devToolsResponseWritten = $true
+        [IO.File]::WriteAllText($devToolsResponsePath, "-define:IDLEFACTORY_DEV`n", (New-Object System.Text.UTF8Encoding($false)))
+    }
+
     foreach ($suiteName in $suites) {
-        Invoke-UnitySuite -Name $suiteName -Focus $focus -RunDirectory $runDirectory -CategoryFilter $Category
+        if ($DevTools) {
+            # Invoke-UnitySuite throws when the result XML holds no test case, so a run that discovers zero tests fails here (QA-4).
+            Invoke-UnitySuite -Name $suiteName -Focus $focus -RunDirectory $runDirectory -CategoryFilter $Category -AssemblyNames @("IdleFactory.DevToolsTests")
+        }
+        else {
+            Invoke-UnitySuite -Name $suiteName -Focus $focus -RunDirectory $runDirectory -CategoryFilter $Category
+        }
     }
 }
 finally {
+    if ($devToolsResponseWritten) {
+        Remove-Item -LiteralPath $devToolsResponsePath -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $devToolsResponseMeta -Force -ErrorAction SilentlyContinue
+    }
     if ($lockStream) {
         $lockStream.Dispose()
         if ($removeOwnedLock -and (Test-Path -LiteralPath $lockPath)) {

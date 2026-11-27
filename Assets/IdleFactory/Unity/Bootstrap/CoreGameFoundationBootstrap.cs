@@ -10,6 +10,7 @@ using IdleFactory.Unity.Content;
 using IdleFactory.Unity.Input;
 using IdleFactory.Unity.Persistence;
 using IdleFactory.Unity.Presentation;
+using IdleFactory.Unity.Presentation.Look;
 using IdleFactory.Unity.UI;
 using IdleFactory.Unity.UI.Panels;
 using UnityEngine;
@@ -172,6 +173,22 @@ namespace IdleFactory.Unity.Bootstrap
         public UIDocument UiDocument => uiDocument;
         public InputActionAsset InputActions => inputActions;
         public PresentationSpriteCatalog SpriteCatalog => spriteCatalog;
+
+        /// <summary>
+        /// Null-default development seam (T609, ARCH-6), mirroring <see cref="FactoryRuntimeHost.DefaultTimeScaleSource"/>: the look-profile source that the
+        /// <c>IdleFactory.DevTools</c> assembly injects at <c>BeforeSceneLoad</c>. A release build never registers one, and the resolver ignores it there.
+        /// </summary>
+        public static ILookProfileSource DefaultLookProfileSource { get; set; }
+
+        /// <summary>The one look-profile resolver of this composition (ARCH-6), or null before start-up resolved it.</summary>
+        public LookProfileResolver LookProfiles => lookResolver;
+
+        /// <summary>The catalog of the active look profile: the world views, the shell icons and the content key check all read it. The scene catalog until the resolver ran.</summary>
+        public PresentationSpriteCatalog ActiveSpriteCatalog => lookResolver != null && lookResolver.ActiveCatalog != null ? lookResolver.ActiveCatalog : spriteCatalog;
+
+        private LookProfileResolver lookResolver;
+        private LookProfile inMemoryShippedProfile;
+        private LookProfileWorldViews lookViews;
         /// <summary>The Feature 003 run session, or null when start-up failed before one was created.</summary>
         public RunSession RunSession => runSession;
         public RunCommands RunCommands => runCommands;
@@ -361,15 +378,18 @@ namespace IdleFactory.Unity.Bootstrap
                     $"Packaged gameplay content could not be read ({exception.GetType().Name}).");
             }
 
-            if (!spriteCatalog.Validate())
+            if (!ResolveLookProfile())
             {
-                return DisableWithCode("presentation.catalog.invalid", spriteCatalog.Error);
+                var lookError = lookResolver.Error;
+                return DisableWithCode(
+                    lookError.StartsWith("lookprofile.", StringComparison.Ordinal) ? "presentation.lookprofile.invalid" : "presentation.catalog.invalid",
+                    lookError);
             }
 
             GameplayContentLoadResult loaded;
             try
             {
-                loaded = GameplayContentDispatcher.Load(contentBytes, new SpriteCatalogKeyResolver(spriteCatalog));
+                loaded = GameplayContentDispatcher.Load(contentBytes, new SpriteCatalogKeyResolver(ActiveSpriteCatalog));
             }
             catch (Exception exception)
             {
@@ -392,6 +412,20 @@ namespace IdleFactory.Unity.Bootstrap
                 var diagnostic = loaded.Diagnostics[0];
                 return DisableWithCode(diagnostic.Code, diagnostic.Message);
             }
+
+            // T609 (N2): a later development switch must satisfy the same content presentation keys that start-up just checked.
+            lookResolver.SetContentKeyCheck(candidate =>
+            {
+                try
+                {
+                    var check = GameplayContentDispatcher.Load(contentBytes, new SpriteCatalogKeyResolver(candidate));
+                    return check.IsSuccess ? null : check.Diagnostics[0].Code + ": " + check.Diagnostics[0].Message;
+                }
+                catch (Exception exception)
+                {
+                    return "content.internal: " + exception.GetType().Name;
+                }
+            });
 
             return InitializeRunRuntime(loaded.RunCatalog);
         }
@@ -598,38 +632,41 @@ namespace IdleFactory.Unity.Bootstrap
                 var gridObject = new GameObject("Slot Grid");
                 gridObject.transform.SetParent(transform, false);
                 var grid = gridObject.AddComponent<SlotGridView>();
-                grid.Configure(spriteCatalog);
+                var worldCatalog = ActiveSpriteCatalog;
+                grid.Configure(worldCatalog);
                 // T527: the deck Tilemap under the slots replaces the F004 floor pool; it follows the grid's layout and each location's condition.
                 var deckObject = new GameObject("Factory Deck View");
                 deckObject.transform.SetParent(transform, false);
                 deckView = deckObject.AddComponent<FactoryDeckView>();
-                deckView.Configure(spriteCatalog, worldCompositionApplied ? worldComposition : null);
+                deckView.Configure(worldCatalog, worldCompositionApplied ? worldComposition : null);
                 deckView.Bind(grid);
                 // T529: the effect pool (3 active renderers plus 5 draining tails) draws on the Effects layer above the slots and answers the card's responses.
                 var effectObject = new GameObject("Effect Pool");
                 effectObject.transform.SetParent(transform, false);
                 effectPool = new EffectPool();
                 effectView = effectObject.AddComponent<EffectPoolView>();
-                effectView.Configure(spriteCatalog, effectPool);
+                effectView.Configure(worldCatalog, effectPool);
                 effectView.Bind(grid);
                 // T528: the links and the depot (links layer, below the machines) and the vein (scenery). Both follow the grid's layout.
                 var linkObject = new GameObject("Depot Link View");
                 linkObject.transform.SetParent(transform, false);
                 depotLinkView = linkObject.AddComponent<DepotLinkView>();
-                depotLinkView.Configure(spriteCatalog);
+                depotLinkView.Configure(worldCatalog);
                 depotLinkView.Bind(grid);
                 depotLinkModel = new DepotLinkModel();
                 var depositObject = new GameObject("Deposit View");
                 depositObject.transform.SetParent(transform, false);
                 depositView = depositObject.AddComponent<DepositView>();
-                depositView.Configure(spriteCatalog);
+                depositView.Configure(worldCatalog);
                 depositView.Bind(grid);
                 // T557: the attention markers (shortage at the trunk junction, store full at the depot), re-bound with the grid's layout.
                 var markerObject = new GameObject("Attention Marker View");
                 markerObject.transform.SetParent(transform, false);
                 markerView = markerObject.AddComponent<AttentionMarkerView>();
-                markerView.Configure(spriteCatalog, ResourceKeyOf);
+                markerView.Configure(worldCatalog, ResourceKeyOf);
                 markerView.Bind(grid);
+                // T609: the one switch path. A profile change re-gives every view the active catalog; the camera refits and the shell re-renders from the same state.
+                lookViews = new LookProfileWorldViews(grid, deckView, worldCompositionApplied ? worldComposition : null, effectView, effectPool, depotLinkView, depositView, markerView, ResourceKeyOf);
                 worldEffects = new WorldEffectsFeed(runSession, effectPool, worldCompositionApplied ? worldComposition.FamilyFpsCapMap() : null);
                 worldEffects.SessionReplaced += HandleWorldSessionReplaced;
                 UseMachineEffects(effectPool);
@@ -705,7 +742,40 @@ namespace IdleFactory.Unity.Bootstrap
             return Rect.MinMaxRect(low.x / perPoint, panelHeight - high.y / perPoint, high.x / perPoint, panelHeight - low.y / perPoint);
         }
 
-        private Sprite ResolveIcon(string key) => spriteCatalog.TryGet(key, out var sprite) ? sprite : null;
+        private Sprite ResolveIcon(string key) => ActiveSpriteCatalog.TryGet(key, out var sprite) ? sprite : null;
+
+        // T609: composes the single resolver (ARCH-6) over the shipped default and the development source, and resolves the start-up profile. A release
+        // build ignores the source (ARCH-11). Fails closed: a missing key or a wrong size of the active profile is a start-up error, never a fallback.
+        private bool ResolveLookProfile()
+        {
+            if (lookResolver == null)
+            {
+                // The shipped default is F006, composed in memory over the scene catalog: exactly the profile that Art/F007/Profiles/F006.asset stores.
+                // The bootstrap serializes no profile reference, because JsonContentAuthorityTests keeps ScriptableObject inputs off it.
+                inMemoryShippedProfile = LookProfile.CreateF006();
+                var shipped = inMemoryShippedProfile;
+
+                lookResolver = new LookProfileResolver(shipped, spriteCatalog, DefaultLookProfileSource, LookProfileResolver.DevelopmentBuild);
+                lookResolver.Applied += HandleLookProfileApplied;
+            }
+
+            return lookResolver.Resolve();
+        }
+
+        // The existing world rebuild path (a layout change): the views take the new catalog, the camera refits through its single writer, and the shell
+        // re-renders. Selection, card and sheet state are keyed by location id, so they stay (look-profile rule 5).
+        private void HandleLookProfileApplied(LookProfile profile)
+        {
+            if (lookViews == null || slotGrid == null)
+            {
+                return;
+            }
+
+            lookViews.Apply(lookResolver.ActiveCatalog);
+            ConfigureRunCamera(true);
+            shellPresenter?.Invalidate();
+            shellPresenter?.Refresh();
+        }
 
         // ------------------------------------------------------------------------------------------------------
         // Panel composition (T194)
@@ -1032,7 +1102,12 @@ namespace IdleFactory.Unity.Bootstrap
         /// </summary>
         private void ConfigureRunCamera(bool fitAll)
         {
-            framing = framing ?? new RunCameraFraming(zoomSettings);
+            // T609: the camera reads the active profile's pixels per unit; for F006 the zoom settings are returned unchanged.
+            var zoom = lookResolver != null && lookResolver.IsValid ? lookResolver.ZoomFor(zoomSettings) : zoomSettings;
+            if (framing == null || framing.Zoom.artPixelsPerCell != zoom.artPixelsPerCell)
+            {
+                framing = new RunCameraFraming(zoom);
+            }
             var worldLayout = LatticeLayoutBuilder.Shipped(Screen.width, Screen.height);
             slotGrid.SetLayout(worldLayout);
             if (runShell != null)
@@ -1649,6 +1724,19 @@ namespace IdleFactory.Unity.Bootstrap
 
         private void OnDestroy()
         {
+            if (lookResolver != null)
+            {
+                lookResolver.Applied -= HandleLookProfileApplied;
+                lookResolver.Dispose();
+                lookResolver = null;
+            }
+
+            if (inMemoryShippedProfile != null)
+            {
+                Destroy(inMemoryShippedProfile);
+                inMemoryShippedProfile = null;
+            }
+
             if (worldCompositionApplied)
             {
                 worldCompositionApplied = false;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using IdleFactory.Unity.Presentation.Look;
 using UnityEngine;
 
 namespace IdleFactory.Unity.Presentation
@@ -284,6 +285,10 @@ namespace IdleFactory.Unity.Presentation
         // T440: the shipped scene catalog sets this, so every required registry row (the F004 accent layers and lock labels) must be
         // registered, as it is for rows passed through Configure. Development and unit-test catalogs leave it off and stay legal without them.
         [SerializeField] private bool requireRegistryRows;
+
+        // T609 (ARCH-5): the requirement table this catalog validates against. Null means the F006 table, which is the static registry below,
+        // so every catalog that never names a profile behaves exactly as before.
+        [NonSerialized] private LookProfileRequirementTable requirementTable;
         private Dictionary<string, PresentationSpriteEntry> byKey;
         private readonly Dictionary<string, PresentationSpriteRequirement> extraRequirements =
             new Dictionary<string, PresentationSpriteRequirement>(StringComparer.Ordinal);
@@ -292,6 +297,12 @@ namespace IdleFactory.Unity.Presentation
 
         public bool IsValid { get; private set; }
         public string Error { get; private set; } = "Sprite catalog has not been validated.";
+
+        /// <summary>The requirement table the catalog validates against: the one a look profile supplied, else the F006 table (the static registry).</summary>
+        public LookProfileRequirementTable RequirementTable => requirementTable ?? LookProfileRequirementTable.F006();
+
+        /// <summary>Validates against <paramref name="table"/> from now on (null returns to the F006 table). Call <see cref="Validate"/> afterwards.</summary>
+        public void UseRequirementTable(LookProfileRequirementTable table) => requirementTable = table;
         public int Count => byKey?.Count ?? 0;
 
         /// <summary>True when a missing key of a required registry row fails validation (the shipped scene catalog).</summary>
@@ -386,9 +397,10 @@ namespace IdleFactory.Unity.Presentation
                 }
             }
 
-            if (requireRegistryRows)
+            // The shipped scene catalog sets requireRegistryRows; a profile's authored table always enforces its own required rows (T609, rule 3).
+            if (requireRegistryRows || (requirementTable != null && requirementTable.Source == LookRequirementSource.Authored))
             {
-                foreach (var requirement in Registry.Values)
+                foreach (var requirement in RequirementTable.Rows)
                 {
                     if (requirement.Required && !extraRequirements.ContainsKey(requirement.Key) && !byKey.ContainsKey(requirement.Key))
                     {
@@ -439,7 +451,9 @@ namespace IdleFactory.Unity.Presentation
         }
 
         private bool TryGetRequirement(string key, out PresentationSpriteRequirement requirement) =>
-            extraRequirements.TryGetValue(key, out requirement) || Registry.TryGetValue(key, out requirement);
+            extraRequirements.TryGetValue(key, out requirement) || (requirementTable == null
+                ? Registry.TryGetValue(key, out requirement)
+                : requirementTable.TryGet(key, out requirement));
 
         private static string ValidateRate(PresentationSpriteEntry entry)
         {
@@ -806,5 +820,8 @@ namespace IdleFactory.Unity.Presentation
         /// </summary>
         public static bool TryGetRegistryRequirement(string key, out PresentationSpriteRequirement requirement) =>
             Registry.TryGetValue(key, out requirement);
+
+        /// <summary>Every row of the static registry, which is the requirement table of the F006 look profile (T609, ARCH-5).</summary>
+        public static IReadOnlyCollection<PresentationSpriteRequirement> F006RegistryRows => Registry.Values;
     }
 }
