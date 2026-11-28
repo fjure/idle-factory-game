@@ -195,6 +195,45 @@ namespace IdleFactory.Tests.EditMode.F007
             Assert.That(dense.Bounds.width, Is.EqualTo(f006.Bounds.width), "the plate width is the pitch: the columns do not move");
         }
 
+        [Test]
+        public void TheShippedBuilderFollowsTheActivePitchAndGoesBackToTheSameF006LayoutWhenItIsCleared()
+        {
+            var before = LatticeLayoutBuilder.ActivePitch;
+            try
+            {
+                LatticeLayoutBuilder.UsePitch(null);
+                var f006 = LatticeLayoutBuilder.Shipped(WorldOrientation.Portrait);
+                Assert.That(f006.Pitch, Is.EqualTo(LayoutPitch.F006));
+                Assert.That(f006.LayoutId, Is.EqualTo("lattice-12x3"));
+
+                LatticeLayoutBuilder.UsePitch(LayoutPitch.F006);
+                Assert.That(LatticeLayoutBuilder.Shipped(WorldOrientation.Portrait), Is.SameAs(f006), "the F006 pitch is the default composition: the cached layout is reused");
+
+                LatticeLayoutBuilder.UsePitch(Dense);
+                var dense = LatticeLayoutBuilder.Shipped(WorldOrientation.Portrait);
+                Assert.That(dense, Is.Not.SameAs(f006));
+                Assert.That(dense.Pitch, Is.EqualTo(Dense));
+                Assert.That(dense.LayoutId, Is.Not.EqualTo(f006.LayoutId));
+                Assert.That(dense.Validate(), Is.Empty);
+                Assert.That(LatticeLayoutBuilder.Shipped(WorldOrientation.Portrait), Is.SameAs(dense), "cached while the pitch stays");
+                Assert.That(LatticeLayoutBuilder.Shipped(WorldOrientation.Landscape).Pitch, Is.EqualTo(Dense), "both orientations follow it");
+                Assert.That(new LatticeLayoutBuilder(12, WorldOrientation.Portrait, null, DenseBays).Build().Pitch, Is.EqualTo(DenseBays), "a builder can carry its own pitch");
+
+                LatticeLayoutBuilder.UsePitch(null);
+                var again = LatticeLayoutBuilder.Shipped(WorldOrientation.Portrait);
+                Assert.That(again.LayoutId, Is.EqualTo(f006.LayoutId));
+                Assert.That(again.Bounds, Is.EqualTo(f006.Bounds));
+                for (var i = 0; i < again.LocationCount; i++)
+                {
+                    Assert.That(again.AnchorOf(new BuildingLocationId(i)), Is.EqualTo(f006.AnchorOf(new BuildingLocationId(i))));
+                }
+            }
+            finally
+            {
+                LatticeLayoutBuilder.UsePitch(before);
+            }
+        }
+
         // ---------------------------------------------------------------------------------------------- a denser pitch keeps ids, order, 44 pt, no overlap
 
         [TestCase(3)]

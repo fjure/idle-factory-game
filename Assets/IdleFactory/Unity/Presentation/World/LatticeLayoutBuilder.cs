@@ -18,12 +18,16 @@ namespace IdleFactory.Unity.Presentation
         private static readonly LayoutComposition[] ShippedCompositions = new LayoutComposition[2];
         private static WorldCompositionSettings activeSettings;
 
+        private static LayoutPitch? activePitch;
+
         private readonly int locationCount;
         private readonly WorldOrientation orientation;
         private readonly WorldCompositionSettings settings;
+        private readonly LayoutPitch? pitchOverride;
 
-        public LatticeLayoutBuilder(int locationCount, WorldOrientation orientation, WorldCompositionSettings settings = null)
+        public LatticeLayoutBuilder(int locationCount, WorldOrientation orientation, WorldCompositionSettings settings = null, LayoutPitch? pitchOverride = null)
         {
+            this.pitchOverride = pitchOverride;
             if (locationCount < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(locationCount), locationCount, "A layout needs at least one location.");
@@ -63,6 +67,16 @@ namespace IdleFactory.Unity.Presentation
             return true;
         }
 
+        /// <summary>
+        /// The lattice pitch of the active look profile (F007 T610): the shipped layouts use it instead of the pitch of the composition asset. The bootstrap sets it from
+        /// <c>LookProfileResolver.LayoutPitch</c> whenever the world is rebuilt for a profile, before it asks for the layout; null clears it (the composition's own pitch,
+        /// F006 by default). The pitch is part of the composition identity, so the shipped layout and the camera refit on a change.
+        /// </summary>
+        public static LayoutPitch? ActivePitch => activePitch;
+
+        /// <summary>Sets (or with null clears) the pitch of the active look profile. See <see cref="ActivePitch"/>.</summary>
+        public static void UsePitch(LayoutPitch? pitch) => activePitch = pitch;
+
         /// <summary>The layout of the shipped locations with the active composition (the F004 defaults when none is set). Cached per composition; the layout is immutable.</summary>
         public static FactoryWorldLayout Shipped(WorldOrientation orientation) => Shipped(orientation, activeSettings);
 
@@ -71,9 +85,14 @@ namespace IdleFactory.Unity.Presentation
         {
             var index = (int)orientation;
             var composition = settings != null ? settings.ComposeFor(orientation) : WorldCompositionSettings.DefaultComposition(orientation);
+            if (activePitch.HasValue)
+            {
+                composition = composition.WithPitch(activePitch.Value);
+            }
+
             if (ShippedLayouts[index] == null || !ShippedCompositions[index].Equals(composition))
             {
-                ShippedLayouts[index] = new LatticeLayoutBuilder(ShippedLocationCount, orientation, settings).Build();
+                ShippedLayouts[index] = new LatticeLayoutBuilder(ShippedLocationCount, orientation, settings, activePitch).Build();
                 ShippedCompositions[index] = composition;
             }
 
@@ -108,7 +127,13 @@ namespace IdleFactory.Unity.Presentation
                 cells.Add(new Vector2Int(i % columns, rows - 1 - i / columns));
             }
 
-            return new FactoryWorldLayout("lattice-" + locationCount + "x" + columns, cells, orientation, settings);
+            var composition = settings != null ? settings.ComposeFor(orientation) : WorldCompositionSettings.DefaultComposition(orientation);
+            if (pitchOverride.HasValue)
+            {
+                composition = composition.WithPitch(pitchOverride.Value);
+            }
+
+            return new FactoryWorldLayout("lattice-" + locationCount + "x" + columns, cells, orientation, composition);
         }
     }
 }

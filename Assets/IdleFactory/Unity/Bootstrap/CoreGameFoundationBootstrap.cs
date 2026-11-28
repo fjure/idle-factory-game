@@ -1108,6 +1108,9 @@ namespace IdleFactory.Unity.Bootstrap
             {
                 framing = new RunCameraFraming(zoom);
             }
+            // T610 (ARCH-4): the active profile's lattice pitch feeds the one layout builder before anyone asks for the layout. The pitch is part of the layout identity,
+            // so a profile switch with another pitch gives another LayoutId below and the camera refits. F006 keeps the F006 pitch: the layout is unchanged.
+            LatticeLayoutBuilder.UsePitch(lookResolver != null && lookResolver.IsValid ? lookResolver.LayoutPitch : (LayoutPitch?)null);
             var worldLayout = LatticeLayoutBuilder.Shipped(Screen.width, Screen.height);
             slotGrid.SetLayout(worldLayout);
             if (runShell != null)
@@ -1737,6 +1740,7 @@ namespace IdleFactory.Unity.Bootstrap
                 inMemoryShippedProfile = null;
             }
 
+            LatticeLayoutBuilder.UsePitch(null);
             if (worldCompositionApplied)
             {
                 worldCompositionApplied = false;
