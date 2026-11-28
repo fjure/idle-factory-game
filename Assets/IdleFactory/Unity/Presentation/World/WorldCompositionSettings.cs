@@ -78,18 +78,150 @@ namespace IdleFactory.Unity.Presentation
     }
 
     /// <summary>
+    /// The lattice pitch of a layout as immutable instance data (F007 T610, research R09 amendment, ARCH-4): the cell size in <b>world units</b>, an optional
+    /// arrangement key and the hit-size floor. It replaces the compile-time constants <c>SlotGridLayout.PitchX/PitchY</c> as the source of every position
+    /// a <see cref="FactoryWorldLayout"/> computes; those constants remain as the F006 values (<see cref="F006"/>). Part of the
+    /// <see cref="LayoutComposition"/> equality and identity, so a pitch change refits the camera. The location ids, count and unlock order never depend on it.
+    /// </summary>
+    public readonly struct LayoutPitch : IEquatable<LayoutPitch>
+    {
+        /// <summary>The one arrangement key this build knows: locations paired side by side share a slab (a "bay"). Grouping is by site zone (the lattice cell), never by production chain (WD-4).</summary>
+        public const string BaysRule = "bays";
+
+        /// <summary>The hit floor in points every pitch has to keep at the minimum zoom (F006 FR-005).</summary>
+        public const float HitPointsFloor = 44f;
+
+        /// <summary>The F006 lattice: 70 x 54 art px at 24 px per unit (2.9167 x 2.25 world units), no grouping, the 44 pt floor. Reproduces today's geometry bit for bit.</summary>
+        public static readonly LayoutPitch F006 = new LayoutPitch(new Vector2(SlotGridLayout.PitchX, SlotGridLayout.PitchY), string.Empty, HitPointsFloor);
+
+        private readonly string groupRule;
+
+        public LayoutPitch(Vector2 pitchWorld, string groupRule, float minHitPoints)
+        {
+            PitchWorld = pitchWorld;
+            this.groupRule = groupRule ?? string.Empty;
+            MinHitPoints = minHitPoints;
+        }
+
+        /// <summary>The lattice cell size in world units (cells of one unit; 24 F006 art pixels).</summary>
+        public Vector2 PitchWorld { get; }
+
+        /// <summary>The arrangement key: empty (none) or <see cref="BaysRule"/>.</summary>
+        public string GroupRule => groupRule ?? string.Empty;
+
+        /// <summary>The least height of a hit area in points at the minimum zoom; at least <see cref="HitPointsFloor"/>.</summary>
+        public float MinHitPoints { get; }
+
+        /// <summary>False for <c>default</c>: a pitch that was never set. A layout then uses <see cref="F006"/>.</summary>
+        public bool IsSet => PitchWorld.x > 0f && PitchWorld.y > 0f && MinHitPoints > 0f;
+
+        /// <summary>This pitch, or <see cref="F006"/> when none was set.</summary>
+        public LayoutPitch OrDefault => IsSet ? this : F006;
+
+        /// <summary>True when the cell size is exactly the F006 one (the layout then reproduces the F006 integer art-pixel arithmetic).</summary>
+        public bool HasF006Cell => PitchWorld.x == SlotGridLayout.PitchX && PitchWorld.y == SlotGridLayout.PitchY;
+
+        /// <summary>The height of the tap shape in world units: the 45 art px hit diamond, clipped to the cell height.</summary>
+        public float HitHeightWorld => Mathf.Min(SlotGridLayout.HitHeightPixels / (float)SlotGridLayout.Density, PitchWorld.y);
+
+        /// <summary>
+        /// The violations of the pitch rules; empty when the pitch is valid. The hit area has to reach <see cref="MinHitPoints"/> at the minimum zoom, where
+        /// one world unit spans at least <paramref name="readableCellPoints"/> points less the 1 % tolerance of the minimum-scale rule (the readable
+        /// floor, 24 points per cell in the shipped zoom settings).
+        /// </summary>
+        public IReadOnlyList<string> Problems(float readableCellPoints = 24f)
+        {
+            var problems = new List<string>();
+            if (float.IsNaN(PitchWorld.x) || float.IsNaN(PitchWorld.y) || float.IsInfinity(PitchWorld.x) || float.IsInfinity(PitchWorld.y) || PitchWorld.x <= 0f || PitchWorld.y <= 0f)
+            {
+                problems.Add("pitchWorld must be finite and greater than 0.");
+                return problems;
+            }
+
+            if (float.IsNaN(MinHitPoints) || MinHitPoints < HitPointsFloor)
+            {
+                problems.Add("minHitPoints must be at least " + HitPointsFloor + ".");
+            }
+            else if (HitHeightWorld * readableCellPoints * (1f - CameraScaleModel.MinScaleTolerance) < MinHitPoints)
+            {
+                problems.Add("the pitch is too tight: its hit area is under " + MinHitPoints + " points at the minimum zoom.");
+            }
+
+            if (GroupRule.Length > 0 && GroupRule != BaysRule)
+            {
+                problems.Add("groupRule must be empty or '" + BaysRule + "'.");
+            }
+
+            return problems;
+        }
+
+        public bool Equals(LayoutPitch other) =>
+            PitchWorld.x.Equals(other.PitchWorld.x) && PitchWorld.y.Equals(other.PitchWorld.y) &&
+            string.Equals(GroupRule, other.GroupRule, StringComparison.Ordinal) && MinHitPoints.Equals(other.MinHitPoints);
+
+        public override bool Equals(object obj) => obj is LayoutPitch other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = PitchWorld.x.GetHashCode();
+                hash = hash * 31 + PitchWorld.y.GetHashCode();
+                hash = hash * 31 + MinHitPoints.GetHashCode();
+                for (var i = 0; i < GroupRule.Length; i++)
+                {
+                    hash = hash * 31 + GroupRule[i];
+                }
+
+                return hash;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The authored lattice pitch (data-model LayoutPitchSettings): a <see cref="WorldCompositionSettings"/> field and a field of every look profile. The
+    /// defaults are the F006 lattice, so an asset serialized before this field existed reads as F006. Converted to the immutable <see cref="LayoutPitch"/>
+    /// before a layout reads it.
+    /// </summary>
+    [Serializable]
+    public sealed class LayoutPitchSettings
+    {
+        [Tooltip("Lattice pitch in world units (one unit is 24 F006 art pixels). F006: 70 x 54 art px = 2.9167 x 2.25.")]
+        public Vector2 pitchWorld = new Vector2(SlotGridLayout.PitchX, SlotGridLayout.PitchY);
+
+        [Tooltip("Optional arrangement key: empty, or 'bays' (pairs of side-by-side locations share a slab). By site zone, never by production chain.")]
+        public string groupRule = string.Empty;
+
+        [Tooltip("The least height of a hit area in points at the minimum zoom. At least 44.")]
+        public float minHitPoints = LayoutPitch.HitPointsFloor;
+
+        /// <summary>The F006 values.</summary>
+        public static LayoutPitchSettings F006() => new LayoutPitchSettings();
+
+        /// <summary>The immutable value: a pitch that was never set (zero values) reads as F006.</summary>
+        public LayoutPitch ToPitch() => new LayoutPitch(pitchWorld, groupRule, minHitPoints).OrDefault;
+    }
+
+    /// <summary>
     /// The layout values a <see cref="FactoryWorldLayout"/> reads, copied out of <see cref="WorldCompositionSettings"/> so that the layout
     /// is immutable and never holds the asset.
     /// </summary>
     public readonly struct LayoutComposition
     {
-        public LayoutComposition(float marginWorldUnits, int deckBandCells, MarginCellRule depotRule, MarginCellRule depositRule)
+        public LayoutComposition(float marginWorldUnits, int deckBandCells, MarginCellRule depotRule, MarginCellRule depositRule, LayoutPitch pitch = default)
         {
             MarginWorldUnits = marginWorldUnits;
             DeckBandCells = deckBandCells;
             DepotRule = depotRule;
             DepositRule = depositRule;
+            Pitch = pitch.OrDefault;
         }
+
+        /// <summary>The lattice pitch (F007 T610, ARCH-4): part of the equality and of the identity, so a pitch change refits the camera.</summary>
+        public LayoutPitch Pitch { get; }
+
+        /// <summary>This composition with another lattice pitch.</summary>
+        public LayoutComposition WithPitch(LayoutPitch pitch) => new LayoutComposition(MarginWorldUnits, DeckBandCells, DepotRule, DepositRule, pitch);
 
         /// <summary>The fit margin the camera model adds around <see cref="FactoryWorldLayout.Bounds"/>, in world units (cells of 24 art px).</summary>
         public float MarginWorldUnits { get; }
@@ -123,6 +255,12 @@ namespace IdleFactory.Unity.Presentation
                     hash = hash * 31 + DepotRule.along;
                     hash = hash * 31 + (int)DepositRule.side;
                     hash = hash * 31 + DepositRule.along;
+                    if (!Pitch.Equals(LayoutPitch.F006))
+                    {
+                        // Only a non-F006 pitch enters the hash, so the identity of every earlier composition is unchanged (ARCH-4).
+                        hash = hash * 31 + Pitch.GetHashCode();
+                    }
+
                     return "+c" + ((uint)hash).ToString("x8", System.Globalization.CultureInfo.InvariantCulture);
                 }
             }
@@ -131,11 +269,11 @@ namespace IdleFactory.Unity.Presentation
         public bool Equals(LayoutComposition other) =>
             MarginWorldUnits.Equals(other.MarginWorldUnits) && DeckBandCells == other.DeckBandCells &&
             DepotRule.side == other.DepotRule.side && DepotRule.along == other.DepotRule.along &&
-            DepositRule.side == other.DepositRule.side && DepositRule.along == other.DepositRule.along;
+            DepositRule.side == other.DepositRule.side && DepositRule.along == other.DepositRule.along && Pitch.Equals(other.Pitch);
 
         public override bool Equals(object obj) => obj is LayoutComposition other && Equals(other);
 
-        public override int GetHashCode() => MarginWorldUnits.GetHashCode() ^ (DeckBandCells << 8) ^ ((int)DepotRule.side << 10) ^ ((int)DepositRule.side << 14);
+        public override int GetHashCode() => MarginWorldUnits.GetHashCode() ^ (DeckBandCells << 8) ^ ((int)DepotRule.side << 10) ^ ((int)DepositRule.side << 14) ^ Pitch.GetHashCode();
     }
 
     /// <summary>
@@ -173,6 +311,9 @@ namespace IdleFactory.Unity.Presentation
 
         [Tooltip("The ore-vein deposit cell. Never Top: the badge band of the back row reaches into the top margin cell.")]
         public MarginCellRule depositRule = new MarginCellRule(MarginSide.Left, -1);
+
+        [Tooltip("The lattice pitch in world units, an optional arrangement key and the hit floor (F007 T610). The defaults are the F006 lattice; an asset serialized before this field existed reads as F006.")]
+        public LayoutPitchSettings layoutPitch = LayoutPitchSettings.F006();
 
         public StagePropWeights[] propWeightsPerStage = NewStageWeights();
         public float[] propDensityPerStage = new float[StageCount];
@@ -242,14 +383,15 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The F004-reproducing default values, without creating an asset (safe in field initializers and constructors).</summary>
         public static LayoutComposition DefaultComposition(WorldOrientation orientation) => new LayoutComposition(
-            DefaultMarginWorldUnits, DefaultDeckBandCells, new MarginCellRule(MarginSide.Right, 0), new MarginCellRule(MarginSide.Left, -1));
+            DefaultMarginWorldUnits, DefaultDeckBandCells, new MarginCellRule(MarginSide.Right, 0), new MarginCellRule(MarginSide.Left, -1), LayoutPitch.F006);
 
         /// <summary>The layout values for an orientation.</summary>
         public LayoutComposition ComposeFor(WorldOrientation orientation) => new LayoutComposition(
             marginWorldUnits,
             deckBandCells,
             orientation == WorldOrientation.Landscape ? depotRuleLandscape : depotRulePortrait,
-            depositRule);
+            depositRule,
+            layoutPitch != null ? layoutPitch.ToPitch() : LayoutPitch.F006);
 
         /// <summary>The deck-edge dressing of a stage (0 Open deck, 1 Walled yard, 2 Gantry line); the stage is clamped.</summary>
         public EdgeRule EdgeRuleOf(int stage) =>
@@ -279,6 +421,14 @@ namespace IdleFactory.Unity.Presentation
             if (deckBandCells < 1 || deckBandCells > MaxDeckBandCells)
             {
                 problems.Add("deckBandCells must be within [1, " + MaxDeckBandCells + "].");
+            }
+
+            if (layoutPitch != null)
+            {
+                foreach (var problem in layoutPitch.ToPitch().Problems())
+                {
+                    problems.Add("layoutPitch: " + problem);
+                }
             }
 
             CheckDepot(depotRulePortrait, "depotRulePortrait", problems);

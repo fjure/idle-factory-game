@@ -14,6 +14,12 @@ namespace IdleFactory.Unity.Presentation
     /// badge band (24 px above the footprint) stays clear of every other slot's overlay and frame ring; 54 is the smallest row pitch that
     /// does (52 touches the frame of the row behind). Every position is a whole number of art pixels (rule P3). Pure. World origin: the lower-left corner of the
     /// lattice content (see <see cref="Extent"/>).
+    /// <para>
+    /// F007 T610: these constants are the <b>F006</b> pitch and the F006 art sizes, and they stay compile-time constants for the F006 look. The pitch of a
+    /// layout is instance data in world units (<see cref="LayoutPitch"/>, <see cref="FactoryWorldLayout.Pitch"/>); <see cref="LayoutPitch.F006"/> is built from
+    /// <see cref="PitchX"/> and <see cref="PitchY"/>, so a layout at the default pitch reproduces the arithmetic here bit for bit. The static methods below
+    /// (<see cref="PivotOf"/>, <see cref="HitTest"/>, <see cref="Extent"/>) describe the F006 lattice only.
+    /// </para>
     /// </summary>
     public static class SlotGridLayout
     {

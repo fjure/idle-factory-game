@@ -65,7 +65,7 @@ namespace IdleFactory.Tests.PlayMode.F006
                 camera.allowMSAA = false;
                 camera.targetTexture = target;
                 camera.enabled = false;
-                var centre = FactoryWorldLayout.PivotOfCell(new Vector2Int(1, 1));
+                var centre = TestLayouts.Six().PivotOfCell(new Vector2Int(1, 1));
                 cameraObject.transform.position = new Vector3(centre.x, centre.y, -10f);
 
                 for (var i = 0; i < 3; i++)

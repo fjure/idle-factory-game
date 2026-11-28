@@ -56,6 +56,8 @@ namespace IdleFactory.Unity.Presentation.Look
         [Min(1)] [SerializeField] private int pixelsPerUnit = 24;
         [SerializeField] private LookFiltering filtering;
         [SerializeField] private LookCameraPolicy cameraPolicy;
+        [Tooltip("The lattice pitch in world units, an optional arrangement key and the hit floor (T610, data-model layoutPitch). F006: the F006 lattice. A prototype may set a denser pitch.")]
+        [SerializeField] private LayoutPitchSettings layoutPitch = LayoutPitchSettings.F006();
         [SerializeField] private string environmentFamily = "f006-deck";
         [SerializeField] private string indicatorSet = "f006-badges";
         [SerializeField] private string lightingMood = string.Empty;
@@ -83,6 +85,9 @@ namespace IdleFactory.Unity.Presentation.Look
         public LookFiltering Filtering => filtering;
 
         public LookCameraPolicy CameraPolicy => cameraPolicy;
+
+        /// <summary>The lattice pitch of this profile (an unset or missing field reads as the F006 lattice). The layout that the world builds for this profile reads it.</summary>
+        public LayoutPitch LayoutPitch => layoutPitch != null ? layoutPitch.ToPitch() : global::IdleFactory.Unity.Presentation.LayoutPitch.F006;
 
         public string EnvironmentFamily => environmentFamily;
 
@@ -119,6 +124,9 @@ namespace IdleFactory.Unity.Presentation.Look
             profile.pixelsPerUnit = pixelsPerUnit;
             return profile;
         }
+
+        /// <summary>Test and tooling hook: gives the profile a lattice pitch (and with it a denser or arranged layout). Null restores the F006 lattice.</summary>
+        public void ConfigureLayoutPitch(LayoutPitchSettings pitch) => layoutPitch = pitch ?? LayoutPitchSettings.F006();
 
         /// <summary>Test and tooling hook for the fields that the factory methods do not take.</summary>
         public void ConfigureRendering(LookWorldRenderer renderer, LookCameraPolicy camera, LookFiltering filter)
@@ -160,6 +168,12 @@ namespace IdleFactory.Unity.Presentation.Look
             if (tableProblem != null)
             {
                 return tableProblem;
+            }
+
+            var pitchProblems = LayoutPitch.Problems();
+            if (pitchProblems.Count > 0)
+            {
+                return "layoutPitch: " + pitchProblems[0];
             }
 
             if (cameraPolicy == LookCameraPolicy.Continuous)

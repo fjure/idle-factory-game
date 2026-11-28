@@ -87,6 +87,12 @@ namespace IdleFactory.Unity.Presentation.Look
         /// <summary>The art pixels per world unit of the active profile (the shipped default's before resolution). The camera model reads it.</summary>
         public int ArtPixelsPerCell => (active != null ? active : shippedDefault).PixelsPerUnit;
 
+        /// <summary>
+        /// The lattice pitch of the active profile (the shipped default's before resolution): F006 for the shipped default. The world rebuild that follows a
+        /// profile switch builds its layout from it, which refits the camera (the pitch is part of the layout identity, ARCH-4).
+        /// </summary>
+        public LayoutPitch LayoutPitch => (active != null ? active : shippedDefault).LayoutPitch;
+
         /// <summary>Raised after a later switch made another profile active. The bootstrap answers with the existing world rebuild path.</summary>
         public event Action<LookProfile> Applied;
 

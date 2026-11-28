@@ -28,6 +28,7 @@ namespace IdleFactory.Tests.EditMode.F006
         {
             Assert.That(FactoryDeckView.CellSize.x, Is.EqualTo(70f / 24f).Within(1e-6f));
             Assert.That(FactoryDeckView.CellSize.y, Is.EqualTo(54f / 24f).Within(1e-6f));
+            var f006 = TestLayouts.Six(); // T610: the pivot is instance data of the layout; the default pitch is the F006 lattice
             for (var y = -4; y <= 25; y++)
             {
                 for (var x = -4; x <= 25; x++)
@@ -35,7 +36,7 @@ namespace IdleFactory.Tests.EditMode.F006
                     var centre = new Vector2(
                         FactoryDeckView.GridOrigin.x + (x + 0.5f) * FactoryDeckView.CellSize.x,
                         FactoryDeckView.GridOrigin.y + (y + 0.5f) * FactoryDeckView.CellSize.y);
-                    var pivot = FactoryWorldLayout.PivotOfCell(new Vector2Int(x, y));
+                    var pivot = f006.PivotOfCell(new Vector2Int(x, y));
                     Assert.That(Vector2.Distance(centre, pivot), Is.LessThan(2e-5f), "cell " + x + "," + y + ": the tile pivot is the slot pivot of the same lattice cell");
                 }
             }
@@ -46,6 +47,7 @@ namespace IdleFactory.Tests.EditMode.F006
         {
             // 70/24 and 54/24 are not exact in binary floating point. A Tilemap places cell n at n * cellSize, so the error must stay far below the
             // 1/24 world unit of one art pixel for every cell a layout can use (the 20 location test layout reaches column 7 and row 6 with margins).
+            var f006 = TestLayouts.Six();
             for (var n = -8; n <= 40; n++)
             {
                 var left = (FactoryDeckView.GridOrigin.x + n * FactoryDeckView.CellSize.x) * Density;
@@ -57,12 +59,12 @@ namespace IdleFactory.Tests.EditMode.F006
                 Assert.That(bottom, Is.EqualTo(54 * n - 12).Within(2e-3f), "bottom edge of row " + n);
                 Assert.That(top, Is.EqualTo(54 * (n + 1) - 12).Within(2e-3f), "top edge of row " + n);
                 Assert.That(Mathf.Abs(right - (70 * (n + 1))), Is.LessThan(1f / 100f), "the seam to column " + (n + 1) + " is under a hundredth of an art pixel");
-                Assert.That(Mathf.RoundToInt(left), Is.EqualTo(PixelRect.FromWorld(FactoryWorldLayout.DeckTileRect(new Vector2Int(n, 0))).X));
+                Assert.That(Mathf.RoundToInt(left), Is.EqualTo(PixelRect.FromWorld(f006.DeckTileRect(new Vector2Int(n, 0))).X));
             }
 
-            var a = PixelRect.FromWorld(FactoryWorldLayout.DeckTileRect(new Vector2Int(3, 2)));
-            var b = PixelRect.FromWorld(FactoryWorldLayout.DeckTileRect(new Vector2Int(4, 2)));
-            var c = PixelRect.FromWorld(FactoryWorldLayout.DeckTileRect(new Vector2Int(3, 3)));
+            var a = PixelRect.FromWorld(f006.DeckTileRect(new Vector2Int(3, 2)));
+            var b = PixelRect.FromWorld(f006.DeckTileRect(new Vector2Int(4, 2)));
+            var c = PixelRect.FromWorld(f006.DeckTileRect(new Vector2Int(3, 3)));
             Assert.That(a.XMax, Is.EqualTo(b.X), "horizontal neighbours share an edge");
             Assert.That(a.YMax, Is.EqualTo(c.Y), "vertical neighbours share an edge");
             Assert.That(a.Overlaps(b) || a.Overlaps(c), Is.False);

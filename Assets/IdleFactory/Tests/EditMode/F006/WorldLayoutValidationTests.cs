@@ -174,7 +174,7 @@ namespace IdleFactory.Tests.EditMode.F006
             Assert.That(deck.yMax, Is.GreaterThan(layout.Bounds.yMax));
             foreach (var cell in layout.DeckCells)
             {
-                Assert.That(FactoryWorldLayout.DeckTileRect(cell).size, Is.EqualTo(new Vector2(70f / 24f, 54f / 24f)));
+                Assert.That(layout.DeckTileRect(cell).size, Is.EqualTo(new Vector2(70f / 24f, 54f / 24f)));
             }
         }
 
@@ -275,7 +275,7 @@ namespace IdleFactory.Tests.EditMode.F006
             foreach (var cell in new[] { layout.DepotCell, layout.DepositCell })
             {
                 Assert.That(cell.x < 0 || cell.x >= layout.ColumnCount || cell.y < 0 || cell.y >= layout.RowCount, Is.True, "in the margin band");
-                var tile = FactoryWorldLayout.DeckTileRect(cell);
+                var tile = layout.DeckTileRect(cell);
                 for (var i = 0; i < layout.LocationCount; i++)
                 {
                     var id = new BuildingLocationId(i);

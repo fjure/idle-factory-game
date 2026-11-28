@@ -149,6 +149,11 @@ namespace IdleFactory.Unity.Presentation
         private readonly Vector2Int[] deckCells;
         private readonly LanePath[] branches;
         private readonly LanePath[] trunks;
+        private readonly LayoutPitch pitch;
+        private readonly float cellWidth;
+        private readonly float cellHeight;
+        private readonly float pitchXPixels;
+        private readonly float pitchYPixels;
 
         /// <summary>
         /// Builds a layout from explicit lattice cells, one per location in id order: <c>cells[i]</c> is (column from the left, row from the
@@ -177,6 +182,15 @@ namespace IdleFactory.Unity.Presentation
             Orientation = orientation;
             Margin = composition.MarginWorldUnits;
             DeckBandCells = Math.Max(1, composition.DeckBandCells);
+
+            // F007 T610 (ARCH-4): the pitch is instance data in world units. The art-pixel values are floats: at the F006 cell they are exactly 70 and 54, so every
+            // position below reproduces the former integer arithmetic bit for bit; any other pitch goes through the world-unit values.
+            pitch = composition.Pitch.OrDefault;
+            cellWidth = pitch.PitchWorld.x;
+            cellHeight = pitch.PitchWorld.y;
+            // Per axis: a pitch that changes only the rows leaves every column position exactly where F006 puts it.
+            pitchXPixels = cellWidth == SlotGridLayout.PitchX ? SlotGridLayout.PitchXPixels : cellWidth * Density;
+            pitchYPixels = cellHeight == SlotGridLayout.PitchY ? SlotGridLayout.PitchYPixels : cellHeight * Density;
 
             var minColumn = int.MaxValue;
             var minRow = int.MaxValue;
@@ -213,8 +227,8 @@ namespace IdleFactory.Unity.Presentation
             }
 
             // The F004 extent: every plate plus the badge band above the back row (SlotGridLayout.Extent).
-            var widthPixels = (columnCount - 1) * SlotGridLayout.PitchXPixels + SlotGridLayout.PlateWidthPixels;
-            var heightPixels = (rowCount - 1) * SlotGridLayout.PitchYPixels + SlotGridLayout.PivotAbovePlateBottomPixels + SlotGridLayout.ContentAbovePivotPixels;
+            var widthPixels = (columnCount - 1) * pitchXPixels + SlotGridLayout.PlateWidthPixels;
+            var heightPixels = (rowCount - 1) * pitchYPixels + SlotGridLayout.PivotAbovePlateBottomPixels + SlotGridLayout.ContentAbovePivotPixels;
             Bounds = new Rect(0f, 0f, widthPixels / Density, heightPixels / Density);
 
             deckCells = BuildDeckCells();
@@ -231,6 +245,21 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The identity the camera model keys on (log, cache and layout change detection).</summary>
         public string LayoutId { get; }
+
+        /// <summary>The lattice pitch of this layout (world units, arrangement key, hit floor).</summary>
+        public LayoutPitch Pitch => pitch;
+
+        /// <summary>The lattice cell width in world units (the horizontal pitch).</summary>
+        public float CellWidth => cellWidth;
+
+        /// <summary>The lattice cell height in world units (the vertical pitch).</summary>
+        public float CellHeight => cellHeight;
+
+        /// <summary>
+        /// The height of a tap shape in world units: the 45 art px hit diamond clipped to the lattice cell. The camera's hit-size check reads it
+        /// (<see cref="CameraScaleModel.FootprintPoints(FactoryWorldLayout, int, int, float)"/>), so a denser pitch is measured, not assumed (ARCH-10).
+        /// </summary>
+        public float HitHeightWorld => pitch.HitHeightWorld;
 
         public int LocationCount => cells.Length;
 
@@ -394,7 +423,7 @@ namespace IdleFactory.Unity.Presentation
         public Vector2 AnchorOf(BuildingLocationId id) => PivotOfCell(cells[Checked(id)]);
 
         /// <summary>The plate centre of a location (and the centre of its lattice cell).</summary>
-        public Vector2 PlateCentreOf(BuildingLocationId id) => PlateCentreOfCell(cells[Checked(id)]);
+        public Vector2 PlateCentreOf(BuildingLocationId id) => PlateCentreAt(cells[Checked(id)]);
 
         /// <summary>The bounding box of the plate diamond (70 x 35 art px): the footprint a sheet has to keep in view.</summary>
         public Rect FootprintOf(BuildingLocationId id)
@@ -405,7 +434,7 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The lattice cell of a location around its plate centre (70 x 54 art px): the clip of its tap shape.</summary>
         public Rect LocationCellRectOf(BuildingLocationId id) =>
-            new Rect(PlateCentreOf(id) - new Vector2(SlotGridLayout.PitchX, SlotGridLayout.PitchY) * 0.5f, new Vector2(SlotGridLayout.PitchX, SlotGridLayout.PitchY));
+            new Rect(PlateCentreOf(id) - new Vector2(cellWidth, cellHeight) * 0.5f, new Vector2(cellWidth, cellHeight));
 
         /// <summary>The tap shape: the plate diamond grown to 90 x 45 art px, clipped to the lattice cell.</summary>
         public HitShape HitShapeOf(BuildingLocationId id) => new HitShape(
@@ -443,9 +472,34 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The location under a world point, or false. A closed-form lattice lookup: no loop over locations, no allocation.</summary>
         public bool TryHit(Vector2 world, out BuildingLocationId id)
         {
-            var first = PlateCentreOfCell(Vector2Int.zero); // bottom-left cell centre
-            var column = Mathf.FloorToInt((world.x - first.x) / SlotGridLayout.PitchX + 0.5f);
-            var rowFromBottom = Mathf.FloorToInt((world.y - first.y) / SlotGridLayout.PitchY + 0.5f);
+            id = default;
+            if (!TryCellOwner(world, out var owner))
+            {
+                return false;
+            }
+
+            var location = owner.Value;
+            var centre = PlateCentreAt(cells[location]);
+            var nx = Mathf.Abs(world.x - centre.x) / (SlotGridLayout.HitWidthPixels * 0.5f / SlotGridLayout.Density);
+            var ny = Mathf.Abs(world.y - centre.y) / (SlotGridLayout.HitHeightPixels * 0.5f / SlotGridLayout.Density);
+            if (nx + ny > 1f)
+            {
+                return false;
+            }
+
+            id = owner;
+            return true;
+        }
+
+        /// <summary>
+        /// The location whose lattice cell holds a world point, or false (outside the lattice or on an empty cell). Unlike <see cref="TryHit"/> the cell
+        /// corners count too: this is the ownership of a point, such as a cue anchor, not a tap. Closed form, no allocation.
+        /// </summary>
+        public bool TryCellOwner(Vector2 world, out BuildingLocationId id)
+        {
+            var first = PlateCentreAt(Vector2Int.zero); // bottom-left cell centre
+            var column = Mathf.FloorToInt((world.x - first.x) / cellWidth + 0.5f);
+            var rowFromBottom = Mathf.FloorToInt((world.y - first.y) / cellHeight + 0.5f);
             id = default;
             if (column < 0 || column >= columnCount || rowFromBottom < 0 || rowFromBottom >= rowCount)
             {
@@ -458,38 +512,59 @@ namespace IdleFactory.Unity.Presentation
                 return false;
             }
 
-            var centre = PlateCentreOfCell(cells[location]);
-            var nx = Mathf.Abs(world.x - centre.x) / (SlotGridLayout.HitWidthPixels * 0.5f / SlotGridLayout.Density);
-            var ny = Mathf.Abs(world.y - centre.y) / (SlotGridLayout.HitHeightPixels * 0.5f / SlotGridLayout.Density);
-            if (nx + ny > 1f)
-            {
-                return false;
-            }
-
             id = new BuildingLocationId(location);
             return true;
+        }
+
+        /// <summary>
+        /// The arrangement group of a location (a shared slab, <see cref="LayoutPitch.BaysRule"/>). Without a group rule every location is its own group (its id).
+        /// With <c>bays</c>, the two locations that sit side by side in a row share a group. The group depends only on the lattice cell, never on the
+        /// location id order or on the machine type, and so never follows the production chain (WD-4).
+        /// </summary>
+        public int GroupOf(BuildingLocationId id)
+        {
+            var cell = cells[Checked(id)];
+            if (pitch.GroupRule != LayoutPitch.BaysRule)
+            {
+                return id.Value;
+            }
+
+            return cell.y * ((columnCount + 1) / 2) + cell.x / 2;
         }
 
         /// <summary>True when the location is one of the first <paramref name="unlockedCount"/> locations (the unlock order is the id order).</summary>
         public bool IsUnlocked(BuildingLocationId id, int unlockedCount) => IsValidId(id) && id.Value < unlockedCount;
 
         /// <summary>The footprint pivot of a deck cell (the same lattice phase as every location): the pivot of a floor tile.</summary>
-        public static Vector2 PivotOfCell(Vector2Int cell) => new Vector2(
+        public Vector2 PivotOfCell(Vector2Int cell) => new Vector2(
+            (SlotGridLayout.PlateWidthPixels / 2 + cell.x * pitchXPixels) / Density,
+            (SlotGridLayout.PivotAbovePlateBottomPixels + cell.y * pitchYPixels) / Density);
+
+        /// <summary>The plate centre of a lattice cell of this layout (its own pitch).</summary>
+        public Vector2 PlateCentreAt(Vector2Int cell) => PivotOfCell(cell) + new Vector2(0f, SlotGridLayout.PlateCentreAbovePivot);
+
+        /// <summary>
+        /// The plate centre of a lattice cell on the F006 lattice (the default pitch), kept static because the F006 layout-independence tests call it that way and
+        /// T610 does not change them. Code that has a layout asks <see cref="PlateCentreAt"/>, which follows the layout's pitch.
+        /// </summary>
+        public static Vector2 PlateCentreOfCell(Vector2Int cell) => new Vector2(
             (SlotGridLayout.PlateWidthPixels / 2 + cell.x * SlotGridLayout.PitchXPixels) / Density,
-            (SlotGridLayout.PivotAbovePlateBottomPixels + cell.y * SlotGridLayout.PitchYPixels) / Density);
+            (SlotGridLayout.PivotAbovePlateBottomPixels + cell.y * SlotGridLayout.PitchYPixels) / Density + SlotGridLayout.PlateCentreAbovePivot);
 
-        /// <summary>The plate centre of a lattice cell.</summary>
-        public static Vector2 PlateCentreOfCell(Vector2Int cell) => PivotOfCell(cell) + new Vector2(0f, SlotGridLayout.PlateCentreAbovePivot);
-
-        /// <summary>The deck tile of a cell: 70 x 54 art px around the cell's pivot (27 px above and below it).</summary>
-        public static Rect DeckTileRect(Vector2Int cell)
+        /// <summary>The deck tile of a cell: one lattice cell (70 x 54 art px at the F006 pitch) around the cell's pivot, half a cell above and below it.</summary>
+        public Rect DeckTileRect(Vector2Int cell)
         {
             var pivot = PivotOfCell(cell);
+
+            // The explicit float casts round each term to a float, as the former constant expressions did: the editor's runtime may keep a wider intermediate, and
+            // 35 / 24 in that precision is not the float 35f / 24f (a difference of 4e-8 shows as a seam between deck tiles).
+            var halfWidth = (float)(pitchXPixels * 0.5f / Density);
+            var halfHeight = (float)(pitchYPixels * 0.5f / Density);
             return new Rect(
-                pivot.x - SlotGridLayout.PitchXPixels / 2 / Density,
-                pivot.y - SlotGridLayout.FloorTilePivotYPixels / Density,
-                SlotGridLayout.PitchXPixels / Density,
-                SlotGridLayout.PitchYPixels / Density);
+                pivot.x - halfWidth,
+                pivot.y - halfHeight,
+                (float)(pitchXPixels / Density),
+                (float)(pitchYPixels / Density));
         }
 
         /// <summary>The trunk of a row, counted from the back (0): from the far end of the row to the depot. Empty when the row holds no location.</summary>
@@ -517,6 +592,11 @@ namespace IdleFactory.Unity.Presentation
         public IReadOnlyList<string> Validate()
         {
             var problems = new List<string>();
+            foreach (var pitchProblem in pitch.Problems())
+            {
+                problems.Add("pitch: " + pitchProblem);
+            }
+
             var count = LocationCount;
             for (var i = 0; i < count; i++)
             {
@@ -721,7 +801,7 @@ namespace IdleFactory.Unity.Presentation
                 }
 
                 var rowFromBottom = rowCount - 1 - row;
-                var laneY = (SlotGridLayout.PivotAbovePlateBottomPixels + rowFromBottom * SlotGridLayout.PitchYPixels + LaneAbovePivotPixels) / Density;
+                var laneY = (SlotGridLayout.PivotAbovePlateBottomPixels + rowFromBottom * pitchYPixels + LaneAbovePivotPixels) / Density;
                 var startX = DepotOnRight ? minX[row] : maxX[row];
                 var points = new List<Vector2> { new Vector2(startX, laneY), new Vector2(collectorX, laneY) };
                 if (Mathf.Abs(laneY - DepotAnchor.y) > 1e-4f)
@@ -736,7 +816,7 @@ namespace IdleFactory.Unity.Presentation
             {
                 var pivot = PivotOfCell(cells[i]);
                 var row = rowCount - 1 - cells[i].y;
-                var rearY = (SlotGridLayout.PivotAbovePlateBottomPixels + cells[i].y * SlotGridLayout.PitchYPixels + RearEdgeAbovePivotPixels) / Density;
+                var rearY = (SlotGridLayout.PivotAbovePlateBottomPixels + cells[i].y * pitchYPixels + RearEdgeAbovePivotPixels) / Density;
                 var laneY = trunks[row].Start.y;
                 branches[i] = new LanePath(new[] { new Vector2(pivot.x, rearY), new Vector2(pivot.x, laneY) });
             }

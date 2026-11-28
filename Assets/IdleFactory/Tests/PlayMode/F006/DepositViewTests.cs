@@ -63,7 +63,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             var rect = BoundsRect(view.RestRenderer);
             Assert.That(view.RestRenderer.enabled, Is.True, name);
             Assert.That((Vector2)view.RestRenderer.transform.localPosition, Is.EqualTo(layout.DepositAnchor), name + ": the pivot is the deposit cell pivot");
-            var cell = FactoryWorldLayout.DeckTileRect(layout.DepositCell);
+            var cell = layout.DeckTileRect(layout.DepositCell);
             Assert.That(rect.xMin, Is.GreaterThanOrEqualTo(cell.xMin - 1e-3f), name);
             Assert.That(rect.yMin, Is.GreaterThanOrEqualTo(cell.yMin - 1e-3f), name);
             Assert.That(rect.xMax, Is.LessThanOrEqualTo(cell.xMax + 1e-3f), name);
@@ -197,7 +197,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             Assert.That(view.GetComponentsInChildren<Collider>(true), Is.Empty);
             Assert.That(typeof(DepositView).GetMethods().Where(m => m.Name.Contains("Hit") || m.Name.Contains("Tap") || m.Name.Contains("Click")), Is.Empty, "the view has no hit test");
 
-            var cell = FactoryWorldLayout.DeckTileRect(layout.DepositCell);
+            var cell = layout.DeckTileRect(layout.DepositCell);
             var rect = BoundsRect(view.RestRenderer);
             var taps = 0;
             for (var x = rect.xMin; x <= rect.xMax; x += 2 / (float)SlotGridLayout.Density)

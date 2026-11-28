@@ -299,8 +299,18 @@ namespace IdleFactory.Unity.Presentation
         /// <summary>The hash as a number in [0, 1).</summary>
         public static float Hash01(int x, int y, uint salt) => (Hash(x, y, salt) >> 8) / 16777216f;
 
-        /// <summary>The cell rectangle (70 x 54 art px) of a lattice cell in world art pixels.</summary>
-        public static PixelRect CellRect(Vector2Int cell) => PixelRect.FromWorld(FactoryWorldLayout.DeckTileRect(cell));
+        /// <summary>The cell rectangle of a lattice cell of <paramref name="layout"/> in world art pixels (70 x 54 at the F006 pitch). T610: the pitch is the layout's.</summary>
+        public static PixelRect CellRect(FactoryWorldLayout layout, Vector2Int cell) => PixelRect.FromWorld(layout.DeckTileRect(cell));
+
+        /// <summary>
+        /// The cell rectangle (70 x 54 art px) of a lattice cell on the F006 lattice, in world art pixels. The deck planner's whole-pixel grid (edges, lane rows,
+        /// pivots) is the F006 lattice; a layout with another pitch asks <see cref="CellRect(FactoryWorldLayout, Vector2Int)"/>.
+        /// </summary>
+        public static PixelRect CellRect(Vector2Int cell) => new PixelRect(
+            cell.x * SlotGridLayout.PitchXPixels,
+            SlotGridLayout.PivotAbovePlateBottomPixels + cell.y * SlotGridLayout.PitchYPixels - SlotGridLayout.FloorTilePivotYPixels,
+            SlotGridLayout.PitchXPixels,
+            SlotGridLayout.PitchYPixels);
 
         /// <summary>The whole-pixel footprint pivot of a lattice cell (the centre of its deck tile).</summary>
         public static Vector2Int CellPivot(Vector2Int cell) => new Vector2Int(
@@ -548,7 +558,7 @@ namespace IdleFactory.Unity.Presentation
             var maxY = int.MinValue;
             foreach (var cell in baseCells)
             {
-                var rect = CellRect(cell);
+                var rect = CellRect(layout, cell);
                 minX = Mathf.Min(minX, rect.X);
                 minY = Mathf.Min(minY, rect.Y);
                 maxX = Mathf.Max(maxX, rect.XMax);
@@ -581,7 +591,7 @@ namespace IdleFactory.Unity.Presentation
                 obstacles.Rects.Add(depot.RectAt(new Vector2Int(Mathf.RoundToInt(layout.DepotAnchor.x * SlotGridLayout.Density), Mathf.RoundToInt(layout.DepotAnchor.y * SlotGridLayout.Density))).Grown(1));
             }
 
-            obstacles.Rects.Add(CellRect(layout.DepositCell));
+            obstacles.Rects.Add(CellRect(layout, layout.DepositCell));
             foreach (var edge in edges)
             {
                 obstacles.Rects.Add(edge.Rect);
@@ -656,7 +666,7 @@ namespace IdleFactory.Unity.Presentation
             var edges = BuildEdges(layout, rule);
             var baseCells = new List<Vector2Int>(layout.DeckCells);
             var obstacles = CollectObstacles(layout, edges, baseCells);
-            var rect = CellRect(cell);
+            var rect = CellRect(layout, cell);
             var free = 0;
             for (var y = rect.Y; y < rect.YMax; y++)
             {
@@ -741,7 +751,7 @@ namespace IdleFactory.Unity.Presentation
                     continue;
                 }
 
-                var cellRect = CellRect(cell);
+                var cellRect = CellRect(layout, cell);
                 if (!FitsInCell(cellRect, size))
                 {
                     // A kind wider or taller than the cell cannot sit inside it: skip it (no modulus by zero or a wrapped negative span).

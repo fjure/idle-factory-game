@@ -66,7 +66,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             // A tile centre is the footprint pivot of its lattice cell, in the same local space as the slots.
             var probe = new Vector3Int(1, 2, 0);
             var centre = deck.Grid.transform.TransformPoint(deck.Grid.GetCellCenterLocal(probe));
-            Assert.That(Vector2.Distance(centre, FactoryWorldLayout.PivotOfCell(new Vector2Int(1, 2))), Is.LessThan(1e-4f), "cell (1, 2) is centred on its slot pivot");
+            Assert.That(Vector2.Distance(centre, layout.PivotOfCell(new Vector2Int(1, 2))), Is.LessThan(1e-4f), "cell (1, 2) is centred on its slot pivot");
             Assert.That(grid.ActiveRendererCount, Is.GreaterThan(0));
         }
 

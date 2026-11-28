@@ -278,7 +278,18 @@ namespace IdleFactory.Unity.Presentation
 
         /// <summary>The height in UI points of a slot tap target (the 90 x 45 art px hit diamond, T456) at a scale; the hit area must be at least 44 points.</summary>
         public static float FootprintPoints(int scale, int artPixelsPerCell, float pixelsPerPoint) =>
-            SlotGridLayout.HitHeightPixels / (float)SlotGridLayout.Density * scale * artPixelsPerCell / pixelsPerPoint;
+            FootprintPoints(SlotGridLayout.HitHeightPixels / (float)SlotGridLayout.Density, scale, artPixelsPerCell, pixelsPerPoint);
+
+        /// <summary>
+        /// The height in UI points of the tap target of a layout (T610, ARCH-10): its hit height in world units (the hit diamond clipped to the layout's lattice
+        /// cell, so a denser pitch is measured, not assumed) times the scale and the profile's pixels per unit, over the pixels per point. The camera stays the
+        /// single writer: this reads, it positions nothing. For the F006 pitch it equals the former value bit for bit.
+        /// </summary>
+        public static float FootprintPoints(FactoryWorldLayout layout, int scale, int artPixelsPerCell, float pixelsPerPoint) =>
+            FootprintPoints(layout.HitHeightWorld, scale, artPixelsPerCell, pixelsPerPoint);
+
+        private static float FootprintPoints(float hitHeightWorld, int scale, int artPixelsPerCell, float pixelsPerPoint) =>
+            hitHeightWorld * scale * artPixelsPerCell / pixelsPerPoint;
 
         // ---------------------------------------------------------------- layout and fit (rules 2, 3, 5)
 

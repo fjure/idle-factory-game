@@ -70,7 +70,7 @@ namespace IdleFactory.Tests.PlayMode.F006
             camera.enabled = false;
 
             // Centre on the deck so the margin ring, the props and the edge V are in view at n = 1.
-            var bounds = deck.Plan.BaseCells.Select(c => FactoryWorldLayout.DeckTileRect(c)).Aggregate((a, b) => Rect.MinMaxRect(
+            var bounds = deck.Plan.BaseCells.Select(c => layout.DeckTileRect(c)).Aggregate((a, b) => Rect.MinMaxRect(
                 Mathf.Min(a.xMin, b.xMin), Mathf.Min(a.yMin, b.yMin), Mathf.Max(a.xMax, b.xMax), Mathf.Max(a.yMax, b.yMax)));
             var centre = new Vector2(Mathf.Round(bounds.center.x * 24f) / 24f, Mathf.Round(bounds.center.y * 24f) / 24f);
             cameraObject.transform.position = new Vector3(centre.x, centre.y, -10f);

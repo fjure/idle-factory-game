@@ -56,6 +56,15 @@ namespace IdleFactory.Tests.PlayMode.F007
         public byte[] MidRunSaveBytes;
         public readonly List<string> Reasons = new List<string>();
         public string ActiveAtEnd;
+
+        /// <summary>The screen pixel of every tap, as the camera of the active profile projected it (N3: the pixels per unit and the pitch change these).</summary>
+        public readonly List<string> TapScreens = new List<string>();
+
+        /// <summary>The id of the world layout, the pixels per unit and the camera scale of the active profile at the end of the run.</summary>
+        public string LayoutIdAtEnd;
+        public int PixelsPerUnitAtEnd;
+        public int CameraScaleAtEnd;
+        public Vector2 FirstAnchorAtEnd;
         public Sprite SlotZeroSpriteAfterSwitch;
         public PresentationSpriteEntry MinerEntryAfterSwitch;
 
@@ -101,8 +110,14 @@ namespace IdleFactory.Tests.PlayMode.F007
             var outcome = new ParityOutcome();
             var table = LookProfileRequirementTable.F006();
             var shipped = LookProfile.Create(LookProfile.F006Id, false, deckRig.Catalog(), table);
-            var prototypeA = LookProfile.Create(LookProfile.PrototypeAId, true, deckRig.Catalog(), table);
-            var prototypeB = LookProfile.Create(LookProfile.PrototypeBId, true, deckRig.Catalog(), table);
+
+            // N3 (T609 architect review): the prototype profiles differ from F006 in pixels per unit AND in pitch. A has 48 pixels per unit and the dense pitch; B has
+            // 64 pixels per unit and the dense pitch with bays. The taps below go through the camera of the active profile and the layout built from its pitch, so the
+            // tap parity is no longer a comparison of two identical geometries.
+            var prototypeA = LookProfile.Create(LookProfile.PrototypeAId, true, deckRig.Catalog(), table, 48);
+            prototypeA.ConfigureLayoutPitch(new LayoutPitchSettings { pitchWorld = DenseLayouts.Dense.PitchWorld, groupRule = string.Empty, minHitPoints = LayoutPitch.HitPointsFloor });
+            var prototypeB = LookProfile.Create(LookProfile.PrototypeBId, true, deckRig.Catalog(), table, 64);
+            prototypeB.ConfigureLayoutPitch(new LayoutPitchSettings { pitchWorld = DenseLayouts.DenseBays.PitchWorld, groupRule = LayoutPitch.BaysRule, minHitPoints = LayoutPitch.HitPointsFloor });
             deckRig.Owned.Add(shipped);
             deckRig.Owned.Add(prototypeA);
             deckRig.Owned.Add(prototypeB);
@@ -123,7 +138,10 @@ namespace IdleFactory.Tests.PlayMode.F007
             var commands = new RunCommands(session, () => Id(nextInstance++), () => Id(nextRun++));
 
             // The views, composed and switched through the same LookProfileWorldViews path the bootstrap uses.
-            var layout = LatticeLayoutBuilder.ShippedForColumns(3);
+            // The world rebuild of a profile (what the bootstrap's ConfigureRunCamera does on a switch): a layout from the profile's pitch, and the camera of the
+            // profile's pixels per unit, fitted again. The pitch is part of the layout identity, so the camera refits.
+            var layout = LayoutOf(resolver.Active);
+            var camera = CameraOf(resolver, layout);
             var grid = Host("parity-grid").AddComponent<SlotGridView>();
             var deck = Host("parity-deck").AddComponent<FactoryDeckView>();
             var links = Host("parity-links").AddComponent<DepotLinkView>();
@@ -134,6 +152,9 @@ namespace IdleFactory.Tests.PlayMode.F007
             resolver.Applied += profile =>
             {
                 outcome.Applied.Add(profile.Id);
+                layout = LayoutOf(profile);
+                camera = CameraOf(resolver, layout);
+                grid.SetLayout(layout);
                 views.Apply(resolver.ActiveCatalog);
             };
 
@@ -164,7 +185,7 @@ namespace IdleFactory.Tests.PlayMode.F007
 
                 if (tick % 10 == 0)
                 {
-                    Tap(tick, grid.Layout, outcome);
+                    Tap(tick, layout, camera, outcome);
                 }
 
                 if (tick == MidRunSaveTick)
@@ -177,6 +198,10 @@ namespace IdleFactory.Tests.PlayMode.F007
 
             outcome.SaveBytes = SaveBytes(session, catalog);
             outcome.ActiveAtEnd = resolver.Active.Id;
+            outcome.LayoutIdAtEnd = layout.LayoutId;
+            outcome.PixelsPerUnitAtEnd = camera.Settings.ArtPixelsPerCell;
+            outcome.CameraScaleAtEnd = camera.Scale;
+            outcome.FirstAnchorAtEnd = layout.AnchorOf(new BuildingLocationId(0));
             resolver.Dispose();
             return outcome;
         }
@@ -265,17 +290,44 @@ namespace IdleFactory.Tests.PlayMode.F007
             }
         }
 
-        // Taps at the centre of every machine's rectangle, and one far outside the world, through the same resolver the input path uses.
-        private static void Tap(int tick, FactoryWorldLayout layout, ParityOutcome outcome)
+        private const int ScreenWidth = 1080;
+        private const int ScreenHeight = 2400;
+        private const float PixelsPerPoint = 2.625f;
+
+        // The shipped 12 locations in 3 columns at the lattice pitch of a profile (the world rebuild path builds the layout from the profile's pitch).
+        private static FactoryWorldLayout LayoutOf(LookProfile profile) => DenseLayouts.Shipped(3, profile.LayoutPitch);
+
+        // The camera of a profile: the integer camera model over the profile's pixels per unit, fitted to the whole screen, as the bootstrap's refit does.
+        private static CameraScaleModel CameraOf(LookProfileResolver resolver, FactoryWorldLayout layout)
         {
-            for (var i = 0; i < layout.LocationCount; i++)
+            var model = new CameraScaleModel(resolver.ZoomFor(new RunZoomSettings()).ToScaleSettings());
+            model.Fit(ScaleLayout.WithView(ScreenWidth, ScreenHeight, PixelsPerPoint, new Rect(0f, 0f, ScreenWidth, ScreenHeight), layout));
+            return model;
+        }
+
+        // Taps at the centre of every machine's rectangle, and one far outside the world, through the camera of the active profile (the world point goes to a device
+        // pixel and back, so the pixels per unit and the scale matter) and the same resolver the input path uses.
+        private static void Tap(int tick, FactoryWorldLayout layout, CameraScaleModel camera, ParityOutcome outcome)
+        {
+            Vector2 Through(Vector2 world, out Vector2 pixel)
             {
-                var source = WorldTapResolver.Resolve(layout, null, layout.MachineRectOf(new BuildingLocationId(i)).center, out var target);
-                outcome.Taps.Add(tick + ":" + i + ":" + source + ":" + (source == WorldTapSource.None ? -1 : target.Value));
+                var screen = camera.WorldToScreen(world, camera.Position, camera.Scale);
+                pixel = new Vector2(Mathf.Round(screen.x), Mathf.Round(screen.y));
+                return camera.ScreenToWorld(pixel, camera.Position, camera.Scale);
             }
 
-            var outside = WorldTapResolver.Resolve(layout, null, new Vector2(1000f, 1000f), out var none);
+            for (var i = 0; i < layout.LocationCount; i++)
+            {
+                var tap = Through(layout.MachineRectOf(new BuildingLocationId(i)).center, out var pixel);
+                var source = WorldTapResolver.Resolve(layout, null, tap, out var target);
+                outcome.Taps.Add(tick + ":" + i + ":" + source + ":" + (source == WorldTapSource.None ? -1 : target.Value));
+                outcome.TapScreens.Add(tick + ":" + i + ":" + pixel.x + "," + pixel.y);
+            }
+
+            var outsideTap = Through(new Vector2(1000f, 1000f), out var outsidePixel);
+            var outside = WorldTapResolver.Resolve(layout, null, outsideTap, out var none);
             outcome.Taps.Add(tick + ":outside:" + outside + ":" + (outside == WorldTapSource.None ? -1 : none.Value));
+            outcome.TapScreens.Add(tick + ":outside:" + outsidePixel.x + "," + outsidePixel.y);
         }
 
         private static byte[] SaveBytes(RunSession session, RunCatalog catalog)

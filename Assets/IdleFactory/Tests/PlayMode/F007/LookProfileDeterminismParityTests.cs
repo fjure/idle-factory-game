@@ -76,6 +76,48 @@ namespace IdleFactory.Tests.PlayMode.F007
             }
         }
 
+        // N3 (T609 architect review, carried to T610): the profiles differ in pixels per unit and in pitch, so the taps are projected through different cameras and
+        // resolved on different layouts. Equal location-id sequences are then evidence, not a tautology.
+        [Test]
+        public void ProfilesThatDifferInPixelsPerUnitAndPitchStillTapTheSameLocationsAndKeepTheSameState()
+        {
+            var a = rig.Run(LookProfile.PrototypeAId, -1, null, null);
+            var b = rig.Run(LookProfile.PrototypeBId, -1, null, null);
+
+            Assert.That(baseline.PixelsPerUnitAtEnd, Is.EqualTo(24));
+            Assert.That(a.PixelsPerUnitAtEnd, Is.EqualTo(48));
+            Assert.That(b.PixelsPerUnitAtEnd, Is.EqualTo(64));
+            Assert.That(baseline.LayoutIdAtEnd, Is.EqualTo("lattice-12x3"), "the F006 layout identity is unchanged");
+            Assert.That(a.LayoutIdAtEnd, Is.Not.EqualTo(baseline.LayoutIdAtEnd), "the dense pitch is part of the layout identity");
+            Assert.That(b.LayoutIdAtEnd, Is.Not.EqualTo(a.LayoutIdAtEnd), "so is the arrangement");
+            Assert.That(a.FirstAnchorAtEnd.y, Is.LessThan(baseline.FirstAnchorAtEnd.y), "the dense rows sit closer: the top machine is lower");
+            Assert.That(a.FirstAnchorAtEnd.x, Is.EqualTo(baseline.FirstAnchorAtEnd.x), "the columns do not move");
+            Assert.That(a.TapScreens, Is.Not.EqualTo(baseline.TapScreens), "the camera and the lattice of the profile project the same taps to other device pixels");
+            Assert.That(b.TapScreens, Is.Not.EqualTo(a.TapScreens));
+            Assert.That(a.TapScreens, Has.Count.EqualTo(baseline.TapScreens.Count));
+
+            AssertSame(baseline, a, "F007-A (48 pixels per unit, dense pitch)");
+            AssertSame(baseline, b, "F007-B (64 pixels per unit, dense pitch with bays)");
+        }
+
+        [Test]
+        public void ASwitchToAProfileWithAnotherPixelsPerUnitAndPitchChangesTheGeometryFromThatTickOnAndNothingInTheState()
+        {
+            const int switchTick = 20;
+            var switched = rig.Run(LookProfile.F006Id, switchTick, LookProfile.PrototypeAId, null);
+            var fromStart = rig.Run(LookProfile.PrototypeAId, -1, null, null);
+
+            AssertSame(baseline, switched, "F006 to F007-A (48 pixels per unit, dense pitch) at tick 20");
+            Assert.That(switched.PixelsPerUnitAtEnd, Is.EqualTo(48));
+            Assert.That(switched.LayoutIdAtEnd, Is.EqualTo(fromStart.LayoutIdAtEnd), "the world rebuild path ends in the same layout as starting with the profile");
+
+            // 13 tap results per tapped tick, at ticks 0, 10, 20, ...: the first two ticks ran on F006, the rest on F007-A.
+            const int perTick = IdleFactory.Unity.Presentation.LatticeLayoutBuilder.ShippedLocationCount + 1;
+            Assert.That(switched.TapScreens.Take(2 * perTick), Is.EqualTo(baseline.TapScreens.Take(2 * perTick)), "before the switch the camera is the F006 one");
+            Assert.That(switched.TapScreens.Skip(2 * perTick), Is.EqualTo(fromStart.TapScreens.Skip(2 * perTick)), "after it, the camera and lattice of F007-A");
+            Assert.That(switched.TapScreens.Skip(2 * perTick), Is.Not.EqualTo(baseline.TapScreens.Skip(2 * perTick)));
+        }
+
         [Test]
         public void AMidRunSwitchChangesNothingInTheSimulationAndRedrawsWithTheNewProfile()
         {
